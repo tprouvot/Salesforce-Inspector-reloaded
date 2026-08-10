@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -62,11 +62,7 @@ class Model {
     if (args.has("sobject")) {
       this.importType = args.get("sobject");
     }
-    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("sfir-prod");
-    }
+    applyProductionStyling(sfHost);
     this.importTableResult = null;
     this.updateResult(null);
 

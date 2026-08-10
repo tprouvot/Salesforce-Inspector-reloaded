@@ -957,6 +957,7 @@ class AllDataBox extends React.PureComponent {
       contextSobject: null,
     };
     this.onAspectClick = this.onAspectClick.bind(this);
+    this.onClearSobjectsCache = this.onClearSobjectsCache.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
   }
 
@@ -1119,6 +1120,20 @@ class AllDataBox extends React.PureComponent {
       });
   }
 
+  async onClearSobjectsCache() {
+    const {sfHost} = this.props;
+    await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, sfHost, true, true);
+    this.setState({sobjectsList: null, sobjectsLoading: false}, () => {
+      this.loadSobjects();
+    });
+    if (this.props.showToast) {
+      this.props.showToast({
+        type: "success",
+        bannerText: "SObjects List cache cleared.",
+      });
+    }
+  }
+
   render() {
     let {
       activeSearchAspect,
@@ -1234,6 +1249,8 @@ class AllDataBox extends React.PureComponent {
           contextSobject,
           linkTarget,
           onContextRecordChange,
+          onClearSobjectsCache: this.onClearSobjectsCache,
+          showToast: this.props.showToast,
           isFieldsPresent,
           eventMonitorHref,
         })
@@ -1306,27 +1323,45 @@ class AllDataBoxUsers extends React.PureComponent {
       userSearchFields,
       excludeInactiveUsersFromSearch,
       excludePortalUsersFromSearch,
+      filterDropdownOpen: false,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+    this.onFilterToggle = this.onFilterToggle.bind(this);
+    this.onFilterChange = this.onFilterChange.bind(this);
+    this.documentClickHandler = null;
+  }
+
+  onFilterToggle() {
+    this.setState(state => ({filterDropdownOpen: !state.filterDropdownOpen}));
+  }
+
+  onFilterChange(filterName, checked) {
+    const {sfHost} = this.props;
+    const option = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.find(o => o.name === filterName);
+    if (!option) return;
+    const newState = {[option.stateKey]: checked};
+    this.setState(newState, () => {
+      const merged = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => ({
+        name: o.name,
+        label: o.label,
+        checked: this.state[o.stateKey],
+      }));
+      localStorage.setItem(sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY, JSON.stringify(merged));
+      const query = this.refs.allDataSearch?.state?.queryString ?? "";
+      this.refs.allDataSearch?.getMatchesDelayed?.(query);
+    });
   }
 
   getUserSearchExclusionsFromLocalStorage() {
-    // Try to read from new MultiCheckboxButtonGroup format first
-    const userSearchExclusions = localStorage.getItem(this.props.sfHost + "_userSearchExclusions");
-    const defaultExclusions = {
-      excludePortalUsersFromSearch: false,
-      excludeInactiveUsersFromSearch: false
-    };
+    const userSearchExclusions = localStorage.getItem(this.props.sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY);
+    const defaultExclusions = Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, false]));
     if (!userSearchExclusions) {
       return defaultExclusions;
     }
     try {
       const parsed = JSON.parse(userSearchExclusions);
-      return {
-        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
-        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
-      };
+      return Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, parsed.find(cb => cb.name === o.name)?.checked || false]));
     } catch (e) {
       return defaultExclusions;
     }
@@ -1338,9 +1373,30 @@ class AllDataBoxUsers extends React.PureComponent {
     this.refs.allDataSearch.refs.showAllDataInp.focus();
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     if (prevProps.contextUserId !== this.props.contextUserId) {
       this.onDataSelect({Id: this.props.contextUserId});
+    }
+    if (this.state.filterDropdownOpen && !prevState.filterDropdownOpen) {
+      this.documentClickHandler = (e) => {
+        const filterEl = this.refs.filterDropdownRef;
+        if (filterEl && !filterEl.contains(e.target)) {
+          this.setState({filterDropdownOpen: false});
+          document.removeEventListener("mousedown", this.documentClickHandler);
+          this.documentClickHandler = null;
+        }
+      };
+      setTimeout(() => document.addEventListener("mousedown", this.documentClickHandler), 0);
+    } else if (!this.state.filterDropdownOpen && prevState.filterDropdownOpen && this.documentClickHandler) {
+      document.removeEventListener("mousedown", this.documentClickHandler);
+      this.documentClickHandler = null;
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.documentClickHandler) {
+      document.removeEventListener("mousedown", this.documentClickHandler);
+      this.documentClickHandler = null;
     }
   }
 
@@ -1506,37 +1562,40 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   resultRender(matches, userQuery) {
-    return matches.map((value) => ({
-      key: value.Id,
-      value,
-      element: [
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "main"},
-          h(MarkSubstring, {
-            text: value.Name + " (" + value.Alias + ")",
-            start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length,
-          })
-        ),
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap small", key: "sub"},
-          h("div", {}, value.Profile ? value.Profile.Name : ""),
-          h(MarkSubstring, {
-            text: !value.IsActive ? "⚠ " + value.Username : value.Username,
-            start: value.Username.toLowerCase().indexOf(
-              userQuery.toLowerCase()
-            ),
-            length: userQuery.length,
-          })
-        ),
-      ],
-    }));
+    return matches.map((value, index) => {
+      const itemKey = value.Id || "user-" + index;
+      return {
+        key: itemKey,
+        value,
+        element: [
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "main-" + itemKey},
+            h(MarkSubstring, {
+              text: value.Name + " (" + value.Alias + ")",
+              start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
+              length: userQuery.length,
+            })
+          ),
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap small", key: "sub-" + itemKey},
+            h("div", {}, value.Profile ? value.Profile.Name : ""),
+            h(MarkSubstring, {
+              text: !value.IsActive ? "⚠ " + value.Username : value.Username,
+              start: value.Username.toLowerCase().indexOf(
+                userQuery.toLowerCase()
+              ),
+              length: userQuery.length,
+            })
+          ),
+        ],
+      };
+    });
   }
 
   render() {
-    let {selectedUser} = this.state;
+    let {selectedUser, filterDropdownOpen, excludePortalUsersFromSearch, excludeInactiveUsersFromSearch} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath}
       = this.props;
 
@@ -1553,6 +1612,57 @@ class AllDataBoxUsers extends React.PureComponent {
         inputSearchDelay: 400,
         placeholderText: "Name, username, email or alias",
         resultRender: this.resultRender,
+        rightIcon:         h(
+          "div",
+          {
+            ref: "filterDropdownRef",
+            className: "slds-dropdown-trigger slds-dropdown-trigger_click" + (filterDropdownOpen ? " slds-is-open" : ""),
+          },
+          h(
+            "button",
+            {
+              type: "button",
+              className: "sfir-input-filter-btn",
+              title: "Search filters",
+              "aria-haspopup": "true",
+              "aria-expanded": filterDropdownOpen,
+              onClick: this.onFilterToggle,
+            },
+            h(
+              "svg",
+              {className: "sfir-input-filter-icon slds-icon-text-default", "aria-hidden": "true", viewBox: "0 0 520 520"},
+              h("use", {xlinkHref: "symbols.svg#filterList"})
+            )
+          ),
+          filterDropdownOpen && h(
+            "div",
+            {className: "slds-dropdown slds-dropdown_right sfir-user-filter-dropdown"},
+            h("div", {className: "slds-dropdown__header slds-p-horizontal_small slds-p-vertical_x-small slds-text-body_small slds-text-color_weak"}, "Exclude users from search"),
+            h("ul", {className: "slds-dropdown__list", role: "menu"},
+              Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(option => {
+                const checked = option.stateKey === "excludePortalUsersFromSearch" ? excludePortalUsersFromSearch : excludeInactiveUsersFromSearch;
+                return h(
+                  "li",
+                  {key: option.name, className: "slds-dropdown__item", role: "presentation"},
+                  h(
+                    "div",
+                    {
+                      className: "sfir-filter-checkbox-item" + (checked ? " selected" : ""),
+                      role: "menuitemcheckbox",
+                      "aria-checked": checked,
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        this.onFilterChange(option.name, !checked);
+                      },
+                    },
+                    h("input", {type: "checkbox", checked, readOnly: true, "aria-hidden": "true"}),
+                    option.label.trim()
+                  )
+                );
+              })
+            )
+          )
+        ),
       }),
       h(
         "div",
@@ -1580,9 +1690,19 @@ class AllDataBoxSObject extends React.PureComponent {
     this.state = {
       selectedValue: null,
       recordIdDetails: null,
+      searchQuery: "",
+      searchMatchCount: 0,
     };
     this.onDataSelect = this.onDataSelect.bind(this);
     this.getMatches = this.getMatches.bind(this);
+    this.onMatchingResultsChange = this.onMatchingResultsChange.bind(this);
+  }
+
+  onMatchingResultsChange(matchingResults, userQuery) {
+    this.setState({
+      searchQuery: userQuery || "",
+      searchMatchCount: matchingResults?.length ?? 0,
+    });
   }
 
   componentDidMount() {
@@ -1592,7 +1712,7 @@ class AllDataBoxSObject extends React.PureComponent {
 
   componentDidUpdate(prevProps) {
     let {contextRecordId, sobjectsLoading, contextSobject} = this.props;
-    if (prevProps.contextRecordId !== contextRecordId) {
+    if (prevProps.contextRecordId !== contextRecordId || prevProps.contextSobject !== contextSobject) {
       this.updateSelection(contextRecordId, contextSobject);
     }
     if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {
@@ -1823,43 +1943,46 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   resultRender(matches, userQuery) {
-    return matches.map((value) => ({
-      key: value.recordId + "#" + value.sobject.name,
-      value,
-      element: [
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "main"},
-          value.recordId
-            || h(MarkSubstring, {
-              text: value.sobject.name,
-              start: value.sobject.name
+    return matches.map((value, index) => {
+      const itemKey = value.recordId + "#" + value.sobject.name + "#" + index;
+      return {
+        key: itemKey,
+        value,
+        element: [
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "main-" + itemKey},
+            value.recordId
+              || h(MarkSubstring, {
+                text: value.sobject.name,
+                start: value.sobject.name
+                  .toLowerCase()
+                  .indexOf(userQuery.toLowerCase()),
+                length: userQuery.length,
+              }),
+            value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
+          ),
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "sub-" + itemKey},
+            h(MarkSubstring, {
+              text: value.sobject.keyPrefix || "---",
+              start:
+                value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
+              length: 3,
+            }),
+            " • ",
+            h(MarkSubstring, {
+              text: value.sobject.label,
+              start: value.sobject.label
                 .toLowerCase()
                 .indexOf(userQuery.toLowerCase()),
               length: userQuery.length,
-            }),
-          value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
-        ),
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "sub"},
-          h(MarkSubstring, {
-            text: value.sobject.keyPrefix || "---",
-            start:
-              value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
-            length: 3,
-          }),
-          " • ",
-          h(MarkSubstring, {
-            text: value.sobject.label,
-            start: value.sobject.label
-              .toLowerCase()
-              .indexOf(userQuery.toLowerCase()),
-            length: userQuery.length,
-          })
-        ),
-      ],
-    }));
+            })
+          ),
+        ],
+      };
+    });
   }
 
   render() {
@@ -1872,7 +1995,10 @@ class AllDataBoxSObject extends React.PureComponent {
       isFieldsPresent,
       eventMonitorHref,
     } = this.props;
-    let {selectedValue, recordIdDetails} = this.state;
+    let {selectedValue, recordIdDetails, searchQuery, searchMatchCount} = this.state;
+    let {onClearSobjectsCache} = this.props;
+    const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE, true);
+    const showClearCacheButton = cacheEnabled && searchQuery.trim().length > 0 && searchMatchCount === 0;
     return h(
       "div",
       {className: "tab-container slds-p-horizontal_x-small"},
@@ -1880,6 +2006,7 @@ class AllDataBoxSObject extends React.PureComponent {
         ref: "allDataSearch",
         sfHost,
         onDataSelect: this.onDataSelect,
+        onMatchingResultsChange: this.onMatchingResultsChange,
         sobjectsList,
         getMatches: this.getMatches,
         inputSearchDelay: 0,
@@ -2206,15 +2333,34 @@ class AllDataBoxSObject extends React.PureComponent {
                 )
               )
             ),
-            h(
-              "div",
-              {className: "slds-text-longform"},
-              h(
-                "h3",
-                {className: "slds-text-body_regular"},
-                "No record to display"
+            showClearCacheButton
+              ? h(
+                "div",
+                {className: "slds-text-longform slds-m-top_small slds-m-bottom_small"},
+                h(
+                  "p",
+                  {className: "slds-text-body_regular slds-m-bottom_xx-small"},
+                  "No matching objects found. Clear the cache to refresh the list and include newly created objects."
+                ),
+                h(
+                  "button",
+                  {
+                    className: "slds-button slds-button_neutral",
+                    onClick: onClearSobjectsCache,
+                    title: "Clear SObjects List cache and refresh"
+                  },
+                  "Clear Cache"
+                )
               )
-            )
+              : h(
+                "div",
+                {className: "slds-text-longform"},
+                h(
+                  "h3",
+                  {className: "slds-text-body_regular"},
+                  "No record to display"
+                )
+              )
           )
         )
     );
@@ -2273,43 +2419,38 @@ class AllDataBoxShortcut extends React.PureComponent {
           != undefined;
       }
 
-      //search for metadata if user did not disabled it
-      if (metadataShortcutSearch) {
+      //search for metadata if user did not disabled it (min 2 chars to avoid heavy queries)
+      if (metadataShortcutSearch && shortcutSearch.length >= 2) {
         const queries = {
           flows:
             "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 30",
+            + "%' LIMIT 15",
           profiles:
             "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 30",
+            + "%' LIMIT 15",
           permissionSets:
             "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 30",
-          networks:
-            "SELECT NetworkId, Network.Name, Network.Status, Network.UrlPathPrefix, SiteId FROM WebStoreNetwork WHERE Network.Name LIKE '%"
-            + shortcutSearch
-            + "%' LIMIT 50",
+            + "%' LIMIT 15",
           classes:
             "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 50",
+            + "%' LIMIT 20",
         };
         // If metadataShortcutSearchOptions is null, assume all options are checked
         const defaultOptions = [
           "flows",
           "profiles",
           "permissionSets",
-          "networks",
           "classes",
         ].map((name) => ({name, checked: true}));
         const effectiveOptions
           = metadataShortcutSearchOptions || defaultOptions;
 
         const compositeRequest = effectiveOptions
-          .filter((setting) => setting.checked)
+          .filter((setting) => setting.checked && queries[setting.name])
           .map((setting) => ({
             method: "GET",
             url:
@@ -2378,14 +2519,6 @@ class AllDataBoxShortcut extends React.PureComponent {
                 + (rec.NamespacePrefix
                   ? ""
                   : " • Length: " + rec.LengthWithoutComments);
-            } else if (rec.attributes.type === "WebStoreNetwork") {
-              rec.link = `/sfsites/picasso/core/config/commeditor.jsp?servlet%2Fnetworks%2Fswitch%3FnetworkId%3D${rec.NetworkId}%26startURL%3D%252FcommunitySetup%252FcwApp.app%2523%252Fc%252Fhome&siteId=${rec.SiteId}&`;
-              rec.label = rec.Network.Name;
-              let url = rec.Network.UrlPathPrefix
-                ? " • /" + rec.Network.UrlPathPrefix
-                : "";
-              rec.name = rec.NetworkId + url;
-              rec.detail = "Network (" + rec.Network.Status + ") • Builder";
             }
             rec.title = rec.name;
             result.push(rec);
@@ -2396,6 +2529,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       result.length > 0
         ? result
         : result.push({
+          Id: "global-search-" + shortcutSearch,
           link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch),
           label: '"' + shortcutSearch + '"',
           detail: "No results found",
@@ -2434,8 +2568,8 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   resultRender(matches, shortcutQuery) {
-    return matches.map((value) => ({
-      key: value.Id,
+    return matches.map((value, index) => ({
+      key: value.Id || "shortcut-" + index,
       value,
       element: [
         h(
@@ -2443,7 +2577,7 @@ class AllDataBoxShortcut extends React.PureComponent {
           {
             className: "dropdown-item slds-wrap",
             title: value.title,
-            key: "main" + value.Id,
+            key: "main-" + (value.Id || index),
           },
           h(MarkSubstring, {
             text: value.label,
@@ -2458,7 +2592,7 @@ class AllDataBoxShortcut extends React.PureComponent {
           {
             className: "dropdown-item slds-wrap small",
             title: value.title,
-            key: "sub" + value.Id,
+            key: "sub-" + (value.Id || index),
           },
           h("div", {}, value.detail),
           h(MarkSubstring, {
@@ -3886,6 +4020,9 @@ class AllDataSelection extends React.PureComponent {
   getSubscribeUrl(name) {
     return this.props.eventMonitorHref + "&channel=" + name;
   }
+  getGenerateEventUrl(name) {
+    return this.props.eventMonitorHref + "&channel=" + name + "&generate=1";
+  }
   setFlowDefinitionId(recordId) {
     if (recordId && !this.state.flowDefinitionId) {
       if (recordId.startsWith("301")) {
@@ -3945,7 +4082,7 @@ class AllDataSelection extends React.PureComponent {
             "article",
             {
               className:
-                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_xx-small sfir-background-grey",
+                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_x-small sfir-background-grey",
             },
             h(
               "div",
@@ -4227,14 +4364,26 @@ class AllDataSelection extends React.PureComponent {
         : null,
       selectedValue.sobject.name.endsWith("__e")
         ? h(
-          "a",
-          {
-            href: this.getSubscribeUrl(selectedValue.sobject.name),
-            target: linkTarget,
-            className:
-                "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral",
-          },
-          h("span", {}, h("u", {}), "Subscribe to Event")
+          "div",
+          {className: "slds-button-group slds-m-top_xx-small", role: "group"},
+          h(
+            "a",
+            {
+              href: this.getSubscribeUrl(selectedValue.sobject.name),
+              target: linkTarget,
+              className: "slds-button slds-button_neutral page-button",
+            },
+            h("span", {}, h("u", {}), "Subscribe Event")
+          ),
+          h(
+            "a",
+            {
+              href: this.getGenerateEventUrl(selectedValue.sobject.name),
+              target: linkTarget,
+              className: "slds-button slds-button_neutral page-button",
+            },
+            h("span", {}, "Generate Event")
+          )
         )
         : null
     );
@@ -4374,8 +4523,10 @@ class AllDataSearch extends React.PureComponent {
       queryString: "",
       matchingResults: [],
       recentItems: [],
-      queryDelayTimer: null,
+      searchLoading: false,
     };
+    this.queryDelayTimerRef = {current: null};
+    this.searchGeneration = 0;
     this.onAllDataInput = this.onAllDataInput.bind(this);
     this.onAllDataFocus = this.onAllDataFocus.bind(this);
     this.onAllDataBlur = this.onAllDataBlur.bind(this);
@@ -4419,28 +4570,38 @@ class AllDataSearch extends React.PureComponent {
     }
   }
   getMatchesDelayed(userQuery) {
-    let {queryDelayTimer} = this.state;
-    let {inputSearchDelay} = this.props;
+    let {inputSearchDelay, onMatchingResultsChange} = this.props;
+    const timerRef = this.queryDelayTimerRef;
 
-    if (queryDelayTimer) {
-      clearTimeout(queryDelayTimer);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
     }
-    queryDelayTimer = setTimeout(async () => {
-      let {getMatches} = this.props;
-      const matchingResults = await getMatches(userQuery);
-      await this.setState({matchingResults});
+    timerRef.current = setTimeout(async () => {
+      timerRef.current = null;
+      const generation = ++this.searchGeneration;
+      this.setState({searchLoading: true});
+      try {
+        let {getMatches} = this.props;
+        const matchingResults = await getMatches(userQuery);
+        if (generation !== this.searchGeneration) {
+          return;
+        }
+        await this.setState({matchingResults});
+        onMatchingResultsChange?.(matchingResults, userQuery);
+      } finally {
+        this.setState({searchLoading: false});
+      }
     }, inputSearchDelay);
-
-    this.setState({queryDelayTimer});
   }
   render() {
-    let {queryString, matchingResults, recentItems} = this.state;
-    let {placeholderText, resultRender, sfHost} = this.props;
+    let {queryString, matchingResults, recentItems, searchLoading} = this.state;
+    let {placeholderText, resultRender, sfHost, rightIcon} = this.props;
     return h(
       "div",
       {
         className:
-          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon slds-input-has-icon_left-right",
+          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon "
+          + (rightIcon ? "slds-input-has-icon_left-right sfir-has-right-icon" : "slds-input-has-icon_right"),
       },
       h("input", {
         className: "slds-input sfir-font-size_11px",
@@ -4460,21 +4621,42 @@ class AllDataSearch extends React.PureComponent {
         queryString,
         sfHost,
       }),
-      h(
-        "svg",
-        {
-          className:
-            "slds-input__icon slds-input__icon_left slds-icon-text-default",
-          viewBox: "0 0 520 520",
-          onClick: this.onAllDataArrowClick,
-        },
-        h(
-          "g",
-          {},
-          h("path", {
-            d: "M496 453L362 320a189 189 0 10-340-92 190 190 0 00298 135l133 133a14 14 0 0021 0l21-21a17 17 0 001-22zM210 338a129 129 0 11130-130 129 129 0 01-130 130z",
-          })
+      searchLoading
+        ? h(
+          "div",
+          {
+            className: "slds-input__icon slds-input__icon_left sfir-search-spinner",
+            "aria-hidden": "true",
+          },
+          h("div", {
+            role: "status",
+            className: "slds-spinner slds-spinner_small slds-spinner_brand",
+            "aria-label": "Searching",
+          }, [
+            h("div", {key: "dot-a", className: "slds-spinner__dot-a"}),
+            h("div", {key: "dot-b", className: "slds-spinner__dot-b"}),
+          ])
         )
+        : h(
+          "svg",
+          {
+            className:
+              "slds-input__icon slds-input__icon_left slds-icon-text-default",
+            viewBox: "0 0 520 520",
+            onClick: this.onAllDataArrowClick,
+          },
+          h(
+            "g",
+            {},
+            h("path", {
+              d: "M496 453L362 320a189 189 0 10-340-92 190 190 0 00298 135l133 133a14 14 0 0021 0l21-21a17 17 0 001-22zM210 338a129 129 0 11130-130 129 129 0 01-130 130z",
+            })
+          )
+        ),
+      rightIcon && h(
+        "div",
+        {className: "slds-input__icon slds-input__icon_right sfir-input-right-icon"},
+        rightIcon
       )
     );
   }
@@ -4757,7 +4939,7 @@ class Autocomplete extends React.PureComponent {
             h(
               "div",
               {
-                key,
+                key: key || "result-" + (firstRenderedIndex + index),
                 className:
                   "slds-dropdown__item "
                   + (selectedIndex == index + firstRenderedIndex

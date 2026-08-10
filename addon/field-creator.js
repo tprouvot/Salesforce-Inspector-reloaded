@@ -1,7 +1,7 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants, applyProductionStyling} from "./utils.js";
 
 let h = React.createElement;
 
@@ -970,11 +970,7 @@ class App extends React.Component {
     // Set orgName from sfHost
     this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
 
-    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("sfir-prod");
-    }
+    applyProductionStyling(sfHost);
   }
 
   didUpdate() {

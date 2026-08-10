@@ -128,15 +128,22 @@ The extension caches the SObjects list to improve popup loading performance. Thi
 
 **How to solve it:**
 
-1. **Clear the SObjects List cache** (recommended for immediate results):
+1. **Clear the SObjects List cache from the Objects tab** (quickest when cache is enabled):
+   * Open the extension and go to the "Objects" tab
+   * Search for your new object name in the search field
+   * If no results appear, a "Clear Cache" button will be displayed
+   * Click the button to clear the cache and refresh the list
+   * Your new object should appear after the refresh
+
+2. **Clear the SObjects List cache from Options** (when the in-tab button is not shown, e.g. cache disabled):
    * Open the extension and click the "Options" button
    * Navigate to the "Cache" tab
-   * Find the "SObjects List Cache Duration (hours)" setting
+   * Find the "SObjects List Cache" setting
    * Click the "Clear Cache" button next to it
    * A success message will confirm the cache has been cleared
 
-2. **Wait for cache expiration**:
+3. **Wait for cache expiration**:
    * The cache will automatically expire based on the configured duration (default: 8 hours when "Preload SObjects before popup opens" is enabled, 168 hours / 7 days when disabled)
    * After expiration, the extension will fetch fresh data on the next popup open
 
-**Note:** The extension caches SObjects per org. If you switch between orgs, the extension uses the cache for the current org. For more details on cache configuration, see [SObjects List Cache Management](../how-to.md#sobjects-list-cache-management) in the how-to.
+**Note:** The "Clear Cache" button in the Objects tab is only displayed when SObjects List cache is enabled (Options > Cache tab) and a search returns no results. The extension caches SObjects per org. If you switch between orgs, the extension uses the cache for the current org. For more details on cache configuration, see [SObjects List Cache Management](../how-to.md#sobjects-list-cache-management) in the how-to.

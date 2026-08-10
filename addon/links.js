@@ -3,6 +3,7 @@ export let setupLinks = [
   //Setup
   {label: "Setup Home", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
   {label: "Salesforce Foundations", link: "/lightning/setup/C360ProvisioningSetup/home", section: "Setup", prod: false},
+  {label: "Salesforce Go", link: "/lightning/setup/SalesforceGo/home", section: "Setup", prod: false},
   {label: "Service Setup Assistant", link: "/lightning/setup/ServiceHome/home", section: "Setup", prod: false},
   {label: "Service Setup", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
   {label: "Multi-Factor Authentication Assistant", link: "/lightning/setup/MfaAssistant/home", section: "Setup", prod: false},
@@ -70,7 +71,7 @@ export let setupLinks = [
   {label: "Connected Apps OAuth Usage", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
   {label: "Manage Connected Apps", link: "/lightning/setup/ConnectedApplication/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
   //Platform Tools > Apps > External Client Apps
-  {label: "External Client App Manager", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
+  {label: "External Client App Manager", link: "/lightning/setup/ManageExternalClientApplication/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   {label: "External Client Apps OAuth Usage", link: "/lightning/setup/ExternalClientApplicationOauthUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   {label: "External Client App Settings", link: "/lightning/setup/ExternalClientApplicationSettings/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   //Platform Tools > Apps > Lightning Bolt
@@ -102,7 +103,6 @@ export let setupLinks = [
 
   //Platform Tools > Feature Settings
   {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
-  {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Functions", link: "/lightning/setup/Functions/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Home", link: "/lightning/setup/Home/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Quip (Salesforce Anywhere)", link: "/lightning/setup/SalesforceAnywhereSetupPage/home", section: "Platform Tools > Feature Settings", prod: false},
@@ -112,8 +112,12 @@ export let setupLinks = [
   {label: "Einstein Conversation Insights Assessor", link: "/lightning/setup/EinsteinCIReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Revenue Intelligence Assessor", link: "/lightning/setup/EinsteinRevIntlReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Sales Cloud Einstein Assessor", link: "/lightning/setup/SalesCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
-  {label: "Service Cloud Einstein Assessor", link: "lightning/setup/ServiceCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
+  {label: "Service Cloud Einstein Assessor", link: "/lightning/setup/ServiceCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   //Platform Tools > Einstein > Einstein Generative AI
+  {label: "Agentforce Analytics", link: "/lightning/setup/AgentAnalyticsLibrary/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Agentforce Agents", link: "/lightning/setup/EinsteinCopilot/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Agentforce Asset Library", link: "/lightning/setup/AgentAssetLibrary/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Testing Center", link: "/lightning/setup/TestingCenter/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
   {label: "Einstein Audit, Analytics, and Monitoring Setup", link: "/lightning/setup/EinsteinFeedbackSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
   {label: "Einstein Setup", link: "/lightning/setup/EinsteinGPTSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
   {label: "Einstein Trust Layer", link: "/lightning/setup/EinsteinTrustLayerSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
@@ -171,13 +175,16 @@ export let setupLinks = [
   //Platform Tools > Feature Settings > Service > Field Service
   {label: "Field Service Settings", link: "/lightning/setup/FieldServiceSettings/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
   {label: "Field Service Mobile App Builder", link: "/lightning/setup/FieldServiceAppBuilder/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
-  {label: "Inbound Social Post Errors", link: "/lightning/setup/InboundSocialPostErrors/homee", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
+  {label: "Inbound Social Post Errors", link: "/lightning/setup/InboundSocialPostErrors/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
 
   //Platform Tools > Feature Settings > Service > Knowledge
   {label: "Data Category Assignments", link: "/lightning/setup/KnowledgeDataCategorySetup/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
   {label: "Data Category Mapping", link: "/lightning/setup/ArticleFilterRules/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
   {label: "Knowledge Settings", link: "/lightning/setup/KnowledgeSettings/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
   {label: "Validation Statuses", link: "/lightning/setup/ValidationStatuses/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
+
+  //Platform Tools > Feature Settings > Service > Messaging
+  {label: "Messaging Settings", link: "/lightning/setup/LiveMessageSetup/home", section: "Platform Tools > Feature Settings > Service > Messaging", prod: false},
 
   {label: "Macro Settings", link: "/lightning/setup/MacroSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   {label: "Omni-Channel Settings", link: "/lightning/setup/OmniChannelSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
@@ -216,7 +223,7 @@ export let setupLinks = [
   {label: "Send Actions", link: "/lightning/setup/SendAction/home", section: "Platform Tools > Process Automation > Workflow Actions", prod: false},
   {label: "Tasks", link: "/lightning/setup/WorkflowTasks/home", section: "Platform Tools > Process Automation > Workflow Actions", prod: false},
   {label: "Workflow Rules", link: "/lightning/setup/WorkflowRules/home", section: "Platform Tools > Process Automation", prod: false},
-  //User Interface
+  //Platform Tools > User Interface
   {label: "Action Link Templates", link: "/lightning/setup/ActionLinkGroupTemplates/home", section: "Platform Tools > User Interface", prod: false},
   {label: "Guided Actions", link: "/lightning/setup/GuidedActions/home", section: "Platform Tools > User Interface", prod: false},
   {label: "App Menu", link: "/lightning/setup/AppMenu/home", section: "Platform Tools > User Interface", prod: false},
@@ -233,7 +240,7 @@ export let setupLinks = [
   {label: "Quick Text Settings", link: "/lightning/setup/LightningQuickTextSettings/home", section: "Platform Tools > User Interface", prod: false},
   {label: "Record Page Settings", link: "/lightning/setup/SimpleRecordHome/home", section: "Platform Tools > User Interface", prod: false},
   {label: "Rename Tabs and Labels", link: "/lightning/setup/RenameTab/home", section: "Platform Tools > User Interface", prod: false},
-  //Sites and Domains
+  //Platform Tools > Sites and Domains
   {label: "Custom URLs", link: "/lightning/setup/DomainSites/home", section: "Platform Tools > User Interface > Sites and Domains", prod: false},
   {label: "Domains", link: "/lightning/setup/DomainNames/home", section: "Platform Tools > User Interface > Sites and Domains", prod: false},
   {label: "Sites", link: "/lightning/setup/CustomDomain/home", section: "Platform Tools > User Interface > Sites and Domains", prod: false},
@@ -249,7 +256,7 @@ export let setupLinks = [
   {label: "Translation Settings", link: "/lightning/setup/LabelWorkbenchSetup/home", section: "Platform Tools > User Interface > Translation Workbench", prod: false},
 
   {label: "User Interface", link: "/lightning/setup/UserInterfaceUI/home", section: "Platform Tools > User Interface", prod: false},
-  //Custom Code
+  //Platform Tools > Custom Code
   {label: "Apex Classes", link: "/lightning/setup/ApexClasses/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Apex Hammer Test Results", link: "/lightning/setup/ApexHammerResultStatus/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Apex Settings", link: "/lightning/setup/ApexSettings/home", section: "Platform Tools > Custom Code", prod: false},
@@ -261,7 +268,7 @@ export let setupLinks = [
   {label: "Custom Permissions", link: "/lightning/setup/CustomPermissions/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Custom Settings", link: "/lightning/setup/CustomSettings/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Email Services", link: "/lightning/setup/EmailToApexFunction/home", section: "Platform Tools > Custom Code", prod: false},
-  //Lightning Components
+  //Platform Tools > Custom Code > Lightning Components
   {label: "Debug Mode", link: "/lightning/setup/UserDebugModeSetup/home", section: "Platform Tools > Custom Code > Lightning Components", prod: false},
   {label: "Lightning Components", link: "/lightning/setup/LightningComponentBundles/home", section: "Platform Tools > Custom Code > Lightning Components", prod: false},
 
@@ -271,7 +278,7 @@ export let setupLinks = [
   {label: "Tools", link: "/lightning/setup/ClientDevTools/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Visualforce Components", link: "/lightning/setup/ApexComponents/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Visualforce Pages", link: "/lightning/setup/ApexPages/home", section: "Platform Tools > Custom Code", prod: false},
-  //Development
+  //Platform Tools >   Development
   {label: "Dev Hub", link: "/lightning/setup/DevHub/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "DevOps Center", link: "/lightning/setup/DevOpsCenterSetup/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "Org Shape", link: "/lightning/setup/ShapeGrantAccess/home", section: "Platform Tools > Dev Hub", prod: true},
@@ -314,6 +321,10 @@ export let setupLinks = [
   {label: "In-App Guidance", link: "/lightning/setup/Prompts/home", section: "Platform Tools > User Engagement", prod: false},
   //Platform Tools > Integrations
   {label: "API", link: "/lightning/setup/WebServices/home", section: "Platform Tools > Integrations", prod: false},
+  //Platform Tools > Integrations > API Catalog
+  {label: "API Catalog", link: "/lightning/setup/ApiCatalog/home", section: "Platform Tools > Integrations > API Catalog", prod: false},
+  {label: "MCP Servers", link: "/lightning/setup/McpServer/home", section: "Platform Tools > Integrations > API Catalog", prod: false},
+
   {label: "Basic Data Import", link: "/lightning/setup/BasicDataImport/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Change Data Capture", link: "/lightning/setup/CdcObjectEnablement/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Data Import Wizard", link: "/lightning/setup/DataManagementDataImporter/home", section: "Platform Tools > Integrations", prod: false},
@@ -322,6 +333,7 @@ export let setupLinks = [
   {label: "External Data Sources", link: "/lightning/setup/ExternalDataSource/home", section: "Platform Tools > Integrations", prod: false},
   {label: "External Objects", link: "/lightning/setup/ExternalObjects/home", section: "Platform Tools > Integrations", prod: false},
   {label: "External Services", link: "/lightning/setup/ExternalServices/home", section: "Platform Tools > Integrations", prod: false},
+  {label: "Named Query API", link: "/lightning/setup/ApiNamedQuery/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Platform Events", link: "/lightning/setup/EventObjects/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Teams Integration", link: "/lightning/setup/MicrosoftTeamsIntegration/home", section: "Platform Tools > Integrations", prod: false},
   //Platform Tools > Notification Builder
@@ -377,7 +389,7 @@ export let setupLinks = [
   {label: "Network Access", link: "/lightning/setup/NetworkAccess/home", section: "Settings > Security", prod: false},
   {label: "Password Policies", link: "/lightning/setup/SecurityPolicies/home", section: "Settings > Security", prod: false},
   //Settings > Security > Platform Encryption
-  {label: "Advanced Settings", link: "/lightning/setup/SecurityRemoteProxy/home", section: "Settings > Security > Platform Encryption", prod: false},
+  {label: "Encryption Settings", link: "/lightning/setup/EncryptionAdvancedSettings/home", section: "Settings > Security > Platform Encryption", prod: false},
   {label: "Encryption Policy", link: "/lightning/setup/EncryptionPolicy/home", section: "Settings > Security > Platform Encryption", prod: false},
   {label: "Encryption Statistics", link: "/lightning/setup/EncryptionStatistics/home", section: "Settings > Security > Platform Encryption", prod: false},
   {label: "Key Management", link: "/lightning/setup/PlatformEncryptionKeyManagement/home", section: "Settings > Security > Platform Encryption", prod: false},

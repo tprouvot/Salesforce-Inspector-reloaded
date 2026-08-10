@@ -4,7 +4,7 @@ import {copyToClipboard, downloadCsvFile, applyProductionStyling} from "./utils.
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
+import {UserInfoModel, PromptTemplate, Constants, SearchFocusManager, isVisibleElement} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
 
 // Constants
@@ -1667,6 +1667,21 @@ class App extends React.Component {
   }
   componentDidMount() {
     this.refs.rowsFilter.focus();
+
+    // Target the specific IDs, prioritizing the modal if it's visible
+    this.searchFocusManager = new SearchFocusManager(() => {
+      const inputs = [
+        document.getElementById('detailsFilter'),
+        document.getElementById('rowsFilter')
+      ];
+      return inputs.find(isVisibleElement);
+    });
+    this.searchFocusManager.register();
+  }
+  componentWillUnmount() {
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
   onUseAllTab(e) {
     let {model} = this.props;
@@ -1867,7 +1882,7 @@ class App extends React.Component {
           h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
             h("use", {xlinkHref: "symbols.svg#search"})
           ),
-          h("input", {className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
+          h("input", {id: "rowsFilter", className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
           h("a", {href: "about:blank", className: "sfir-filter-clear", onClick: this.onClearAndFocusFilter},
             h("svg", {className: "sfir-filter-clear-icon"},
               h("use", {xlinkHref: "symbols.svg#clear"})
@@ -2642,7 +2657,7 @@ class DetailsBox extends React.Component {
             className: "slds-modal__title slds-hyphenate",
             tabIndex: -1
           }, "All available metadata for \"" + model.detailsBox.name + "\""),
-          h("input", {className: "slds-input slds-m-top_small", placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: "detailsFilter"}),
+          h("input", {id: "detailsFilter", className: "slds-input slds-m-top_small", placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: "detailsFilter"}),
         ),
         h("div", {className: "slds-modal__content slds-p-around_medium", id: "modal-content-id-1"},
           h("table", {className: "slds-table slds-table_cell-buffer"},

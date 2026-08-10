@@ -1,6 +1,6 @@
 /* global React ReactDOM initButton */
 import {sfConn, apiVersion} from "./inspector.js";
-import {UserInfoModel, createSpinForMethod, PromptTemplate, Constants, isOptionEnabled} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, PromptTemplate, Constants, isOptionEnabled, SearchFocusManager, isVisibleElement} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import AgentforceModal from "./components/AgentforceModal.js";
@@ -1984,6 +1984,22 @@ class App extends React.Component {
 
   componentDidMount() {
     this.model.init();
+
+    // Prioritize the preview modal search, fallback to the main logs search
+    this.searchFocusManager = new SearchFocusManager(() => {
+      const inputs = [
+        document.querySelector('.sfir-preview-search-input'),
+        document.querySelector('input[placeholder="Search in logs..."]')
+      ];
+      return inputs.find(isVisibleElement);
+    });
+    this.searchFocusManager.register();
+  }
+
+  componentWillUnmount() {
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
 
   render() {

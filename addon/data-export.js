@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory, SearchFocusManager} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -1780,6 +1780,22 @@ class App extends React.Component {
     }
     addEventListener("resize", resize);
     resize();
+
+    this.searchFocusManager = new SearchFocusManager(() => this.refs.resultsFilter);
+    this.searchFocusManager.register();
+    if (chrome.commands && chrome.commands.getAll) {
+      chrome.commands.getAll((commands) => {
+        const focusCmd = commands.find(c => c.name === "focus-search");
+        if (focusCmd && focusCmd.shortcut) {
+          this.setState({ focusShortcut: focusCmd.shortcut });
+        }
+      });
+    }
+  }
+  componentWillUnmount() {
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
   componentDidUpdate() {
     this.recalculateSize();
@@ -2079,7 +2095,11 @@ class App extends React.Component {
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
                   h("input", {
+                    ref: "resultsFilter",
                     className: "slds-input slds-button slds-m-around_none",
+                    title: this.state.focusShortcut 
+                      ? `Filter export results (/ or ${this.state.focusShortcut})` 
+                      : "Filter export results (/)",
                     placeholder: model.filterColumns?.length > 0
                       ? `Filter by (${model.filterColumns.length})`
                       : "Filter",

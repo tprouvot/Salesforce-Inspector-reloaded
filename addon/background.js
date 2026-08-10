@@ -64,6 +64,9 @@ chrome.action.onClicked.addListener(() => {
   });
 });
 chrome.commands?.onCommand.addListener((command) => {
+  if (!sfHost) {
+    return;
+  }
   if (command.startsWith("link-")){
     let link;
     switch (command){
@@ -85,6 +88,8 @@ chrome.commands?.onCommand.addListener((command) => {
     chrome.runtime.sendMessage({
       msg: "shortcut_pressed", command, sfHost
     });
+  } else if (command === "focus-search") {
+    chrome.runtime.sendMessage({ command: "focus-search" });
   } else {
     chrome.tabs.create({
       url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`

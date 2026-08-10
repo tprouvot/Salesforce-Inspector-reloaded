@@ -11,7 +11,7 @@
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore, I decided to take over so trailblazer community can keep asking for new features !
+We all know and love Salesforce Inspector: As the great Søren Krabbe did not maintain it anymore, I decided to take over so trailblazer community can keep asking for new features !
 
 - [New features compared to the original SF Inspector](#new-features-compared-to-original-sf-inspector)
 - [Security and Privacy](#security-and-privacy)
@@ -43,7 +43,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
-  - Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded)
+- Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded)
 - SalesforceBen :
   - [Salesforce Inspector Reloaded](https://www.salesforceben.com/salesforce-inspector-reloaded/)
   - [Video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
@@ -54,19 +54,62 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 ## New features compared to original SF Inspector
 
-- REST Explore: use Salesforce APIs without external tool
-- Favicon customization for each org
+### New Pages & Features
+
+- **[REST Explorer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/rest-explorer/)**: Interact with Salesforce REST APIs directly from the extension with request templates, query history, and auto-completion
+- **[Dependencies Explorer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/dependencies-explorer/)**: Analyze Salesforce metadata dependencies to understand what depends on your metadata and what your metadata depends on
+- **[Field Creator](https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/)**: Create fields for standard objects, custom objects, platform events, and custom metadata types with bulk import support
+- **[Flow Scanner](https://tprouvot.github.io/Salesforce-Inspector-reloaded/flow-scanner/)**: Analyze Salesforce Flows for best practices, errors, and potential issues with comprehensive rule checking
+- **[Debug Logs Viewer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/logs-viewer/)**: View, filter, analyze, and manage Salesforce debug logs with Agentforce-powered analysis and grep-like filtering
+- **[Event Monitor](https://tprouvot.github.io/Salesforce-Inspector-reloaded/event-monitor/)**: Subscribe to and display Salesforce Platform Events in real-time, including Change Events and custom channels
+- **[Metadata Retrieve](https://tprouvot.github.io/Salesforce-Inspector-reloaded/download-metadata/)**: Retrieve and deploy metadata from Salesforce with package.xml generation and deployment options
+- **[API Statistics](https://tprouvot.github.io/Salesforce-Inspector-reloaded/api-statistics/)**: Track and monitor all REST and SOAP API calls with performance metrics and error tracking
+- **[Options](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/)**: Configure extension settings including favicon color picker, export/import configuration, custom shortcuts, default popup tab, and hide buttons options
+
+### Enhanced Features
+
+- **Show All Data** (Inspect page):
+  - Agentforce Helper for formula fields to analyze and generate improvements
+  - Analyze field usage by showing percentage of records that have a value for each field
+  - Save fields selection to persist across sessions
+  - Keyboard shortcut to save edited record values
+  - Back to record button for easy navigation
+
+- **Popup**:
+  - New **Org tab** to display org and instance information
+  - New **Shortcuts tab** to accelerate setup navigation with search functionality
+  - **Reset Password** button in User tab
+  - **Unfreeze User** button in User tab
+  - **Copy Id** icon in User tab
+
+- **Data Export** - [Documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/data-export/):
+  - Multiple query tabs support with drag & drop reordering and editable tab names
+  - Agentforce SOQL generation from natural language descriptions
+  - Auto-populate SOQL editor from Salesforce List View context
+  - Query performance metrics with batch statistics
+  - Filter result by column for easier data analysis
+
+- **Data Import** - [Documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/data-import/):
+  - Configure SOAP headers for assignment rules, duplicate rules, and owner change options
+  - Automatically detect SObject based on Id field
+  - Grey out columns that were not imported
+  - Guess file format on paste (CSV, JSON, Excel)
+  - Undelete records support
+
+- **Org Limits**:
+  - Refresh button to update limits in real-time
+  - Persist filter in URL for easy bookmarking
+  - Restyled Org Limits UI with improved readability
+  - Fix gauge display and text when limits are exceeded
+
+### Other Improvements
+
+- Favicon and banner customization for each org
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
 - Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
 - Control access to Salesforce Inspector reloaded with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 - Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
-- New UI for Export / Import
-- Enhanced Event Monitor:
-  - Support for Change Events to monitor data changes in Salesforce
-  - Manual channel configuration with custom channel path input
-  - Improved channel type selection with dedicated dropdown
-  - Streamlined UI with all inputs in a single row for better usability
 
 ## Security and Privacy
 
@@ -126,18 +169,40 @@ Thank you for shaping our extension's future! Your feedback makes it better.
 
 Contributions are welcome!
 
-Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
-You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/labels/%22help%20wanted%22)
+**Before starting developments**, create a feature request and explain the goal of it and the uses cases that it addresses. Let's discuss the implementation first, then you can start the development.
 
-Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
-To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
-This branch will be merge into master when the new version is published on web store.
+You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues?q=state%3Aopen%20label%3A%22help%20wanted%22)
 
-Make sure to update CHANGES.md file by describing the improvement / bugfix you realized.
+**Project Structure**
 
-In order to make sure everyone who reads documentation is aware of your improvement, you can update the 'how-to' page to document / expose this new functionality.
+- `addon/`: Contains the extension source code.
+- `addon/inspector.js`: Handles Salesforce connection and API calls.
+- `addon/utils.js`: Common utility functions.
+- `addon/components/`: React components.
 
-Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
+**Component Development**
+
+- **SLDS Usage**: When creating new components, use Salesforce Design System (SLDS) classes and structure.
+  - Styles are defined in `addon/styles/slds/slds.css`.
+- **Location**: Save new components under the `addon/components/` folder to promote reusability (e.g., see existing components like `PageHeader.js`, `ConfirmModal.js`).
+
+**Code Reuse**
+
+- **Check Existing**: Before creating new functions, search the codebase (especially `addon/utils.js`) to see if existing logic can be reused to avoid duplication.
+
+**General Guidelines**
+
+- When modifying the UI, check both Chrome and Firefox compatibility if possible.
+- Use `browser` namespace for WebExtension APIs (polyfill provided or checked).
+
+### Submitting a Pull Request
+
+To submit a PR, please create a branch from `releaseCandidate` which is the work in progress next version.
+This branch will be merged into beta and then master when the new version is published on web store.
+
+1. **Update CHANGES.md**: Describe the improvement / bugfix you realized (latest contributions on top of the file).
+2. **Update Documentation**: In order to make sure everyone who reads documentation is aware of your improvement, update the 'how-to' page to document / expose this new functionality.
+3. **Linting**: To assure indentation, formatting and best practices coherence, please install ESLint extension.
 
 ## Development
 
@@ -161,14 +226,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 ### Unit tests
 
-1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]`.
-   2. Make sure your user language is set to English.
-   3. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
-   4. Assign Permission Set `SfInspector` to your user.
-2. Navigate to one of the extension pages and replace the file name with `test-framework.html`, for example `chrome-extension://example/test-framework.html?host=example.my.salesforce.com`.
-3. Wait until "Salesforce Inspector unit test finished successfully" is shown.
-4. If the test fails, open your browser's developer tools console to see error messages.
+See [How to run tests](tests/HOW_TO_RUN_TESTS.md).
 
 ### Linting
 
@@ -191,6 +249,15 @@ Linting : to assure indentation, formatting and best practices coherence, please
 ## About
 
 By Thomas Prouvot and forked from [Søren Krabbe and Jesper Kristensen](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector)
+
+## Third-Party Libraries
+
+This extension uses the following third-party libraries:
+
+- [Lightning Flow Scanner Core](https://github.com/Flow-Scanner/lightning-flow-scanner) - A lightweight engine for Flow metadata analysis in Node.js and browser environments (MIT License)
+- [PrismJS](https://prismjs.com/) - Lightweight, extensible syntax highlighter (MIT License)
+
+For full license details, see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)
 
 ## License
 

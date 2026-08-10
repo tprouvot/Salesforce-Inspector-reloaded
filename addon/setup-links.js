@@ -13,7 +13,7 @@ export async function getObjectSetupLinks(sfHost, sobjectName) {
 }
 
 function getFieldDefinitionSetupLinks(sfHost, fieldName, fieldDefinition, isCustomSetting, isCustomMetadata) {
-  if(fieldDefinition?.DurableId){
+  if (fieldDefinition?.DurableId){
     let durableId = fieldDefinition.DurableId?.split(".");
     let entityDurableId = durableId[0];
     let fieldDurableId = durableId[durableId.length - 1];

@@ -1,6 +1,9 @@
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
-import {copyToClipboard} from "./data-load.js";
+import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, generatePackageXml} from "./utils.js";
+import ConfirmModal from "./components/ConfirmModal.js";
+import {Spinner} from "./components/Spinner.js";
 
 class Model {
   constructor(sfHost) {
@@ -15,62 +18,74 @@ class Model {
 
     this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
-    this.userInfo = "...";
     this.logMessages = [];
     this.progress = "ready";
     this.statusLink = null;
     this.metadataObjects = [];
+    this.metadataTypeMap = {}; // Map of xmlName to metadata object with suffix
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
+    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMevetadataBy")) || "fullName";
     this.packageXml;
     this.metadataFilter = "";
     this.deployRequestId;
     this.allSelected = false;
+    this.orgName = "";
     let deployOptions = localStorage.getItem("deployOptions");
     this.deployOptions = deployOptions ? JSON.parse(deployOptions) : {
       allowMissingFiles: false,
       checkOnly: false,
       ignoreWarnings: false,
       purgeOnDelete: false,
-      singlePackage: true,
+      singlePackage: false,
       performRetrieve: true,
       rollbackOnError: true,
       testLevel: "NoTestRun",
       runTests: null
     };
-    this.spinFor(
-      "getting user info",
-      sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-        this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-      })
-    );
+
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+
+    // Set orgName from sfHost
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
   }
 
   didUpdate(cb) {
     if (this.reactCallback) {
       this.reactCallback(cb);
     }
-  }
-
-  spinFor(actionName, promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error(err);
-        this.errorMessages.push("Error " + actionName + ": " + err.message);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
+    if (this.testCallback) {
+      this.testCallback();
+    }
   }
 
   title() {
     if (this.progress == "working") {
       return "(Loading) Metadata";
     }
-    return "Metadata (beta)";
+    return "Metadata";
+  }
+
+  /**
+   * Adds a custom metadata type that is not returned by describeMetadata
+   * @param {string} xmlName - The XML name of the metadata type (e.g., "CustomField", "ValidationRule")
+   * @param {string} suffix - The file suffix for this metadata type (e.g., "field", "validationRule")
+   */
+  addCustomMetadataType(xmlName, suffix) {
+    // Add to metadataTypeMap for suffix lookup
+    this.metadataTypeMap[xmlName] = {xmlName, suffix};
+
+    // Add to metadataObjects array
+    this.metadataObjects.push({
+      xmlName,
+      childXmlNames: [],
+      isFolder: false,
+      selected: false,
+      expanded: false
+    });
   }
 
   startLoading() {
@@ -87,17 +102,21 @@ class Model {
         );
         let availableMetadataObjects = res.metadataObjects;
 
-        this.metadataObjects = availableMetadataObjects;
-        // Add a CustomField metadata to the metadata objects (not returned by describeMetadata)
-        this.metadataObjects.push({
-          xmlName: "CustomField",
-          childXmlNames: [],
-          isFolder: false,
-          selected: false,
-          expanded: false
+        // Store metadata type map for suffix lookup
+        availableMetadataObjects.forEach(obj => {
+          this.metadataTypeMap[obj.xmlName] = obj;
         });
-        this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
+
         this.metadataObjects = availableMetadataObjects.map(obj => ({...obj, isFolder: false}));
+
+        // Add custom metadata types that are not returned by describeMetadata
+        this.addCustomMetadataType("CustomField", "field");
+        this.addCustomMetadataType("ValidationRule", "validationRule");
+        this.addCustomMetadataType("WorkflowRule", "workflow");
+        this.addCustomMetadataType("BusinessProcess", "businessProcess");
+
+        // Sort metadata objects alphabetically
+        this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
 
         this.progress = "ready";
         this.generatePackageXml([]);
@@ -132,6 +151,10 @@ class Model {
               expanded: true,
               childXmlNames: []
             };
+            // Store in metadataTypeMap if not already present (for suffix lookup)
+            if (!this.metadataTypeMap[componentType]) {
+              this.metadataTypeMap[componentType] = {xmlName: componentType, suffix: "xml"};
+            }
           }
           metadataObjectsMap[componentType].childXmlNames.push({
             parent: metadataObjectsMap[componentType],
@@ -303,18 +326,192 @@ class Model {
         });
       }
     });
-    this.packageXml = "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
-
-    Object.entries(groupedComponents).forEach(([type, members]) => {
-      this.packageXml += "    <types>\n";
-      [...members].sort().forEach(member => {
-        this.packageXml += `        <members>${member}</members>\n`;
-      });
-      this.packageXml += `        <name>${type}</name>\n`;
-      this.packageXml += "    </types>\n";
+    // Generate the package.xml using shared utility
+    this.packageXml = generatePackageXml(groupedComponents, {
+      includeXmlDeclaration: false,
+      sortTypes: false,
+      skipEmptyTypes: false
     });
-    this.packageXml += `    <version>${apiVersion}</version>\n`;
-    this.packageXml += "</Package>";
+  }
+
+  formatXml(xmlString) {
+    // Parse the XML string
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+    // Use XSLT to format the XML with indentation
+    const xsltDoc = parser.parseFromString([
+      '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
+      '  <xsl:strip-space elements="*"/>',
+      '  <xsl:template match="node()|@*">',
+      '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
+      "  </xsl:template>",
+      '  <xsl:output indent="yes"/>',
+      "</xsl:stylesheet>"
+    ].join("\n"), "application/xml");
+
+    const xsltProcessor = new XSLTProcessor();
+    xsltProcessor.importStylesheet(xsltDoc);
+    const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+    const formattedXml = new XMLSerializer().serializeToString(resultDoc);
+    return formattedXml;
+  }
+
+  getMetadataFormat(metadataType) {
+    // Code-based metadata types that have a 'body' field with source code
+    const codeBasedTypes = ["ApexClass", "ApexTrigger"];
+    // HTML/Markup-based metadata types that have 'content' or 'markup' field
+    const markupBasedTypes = ["ApexPage", "ApexComponent"];
+
+    if (codeBasedTypes.includes(metadataType)) {
+      return "code";
+    } else if (markupBasedTypes.includes(metadataType)) {
+      return "markup";
+    }
+    // Default to XML format
+    return "xml";
+  }
+
+  shouldUseToolingApi(metadataType) {
+    // Metadata types that should use Tooling API directly instead of readMetadata
+    return ["ApexClass", "ApexTrigger", "ApexPage"].includes(metadataType);
+  }
+
+  async retrieveSingleMetadata(metadataType, metadataName) {
+    try {
+      // For metadata types that should use Tooling API directly (ApexClass, ApexTrigger, ApexPage)
+      // use Tooling API as readMetadata may not be supported for these types
+      if (this.shouldUseToolingApi(metadataType)) {
+        return await this.retrieveMetadataViaTooling(metadataType, metadataName);
+      }
+
+      // For other metadata types, use readMetadata
+      return await this.retrieveViaReadMetadata(metadataType, metadataName);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  }
+
+  async retrieveViaReadMetadata(metadataType, metadataName) {
+    let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
+
+    // Use readMetadata which returns metadata directly without ZIP
+    // See: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
+    let result = await sfConn.soap(metadataApi, "readMetadata", {
+      type: metadataType,
+      fullNames: metadataName === "*" ? [] : [metadataName]
+    });
+
+    // Handle case where result might be a JSON string
+    if (typeof result === "string") {
+      try {
+        result = JSON.parse(result);
+      } catch {
+        // If parsing fails, result is already an object
+      }
+    }
+
+    // readMetadata returns an object with a 'records' property
+    // records can be either an array or a single object
+    if (!result || !result.records) {
+      throw new Error("No metadata found");
+    }
+
+    // Convert records to array if it's a single object
+    let recordsArray = Array.isArray(result.records) ? result.records : [result.records];
+
+    if (recordsArray.length === 0) {
+      throw new Error("No metadata found");
+    }
+
+    // Get the first metadata record
+    const metadataRecord = recordsArray[0];
+    const format = this.getMetadataFormat(metadataType);
+
+    // Handle different metadata formats
+    if (format === "code") {
+      // For ApexClass and ApexTrigger, extract the body field
+      const body = metadataRecord.body || metadataRecord.content || "";
+      return {
+        content: body,
+        format: "code",
+        language: "markup" // Prism doesn't have Java/Apex, use markup for basic display
+      };
+    } else if (format === "markup") {
+      // For ApexPage and ApexComponent, extract content or markup field
+      const content = metadataRecord.content || metadataRecord.markup || "";
+      return {
+        content,
+        format: "markup",
+        language: "markup"
+      };
+    } else {
+      // XML format - convert metadata object to XML
+      const xmlContent = XML.stringify({
+        name: metadataType,
+        attributes: ' xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+        value: metadataRecord
+      });
+
+      // Format the XML with proper indentation
+      const formattedXml = this.formatXml(xmlContent);
+      return {
+        content: formattedXml,
+        format: "xml",
+        language: "markup"
+      };
+    }
+  }
+
+  async retrieveMetadataViaTooling(metadataType, metadataName) {
+    // Use Tooling API to retrieve metadata source code/markup
+    // Tooling API REST endpoint: /services/data/v{version}/tooling/query/
+    const format = this.getMetadataFormat(metadataType);
+
+    let toolingObject;
+    let fields;
+
+    if (metadataType === "ApexClass" || metadataType === "ApexTrigger") {
+      toolingObject = metadataType;
+      fields = "Id, Name, Body";
+    } else if (metadataType === "ApexPage") {
+      toolingObject = "ApexPage";
+      fields = "Id, Name, Markup";
+    } else {
+      throw new Error(`Tooling API not supported for metadata type: ${metadataType}`);
+    }
+
+    const query = `SELECT ${fields} FROM ${toolingObject} WHERE Name = '${metadataName.replace(/'/g, "''")}'`;
+    const result = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`);
+
+    if (!result || !result.records || result.records.length === 0) {
+      throw new Error("No metadata found");
+    }
+
+    const record = result.records[0];
+
+    // Extract content based on metadata type
+    let content;
+    if (metadataType === "ApexPage") {
+      content = record.Markup || "";
+    } else {
+      content = record.Body || "";
+    }
+
+    // Determine language for Prism syntax highlighting
+    let language;
+    if (metadataType === "ApexPage") {
+      language = "markup";
+    } else {
+      language = "apex"; // Prism doesn't have Java/Apex, use markup for basic display
+    }
+
+    return {
+      content,
+      format,
+      language
+    };
   }
 }
 
@@ -335,6 +532,10 @@ class App extends React.Component {
     this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
     this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
     this.hideToast = this.hideToast.bind(this);
+    this.onViewMetadata = this.onViewMetadata.bind(this);
+    this.onCloseMetadataModal = this.onCloseMetadataModal.bind(this);
+    this.onCopyMetadataXml = this.onCopyMetadataXml.bind(this);
+    this.onDownloadMetadataXml = this.onDownloadMetadataXml.bind(this);
     this.state = {};
   }
   componentDidMount() {
@@ -354,6 +555,17 @@ class App extends React.Component {
     if (window.Prism) {
       window.Prism.highlightAll();
     }
+    // Highlight XML in modal if it's open
+    if (this.state.showMetadataModal) {
+      setTimeout(() => {
+        if (window.Prism) {
+          const modalCode = document.getElementById("metadata-xml-content");
+          if (modalCode) {
+            window.Prism.highlightElement(modalCode);
+          }
+        }
+      }, 0);
+    }
   }
   onSelectAllChange(e) {
     let {model} = this.props;
@@ -361,8 +573,16 @@ class App extends React.Component {
     model.allSelected = checked;
     model.metadataObjects.forEach(metadataObject => {
       metadataObject.selected = checked;
+      metadataObject.indeterminate = false;
       metadataObject.childXmlNames.forEach(child => {
         child.selected = checked;
+        child.indeterminate = false;
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = checked;
+            grandchild.indeterminate = false;
+          });
+        }
       });
     });
     if (checked){
@@ -623,8 +843,107 @@ class App extends React.Component {
   }
   hideToast() {
     let {model} = this.props;
-    this.state = {showToast: false, toastMessage: ""};
+    this.setState({showToast: false, toastMessage: ""});
     model.didUpdate();
+  }
+  getLanguageForMetadata(metadataType) {
+    if (!metadataType) return "markup";
+    if (metadataType === "ApexPage") return "markup";
+    if (metadataType === "ApexClass" || metadataType === "ApexTrigger") return "apex";
+    return "markup"; // default
+  }
+  async onViewMetadata(metadataType, metadataName) {
+    let {model} = this.props;
+    this.setState({
+      showMetadataModal: true,
+      metadataXmlContent: "Loading...",
+      metadataFileName: metadataName,
+      metadataType
+    });
+    model.didUpdate();
+
+    model.spinFor(
+      model.retrieveSingleMetadata(metadataType, metadataName).then(result => {
+        if (result && result.content) {
+          this.setState({
+            metadataXmlContent: result.content,
+            metadataFileName: metadataName,
+            metadataType
+          });
+        } else {
+          this.setState({
+            metadataXmlContent: "No content found",
+            metadataFileName: metadataName,
+            metadataType
+          });
+        }
+        model.didUpdate();
+      }).catch(error => {
+        console.error(error);
+        this.setState({
+          metadataXmlContent: "Error retrieving metadata: " + error.message,
+          metadataFileName: metadataName,
+          metadataType
+        });
+        model.didUpdate();
+      })
+    );
+  }
+  onCloseMetadataModal() {
+    this.setState({
+      showMetadataModal: false,
+      metadataXmlContent: null,
+      metadataFileName: null,
+      metadataType: null
+    });
+    this.props.model.didUpdate();
+  }
+  onCopyMetadataXml() {
+    const {metadataXmlContent} = this.state;
+    if (!metadataXmlContent || metadataXmlContent === "Loading..." || metadataXmlContent.startsWith("Error")) {
+      return;
+    }
+    copyToClipboard(metadataXmlContent);
+    let {model} = this.props;
+    this.setState({
+      showToast: true,
+      toastMessage: "Metadata copied to clipboard",
+      toastVariant: "success",
+      toastTitle: "Success"
+    });
+    setTimeout(this.hideToast, 3000);
+    model.didUpdate();
+  }
+  onDownloadMetadataXml() {
+    const {metadataXmlContent, metadataFileName, metadataType} = this.state;
+    if (!metadataXmlContent || metadataXmlContent === "Loading..." || metadataXmlContent.startsWith("Error")) {
+      return;
+    }
+    let {model} = this.props;
+
+    // Get file extension from metadata type suffix
+    let fileExtension = "xml"; // default fallback
+    if (metadataType && model.metadataTypeMap[metadataType] && model.metadataTypeMap[metadataType].suffix) {
+      fileExtension = model.metadataTypeMap[metadataType].suffix;
+    }
+
+    // Derive format from metadata type to determine MIME type
+    const metadataFormat = model.getMetadataFormat(metadataType);
+    let mimeType = "text/xml";
+    if (metadataFormat === "code") {
+      mimeType = "text/plain";
+    } else if (metadataFormat === "markup") {
+      mimeType = "text/html";
+    }
+
+    const blob = new Blob([metadataXmlContent], {type: mimeType});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (metadataFileName || "metadata") + "." + fileExtension;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
   }
   render() {
     let {model} = this.props;
@@ -638,30 +957,59 @@ class App extends React.Component {
           message: this.state.toastMessage,
           onClose: this.hideToast
         }),
-        h("div", {id: "user-info", className: "slds-border_bottom"},
-          h("a", {href: model.sfLink, className: "sf-link"},
-            h("svg", {viewBox: "0 0 24 24"},
-              h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-            ),
-            " Salesforce Home"
-          ),
-          h("h1", {className: "slds-text-title_bold"}, model.title()),
-          h("span", {}, " / " + model.userInfo),
-          h("div", {className: "flex-right"},
-            h("div", {role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
-              h("span", {className: "slds-assistive-text"}),
-              h("div", {className: "slds-spinner__dot-a"}),
-              h("div", {className: "slds-spinner__dot-b"}),
+        this.state.showMetadataModal && h(ConfirmModal, {
+          isOpen: this.state.showMetadataModal,
+          title: "Metadata: " + (this.state.metadataFileName || ""),
+          onCancel: this.onCloseMetadataModal,
+          onCopy: this.onCopyMetadataXml,
+          copyLabel: "Copy",
+          copyIconName: "symbols.svg#copy",
+          onConfirm: this.onDownloadMetadataXml,
+          confirmLabel: "Download",
+          confirmIconName: "symbols.svg#download",
+          cancelLabel: "Close",
+          modalSize: "large",
+          children: h("div", {className: "slds-scrollable_y"},
+            h("pre", {className: "reset-margin"},
+              h("code", {
+                id: "metadata-xml-content",
+                className: "language-" + (this.getLanguageForMetadata(this.state.metadataType))
+              }, this.state.metadataXmlContent || "")
             )
-          ),
-          h("span", {className: "progress progress-" + model.progress},
-            model.progress == "ready" ? "Ready"
-            : model.progress == "working" ? "Retrieving metadata..."
-            : model.progress == "deploying" ? "Deploying metadata..."
-            : model.progress == "done" ? "Finished"
-            : "Error!"
-          ),
+          )
+        }),
+        h(PageHeader, {
+          pageTitle: model.title(),
+          subTitle: model.progress == "ready" ? "Ready"
+          : model.progress == "working" ? "Retrieving metadata..."
+          : model.progress == "deploying" ? "Deploying metadata..."
+          : model.progress == "done" ? "Finished"
+          : "Error!",
+          orgName: model.orgName,
+          sfLink: model.sfLink,
+          sfHost: model.sfHost,
+          spinnerCount: model.spinnerCount,
+          ...model.userInfoModel.getProps()
+        }),
+        ((model.progress == "working" || model.progress == "deploying") || model.spinnerCount > 0)
+        && h("div", {
+          className: "sfir-spinner-overlay"
+        },
+        h(Spinner, {
+          size: "large",
+          type: "brand",
+          text: model.progress == "working" ? "Retrieving metadata..." : (model.progress == "deploying" ? "Deploying metadata..." : "Loading..."),
+          centered: false
+        })
         ),
+        h("div", {
+          className: "slds-m-top_xx-large",
+          style: {
+            display: "flex",
+            flexDirection: "column",
+            height: "calc(100vh - 4rem)"
+          }
+        },
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
@@ -800,7 +1148,7 @@ class App extends React.Component {
                 h("div", {className: "slds-col"},
                   h("br", {}),
                   h("ul", {className: "slds-accordion"},
-                    model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model, key: metadataObject.xmlName}))),
+                    model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model, onViewMetadata: this.onViewMetadata, key: metadataObject.xmlName}))),
                   !model.deployRequestId ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
                 ),
                 h("div", {className: "slds-col"},
@@ -811,6 +1159,7 @@ class App extends React.Component {
               )
               : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
           )
+        )
         )
       )
     );
@@ -823,14 +1172,43 @@ class ObjectSelector extends React.Component {
     this.onChange = this.onChange.bind(this);
     this.onSelectMeta = this.onSelectMeta.bind(this);
     this.onSelectChild = this.onSelectChild.bind(this);
+    this.onViewMetadataClick = this.onViewMetadataClick.bind(this);
+    this.onMouseEnter = this.onMouseEnter.bind(this);
+    this.onMouseLeave = this.onMouseLeave.bind(this);
     props.metadataObject.childXmlNames = [];
+    this.state = {
+      hoveredItem: null
+    };
+  }
+  onMouseEnter(item) {
+    this.setState({hoveredItem: item});
+  }
+  onMouseLeave() {
+    this.setState({hoveredItem: null});
+  }
+  onViewMetadataClick(e, metadataType, metadataName) {
+    e.stopPropagation();
+    if (this.props.onViewMetadata) {
+      this.props.onViewMetadata(metadataType, metadataName);
+    }
   }
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
+    metadataObject.indeterminate = false;
     metadataObject.wildcard = !metadataObject.expanded;
     if (metadataObject.expanded){
-      metadataObject.childXmlNames.forEach(child => child.selected = metadataObject.selected);
+      metadataObject.childXmlNames.forEach(child => {
+        child.selected = metadataObject.selected;
+        child.indeterminate = false;
+        // If child is a folder, update its children too
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = metadataObject.selected;
+            grandchild.indeterminate = false;
+          });
+        }
+      });
     }
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
@@ -838,13 +1216,41 @@ class ObjectSelector extends React.Component {
   onSelectChild(child, e){
     let {model} = this.props;
     if (child.isFolder){
-      this.onSelectMeta(null, child);
+      // If clicking on the checkbox input itself, toggle selection
+      if (e.target.nodeName === "INPUT") {
+        child.selected = !child.selected;
+        child.indeterminate = false;
+
+        // Update all grandchildren
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = child.selected;
+            grandchild.indeterminate = false;
+          });
+        }
+
+        // Update grandparent state
+        if (child.parent) {
+          this.updateParentSelectionState(child.parent);
+        }
+
+        model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
+        model.didUpdate();
+      } else {
+        // Clicking elsewhere expands/collapses
+        this.onSelectMeta(null, child);
+      }
     } else {
       child.selected = !child.selected;
-      child.parent.selected = true;
-      if (child.parent.isFolder){
-        child.parent.parent.selected = true;
+
+      // Update parent selection state based on children
+      this.updateParentSelectionState(child.parent);
+
+      // If parent is a folder, update grandparent state
+      if (child.parent.isFolder && child.parent.parent) {
+        this.updateParentSelectionState(child.parent.parent);
       }
+
       model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
       model.didUpdate();
     }
@@ -853,10 +1259,38 @@ class ObjectSelector extends React.Component {
       e.preventDefault();
     }
   }
+
+  /**
+   * Updates the selection state of a parent based on its children's selection state
+   * Sets selected, indeterminate, or unchecked based on children
+   */
+  updateParentSelectionState(parent) {
+    if (!parent || !parent.childXmlNames || parent.childXmlNames.length === 0) {
+      return;
+    }
+
+    const selectedChildren = parent.childXmlNames.filter(child => child.selected || child.indeterminate);
+    const allSelected = selectedChildren.length === parent.childXmlNames.length
+                       && parent.childXmlNames.every(child => child.selected && !child.indeterminate);
+
+    if (selectedChildren.length === 0) {
+      // No children selected
+      parent.selected = false;
+      parent.indeterminate = false;
+    } else if (allSelected) {
+      // All children fully selected
+      parent.selected = true;
+      parent.indeterminate = false;
+    } else {
+      // Some children selected or some are indeterminate
+      parent.selected = true;
+      parent.indeterminate = true;
+    }
+  }
   getMetaFolderProof(metadataObject){
     if (metadataObject.xmlName == "Report" && !metadataObject.isFolder){
       return {xmlName: "ReportFolder", directoryName: "*"};
-    } else if ((metadataObject.xmlName == "Dashboard" || metadataObject.xmlName == "Document") && !metadataObject.isFolder){
+    } else if ((metadataObject.xmlName == "Dashboard" || metadataObject.xmlName == "Document") && !metadataObject.isFolder){
       return {xmlName: metadataObject.xmlName + "Folder"};
     } else if (metadataObject.xmlName == "EmailTemplate" && !metadataObject.isFolder){
       return {xmlName: "EmailFolder"};
@@ -864,6 +1298,81 @@ class ObjectSelector extends React.Component {
       return metadataObject;
     }
   }
+
+  /**
+   * Checks if a metadata type should use REST API query instead of listMetadata
+   * @param {string} metaType - The metadata type XML name
+   * @returns {boolean} - True if this metadata type should use REST API query
+   */
+  shouldUseRestApiForList(metaType){
+    // List of metadata types that require REST API query for listing
+    const restApiTypes = ["ApprovalProcess"];
+    return restApiTypes.includes(metaType);
+  }
+
+  /**
+   * Generic method to query REST API for metadata items
+   * @param {Object} params - Query parameters
+   * @param {string} params.metaName - Field name to select for metadata name (e.g., "DeveloperName")
+   * @param {string} params.folderName - Field name to select for folder/object name (e.g., "TableEnumOrId")
+   * @param {string} params.objectName - Object name to query (e.g., "ProcessDefinition")
+   * @returns {Promise<Array>} - Array of metadata items
+   */
+  async queryMetadataViaRest({metaName, folderName, objectName}){
+    const query = `SELECT ${metaName}, ${folderName} FROM ${objectName}`;
+    const allRecords = [];
+    let queryUrl = `/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(query);
+
+    while (queryUrl) {
+      const res = await sfConn.rest(queryUrl);
+      if (res.records) {
+        allRecords.push(...res.records);
+      }
+      queryUrl = res.nextRecordsUrl || null;
+    }
+
+    return allRecords;
+  }
+
+  /**
+   * Builds child metadata objects from REST API records
+   * @param {Object} model - The model instance
+   * @param {Object} meta - The parent metadata object
+   * @param {Array} records - Array of REST API records
+   * @param {string} metaNameField - Field name that contains the metadata name (e.g., "DeveloperName")
+   * @param {string} folderNameField - Field name that contains the folder/object name (e.g., "TableEnumOrId")
+   */
+  buildChildMetadataFromRest(model, meta, records, metaNameField, folderNameField){
+    meta.childXmlNames = []; // Reset children
+
+    records.forEach(record => {
+      // Build fullName: ObjectName.MetadataName or just MetadataName if no folderNameField
+      const metaNameValue = record[metaNameField];
+      const folderNameValue = folderNameField ? record[folderNameField] : null;
+
+      const fullName = folderNameValue && metaNameValue
+        ? `${folderNameValue}.${metaNameValue}`
+        : metaNameValue;
+
+      const childMeta = {
+        fullName,
+        type: meta.xmlName,
+        parent: meta,
+        selected: false,
+        isFolder: false
+      };
+
+      // Apply managed package filter if needed
+      if (model.includeManagedPackage || (!model.includeManagedPackage && !record.NamespacePrefix)) {
+        if (!meta.childXmlNames.some(existingElt => existingElt.fullName === childMeta.fullName)) {
+          meta.childXmlNames.push(childMeta);
+        }
+      }
+    });
+
+    meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
+  }
+
   onSelectMeta(e, child){
     if (!e || e.target.nodeName !== "INPUT"){
       let {model, metadataObject} = this.props;
@@ -876,32 +1385,45 @@ class ObjectSelector extends React.Component {
     meta.icon = meta.expanded ? "switch" : "chevronright";
     if (meta.childXmlNames.length == 0 || model.deployRequestId || meta.childXmlNames[0].fullName == "*"){
 
-      let metaFolderProof = this.getMetaFolderProof(meta);
-      model.spinFor(
-        "getting child metadata " + meta.xmlName,
-        sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
+      // Check if this metadata type should use REST API query
+      if (this.shouldUseRestApiForList(meta.xmlName)) {
+        model.spinFor(
+          this.queryMetadataViaRest({
+            metaName: "DeveloperName",
+            folderName: "TableEnumOrId",
+            objectName: "ProcessDefinition"
+          }).then(records => {
+            this.buildChildMetadataFromRest(model, meta, records, "DeveloperName", "TableEnumOrId");
+          })
+        );
+      } else {
+        // Use standard listMetadata API
+        let metaFolderProof = this.getMetaFolderProof(meta);
+        model.spinFor(
+          sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
 
-          if (res){
-            meta.childXmlNames = []; //reset tab if wildcard is the only child
-            let resArray = Array.isArray(res) ? res : res ? [res] : []; // only one element can be returned
-            resArray.forEach(elt => {
-              elt.isFolder = elt.type.endsWith("Folder");
-              if (elt.isFolder){
-                elt.xmlName = meta.xmlName;
-                elt.directoryName = elt.fullName;
-                elt.childXmlNames = [];
-              }
-              if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-                elt.parent = meta;
-                if (!meta.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
-                  meta.childXmlNames.push(elt);
+            if (res){
+              meta.childXmlNames = []; //reset tab if wildcard is the only child
+              let resArray = Array.isArray(res) ? res : res ? [res] : []; // only one element can be returned
+              resArray.forEach(elt => {
+                elt.isFolder = elt.type.endsWith("Folder");
+                if (elt.isFolder){
+                  elt.xmlName = meta.xmlName;
+                  elt.directoryName = elt.fullName;
+                  elt.childXmlNames = [];
                 }
-              }
-            });
-            meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
-          }
-        })
-      );
+                if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+                  elt.parent = meta;
+                  if (!meta.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
+                    meta.childXmlNames.push(elt);
+                  }
+                }
+              });
+              meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
+            }
+          })
+        );
+      }
     } else {
       //call refresh filter
     }
@@ -911,50 +1433,107 @@ class ObjectSelector extends React.Component {
   render() {
     let {metadataObject} = this.props;
 
-    const renderChildren = (children, parentXmlName) => {
+    const renderChildren = (children, parentXmlName, parentType) => {
       if (!children || children.length === 0) {
         return null;
       }
 
       return h("ul", {className: "slds-accordion", key: parentXmlName + "_children"},
-        children.map(child =>
-          h("li", {key: parentXmlName + "_li_" + child.fullName, className: "slds-accordion__list-item", hidden: child.hidden},
+        children.map(child => {
+          const metadataType = child.type || parentType || metadataObject.xmlName;
+          const metadataName = child.fullName;
+          const isHovered = this.state.hoveredItem === child.fullName;
+          const itemKey = parentXmlName + "_li_" + child.fullName;
+
+          return h("li", {key: itemKey, className: "slds-accordion__list-item", hidden: child.hidden},
             h("section", {className: child.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
-              h("div", {className: "slds-accordion__summary", title: child.fullName, onClick: (e) => this.onSelectChild(child, e)},
-                h("h4", {className: "slds-accordion__summary-heading"},
-                  h("button", {"aria-controls": "accordion-details-" + child.fullName, "aria-expanded": child.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
-                    child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-                      h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
-                    ) : null,
-                    h("input", {type: "checkbox", className: !child.isFolder ? "margin-grandchild metadata" : "metadata", checked: !!child.selected}),
-                    h("span", {className: "slds-text-body_small slds-accordion__summary-content", title: child.fullName}, child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""))
+              h("div", {
+                className: "slds-accordion__summary",
+                title: child.fullName,
+                onClick: (e) => this.onSelectChild(child, e),
+                onMouseEnter: () => !child.isFolder && this.onMouseEnter(child.fullName),
+                onMouseLeave: () => this.onMouseLeave(),
+                style: {position: "relative"}
+              },
+              h("h4", {className: "slds-accordion__summary-heading"},
+                h("button", {"aria-controls": "accordion-details-" + child.fullName, "aria-expanded": child.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
+                  child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
+                  ) : null,
+                  h("input", {
+                    type: "checkbox",
+                    className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
+                    checked: !!child.selected,
+                    ref: (input) => {
+                      if (input) {
+                        input.indeterminate = !!child.indeterminate;
+                      }
+                    }
+                  }),
+                  h("span", {
+                    className: "slds-text-body_small slds-accordion__summary-content",
+                    title: child.fullName,
+                    style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
+                  },
+                  child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
+                  !child.isFolder && isHovered && !metadataType.toLowerCase().includes("bundle") && h("svg", {
+                    className: "slds-icon slds-icon_x-small slds-icon-text-default",
+                    style: {cursor: "pointer", flexShrink: 0},
+                    viewBox: "0 0 52 52",
+                    onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
+                    title: "View metadata"
+                  },
+                  h("use", {xlinkHref: "symbols.svg#preview"})
+                  )
                   )
                 )
+              )
               ),
               child.expanded && h("div", {className: "slds-accordion__content", id: "accordion-details-" + child.fullName},
-                renderChildren(child.childXmlNames, child.fullName)
+                renderChildren(child.childXmlNames, child.fullName, metadataType)
               )
             )
-          )
-        )
+          );
+        })
       );
     };
 
+    const isHovered = this.state.hoveredItem === metadataObject.xmlName;
     return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden, key: metadataObject.xmlName},
       h("section", {className: metadataObject.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
-        h("div", {className: "slds-accordion__summary", title: metadataObject.xmlName, onClick: (event) => { this.onSelectMeta(event); }},
-          h("h3", {className: "slds-accordion__summary-heading"},
-            h("button", {"aria-controls": "accordion-details-" + metadataObject.xmlName, "aria-expanded": metadataObject.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
-              h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
-              ),
-              h("input", {type: "checkbox", className: "metadata", checked: !!metadataObject.selected, onChange: this.onChange, key: metadataObject.xmlName}),
-              h("span", {className: "slds-accordion__summary-content", title: metadataObject.xmlName}, metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : ""))
+        h("div", {
+          className: "slds-accordion__summary",
+          title: metadataObject.xmlName,
+          onClick: (event) => { this.onSelectMeta(event); }
+        },
+        h("h3", {className: "slds-accordion__summary-heading"},
+          h("button", {"aria-controls": "accordion-details-" + metadataObject.xmlName, "aria-expanded": metadataObject.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
+            h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
+            ),
+            h("input", {
+              type: "checkbox",
+              className: "metadata",
+              checked: !!metadataObject.selected,
+              onChange: this.onChange,
+              key: metadataObject.xmlName,
+              ref: (input) => {
+                if (input) {
+                  input.indeterminate = !!metadataObject.indeterminate;
+                }
+              }
+            }),
+            h("span", {
+              className: "slds-accordion__summary-content",
+              title: metadataObject.xmlName
+            },
+            metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : "")
             )
           )
+        )
         ),
         metadataObject.expanded && h("div", {className: "slds-accordion__content", id: "accordion-details-" + metadataObject.xmlName},
-          renderChildren(metadataObject.childXmlNames, metadataObject.xmlName)
+          renderChildren(metadataObject.childXmlNames, metadataObject.xmlName, metadataObject.xmlName)
         )
       )
     );

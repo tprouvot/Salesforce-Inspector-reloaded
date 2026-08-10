@@ -1,17 +1,7 @@
 * {
   box-sizing: border-box;
 }
-body {
-  font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: 0.8125rem;
-  overflow: hidden;
-  margin: 0;
-  background-color: #b0c4df;
-  background-image: url(images/lightning_blue_background.png);
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 0px 48px;
-}
+
 .sf-link {
   margin-right: 1em;
   background-color: rgb(6, 28, 63);
@@ -210,4 +200,30 @@ textarea {
 }
 select {
   width: auto;
+}
+
+/* Spinner overlay for metadata retrieval */
+.sfir-spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.75);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Scrollable columns */
+#result-table .result.slds-grid {
+  height: calc(100vh - 5rem);
+  overflow: hidden;
+}
+
+#result-table .result .slds-col {
+  overflow-y: auto;
+  height: 100%;
+  padding: 0 1rem;
 }

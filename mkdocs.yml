@@ -39,6 +39,10 @@ extra:
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/in/thomasprouvot/
 
+extra_javascript:
+  - https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js
+  - javascripts/mermaid-config.js
+
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -54,7 +58,11 @@ markdown_extensions:
       generic: true
   - footnotes
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.mark
   - attr_list
   - pymdownx.emoji
@@ -71,13 +79,19 @@ nav:
       - Data Management:
           - Data Export: data-export.md
           - Data Import: data-import.md
+      - Debugging:
+          - Debug Logs Viewer: logs-viewer.md
       - Metadata:
+          - Dependencies Explorer: dependencies-explorer.md
           - Download Metadata: download-metadata.md
           - Field Creator: field-creator.md
+          - Flow Scanner: flow-scanner.md
       - API:
           - Event Monitor: event-monitor.md
           - REST Explorer: rest-explorer.md
+          - API Statistics: api-statistics.md
           - Org Limits: limits.md
+          - SObject Cache Management: sobject-cache-management.md
       - How-To: how-to.md
   - Articles: articles.md
 

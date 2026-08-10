@@ -3,9 +3,12 @@
     {
       "path": "test",
       "default": true
+    },
+    {
+      "path": "force-app"
     }
   ],
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "60.0"
+  "sourceApiVersion": "66.0"
 }

@@ -1,8 +1,8 @@
 {
   "name": "Salesforce Inspector Reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.271",
-  "version_name": "1.27",
+  "version": "2.0.0",
+  "version_name": "2.0",
   "icons": {
     "128": "icon128.png"
   },
@@ -11,7 +11,8 @@
   },
   "minimum_chrome_version": "88",
   "permissions": [
-    "cookies"
+    "cookies",
+    "storage"
   ],
   "host_permissions": [
     "https://*.salesforce.com/*",
@@ -77,12 +78,16 @@
         "metadata-retrieve.html",
         "metadata-retrieve-legacy.html",
         "explore-api.html",
+        "dependencies-explorer.html",
         "rest-explore.html",
         "limits.html",
+        "api-statistics.html",
         "inject.js",
         "field-creator.html",
         "options.html",
-        "event-monitor.html"
+        "event-monitor.html",
+        "flow-scanner.html",
+        "debug-log.html"
       ],
       "matches": [
         "https://*.salesforce.com/*",
@@ -120,6 +125,9 @@
     "open-export-execute": {
       "description": "Run Query in Data Export"
     },
+    "open-save-modifications": {
+      "description": "Save modifications in Show All Data"
+    },
     "link-setup": {
       "description": "Open Setup"
     },
@@ -134,6 +142,9 @@
     },
     "data-import": {
       "description": "Data Import"
+    },
+    "dependencies-explorer": {
+      "description": "Dependencies Explorer"
     },
     "options": {
       "description": "Options"
@@ -155,6 +166,15 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "flow-scanner": {
+      "description": "Flow Scanner"
+    },
+    "debug-log": {
+      "description": "Logs Viewer"
+    },
+    "api-statistics": {
+      "description": "API Statistics"
     }
   }
 }

@@ -1377,21 +1377,14 @@ export function formatDuration(minutes) {
  * - SearchFocusManager: The core class that registers event listeners and executes the focus logic.
  */
 export function isEditableElement(element) {
-  if (!element || element.nodeType !== 1) {
-    return false;
-  }
+  if (!element || element.nodeType !== 1) return false;
   const tagName = element.tagName;
-  return tagName === "INPUT"
-    || tagName === "TEXTAREA"
-    || tagName === "SELECT"
-    || element.isContentEditable
-    || element.closest("[contenteditable]") !== null;
+  return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || 
+         element.isContentEditable || element.closest("[contenteditable]") !== null;
 }
 
 export function isVisibleElement(element) {
-  return element
-    && element.getClientRects().length > 0
-    && getComputedStyle(element).visibility !== "hidden";
+  return element && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden";
 }
 
 export class SearchFocusManager {
@@ -1400,44 +1393,27 @@ export class SearchFocusManager {
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onMessage = this.onMessage.bind(this);
   }
-
   register() {
     window.addEventListener("keydown", this.onKeyDown);
     chrome.runtime.onMessage.addListener(this.onMessage);
   }
-
   unregister() {
     window.removeEventListener("keydown", this.onKeyDown);
     chrome.runtime.onMessage.removeListener(this.onMessage);
   }
-
   focusInput() {
     const input = this.inputElementProvider();
-    if (input && isVisibleElement(input) && document.activeElement !== input) {
-      input.focus();
-    }
+    if (input && isVisibleElement(input) && document.activeElement !== input) input.focus();
   }
-
   onKeyDown(e) {
-    if (e.defaultPrevented) {
-      return;
-    }
-    
-    const isSlashShortcut = e.key === "/"
-      && !e.ctrlKey
-      && !e.altKey
-      && !e.metaKey
-      && !isEditableElement(e.target);
-
+    if (e.defaultPrevented) return;
+    const isSlashShortcut = e.key === "/" && !e.ctrlKey && !e.altKey && !e.metaKey && !isEditableElement(e.target);
     if (isSlashShortcut) {
       e.preventDefault();
       this.focusInput();
     }
   }
-
   onMessage(request) {
-    if (request && request.command === "focus-search") {
-      this.focusInput();
-    }
+    if (request?.command === "focus-search") this.focusInput();
   }
 }

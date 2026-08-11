@@ -2,7 +2,7 @@
 
 ## Version 2.1
 
-- `Accessibility` Add keyboard shortcuts (`/` or customizable `Ctrl/Cmd+Shift+F`) to focus search and filter inputs across Data Export, Data Import, Popup, Show all data, Logs Viewer, Field Creator, Download Metadata, Event Monitor, Dependencies Explorer, and REST Explorer [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Accessibility` Add keyboard shortcuts (`/` or customizable `Ctrl/Cmd+Shift+F`) to focus search and filter inputs [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Disabled the Copy/Download buttons when the query output has no results [#1258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1258) (contribution by [Prem Kumar](https://github.com/prem-k-r))

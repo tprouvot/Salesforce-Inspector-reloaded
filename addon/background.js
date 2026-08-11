@@ -64,9 +64,6 @@ chrome.action.onClicked.addListener(() => {
   });
 });
 chrome.commands?.onCommand.addListener((command) => {
-  if (!sfHost) {
-    return;
-  }
   if (command.startsWith("link-")){
     let link;
     switch (command){

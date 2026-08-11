@@ -1712,7 +1712,7 @@ class AllDataBoxSObject extends React.PureComponent {
 
   componentDidUpdate(prevProps) {
     let {contextRecordId, sobjectsLoading, contextSobject} = this.props;
-    if (prevProps.contextRecordId !== contextRecordId) {
+    if (prevProps.contextRecordId !== contextRecordId || prevProps.contextSobject !== contextSobject) {
       this.updateSelection(contextRecordId, contextSobject);
     }
     if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {
@@ -4082,7 +4082,7 @@ class AllDataSelection extends React.PureComponent {
             "article",
             {
               className:
-                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_xx-small sfir-background-grey",
+                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_x-small sfir-background-grey",
             },
             h(
               "div",
@@ -4600,8 +4600,8 @@ class AllDataSearch extends React.PureComponent {
       "div",
       {
         className:
-          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon slds-input-has-icon_left-right"
-          + (rightIcon ? " sfir-has-right-icon" : ""),
+          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon "
+          + (rightIcon ? "slds-input-has-icon_left-right sfir-has-right-icon" : "slds-input-has-icon_right"),
       },
       h("input", {
         className: "slds-input sfir-font-size_11px",

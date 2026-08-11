@@ -260,7 +260,7 @@ class Model {
     this.describeInfo.reloadAll();
   }
   canCopy() {
-    return this.exportedData != null;
+    return this.exportedData != null && this.exportedData.table.length > 0;
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
@@ -279,7 +279,7 @@ class Model {
   }
   downloadAsCsv(){
     const csvContent = this.exportedData.csvSerialize(this.separator);
-    const filename = `${this.exportedData.records[0].attributes.type}-${new Date().toLocaleDateString()}.csv`;
+    const filename = `${this.exportedData.records[0]?.attributes.type}-${new Date().toLocaleDateString()}.csv`;
     downloadCsvFile(csvContent, filename);
   }
   deleteRecords(e) {
@@ -2017,7 +2017,7 @@ class App extends React.Component {
                       h("span", {className: "sfir-autocomplete-icon"})
                     ),
                     h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "slds-pill__action slds-p-right_x-small"},
-                      h("span", {className: "slds-pill__label"}, r.value)
+                      h("span", {className: "slds-pill__label field-suggestions-label"}, r.value)
                     )
                   )))
               ),

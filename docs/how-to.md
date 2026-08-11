@@ -124,10 +124,32 @@ If you want to _always_ open extension's links in a new tab, you can enable> **W
 * Event <ins>M</ins>onitor : m
 * <ins>F</ins>ield Creator : f
 
-## Disable metadata search from Shortcut tab
+## Shortcut tab search
 
-By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, Profiles, Permission Sets and Apex Classes).
-If you want to disable the search on the metadata, update related option:
+By default when you enter a keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, Profiles, Permission Sets and Apex Classes).
+
+Metadata search can be slow on orgs with a lot of metadata. Use search prefixes to narrow the scope and speed up results:
+
+| Prefix | Scope | Example |
+| --- | --- | --- |
+| _(none)_ | Setup links + metadata (default) | `profiles` |
+| `/` | Setup / custom links only (no API call) | `/profiles` |
+| `!` | All metadata types | `!MyMetadata` |
+| `!flow` | Flows only | `!flow Onboarding` |
+| `!profile` | Profiles only | `!profile System` |
+| `!class` / `!apex` | Apex Classes only | `!class AccountService` |
+| `!perm` / `!pset` | Permission Sets only | `!perm Sales` |
+
+Notes:
+
+* Prefix type aliases are case-insensitive (`!Profile`, `!FLOW`, etc.).
+* Typed metadata prefixes (`!flow`, `!profile`, …) always query that metadata type, even if it is unchecked under **Searchable metadata from Shortcut tab**.
+* Metadata queries still require at least 2 characters after the prefix (for example `!flow Ab`).
+* `/` is local-only and is the fastest way to find a Setup page from the built-in / custom shortcut list.
+
+### Disable metadata search from Shortcut tab
+
+If you want to disable metadata search for the default (unprefixed) queries, update related option:
 
 <img width="892" alt="image" src="https://github.com/user-attachments/assets/2541fc22-9f1b-4cd1-90cd-d4615b313d96">
 

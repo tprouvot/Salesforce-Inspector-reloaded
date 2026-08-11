@@ -34,7 +34,7 @@ const SHORTCUT_METADATA_MOCKS = [
       Type: "Regular",
       License: null,
       PermissionSetGroupId: null,
-      attributes: {type: "PermissionSet"}
+      attributes: {typae: "PermissionSet"}
     }
   },
   {
@@ -153,100 +153,102 @@ test.describe("Popup", () => {
         return;
       }
 
+      const request = route.request();
+      const url = request.url();
+      const method = request.method();
+
+      // REST API - Composite Query (user details + Shortcut tab metadata search).
+      // Handled before routeMock() because test-mock.js has a generic composite fallback
+      // that would otherwise swallow these requests and respond with empty records.
+      if (url.includes(mockHost) && url.includes("/composite") && method === "POST") {
+        const requestBody = await request.postData();
+        const body = JSON.parse(requestBody);
+
+        // User search composite
+        if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("FROM User WHERE")) {
+          await fulfillSuccess(route, {
+            compositeResponse: [
+              {
+                httpStatusCode: 200,
+                body: {
+                  totalSize: 1,
+                  records: [{
+                    Id: "005000000000001AAA",
+                    Name: "Test User",
+                    Email: "test@example.com",
+                    Username: "test@example.com",
+                    Alias: "tuser",
+                    IsActive: true,
+                    Profile: {
+                      Name: "System Administrator"
+                    },
+                    UserRole: {
+                      Name: "CEO"
+                    }
+                  }]
+                }
+              }
+            ]
+          });
+          return;
+        }
+
+        // User details composite
+        if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("WHERE Id='")) {
+          await fulfillSuccess(route, {
+            compositeResponse: [
+              {
+                httpStatusCode: 200,
+                body: {
+                  totalSize: 1,
+                  records: [{
+                    Id: "005000000000001AAA",
+                    Name: "Test User",
+                    Email: "test@example.com",
+                    Username: "test@example.com",
+                    Alias: "tuser",
+                    IsActive: true,
+                    FederationIdentifier: "test@example.com",
+                    ProfileId: "00e000000000001AAA",
+                    Profile: {
+                      Name: "System Administrator"
+                    },
+                    ContactId: null,
+                    IsPortalEnabled: false,
+                    UserPreferencesUserDebugModePref: false,
+                    UserRole: {
+                      Name: "CEO"
+                    },
+                    LocaleSidKey: "en_US",
+                    LanguageLocaleKey: "en_US"
+                  }]
+                }
+              }
+            ]
+          });
+          return;
+        }
+
+        // Shortcut search composite (Shortcuts tab: default, "!", "!flow", "!profile", "!class", "!perm" searches)
+        if (body.compositeRequest && body.compositeRequest.some((req) => SHORTCUT_METADATA_MOCKS.some(({match}) => req.url?.includes(match)))) {
+          const compositeResponse = body.compositeRequest.map((req) => {
+            const mock = SHORTCUT_METADATA_MOCKS.find(({match}) => req.url?.includes(match));
+            return {
+              httpStatusCode: 200,
+              body: {totalSize: mock ? 1 : 0, records: mock ? [mock.record] : []}
+            };
+          });
+          await fulfillSuccess(route, {compositeResponse});
+          return;
+        }
+      }
+
       //we check if we have a mock for this request
       if (await routeMock(route, mockHost)) {
         return;
       }
 
-      const request = route.request();
-      const url = request.url();
-      const method = request.method();
-
       if (url.includes(mockHost)) {
-
-        // REST API - Composite Query (for user details)
-        if (url.includes("/composite") && method === "POST") {
-          const requestBody = await request.postData();
-          const body = JSON.parse(requestBody);
-
-          // User search composite
-          if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("FROM User WHERE")) {
-            await fulfillSuccess(route, {
-              compositeResponse: [
-                {
-                  httpStatusCode: 200,
-                  body: {
-                    totalSize: 1,
-                    records: [{
-                      Id: "005000000000001AAA",
-                      Name: "Test User",
-                      Email: "test@example.com",
-                      Username: "test@example.com",
-                      Alias: "tuser",
-                      IsActive: true,
-                      Profile: {
-                        Name: "System Administrator"
-                      },
-                      UserRole: {
-                        Name: "CEO"
-                      }
-                    }]
-                  }
-                }
-              ]
-            });
-            return;
-          }
-
-          // User details composite
-          if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("WHERE Id='")) {
-            await fulfillSuccess(route, {
-              compositeResponse: [
-                {
-                  httpStatusCode: 200,
-                  body: {
-                    totalSize: 1,
-                    records: [{
-                      Id: "005000000000001AAA",
-                      Name: "Test User",
-                      Email: "test@example.com",
-                      Username: "test@example.com",
-                      Alias: "tuser",
-                      IsActive: true,
-                      FederationIdentifier: "test@example.com",
-                      ProfileId: "00e000000000001AAA",
-                      Profile: {
-                        Name: "System Administrator"
-                      },
-                      ContactId: null,
-                      IsPortalEnabled: false,
-                      UserPreferencesUserDebugModePref: false,
-                      UserRole: {
-                        Name: "CEO"
-                      },
-                      LocaleSidKey: "en_US",
-                      LanguageLocaleKey: "en_US"
-                    }]
-                  }
-                }
-              ]
-            });
-            return;
-          }
-
-          // Shortcut search composite (Shortcuts tab: default, "!", "!flow", "!profile", "!class", "!perm" searches)
-          if (body.compositeRequest && body.compositeRequest.some((req) => SHORTCUT_METADATA_MOCKS.some(({match}) => req.url?.includes(match)))) {
-            const compositeResponse = body.compositeRequest.map((req) => {
-              const mock = SHORTCUT_METADATA_MOCKS.find(({match}) => req.url?.includes(match));
-              return {
-                httpStatusCode: 200,
-                body: {totalSize: mock ? 1 : 0, records: mock ? [mock.record] : []}
-              };
-            });
-            await fulfillSuccess(route, {compositeResponse});
-            return;
-          }
-        }
 
         // Tooling API - TraceFlag Query
         if (url.includes("/tooling/query") && url.includes("TraceFlag")) {

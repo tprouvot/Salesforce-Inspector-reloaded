@@ -34,7 +34,7 @@ const SHORTCUT_METADATA_MOCKS = [
       Type: "Regular",
       License: null,
       PermissionSetGroupId: null,
-      attributes: {typae: "PermissionSet"}
+      attributes: {type: "PermissionSet"}
     }
   },
   {

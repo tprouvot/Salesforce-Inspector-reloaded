@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -453,6 +453,23 @@ class Model {
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
     copyToClipboard(csvSerialize([header, ...data], separator));
+  }
+
+  downloadResult(separator) {
+    let header = this.importData.importTable.header.map(c => c.columnValue);
+    let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
+    let csvContent = csvSerialize([header, ...data], separator);
+    let objectName = this.importType; 
+    let actionVerb = this.getActionVerb(this.importAction);
+    actionVerb = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
+    const statuses = ["Succeeded", "Failed", "Processing", "Queued"];
+    let countParts = statuses
+      .filter(status => this.showStatus[status] && this.importData.counts[status] > 0)
+      .map(status => `${status}_${this.importData.counts[status]}`);
+    let countsStr = countParts.length > 0 ? "-" + countParts.join("-") : "";
+    let dateStr = new Date().toLocaleDateString();
+    let filename = `${objectName}-${actionVerb}${countsStr}-${dateStr}.csv`;
+    downloadCsvFile(csvContent, filename);
   }
 
   importCounts() {
@@ -970,6 +987,7 @@ class App extends React.Component {
     this.onRetryFailedClick = this.onRetryFailedClick.bind(this);
     this.onCopyAsExcelClick = this.onCopyAsExcelClick.bind(this);
     this.onCopyAsCsvClick = this.onCopyAsCsvClick.bind(this);
+    this.onDownloadAsCsvClick = this.onDownloadAsCsvClick.bind(this);
     this.onCopyOptionsClick = this.onCopyOptionsClick.bind(this);
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
@@ -1083,6 +1101,15 @@ class App extends React.Component {
       separator = localStorage.getItem("csvSeparator");
     }
     model.copyResult(separator);
+  }
+  onDownloadAsCsvClick(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+    model.downloadResult(separator);
   }
   onCopyOptionsClick(e) {
     e.preventDefault();
@@ -1326,8 +1353,13 @@ class App extends React.Component {
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
               h("div", {className: "slds-button-group"},
-                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel format)"),
+                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel)"),
                 h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"}, "Copy (CSV)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsvClick, title: "Download as a CSV file"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#download"})
+                  )
+                )
               ),
             ),
             h("div", {className: "slds-col"},

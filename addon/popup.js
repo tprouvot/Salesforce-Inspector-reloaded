@@ -5049,9 +5049,9 @@ class Autocomplete extends React.PureComponent {
               {
                 key: key || "result-" + (firstRenderedIndex + index),
                 className:
-                  "slds-dropdown__item "
+                  "slds-dropdown__item autocomplete-item "
                   + (selectedIndex == index + firstRenderedIndex
-                    ? "selected-old"
+                    ? "selected"
                     : ""),
                 onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () =>

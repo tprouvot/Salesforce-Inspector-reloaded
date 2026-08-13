@@ -2347,6 +2347,9 @@ class FieldValueCell extends React.Component {
   }
   render() {
     let {row, col} = this.props;
+    let isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    let modKey = isMac ? "Cmd" : "Ctrl";
+    let tooltipTitle = `Click: Menu\n${modKey} + Click: View in Salesforce\n${modKey} + Shift + Click: Show All Data`;
     if (row.isEditing()) {
       return h("td", {className: col.className},
         h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
@@ -2364,7 +2367,7 @@ class FieldValueCell extends React.Component {
               href: row.idLink(), /*used to show visited color*/
               onClick: this.onRecordIdClick,
               onAuxClick: this.onRecordIdClick,
-              title: "Click: Menu\nCtrl/Cmd + Click: View in Salesforce\nCtrl/Cmd + Shift + Click: Show All Data"
+              title: tooltipTitle
             }, row.dataStringValue())
           ),
           row.recordIdPop == null ? null : h("div", {className: "slds-dropdown slds-dropdown_left slds-dropdown_actions pop-menu"},

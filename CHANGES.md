@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by Prem Kumar)
 - `Popup` Add search prefixes to speed up Shortcut tab queries: `/` for setup links only, `!` for metadata, and typed filters (`!flow`, `!profile`, `!class`, `!perm`) [feature 1265](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1265)
 - `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))

@@ -125,6 +125,8 @@ class App extends React.PureComponent {
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
+      auditTrailHref: "audit-trail.html?" + hostArg,
+      userManagementHref: "user-management.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       apiStatisticsHref: "api-statistics.html?" + hostArg,
       latestNotesViewed:
@@ -382,6 +384,8 @@ class App extends React.PureComponent {
       importHref,
       eventMonitorHref,
       fieldCreatorHref,
+      auditTrailHref,
+      userManagementHref,
       limitsHref,
       apiStatisticsHref,
       isFieldsPresent,
@@ -560,6 +564,16 @@ class App extends React.PureComponent {
                   className: "page-button slds-button slds-button_neutral",
                 },
                 h("span", {}, "Field Crea", h("u", {}, "t"), "or")
+              )
+            ),
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "auditTrailBtn", href: auditTrailHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+                h("span", {}, "Audit Trail")
+              )
+            ),
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "userManagementBtn", href: userManagementHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+                h("span", {}, "User Management")
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},

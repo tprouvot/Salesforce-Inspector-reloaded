@@ -1,7 +1,12 @@
 # Release Notes
 
-## Version 2.1
+## Version 2.2
 
+- `Audit Trail` Add dedicated page to query and filter `SetupAuditTrail` records with configurable row limit and column visibility (contribution by [SantiParris8](https://github.com/SantiParris8))
+- `User Management` Add dedicated page to search, create and clone Salesforce users directly from the extension (contribution by [SantiParris8](https://github.com/SantiParris8))
+- `Popup` Add Audit Trail and User Management shortcut buttons to the popup
+
+## Version 2.1
 - `Popup` Add search prefixes to speed up Shortcut tab queries: `/` for setup links only, `!` for metadata, and typed filters (`!flow`, `!profile`, `!class`, `!perm`) [feature 1265](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1265)
 - `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))

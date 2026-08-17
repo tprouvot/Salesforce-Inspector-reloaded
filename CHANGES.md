@@ -2,10 +2,10 @@
 
 ## Version 2.1
 
+- `Data Export` Option to automatically formats newline and tab-separated text into valid comma-separated lists when pasted into IN, EXCLUDES, or INCLUDES clauses [feature #1279](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1279) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
-- `Data Export` Option to automatically formats newline and tab-separated text into valid comma-separated lists when pasted into IN, EXCLUDES, or INCLUDES clauses #1241 (contribution by [Prem Kumar](https://github.com/prem-k-r))
 
 ## Version 2.0
 

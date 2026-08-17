@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Option to automatically formats newline and tab-separated text into valid comma-separated lists when pasted into IN, EXCLUDES, or INCLUDES clauses [feature #1279](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1279) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
 - `Popup` Add search prefixes to speed up Shortcut tab queries: `/` for setup links only, `!` for metadata, and typed filters (`!flow`, `!profile`, `!class`, `!perm`) [feature 1265](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1265)
 - `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))

@@ -620,6 +620,76 @@ export function getStandardObjectNameField(sobjectName) {
 }
 
 /**
+ * In-memory cache of sobject field describes: sobjectName (lowercase) -> Map(fieldName
+ * lowercase -> {type, referenceTo, relationshipName}). Lives only for the page's lifetime
+ * (not persisted like DataCache), since it exists to avoid duplicate describe calls within
+ * a session rather than to survive reloads.
+ */
+const fieldDescribeCache = new Map();
+
+/**
+ * Fetches (and caches) field describe info for an sobject, keyed by lowercase field name.
+ * Used to determine real field types, e.g. so Smart Paste in Data Export can quote values
+ * correctly for Text fields instead of guessing from the pasted value's shape.
+ * Returns null on failure (invalid/inaccessible object, network error, etc.) instead of
+ * throwing, so callers can fall back to their own logic.
+ * @param {string} sobjectName - API name of the sobject
+ * @returns {Promise<Map<string, {type: string, referenceTo: string[]|null, relationshipName: string|null}>|null>}
+ */
+export async function getSobjectFieldsDescribe(sobjectName) {
+  if (!sobjectName) return null;
+  const cacheKey = sobjectName.toLowerCase();
+  if (fieldDescribeCache.has(cacheKey)) {
+    return fieldDescribeCache.get(cacheKey);
+  }
+  try {
+    const describe = await sfConn.rest(`/services/data/v${apiVersion}/sobjects/${sobjectName}/describe/`);
+    const fieldsMap = new Map(describe.fields.map(f => [f.name.toLowerCase(), {
+      type: f.type,
+      referenceTo: f.referenceTo && f.referenceTo.length > 0 ? f.referenceTo : null,
+      relationshipName: f.relationshipName ? f.relationshipName.toLowerCase() : null
+    }]));
+    fieldDescribeCache.set(cacheKey, fieldsMap);
+    return fieldsMap;
+  } catch (err) {
+    console.error(`getSobjectFieldsDescribe: failed to describe "${sobjectName}"`, err);
+    return null; // Not cached, so a transient failure doesn't permanently block later lookups
+  }
+}
+
+/**
+ * Resolves the Salesforce field type for a field path on an sobject, walking through
+ * relationships for dotted paths (e.g. "Owner.Profile.Name"). Returns null if any part of
+ * the path can't be resolved (unknown field, polymorphic relationship, describe failure,
+ * etc.) so callers can fall back to their own heuristic instead of guessing.
+ * @param {string} sobjectName - API name of the base sobject
+ * @param {string} fieldPath - Field name, optionally dotted through relationships
+ * @returns {Promise<string|null>} Salesforce field type (e.g. "string", "boolean", "double", "date"), or null if unresolved
+ */
+export async function getFieldType(sobjectName, fieldPath) {
+  if (!sobjectName || !fieldPath) return null;
+  const parts = fieldPath.split(".");
+  let currentObject = sobjectName;
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    const fieldsMap = await getSobjectFieldsDescribe(currentObject);
+    if (!fieldsMap) return null;
+    const relPart = parts[i].toLowerCase();
+    const relField = [...fieldsMap.values()].find(f => f.relationshipName === relPart);
+    // Bail out on unresolved or polymorphic relationships (e.g. Task.Who / Task.What)
+    if (!relField || !relField.referenceTo || relField.referenceTo.length !== 1) {
+      return null;
+    }
+    currentObject = relField.referenceTo[0];
+  }
+
+  const fieldsMap = await getSobjectFieldsDescribe(currentObject);
+  if (!fieldsMap) return null;
+  const finalField = fieldsMap.get(parts[parts.length - 1].toLowerCase());
+  return finalField ? finalField.type : null;
+}
+
+/**
  * DataCache - Generic caching utility for any JSON-serializable data
  * Stores data with timestamps and provides expiration checking based on user-configured days.
  */

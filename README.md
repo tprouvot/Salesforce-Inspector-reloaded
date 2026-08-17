@@ -218,11 +218,11 @@ This branch will be merged into beta and then master when the new version is pub
 
 ### Firefox
 
-1. Rename the manifest-firefox.json file to manifest.json (and manifest.json to manifest-chrome.json).
+1. Generate the Firefox add-on with `npm run firefox-release-build`. This copies `addon/manifest-firefox.json` to `target/firefox/dist/manifest.json` (see `scripts/release-build.js`).
 2. In Firefox, open `about:debugging`.
 3. Select `This Firefox` at the top left.
 4. Click `Load Temporary Add-on…`.
-5. Select the file `addon/manifest.json`.
+5. Select the file `target/firefox/dist/manifest.json`.
 
 ### Unit tests
 

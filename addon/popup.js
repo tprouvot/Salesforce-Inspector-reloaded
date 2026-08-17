@@ -569,7 +569,7 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a", {ref: "dependenciesExplorerBtn", href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
-                h("span", {}, "Depen", h("u", {}, "c"), "encies Explorer")
+                h("span", {}, "Dependen", h("u", {}, "c"), "ies Explorer")
               )
             )
           ),

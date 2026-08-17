@@ -1810,7 +1810,7 @@ class App extends React.Component {
     function getCurrentSobject(queryText, cursorPos) {
       const text = queryText.slice(0, cursorPos);
       const tokens = [];
-      const tokenRegex = /\(|\)|\bFROM\s+([A-Za-z_]\w*)/gi;
+      const tokenRegex = /\(|\)|\bFROM\s+(?!WHERE\b)([A-Za-z_]\w*)/gi;
       let m;
       while ((m = tokenRegex.exec(text)) !== null) {
         tokens.push({index: m.index, text: m[0], sobject: m[1] || null});

@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
 - `Data Export` Fix unrecognized Salesforce Ids [issue #984](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/984)
 - `Options/Popup` Change SObjects List Cache default (`enableSobjectsListCache`) from enabled to disabled for new installs
 - `Data Import` Expose metadata updates through Tooling API (ie Bulk Deactivate Flows) [feature 1125](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1125)

@@ -5198,9 +5198,15 @@ function sfLocaleKeyToCountryCode(localeKey) {
     return "";
   }
   const splitted = localeKey.split("_");
-  return splitted[
+  const code = splitted[
     splitted.length > 1 && !localeKey.includes("_LATN_") ? 1 : 0
   ].toLowerCase();
+  // Languages without their own ISO 3166 country code: Catalan (ca) and Basque (eu), added in Salesforce Summer '26
+  const regionalFlags = {ca: "catalonia", eu: "basque"};
+  if (splitted.length === 1 && regionalFlags[code]) {
+    return regionalFlags[code];
+  }
+  return code;
 }
 
 window.getRecordId = getRecordId; // for unit tests

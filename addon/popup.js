@@ -107,6 +107,13 @@ function initLinks({sfHost}) {
       setupLinks.push(link);
     });
   }
+  //add global custom links (shared across every org) to setupLink
+  if (localStorage.getItem(Constants.GLOBAL_LINKS_KEY)) {
+    let globalLinks = JSON.parse(localStorage.getItem(Constants.GLOBAL_LINKS_KEY));
+    globalLinks.forEach((link) => {
+      setupLinks.push(link);
+    });
+  }
 }
 
 class App extends React.PureComponent {

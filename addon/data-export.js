@@ -266,7 +266,8 @@ class Model {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
     return this.exportedData
           && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 0)
-          && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
+          && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id")
+          && this.exportedData.getSelectedVisibleCount() > 0;
   }
   copyAsExcel() {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
@@ -283,7 +284,7 @@ class Model {
     downloadCsvFile(csvContent, filename);
   }
   deleteRecords(e) {
-    let data = this.exportedData.csvSerialize(this.separator);
+    let data = this.exportedData.csvSerializeSelected(this.separator);
     let encodedData = btoa(data);
 
     let args = new URLSearchParams();
@@ -842,6 +843,7 @@ class Model {
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
+    exportedData.showCheckboxes = true;
     exportedData.isTooling = vm.queryTooling;
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
@@ -1287,16 +1289,19 @@ function RecordTable(vm) {
     records: [],
     table: [],
     rowVisibilities: [],
+    rowSelections: [],
     colVisibilities: [!vm.prefHideRelations],
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
     preventLineWrap: vm.prefPreventLineWrap,
+    showCheckboxes: false,
     addToTable(expRecords) {
       rt.records = rt.records.concat(expRecords);
       if (rt.table.length == 0 && expRecords.length > 0) {
         rt.table.push(header);
         rt.rowVisibilities.push(true);
+        rt.rowSelections.push(false); // header placeholder
       }
       let filter = vm.resultsFilter;
       for (let record of expRecords) {
@@ -1304,10 +1309,61 @@ function RecordTable(vm) {
         row[0] = record;
         rt.table.push(row);
         rt.rowVisibilities.push(isVisible(row, filter));
+        rt.rowSelections.push(false); // initially unselected
         discoverColumns(record, "", row);
       }
     },
     csvSerialize: separator => rt.getVisibleTable().map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
+    csvSerializeSelected(separator) {
+      let rows = [];
+      for (let r = 0; r < rt.table.length; r++) {
+        if (r === 0 || (rt.rowVisibilities[r] && rt.rowSelections[r])) {
+          rows.push(rt.table[r]);
+        }
+      }
+      if (vm.prefHideRelations) {
+        rows = rt.filterColumns(rows, rt.colVisibilities);
+      }
+      return rows.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n");
+    },
+    getSelectedVisibleCount() {
+      let count = 0;
+      for (let r = 1; r < rt.rowVisibilities.length; r++) {
+        if (rt.rowVisibilities[r] && rt.rowSelections[r]) count++;
+      }
+      return count;
+    },
+    isAllVisibleSelected() {
+      let visibleCount = 0;
+      let selectedCount = 0;
+      for (let r = 1; r < rt.rowVisibilities.length; r++) {
+        if (rt.rowVisibilities[r]) {
+          visibleCount++;
+          if (rt.rowSelections[r]) selectedCount++;
+        }
+      }
+      return visibleCount > 0 && selectedCount === visibleCount;
+    },
+    isSomeVisibleSelected() {
+      for (let r = 1; r < rt.rowVisibilities.length; r++) {
+        if (rt.rowVisibilities[r] && rt.rowSelections[r]) return true;
+      }
+      return false;
+    },
+    onToggleRowSelection(rowIdx) {
+      rt.rowSelections[rowIdx] = !rt.rowSelections[rowIdx];
+      vm.updatedExportedData();
+      vm.didUpdate();
+    },
+    onSelectAll(selected) {
+      for (let r = 1; r < rt.rowVisibilities.length; r++) {
+        if (rt.rowVisibilities[r]) {
+          rt.rowSelections[r] = selected;
+        }
+      }
+      vm.updatedExportedData();
+      vm.didUpdate();
+    },
     updateVisibility() {
       let filter = vm.resultsFilter;
       let countOfVisibleRecords = 0;
@@ -2074,7 +2130,16 @@ class App extends React.Component {
                   )
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
-                  ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+                  ? h("button", {
+                    className: "slds-button slds-button_destructive",
+                    disabled: !model.canDelete(),
+                    onClick: this.onDeleteRecords,
+                    title: model.exportedData && model.exportedData.getSelectedVisibleCount() === 0
+                      ? "Select records using checkboxes to enable deletion. 'Id' field needs to be queried (< 20k records)"
+                      : "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"
+                  }, model.exportedData && model.exportedData.getSelectedVisibleCount() > 0
+                    ? `Delete ${model.exportedData.getSelectedVisibleCount()} Record${model.exportedData.getSelectedVisibleCount() > 1 ? "s" : ""}`
+                    : "Delete Records") : null,
               ),
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},

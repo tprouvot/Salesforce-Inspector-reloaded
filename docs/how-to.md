@@ -202,7 +202,7 @@ You can bulk deactivate flows using the Data Import feature with the Tooling API
 
 <img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
 
-You can add custom links to the "Shortcut" tab. These links will be stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
+You can add custom links to the "Shortcut" tab. By default, links are org-specific and stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
 
 * `label`: The label of the link
 * `link`: The link to the page
@@ -215,12 +215,20 @@ The links are displayed in a table format with the following features:
 * Search functionality to filter links by label, link, or section
 * Edit and delete buttons for each link
 * Add button to create new links
+* A "Global" toggle to share a link across every org instead of keeping it specific to the current org
+
+### Global links
+
+Each link has a "Global" toggle. When it's off (the default), the link is specific to the current org and stored under `sfHost + "_orgLinks"`. When it's turned on, the link is moved into a single shared `globalLinks` localStorage variable (not prefixed by org) and becomes visible in every org's Shortcut tab and popup search.
+
+Because `globalLinks` is a single list shared by all orgs, editing or deleting a global link from any org's Options page affects what every other org sees. Toggling the flag back off moves the link back into the current org's own list.
 
 To add a new link:
 
 1. Click the "+" button at the bottom of the table
 2. Fill in the label, link, and section fields
-3. Click the check icon to save or the X icon to cancel
+3. Optionally turn on the "Global" toggle to make the link visible in every org
+4. Click the check icon to save or the X icon to cancel
 
 To edit a link:
 

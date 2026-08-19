@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {UserInfoModel, createSpinForMethod, isRecordId, generatePackageXml} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, isRecordId, generatePackageXml, getSalesforceViewLink, getObjectManagerParent} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 /* global initButton */
 
@@ -627,12 +627,19 @@ class Model {
       type: this.selectedMetadataItem.type
     };
 
+    // Fetch parent object for the entry point so the main header link works
+    if (entryPoint.id) {
+        getObjectManagerParent(entryPoint.id).then(parent => {
+            if (parent) this.lastAnalyzedItem.parentObject = parent;
+        }).catch(err => console.warn(err));
+    }
+
     // Fetch both directions in parallel
     Promise.all([
       this._getDependencies(entryPoint, "dependsOn").then(async deps => {
         let enhanced = await this._enhanceCustomFieldData(deps);
         let unsupported = await this._createUnsupportedDependencies(enhanced);
-        return [...enhanced, ...unsupported];
+        return await this._enhanceWithParentObjects([...enhanced, ...unsupported]);
       }).catch(err => {
         console.warn('Error fetching "depends on" dependencies:', err);
         return [];
@@ -640,7 +647,7 @@ class Model {
       this._getDependencies(entryPoint, "dependedOnBy").then(async deps => {
         let enhanced = await this._enhanceCustomFieldData(deps);
         let unsupported = await this._createUnsupportedDependencies(enhanced);
-        return [...enhanced, ...unsupported];
+        return await this._enhanceWithParentObjects([...enhanced, ...unsupported]);
       }).catch(err => {
         console.warn('Error fetching "depended on by" dependencies:', err);
         return [];
@@ -840,6 +847,31 @@ class Model {
       });
     }
     return newDependencies;
+  }
+
+  async _enhanceWithParentObjects(dependencies) {
+    const uniqueIds = new Set();
+    dependencies.forEach(dep => {
+      if (dep.id) uniqueIds.add(dep.id);
+      if (dep.referencedBy && dep.referencedBy.id) uniqueIds.add(dep.referencedBy.id);
+    });
+
+    const parentMap = new Map();
+    await Promise.all(
+      Array.from(uniqueIds).map(async id => {
+        const parent = await getObjectManagerParent(id);
+        if (parent) parentMap.set(id, parent);
+      })
+    );
+
+    dependencies.forEach(dep => {
+      if (dep.id) dep.parentObject = parentMap.get(dep.id);
+      if (dep.referencedBy && dep.referencedBy.id) {
+        dep.referencedBy.parentObject = parentMap.get(dep.referencedBy.id);
+      }
+    });
+
+    return dependencies;
   }
 
   // --- Helper functions for metadata lookups ---
@@ -1696,58 +1728,43 @@ ${(() => {
     return !dep.id || dep.type === "ExternalReference" || dep.type === "DynamicReference";
   }
 
-  _buildSalesforceUrl(targetType, targetId, dep) {
-    const baseUrl = `https://${this.sfHost}`;
-
-    const urlTemplates = {
-      "ApexClass": `${baseUrl}/lightning/setup/ApexClasses/page?address=%2F${targetId}`,
-      "ApexTrigger": `${baseUrl}/lightning/setup/ApexTriggers/page?address=%2F${targetId}`,
-      "CustomObject": `${baseUrl}/lightning/setup/ObjectManager/${targetId}/Details/view`,
-      "CustomField": this._buildCustomFieldUrl(baseUrl, targetId, dep),
-      "ApexPage": `${baseUrl}/lightning/setup/VisualforcePages/page?address=%2F${targetId}`,
-      "ApexComponent": `${baseUrl}/lightning/setup/VisualforceComponents/page?address=%2F${targetId}`,
-      "StaticResource": `${baseUrl}/lightning/setup/StaticResources/page?address=%2F${targetId}`,
-      "LightningComponent": `${baseUrl}/lightning/setup/LightningComponents/page?address=%2F${targetId}`,
-      "ValidationRule": `${baseUrl}/lightning/setup/ObjectManager/${targetId}/ValidationRules/view`,
-      "CustomLabel": `${baseUrl}/lightning/setup/CustomLabels/page?address=%2F${targetId}`,
-      "Flow": `${baseUrl}/lightning/setup/Flows/page?address=%2F${targetId}`,
-      "LightningWebComponent": `${baseUrl}/lightning/setup/LightningWebComponents/page?address=%2F${targetId}`,
-      "EmailTemplate": `${baseUrl}/lightning/setup/EmailTemplates/page?address=%2F${targetId}`,
-      "WorkflowAlert": `${baseUrl}/lightning/setup/WorkflowAlerts/page?address=%2F${targetId}`,
-      "WebLink": `${baseUrl}/lightning/setup/ObjectManager/${targetId}/ButtonsLinksAndActions/view`,
-      "Layout": `${baseUrl}/lightning/setup/ObjectManager/${targetId}/PageLayouts/view`,
-      "FlexiPage": `${baseUrl}/lightning/setup/FlexiPages/page?address=%2F${targetId}`,
-      "GlobalPicklist": `${baseUrl}/lightning/setup/GlobalPicklists/page?address=%2F${targetId}`
-    };
-
-    return urlTemplates[targetType] || null;
-  }
-
-  _buildCustomFieldUrl(baseUrl, targetId, dep) {
-    // For custom fields, we need to get the object ID first
-    if (dep.name && dep.name.includes(".")) {
-      const [objectName, fieldName] = dep.name.split(".");
-      return `${baseUrl}/lightning/setup/ObjectManager/${objectName}/FieldsAndRelationships/${targetId}/view`;
-    }
-    return `${baseUrl}/lightning/setup/ObjectManager/${targetId}/FieldsAndRelationships/view`;
-  }
-
   generateSalesforceUrl(dep) {
-    // For Depends On: use dep.id (the dependency item)
-    // For Referenced By: use dep.referencedBy.id (the item that references this)
-    let targetId, targetType;
+    let targetId, parentObj, targetType;
 
     if (this.currentFilter === "dependedOnBy") {
-      // Referenced By: link to the item that references this
       targetId = dep.referencedBy ? dep.referencedBy.id : dep.id;
+      parentObj = dep.referencedBy ? dep.referencedBy.parentObject : dep.parentObject;
       targetType = dep.referencedBy ? dep.referencedBy.type : dep.type;
     } else {
-      // Depends On: link to the dependency item itself
       targetId = dep.id;
+      parentObj = dep.parentObject;
       targetType = dep.type;
     }
 
-    return this._buildSalesforceUrl(targetType, targetId, dep);
+    // Only enable the "Open in Salesforce" link for these specific metadata types.
+    const supportedTypes = [
+      "ApexClass", "ApexTrigger", "CustomObject", "CustomField", 
+      "ApexPage", "ApexComponent", "StaticResource", "LightningComponent", 
+      "ValidationRule", "CustomLabel", "Flow", "LightningWebComponent", 
+      "WorkflowAlert", "WebLink", "Layout", "FlexiPage", "GlobalPicklist"
+    ];
+
+    if (!targetId || !supportedTypes.includes(targetType)) {
+      return null;
+    }
+
+    // Fallback parsing from name (e.g. Account.MyField) if parentObj isn't dynamically resolved
+    if (!parentObj) {
+      const nameToParse = this.currentFilter === "dependedOnBy"
+        ? (dep.referencedBy ? dep.referencedBy.name : dep.name)
+        : dep.name;
+
+      if (nameToParse && nameToParse.includes(".")) {
+        parentObj = nameToParse.split(".")[0];
+      }
+    }
+
+    return getSalesforceViewLink(this.sfHost, targetId, parentObj);
   }
 
   /**
@@ -2592,7 +2609,8 @@ class App extends React.Component {
                 const url = model.generateSalesforceUrl({
                   id: item.id,
                   type: item.type,
-                  name: item.fullName
+                  name: item.fullName,
+                  parentObject: item.parentObject
                 });
                 if (url) {
                   return [

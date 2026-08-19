@@ -4,7 +4,7 @@ import {copyToClipboard, downloadCsvFile, applyProductionStyling} from "./utils.
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
+import {UserInfoModel, PromptTemplate, Constants, getSalesforceViewLink, getObjectManagerParent} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
 
 // Constants
@@ -1132,6 +1132,7 @@ class FieldRow extends TableRow {
     this.entityParticle = undefined;
     this.fieldParticleMetadata = undefined;
     this.recordIdPop = null;
+    this.objectManagerParent = undefined;
     this.fieldActionsOpen = false;
     this.fieldSetupLinks = null;
     this.fieldSetupLinksRequested = false;
@@ -1402,7 +1403,21 @@ class FieldRow extends TableRow {
     return false;
   }
   idLink() {
-    return "https://" + this.rowList.model.sfHost + "/" + this.dataTypedValue;
+    let recordId = this.dataTypedValue;
+    if (this.objectManagerParent === undefined) {
+      this.objectManagerParent = null;
+      getObjectManagerParent(recordId).then(parent => {
+        this.objectManagerParent = parent;
+        if (parent && this.recordIdPop) {
+          let viewLink = this.recordIdPop.find(link => link.className === "view-salesforce");
+          if (viewLink) {
+            viewLink.href = getSalesforceViewLink(this.rowList.model.sfHost, recordId, parent);
+          }
+        }
+        this.rowList.model.didUpdate();
+      });
+    }
+    return getSalesforceViewLink(this.rowList.model.sfHost, recordId, this.objectManagerParent || this.rowList.model.objectName());
   }
   toggleRecordIdPop(elem) {
     if (this.recordIdPop) {

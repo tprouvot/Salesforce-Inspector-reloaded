@@ -582,6 +582,117 @@ export function getFlowCompareUrl(sfHost, recordId) {
 }
 
 /**
+ * Generates a Salesforce URL for viewing a record, using hardcoded setup-page
+ * routes for record types whose standard `/id` redirect is broken.
+ * Falls back to the standard record URL for anything not in the map.
+ * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com").
+ * @param {string} recordId - The 15/18-char record Id.
+ * @param {string} [parentObjectIdentifier] - Parent object API name or DurableId
+ * @returns {string} Full URL to open the record/metadata in Salesforce.
+ */
+export function getSalesforceViewLink(sfHost, recordId, parentObjectIdentifier) {
+  const prefix = recordId.substring(0, 3);
+  const origin = "https://" + sfHost;
+  const baseUrl = origin + "/lightning/setup";
+
+  switch (prefix) {
+    // --- Setup ---
+    case "01p": return `${baseUrl}/ApexClasses/page?address=%2F${recordId}`; // Apex Class
+    case "07L": return `${origin}/one/one.app#/alohaRedirect/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=${recordId}`; // Apex Debug Log
+    case "00e": return `${baseUrl}/Profiles/page?address=%2F${recordId}`; // Profile
+    case "00E": return `${baseUrl}/Roles/page?address=%2F${recordId}`; // Role
+    case "0PS": return `${baseUrl}/PermSets/page?address=%2F${recordId}`; // Permission Set
+    case "0PG": return `${baseUrl}/PermSetGroups/page?address=%2F${recordId}`; // Permission Set Group
+    case "00G": return `${baseUrl}/PublicGroups/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3D${recordId}`; // Public Group / Queue
+    case "0MI": return `${baseUrl}/Territory2Models/page?address=%2F${recordId}`; // Territory2
+    case "0MA": return `${baseUrl}/Territory2Models/page?address=%2F${recordId}`; // Territory2 Model
+    case "300": return `${baseUrl}/Flows/page?address=%2F${recordId}`; // Flow Details & Versions
+    case "301": return `${baseUrl}/Flows/page?address=%2F${recordId}`; // Flow Details
+    case "01Q": return `${baseUrl}/WorkflowRules/page?address=%2F${recordId}`; // Workflow Rule
+    case "01W": return `${baseUrl}/WorkflowAlerts/page?address=%2F${recordId}`; // Workflow Email Alert
+    case "04Y": return `${baseUrl}/WorkflowFieldUpdates/page?address=%2F${recordId}`; // Workflow Field Update
+    case "04a": return `${baseUrl}/ApprovalProcesses/page?address=%2F${recordId}`; // Approval Process
+    case "0Nt": return `${baseUrl}/Picklists/page?address=%2F${recordId}`; // Global Value Set
+    case "101": return `${baseUrl}/CustomLabels/page?address=%2F${recordId}`; // Custom Label
+    case "081": return `${baseUrl}/StaticResources/page?address=%2F${recordId}`; // Static Resource
+    case "00X": return `${baseUrl}/CommunicationTemplatesEmail/page?address=%2F${recordId}`; // Email Template
+    case "066": return `${baseUrl}/ApexPages/page?address=%2F${recordId}`; // Visualforce Page
+    case "099": return `${baseUrl}/ApexComponents/page?address=%2F${recordId}`; // Visualforce Component
+    case "0Ab": return `${baseUrl}/LightningComponentBundles/page?address=%2F${recordId}`; // Aura Component
+    case "0Rb": return `${baseUrl}/LightningComponentBundles/page?address=%2F${recordId}`; // Lightning Web Component (LWC)
+    case "01r": return `${baseUrl}/CustomTabs/page?address=%2F${recordId}`; // Custom Tab
+    case "01I": return `${baseUrl}/ObjectManager/${recordId}/Details/view`; // Custom Object
+
+    // --- Object Manager ---
+    case "00N": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/FieldsAndRelationships/${recordId}/view`; // Field
+    case "00h": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/PageLayouts/${recordId}/view`; // Page Layout
+    case "0M0": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/LightningPages/${recordId}/view`; // Lightning Record Page
+    case "00b": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/ButtonsLinksActions/${recordId}/view`; // Button / Link / Action
+    case "0AH": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/CompactLayouts/${recordId}/view`; // Compact Layout
+    case "0IX": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/FieldSets/${recordId}/view`; // Field Set
+    case "012": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/RecordTypes/${recordId}/view`; // Record Type
+    case "01q": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/ApexTriggers/${recordId}/view`; // Apex Trigger
+    case "03d": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/ValidationRules/${recordId}/view`; // Validation Rule
+
+    default: return `${origin}/${recordId}`;
+  }
+}
+
+/**
+ * For each Object Manager-scoped metadata type (keyed by the 3-char Id prefix),
+ * the Tooling API sobject to query and the field on it that identifies the
+ * SObject it belongs to. That field's value is already in the exact format
+ * getSalesforceViewLink's parentObjectIdentifier needs: the API name for
+ * standard objects, or the owning custom object's EntityDefinition DurableId
+ * for custom objects - never the type of the metadata record itself.
+ */
+const OBJECT_MANAGER_PARENT_LOOKUP = {
+  "00N": {sobject: "CustomField", field: "TableEnumOrId"}, // Field
+  "00h": {sobject: "Layout", field: "TableEnumOrId"}, // Page Layout
+  "0M0": {sobject: "FlexiPage", field: "EntityDefinitionId"}, // Lightning Record Page
+  "00b": {sobject: "WebLink", field: "EntityDefinitionId"}, // Button / Link / Action
+  "0AH": {sobject: "CompactLayout", field: "SobjectType"}, // Compact Layout
+  "0IX": {sobject: "FieldSet", field: "EntityDefinitionId"}, // Field Set
+  "012": {sobject: "RecordType", field: "SobjectType"}, // Record Type
+  "01q": {sobject: "ApexTrigger", field: "TableEnumOrId"}, // Apex Trigger
+  "03d": {sobject: "ValidationRule", field: "EntityDefinitionId"}, // Validation Rule
+};
+
+// recordId -> resolved parent object (or null). Metadata doesn't change which
+// object it belongs to without changing Id, so this never needs to expire.
+const objectManagerParentCache = new Map();
+
+/**
+ * Resolves the SObject that owns an Object Manager-scoped metadata record,
+ * for use as getSalesforceViewLink's parentObjectIdentifier argument. Returns null
+ * (without any API call) for record Ids that aren't one of these metadata types,
+ * since getSalesforceViewLink ignores parentObjectIdentifier for everything else.
+ * @param {string} recordId - The 15/18-char record Id of the metadata record.
+ * @returns {Promise<string|null>} The parent object's API name (standard) or
+ *  EntityDefinition DurableId (custom), or null if not applicable/found.
+ */
+export async function getObjectManagerParent(recordId) {
+  const prefix = recordId.substring(0, 3);
+  const lookup = OBJECT_MANAGER_PARENT_LOOKUP[prefix];
+  if (!lookup) {
+    return null;
+  }
+  if (objectManagerParentCache.has(recordId)) {
+    return objectManagerParentCache.get(recordId);
+  }
+  try {
+    const query = `SELECT ${lookup.field} FROM ${lookup.sobject} WHERE Id = '${recordId}'`;
+    const res = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`);
+    const parent = (res && res.records && res.records[0]) ? res.records[0][lookup.field] : null;
+    objectManagerParentCache.set(recordId, parent);
+    return parent;
+  } catch (err) {
+    console.error("getObjectManagerParent", err);
+    return null;
+  }
+}
+
+/**
  * Downloads a CSV file with optional UTF-8 BOM for Excel compatibility
  * @param {string} csvContent - The CSV content to download
  * @param {string} filename - The filename for the downloaded file

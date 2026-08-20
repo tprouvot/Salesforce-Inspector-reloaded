@@ -511,13 +511,43 @@ export async function routeMock(route, host) {
       }
 
       // REST API - User Query (for Users tab)
+      // The searched user Id differs from the logged-in user (005000000000001AAA)
+      // so that the LoginAs buttons are rendered on the user details card
       if (query.includes(" from user") || query.includes("from+users")) {
+        // User details query (by Id); UserLogins is only returned when the subquery was requested
+        if (query.includes("where id='005000000000002aaa'")) {
+          const userDetail = {
+            Id: "005000000000002AAA",
+            Name: TEST_CONSTANTS.testUserSearchTerm,
+            Email: "integration@example.com",
+            Username: "integration@example.com",
+            Alias: "intuser",
+            IsActive: true,
+            FederationIdentifier: null,
+            ContactId: null,
+            UserPreferencesUserDebugModePref: false,
+            ProfileId: "00e000000000001AAA",
+            Profile: {Name: "System Administrator"},
+            UserRole: {Name: "CEO"},
+            LocaleSidKey: "en_US",
+            LanguageLocaleKey: "en_US"
+          };
+          if (query.includes("userlogins")) {
+            userDetail.UserLogins = {totalSize: 1, done: true, records: [{Id: "0Yw000000000001AAA", IsFrozen: false}]};
+          }
+          await fulfillSuccess(route, {
+            totalSize: 1,
+            done: true,
+            records: [userDetail]
+          });
+          return true;
+        }
         await fulfillSuccess(route, {
-          totalSize: 2,
+          totalSize: 1,
           done: true,
           records: [
             {
-              Id: "005000000000001AAA",
+              Id: "005000000000002AAA",
               Name: TEST_CONSTANTS.testUserSearchTerm,
               Email: "integration@example.com",
               Username: "integration@example.com",

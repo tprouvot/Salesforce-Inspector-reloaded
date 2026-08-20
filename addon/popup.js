@@ -1327,6 +1327,7 @@ class AllDataBoxUsers extends React.PureComponent {
     this.state = {
       selectedUser: null,
       selectedUserId: null,
+      selectedUserError: null,
       userSearchFields,
       excludeInactiveUsersFromSearch,
       excludePortalUsersFromSearch,
@@ -1529,7 +1530,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   async onDataSelect(userRecord) {
     if (userRecord && userRecord.Id) {
-      await this.setState({selectedUserId: userRecord.Id, selectedUser: null});
+      await this.setState({selectedUserId: userRecord.Id, selectedUser: null, selectedUserError: null});
       await this.querySelectedUserDetails();
     }
   }
@@ -1545,11 +1546,29 @@ class AllDataBoxUsers extends React.PureComponent {
     // leverage USER_MODE to get the user details with fields that are not accessible by the regular API
     const hasProfileId = await this.hasFieldAccess("ProfileId");
     const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
-    const querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)" + (hasProfileId ? ", ProfileId, Profile.Name" : "") + (hasIsPortalEnabled ? ", IsPortalEnabled" : "") + " FROM User WHERE Id='" + selectedUserId + "' WITH USER_MODE LIMIT 1";
+    const querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref" + (hasProfileId ? ", ProfileId, Profile.Name" : "") + (hasIsPortalEnabled ? ", IsPortalEnabled" : "");
+    const queryFrom = " FROM User WHERE Id='" + selectedUserId + "' WITH USER_MODE LIMIT 1";
+    // Reading UserLogins requires the Manage Users permission; with USER_MODE the whole query fails without it, so retry without the subquery
+    const queries = [
+      querySelect + ", (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)" + queryFrom,
+      querySelect + queryFrom
+    ];
 
     try {
       setIsLoading(true);
-      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect));
+      let userResult;
+      for (let i = 0; i < queries.length; i++) {
+        try {
+          userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queries[i]));
+          break;
+        } catch (err) {
+          console.error("Unable to query user details:", err);
+          if (i == queries.length - 1) {
+            this.setState({selectedUserError: "Unable to query user details. Your user may lack read access to some User fields."});
+            return;
+          }
+        }
+      }
       let userDetail = userResult.records[0];
       userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
@@ -1558,6 +1577,9 @@ class AllDataBoxUsers extends React.PureComponent {
           if (res.records && res.records.length > 0){
             userDetail.NetworkId = res.records[0].NetworkId;
           }
+        }).catch(err => {
+          //not blocking, the user details can be displayed without the "Login to Experience" button
+          console.error("Unable to query NetworkMember:", err);
         });
       }
       await this.setState({selectedUser: userDetail});
@@ -1602,7 +1624,7 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   render() {
-    let {selectedUser, filterDropdownOpen, excludePortalUsersFromSearch, excludeInactiveUsersFromSearch} = this.state;
+    let {selectedUser, selectedUserError, filterDropdownOpen, excludePortalUsersFromSearch, excludeInactiveUsersFromSearch} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath}
       = this.props;
 
@@ -1684,7 +1706,7 @@ class AllDataBoxUsers extends React.PureComponent {
             contextPath,
             showToast: this.props.showToast,
           })
-          : h("div", {className: "center"}, "No user details available")
+          : h("div", {className: "center"}, selectedUserError || "No user details available")
       )
     );
   }

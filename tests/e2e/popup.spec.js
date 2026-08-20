@@ -673,6 +673,63 @@ test.describe("Popup", () => {
       // Note: Clicking this will trigger API calls, but we'll just verify the button exists
       await expect(enableLogsButton).toBeEnabled();
     });
+
+    test("Login As Buttons", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+
+      // Click Users tab
+      await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
+
+      // Wait for user search input
+      await page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']").waitFor({timeout: 1000});
+
+      // Type and select a user (a different user than the logged-in one)
+      const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']");
+      await searchInput.fill(TEST_CONSTANTS.testUserSearchTerm);
+      await page.waitForTimeout(1000);
+      await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first().click();
+
+      // Wait for user details to load
+      await page.waitForTimeout(2000);
+
+      // Verify LoginAs and Incognito buttons appear
+      await expect(page.frameLocator(".insext-popup").locator("a:has-text('LoginAs')")).toBeVisible({timeout: 1000});
+      await expect(page.frameLocator(".insext-popup").locator("a:has-text('Incognito')")).toBeVisible({timeout: 1000});
+    });
+
+    test("Login As Buttons without UserLogins access", async ({page, extensionId}) => {
+      // Simulate a user without the Manage Users permission: with USER_MODE, the
+      // UserLogins subquery fails the whole user details query (discussion #1270).
+      // The extension should fall back to a query without the subquery.
+      await page.route(/\/query\/\?q=[^&]*UserLogins/, route =>
+        route.fulfill({
+          status: 400,
+          contentType: "application/json",
+          body: JSON.stringify([{message: "sObject type 'UserLogin' is not supported.", errorCode: "INVALID_TYPE"}])
+        })
+      );
+
+      await initPopupPage(page, extensionId);
+
+      // Click Users tab
+      await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
+
+      // Wait for user search input
+      await page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']").waitFor({timeout: 1000});
+
+      // Type and select a user
+      const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']");
+      await searchInput.fill(TEST_CONSTANTS.testUserSearchTerm);
+      await page.waitForTimeout(1000);
+      await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first().click();
+
+      // Wait for user details to load
+      await page.waitForTimeout(2000);
+
+      // The details card and LoginAs buttons should still be displayed
+      await expect(page.frameLocator(".insext-popup").locator("a:has-text('LoginAs')")).toBeVisible({timeout: 1000});
+      await expect(page.frameLocator(".insext-popup").locator("a:has-text('Incognito')")).toBeVisible({timeout: 1000});
+    });
   });
 
   test.describe("Shortcuts Tab", () => {

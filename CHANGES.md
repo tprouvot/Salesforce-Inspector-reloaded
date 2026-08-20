@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Metadata` Add 'Run Relevant Tests' option to metadata deploy Test Level picklist [feature 1286](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1286)
 - `Popup` Fix language flag icons for Catalan and Basque on the Users tab [issue #1196](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1196)
 - `Custom Shortcuts` Add "Global" toggle to share a shortcut across all orgs instead of keeping it specific to the current org [feature 191](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/191)
 - `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)

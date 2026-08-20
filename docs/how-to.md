@@ -256,6 +256,27 @@ The links are stored in the browser's localStorage, so they will persist between
 
 <img width="278" alt="Custom Link Search" src="https://github.com/user-attachments/assets/5ccd6778-4fb2-46d5-9b54-cd47cb03c7bb" />
 
+### Switch between Lightning apps
+
+You can add custom shortcuts to jump directly to any Lightning app — no more navigating through the App Launcher.
+
+In Lightning, each app has a URL you can find in the browser by copying the link. Use that relative path as the **Link** value when creating a shortcut.
+
+<img width="1325" height="454" alt="Custom shortcuts configuration for switching apps" src="https://github.com/user-attachments/assets/a0e8a68d-5e0e-4f6f-83ad-5c118eea1c6f" />
+
+Once configured, the shortcuts appear in the popup and can be triggered by typing their label in the search box:
+
+<img width="278" height="702" alt="Switching apps from the shortcut tab" src="https://github.com/user-attachments/assets/23c6f67f-16a1-406a-b443-2a67a2ee889e" />
+
+### Switch between Classic and Lightning
+
+Use the following relative URLs to switch between Salesforce Classic and Lightning Experience:
+
+* **Switch to Lightning**: `/user/switchToLightning`
+* **Switch to Classic**: `/user/switchToClassic`
+
+Create one shortcut for each, give them descriptive labels (e.g. `Switch to Lightning` / `Switch to Classic`), and you can toggle between the two UIs in one click from the Shortcuts tab.
+
 ## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
 
 Since Winter 24, there is a beta functionality to view a summary of the PermissionSet / PermissionSetGroups

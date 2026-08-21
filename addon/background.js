@@ -64,9 +64,18 @@ chrome.action.onClicked.addListener(() => {
   });
 });
 chrome.commands?.onCommand.addListener((command) => {
-  if (!sfHost) {
-    return;
-  }
+  chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+    const activeTab = tabs[0];
+    if (!activeTab?.id) return;
+
+    chrome.tabs.sendMessage(activeTab.id, {message: "getSfHostForShortcut"}, activeSfHost => {
+      if (chrome.runtime.lastError || !activeSfHost) return;
+      executeCommand(command, activeSfHost);
+    });
+  });
+});
+
+function executeCommand(command, activeSfHost) {
   if (command.startsWith("link-")){
     let link;
     switch (command){
@@ -81,19 +90,19 @@ chrome.commands?.onCommand.addListener((command) => {
         break;
     }
     chrome.tabs.create({
-      url: `https://${sfHost}${link}`
+      url: `https://${activeSfHost}${link}`
     });
 
   } else if (command.startsWith("open-")){
     chrome.runtime.sendMessage({
-      msg: "shortcut_pressed", command, sfHost
+      msg: "shortcut_pressed", command, sfHost: activeSfHost
     });
   } else {
     chrome.tabs.create({
-      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${activeSfHost}`
     });
   }
-});
+}
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === "install") {

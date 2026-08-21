@@ -474,6 +474,15 @@ a.icon-url {
 .popup-header {
   border: 0 !important;
   border-radius: 0 !important;
+  cursor: pointer;
+}
+.popup-header:hover,
+.popup-header.popup-header-linked-hover {
+  filter: brightness(95%);
+}
+.header-dark.popup-header:hover,
+.header-dark.popup-header.popup-header-linked-hover {
+  filter: brightness(120%);
 }
 .popup-header.slds-page-header {
   padding-inline: 0 !important;

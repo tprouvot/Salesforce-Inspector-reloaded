@@ -158,7 +158,7 @@ export class ButtonMenu extends React.Component {
     const { isOpen } = this.state;
 
     const buttonClass = `slds-button ${label ? 'slds-button_neutral' : 'slds-button_icon slds-button_icon-border'}`;
-    const dropdownClass = `slds-dropdown slds-dropdown_${menuAlignment}`;
+    const dropdownClass = `slds-dropdown slds-dropdown_${menuAlignment} sfir-buttonmenu-dropdown`;
 
     return h("div", {
       className: `slds-dropdown-trigger slds-dropdown-trigger_click${isOpen ? " slds-is-open" : ""}`

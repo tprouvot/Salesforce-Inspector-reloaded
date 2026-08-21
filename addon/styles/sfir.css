@@ -261,8 +261,8 @@ a.download-salesforce {
   transform: translateX(-50%);
 }
 
-/* Dropdown constraints for ButtonMenu */
-.slds-dropdown {
+/* Dropdown constraints for ButtonMenu (scoped to avoid affecting other .slds-dropdown usages) */
+.sfir-buttonmenu-dropdown {
   max-height: 20rem;
   overflow-y: auto;
 }

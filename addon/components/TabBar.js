@@ -49,7 +49,7 @@ export function TabBar(props) {
       h(
         "ul",
         { className: "slds-tabs_scoped__nav", role: "tablist", "aria-label": ariaLabel },
-        tabs.map((tab) => {
+        tabs.map((tab, index) => {
           const isActive = props.activeId === tab.id;
           return h(
             "li",
@@ -60,6 +60,21 @@ export function TabBar(props) {
               "aria-selected": isActive,
               "data-aspect": tab.id,
               onClick: (e) => props.onTabChange(e, tab.id),
+              onKeyDown: (e) => {
+                let nextIndex = null;
+                if (e.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+                else if (e.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+                else if (e.key === "Home") nextIndex = 0;
+                else if (e.key === "End") nextIndex = tabs.length - 1;
+                else if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  props.onTabChange(e, tab.id);
+                  return;
+                } else return;
+                e.preventDefault();
+                props.onTabChange(e, tabs[nextIndex].id);
+                e.currentTarget.parentElement.children[nextIndex]?.focus();
+              },
               className: isActive ? "slds-tabs_scoped__item slds-is-active" : "slds-tabs_scoped__item"
             },
             h("span", { className: "slds-tabs_scoped__link" }, ...(Array.isArray(tab.content) ? tab.content : [tab.content]))

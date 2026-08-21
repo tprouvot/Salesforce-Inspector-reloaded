@@ -1636,6 +1636,20 @@ class App extends React.Component {
     const {model} = this.props;
     const count = model.queryTabs.length;
     if (count === 0) return;
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && (e.ctrlKey || e.metaKey)) {
+      const toIndex = e.key === "ArrowLeft" ? Math.max(0, index - 1) : Math.min(count - 1, index + 1);
+      if (toIndex !== index) {
+        e.preventDefault();
+        model.reorderTabs(index, toIndex);
+        model.didUpdate();
+      }
+      return;
+    }
+    if ((e.key === "Delete" || e.key === "Backspace") && count > 1) {
+      e.preventDefault();
+      model.removeQueryTab(index);
+      return;
+    }
     let nextIndex = -1;
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       nextIndex = Math.max(0, index - 1);

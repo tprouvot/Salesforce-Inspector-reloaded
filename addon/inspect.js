@@ -1920,7 +1920,12 @@ class App extends React.Component {
                       value: model.rowsFilter,
                       onChange: this.onRowsFilterInput,
                       ref: "rowsFilter"
-                    })
+                    }),
+                    h("a", {href: "about:blank", className: "sfir-filter-clear", onClick: this.onClearAndFocusFilter, title: "Clear filter"},
+                      h("svg", {className: "sfir-filter-clear-icon"},
+                        h("use", {xlinkHref: "symbols.svg#clear"})
+                      )
+                    )
                   ),
                   h("div", {className: "sfir-column-controls-container"},
                     model.useTab == "fields" || model.useTab == "all" ? h("div", {className: "sfir-column-control-group"},

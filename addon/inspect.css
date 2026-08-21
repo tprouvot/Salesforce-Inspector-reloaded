@@ -45,6 +45,9 @@ tr.fieldHidden a[href] {
 
 .sfir-filter-clear {
   position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
   fill: #706e6b;
   line-height: 1;
   color: #706e6b;
@@ -105,6 +108,7 @@ tr.fieldHidden a[href] {
 .sfir-controls-right .slds-input {
   width: 180px;
   padding-left: 2rem;
+  padding-right: 1.5rem;
 }
 
 .sfir-controls-right .slds-input__icon_left {

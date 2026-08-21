@@ -9,16 +9,30 @@
   min-width: 220px;
 }
 
-.options-tab {
+.slds-tabs_default .slds-tabs_scoped__item {
   min-width: 80px;
+  text-align: center;
 }
 
-.sfir-options-tab-container {
-  background-color: #f7f9fb;
+.slds-tabs_default .slds-tabs_scoped__link {
+  overflow: hidden;
+  text-overflow: clip;
+  padding-inline: clamp(0.2rem, 0.5vw, 1rem);
+}
+
+.slds-tabs_default .slds-tabs_scoped {
   position: sticky;
   top: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1;
+  z-index: 50;
+}
+
+.slds-tabs_default .slds-tabs_scoped__nav {
+  background-color: #f7f9fb;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom: 1px solid #dddbda;
+  border-radius: 0;
 }
 
 .main-container {

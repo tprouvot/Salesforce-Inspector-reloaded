@@ -4,6 +4,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {TabBar} from "./components/TabBar.js";
 
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
@@ -147,7 +148,20 @@ class Model {
   }
   setQueryInput(queryInput) {
     this.queryInput = queryInput;
-    queryInput.value = this.initialQuery;
+    let query = "";
+    if (this.queryTabs.length > 0 && this.queryTabs[this.activeTabIndex]) {
+      query = this.queryTabs[this.activeTabIndex].query || "";
+    }
+    // If the current tab has no query and we have an initialQuery, use it
+    if (!query && this.initialQuery) {
+      query = this.initialQuery;
+      // Update the current tab with the initial query
+      if (this.queryTabs[this.activeTabIndex]) {
+        this.queryTabs[this.activeTabIndex].query = query;
+        this.saveQueryTabs();
+      }
+    }
+    queryInput.value = query;
     this.initialQuery = null;
   }
   toggleHelp() {
@@ -173,18 +187,23 @@ class Model {
   }
   selectHistoryEntry() {
     if (this.selectedHistoryEntry != null) {
-      this.queryInput.value = this.selectedHistoryEntry.query;
+      const query = this.selectedHistoryEntry.query;
+      this.queryInput.value = query;
+      this.updateCurrentTabQuery(query);
       this.queryTooling = this.selectedHistoryEntry.useToolingApi;
       this.queryAutocompleteHandler();
       this.selectedHistoryEntry = null;
     }
   }
   selectQueryTemplate() {
-    this.queryInput.value = this.selectedQueryTemplate.trimStart();
+    const query = this.selectedQueryTemplate.trimStart();
+    this.queryInput.value = query;
+    this.updateCurrentTabQuery(query);
     this.queryInput.focus();
     let indexPos = this.queryInput.value.toLowerCase().indexOf("from ");
     if (indexPos !== -1) {
       this.queryInput.setRangeText("", indexPos + 5, indexPos + 5, "end");
+      this.updateCurrentTabQuery(this.queryInput.value);
     }
   }
   initPerf() {
@@ -239,6 +258,7 @@ class Model {
         queryStr = this.selectedSavedEntry.query;
       }
       this.queryInput.value = queryStr;
+      this.updateCurrentTabQuery(queryStr);
       this.queryTooling = this.selectedSavedEntry.useToolingApi;
       this.queryAutocompleteHandler();
       this.selectedSavedEntry = null;
@@ -848,6 +868,7 @@ class Model {
     vm.initPerf();
     let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
+    vm.updateCurrentTabQuery(query);
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -1102,12 +1123,12 @@ class Model {
     this.activeTabIndex = index;
     // Update the query input value to match the current tab's query
     if (this.queryInput) {
-      this.queryInput.value = this.queryTabs[index].query;
+      this.queryInput.value = this.queryTabs[index]?.query ?? "";
     }
-    this.queryTooling = this.queryTabs[index].queryTooling;
-    this.queryAll = this.queryTabs[index].queryAll;
+    this.queryTooling = this.queryTabs[index]?.queryTooling ?? false;
+    this.queryAll = this.queryTabs[index]?.queryAll ?? false;
     // Update the exported data with the tab's results
-    this.exportedData = this.queryTabs[index].results;
+    this.exportedData = this.queryTabs[index]?.results;
     // Update the UI with the new data
     if (this.exportedData) {
       this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
@@ -1381,6 +1402,7 @@ class App extends React.Component {
     this.onRemoveRightTabs = this.onRemoveRightTabs.bind(this);
     this.onRemoveAllTabs = this.onRemoveAllTabs.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
+    this.onTabKeyDown = this.onTabKeyDown.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
@@ -1390,6 +1412,7 @@ class App extends React.Component {
     this.onTabDragLeave = this.onTabDragLeave.bind(this);
     this.onTabDragEnd = this.onTabDragEnd.bind(this);
     this.onTabContextMenu = this.onTabContextMenu.bind(this);
+    this.onTabMouseUp = this.onTabMouseUp.bind(this);
     this.onOverlayContextMenu = this.onOverlayContextMenu.bind(this);
     this.onCloseContextMenu = this.onCloseContextMenu.bind(this);
 
@@ -1398,6 +1421,7 @@ class App extends React.Component {
       ...this.state,
       editingTabIndex: -1,
       editingTabName: "",
+      editingTabError: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
       contextMenu: null
@@ -1607,6 +1631,52 @@ class App extends React.Component {
     model.setActiveTab(index);
   }
 
+  onTabKeyDown(e, index) {
+    if (this.state.editingTabIndex >= 0) return;
+    const {model} = this.props;
+    const count = model.queryTabs.length;
+    if (count === 0) return;
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && (e.ctrlKey || e.metaKey)) {
+      const toIndex = e.key === "ArrowLeft" ? Math.max(0, index - 1) : Math.min(count - 1, index + 1);
+      if (toIndex !== index) {
+        e.preventDefault();
+        model.reorderTabs(index, toIndex);
+        model.didUpdate();
+      }
+      return;
+    }
+    if ((e.key === "Delete" || e.key === "Backspace") && count > 1) {
+      e.preventDefault();
+      model.removeQueryTab(index);
+      return;
+    }
+    let nextIndex = -1;
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      nextIndex = Math.max(0, index - 1);
+    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      nextIndex = Math.min(count - 1, index + 1);
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = count - 1;
+    }
+    if (nextIndex >= 0 && nextIndex !== index) {
+      e.preventDefault();
+      model.setActiveTab(nextIndex);
+      model.didUpdate();
+    }
+  }
+
+  onTabMouseUp(e, index) {
+    // Middle mouse button (wheel click) closes the tab
+    if (e.button === 1) {
+      e.preventDefault();
+      e.stopPropagation();
+      let {model} = this.props;
+      model.removeQueryTab(index);
+    }
+  }
+
   onQueryInput(e) {
     let {model} = this.props;
     model.updateCurrentTabQuery(e.target.value);
@@ -1619,7 +1689,8 @@ class App extends React.Component {
     let {model} = this.props;
     this.setState({
       editingTabIndex: index,
-      editingTabName: model.queryTabs[index].name
+      editingTabName: model.queryTabs[index].name,
+      editingTabError: ""
     });
   }
 
@@ -1627,12 +1698,12 @@ class App extends React.Component {
     e.preventDefault();
     e.stopPropagation();
     let {model} = this.props;
-    if (this.state.editingTabName.trim()) {
-      model.updateTabName(index, this.state.editingTabName);
-    }
+    let name = this.state.editingTabName.trim() || model.queryTabs[index].name;
+    model.updateTabName(index, name);
     this.setState({
       editingTabIndex: -1,
-      editingTabName: ""
+      editingTabName: "",
+      editingTabError: ""
     });
   }
 
@@ -1720,27 +1791,29 @@ class App extends React.Component {
       queryInput.focus();
     }
 
-    function queryAutocompleteEvent() {
+    this._queryAutocompleteEvent = () => {
       model.queryAutocompleteHandler();
       model.didUpdate();
-    }
-    queryInput.addEventListener("input", queryAutocompleteEvent);
-    queryInput.addEventListener("select", queryAutocompleteEvent);
+    };
+    // Note: "input" event is handled by React's onChange prop, not here
+    queryInput.addEventListener("select", this._queryAutocompleteEvent);
 
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
-    queryInput.addEventListener("keyup", queryAutocompleteEvent);
-    queryInput.addEventListener("mouseup", queryAutocompleteEvent);
+    queryInput.addEventListener("keyup", this._queryAutocompleteEvent);
+    queryInput.addEventListener("mouseup", this._queryAutocompleteEvent);
 
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
-    queryInput.addEventListener("keydown", e => {
+    this._queryKeydown = e => {
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       }
-    });
-    addEventListener("message", e => {
+    };
+    queryInput.addEventListener("keydown", this._queryKeydown);
+
+    this._messageListener = e => {
       if (e.data.command === "open-export-autocomplete") {
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
@@ -1748,38 +1821,65 @@ class App extends React.Component {
         model.doExport();
         model.didUpdate();
       }
-    });
+    };
+    addEventListener("message", this._messageListener);
 
-    addEventListener("keydown", e => {
+    this._globalKeydown = e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
         model.doExport();
         model.didUpdate();
       }
-    });
+    };
+    addEventListener("keydown", this._globalKeydown);
 
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
 
-    let recalculateHeight = this.recalculateSize.bind(this);
+    this._recalculateHeight = this.recalculateSize.bind(this);
     if (!window.webkitURL) {
       // Firefox
       // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
-      new MutationObserver(recalculateHeight).observe(queryInput, {attributes: true});
+      this._mutationObserver = new MutationObserver(this._recalculateHeight);
+      this._mutationObserver.observe(queryInput, {attributes: true});
     } else {
       // Chrome
       // Chrome does not fire a resize event and does not allow us to get notified when the browser changes the style.height attribute.
       // Instead we listen to a few events which are often fired at the same time.
       // This is not required in Firefox, and Mozilla reviewers don't like it for performance reasons, so we only do this in Chrome via browser detection.
-      queryInput.addEventListener("mousemove", recalculateHeight);
-      addEventListener("mouseup", recalculateHeight);
+      queryInput.addEventListener("mousemove", this._recalculateHeight);
+      this._mouseupRecalc = this._recalculateHeight;
+      addEventListener("mouseup", this._mouseupRecalc);
     }
-    function resize() {
+    this._resize = () => {
       model.winInnerHeight = innerHeight;
       model.didUpdate(); // Will call recalculateSize
+    };
+    addEventListener("resize", this._resize);
+    this._resize();
+
+    // Middle-click to close tabs is now handled by TabBar's onTabMouseUp prop
+  }
+  componentWillUnmount() {
+    let queryInput = this.refs.query;
+    if (queryInput) {
+      queryInput.removeEventListener("select", this._queryAutocompleteEvent);
+      queryInput.removeEventListener("keyup", this._queryAutocompleteEvent);
+      queryInput.removeEventListener("mouseup", this._queryAutocompleteEvent);
+      queryInput.removeEventListener("keydown", this._queryKeydown);
+      if (window.webkitURL) {
+        queryInput.removeEventListener("mousemove", this._recalculateHeight);
+      }
     }
-    addEventListener("resize", resize);
-    resize();
+    removeEventListener("message", this._messageListener);
+    removeEventListener("keydown", this._globalKeydown);
+    removeEventListener("resize", this._resize);
+    if (this._mouseupRecalc) {
+      removeEventListener("mouseup", this._mouseupRecalc);
+    }
+    if (this._mutationObserver) {
+      this._mutationObserver.disconnect();
+    }
   }
   componentDidUpdate() {
     this.recalculateSize();
@@ -1920,68 +2020,42 @@ class App extends React.Component {
                   )),
               ),
             ),
+            h("div", { ref: "tabBar" },
+            h(TabBar, {
+              mode: "advanced",
+              tabs: model.queryTabs,
+              activeIndex: model.activeTabIndex,
+              onTabAdd: this.onAddTab,
+              onTabRemove: this.onRemoveTab,
+              editingTabIndex: this.state.editingTabIndex,
+              editingTabName: this.state.editingTabName,
+              editingTabError: this.state.editingTabError,
+              onTabNameEdit: this.onTabNameEdit,
+              onTabNameSubmit: this.onTabNameSubmit,
+              onEditingChange: (updates) => this.setState(updates),
+              draggedTabIndex: this.state.draggedTabIndex,
+              dropTargetIndex: this.state.dropTargetIndex,
+              onTabDragStart: this.onTabDragStart,
+              onTabDragOver: this.onTabDragOver,
+              onTabDragLeave: this.onTabDragLeave,
+              onTabDrop: this.onTabDrop,
+              onTabDragEnd: this.onTabDragEnd,
+              onTabKeyDown: this.onTabKeyDown,
+              onTabContextMenu: this.onTabContextMenu,
+              onTabMouseUp: this.onTabMouseUp,
+              onTabClick: this.onTabClick,
+              ariaLabel: "Query tabs"
+            })
+            ),
             h("div", {
-              className: "query-tabs",
-              onDragLeave: this.onTabDragLeave
+              role: "tabpanel",
+              id: "tabpanel-" + model.activeTabIndex,
+              "aria-labelledby": "tab-" + model.activeTabIndex
             },
-            model.queryTabs.map((tab, index) =>
-              h("div", {
-                key: index,
-                className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""} ${this.state.dropTargetIndex === index ? "drop-target" : ""}`,
-                onClick: e => this.onTabClick(e, index),
-                draggable: true,
-                onDragStart: e => this.onTabDragStart(e, index),
-                onDragOver: e => this.onTabDragOver(e, index),
-                onDragLeave: e => this.onTabDragLeave(e),
-                onDrop: e => this.onTabDrop(e, index),
-                onDragEnd: e => this.onTabDragEnd(e),
-                onContextMenu: e => this.onTabContextMenu(e, index)
-              },
-              this.state.editingTabIndex === index
-                ? h("input", {
-                  type: "text",
-                  className: "query-tab-name-input",
-                  value: this.state.editingTabName,
-                  onChange: e => this.setState({editingTabName: e.target.value}),
-                  onBlur: e => this.onTabNameSubmit(e, index),
-                  onKeyPress: e => {
-                    if (e.key === "Enter") {
-                      this.onTabNameSubmit(e, index);
-                    }
-                  },
-                  onKeyDown: e => {
-                    if (e.key === "Escape") {
-                      this.setState({
-                        editingTabIndex: -1,
-                        editingTabName: ""
-                      });
-                    }
-                    e.stopPropagation();
-                  },
-                  autoFocus: true,
-                  onClick: e => e.stopPropagation()
-                })
-                : h("span", {
-                  className: "query-tab-name",
-                  onDoubleClick: e => this.onTabNameEdit(e, index),
-                  title: "Double-click to edit tab name"
-                }, tab.name),
-              h("span", {
-                className: "query-tab-close",
-                onClick: e => this.onRemoveTab(e, index),
-                title: "Close tab"
-              }, "×")
-              )
-            ),
-            h("div", {
-              className: "add-tab-button",
-              onClick: this.onAddTab,
-              title: "Add new query tab"
-            }, "+")
-            ),
             h("textarea", {
               id: "query",
               ref: "query",
+              value: model.getCurrentTabQuery(),
               style: {maxHeight: (model.winInnerHeight - 200) + "px"},
               onChange: this.onQueryInput
             }),
@@ -2021,6 +2095,7 @@ class App extends React.Component {
                     )
                   )))
               ),
+            )
             ),
             !model.showHelp ? null : h("div", {className: "slds-box slds-theme_info slds-m-top_medium"},
               h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Export Help"),

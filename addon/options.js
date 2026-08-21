@@ -8,6 +8,7 @@ import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {TabBar} from "./components/TabBar.js";
 
 class Model {
 
@@ -445,23 +446,24 @@ class OptionsTabSelector extends React.Component {
     }
   }
 
-  onTabSelect(e) {
-    e.preventDefault();
-    const selectedTabId = e.currentTarget.dataset.tabId;
-
+  onTabSelect(e, id) {
     // Update the URL with the selected tab
     const url = new URL(window.location);
-    url.searchParams.set("selectedTab", selectedTabId);
+    url.searchParams.set("selectedTab", id);
     window.history.pushState({}, "", url);
 
-    this.setState({selectedTabId});
+    this.setState({selectedTabId: id});
   }
 
   render() {
     return h("div", {className: "slds-tabs_default"},
-      h("ul", {className: "sfir-options-tab-container slds-tabs_default__nav", role: "tablist"},
-        this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.tabTitle || tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
-      ),
+      h(TabBar, {
+        mode: "simple",
+        tabs: this.tabs.map(tab => ({id: tab.id, content: tab.tabTitle || tab.title})),
+        activeId: this.state.selectedTabId,
+        onTabChange: this.onTabSelect,
+        ariaLabel: "Options"
+      }),
       this.tabs.map((tab) => h(OptionsContainer, {
         key: tab.id,
         id: tab.id,
@@ -474,20 +476,6 @@ class OptionsTabSelector extends React.Component {
         model: this.model,
         appRef: this.appRef
       }))
-    );
-  }
-}
-
-class OptionsTab extends React.Component {
-
-  getClass() {
-    return "options-tab slds-text-align_center slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
-  }
-
-  render() {
-    return h("li", {key: this.props.id, className: this.getClass(), title: this.props.title, "data-tab-id": this.props.id, role: "presentation", onClick: this.props.onTabSelect},
-      h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: "0", id: "tab-default-" + this.props.id + "__item"},
-        this.props.title)
     );
   }
 }

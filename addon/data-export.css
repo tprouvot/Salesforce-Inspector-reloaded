@@ -99,6 +99,7 @@ textarea[hidden] {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  margin-bottom: 1rem;
 }
 
 .query-controls .button-group {
@@ -641,118 +642,4 @@ svg.icon:hover {
   margin-top: 10px;
 }
 
-.query-tabs {
-  display: flex;
-  padding: 0;
-  position: relative;
-}
-
-.query-tab {
-  padding: 8px 16px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  border-bottom: none;
-  margin-right: 4px;
-  border-radius: 4px 4px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.query-tab:hover {
-  background-color: #f4f6f9;
-}
-
-.query-tab.active {
-  background: #fff;
-  border-color: #dddbda;
-  border-bottom-color: #fff;
-  margin-bottom: -1px;
-}
-
-.query-tab.active:hover {
-  background: #fff;
-}
-
-.query-tab.dragging {
-  opacity: 0.5;
-  transform: rotate(5deg);
-}
-
-.query-tab.drop-target {
-  position: relative;
-}
-
-.query-tab.drop-target::before {
-  content: "";
-  position: absolute;
-  left: -1px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #706e6b;
-  border-radius: 1px;
-  z-index: 10;
-  box-shadow: 0 0 2px rgba(112, 110, 107, 0.3);
-}
-
-.query-tab-name {
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 2px;
-  transition: background-color 0.1s;
-}
-
-.query-tab-name:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.query-tab-name-input {
-  border: 1px solid #1589ee;
-  border-radius: 2px;
-  padding: 2px 4px;
-  font-size: inherit;
-  font-family: inherit;
-  background: #fff;
-  min-width: 60px;
-  max-width: 120px;
-}
-
-.query-tab-name-input:focus {
-  outline: none;
-  box-shadow: 0 0 3px rgba(21, 137, 238, 0.3);
-}
-
-.query-tab-close {
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 12px;
-  color: #706e6b;
-  transition: background-color 0.1s;
-}
-
-.query-tab-close:hover {
-  background: #f3f2f2;
-  color: #c23934;
-}
-
-.add-tab-button {
-  padding: 8px;
-  cursor: pointer;
-  color: #706e6b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.1s;
-}
-
-.add-tab-button:hover {
-  background: #f3f2f2;
-}
+/* Query tab styles moved to components/TabBar.css */

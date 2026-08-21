@@ -3,6 +3,7 @@ import {sfConn, apiVersion, sessionError} from "./inspector.js";
 import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
+import {TabBar} from "./components/TabBar.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
@@ -963,7 +964,6 @@ class AllDataBox extends React.PureComponent {
       contextPath: null,
       contextSobject: null,
     };
-    this.onAspectClick = this.onAspectClick.bind(this);
     this.onClearSobjectsCache = this.onClearSobjectsCache.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
   }
@@ -1092,12 +1092,6 @@ class AllDataBox extends React.PureComponent {
     }
   }
 
-  onAspectClick(e) {
-    this.setState({
-      activeSearchAspect: e.currentTarget.dataset.aspect,
-    });
-  }
-
   loadSobjects() {
     // Don't load if already loading or already loaded
     if (this.state.sobjectsLoading || this.state.sobjectsList !== null) {
@@ -1164,87 +1158,20 @@ class AllDataBox extends React.PureComponent {
     return h(
       "div",
       {
-        className:
-          "slds-tabs_scoped slds-p-bottom_xx-small"
-          + (this.isLoading() ? " loading " : ""),
+        className: this.isLoading() ? " loading " : "",
       },
-      h(
-        "ul",
-        {className: "slds-tabs_scoped__nav"},
-        h(
-          "li",
-          {
-            ref: "objectTab",
-            onClick: this.onAspectClick,
-            "data-aspect": this.SearchAspectTypes.sobject,
-            className:
-              activeSearchAspect == this.SearchAspectTypes.sobject
-                ? "slds-tabs_scoped__item slds-is-active"
-                : "slds-tabs_scoped__item",
-          },
-          h(
-            "span",
-            {className: "slds-tabs_scoped__link"},
-            h("u", {}, "O"),
-            "bjects"
-          )
-        ),
-        h(
-          "li",
-          {
-            ref: "userTab",
-            onClick: this.onAspectClick,
-            "data-aspect": this.SearchAspectTypes.users,
-            className:
-              activeSearchAspect == this.SearchAspectTypes.users
-                ? "slds-tabs_scoped__item slds-is-active"
-                : "slds-tabs_scoped__item",
-          },
-          h(
-            "span",
-            {className: "slds-tabs_scoped__link"},
-            h("u", {}, "U"),
-            "sers"
-          )
-        ),
-        h(
-          "li",
-          {
-            ref: "shortcutTab",
-            onClick: this.onAspectClick,
-            "data-aspect": this.SearchAspectTypes.shortcuts,
-            className:
-              activeSearchAspect == this.SearchAspectTypes.shortcuts
-                ? "slds-tabs_scoped__item slds-is-active"
-                : "slds-tabs_scoped__item",
-          },
-          h(
-            "span",
-            {className: "slds-tabs_scoped__link"},
-            h("u", {}, "S"),
-            "hortcuts"
-          )
-        ),
-        h(
-          "li",
-          {
-            ref: "orgTab",
-            onClick: this.onAspectClick,
-            "data-aspect": this.SearchAspectTypes.org,
-            className:
-              activeSearchAspect == this.SearchAspectTypes.org
-                ? "slds-tabs_scoped__item slds-is-active"
-                : "slds-tabs_scoped__item",
-          },
-          h(
-            "span",
-            {className: "slds-tabs_scoped__link"},
-            "O",
-            h("u", {}, "r"),
-            "g"
-          )
-        )
-      ),
+      h(TabBar, {
+        mode: "simple",
+        tabs: [
+          { id: this.SearchAspectTypes.sobject, content: [h("u", {}, "O"), "bjects"] },
+          { id: this.SearchAspectTypes.users, content: [h("u", {}, "U"), "sers"] },
+          { id: this.SearchAspectTypes.shortcuts, content: [h("u", {}, "S"), "hortcuts"] },
+          { id: this.SearchAspectTypes.org, content: ["O", h("u", {}, "r"), "g"] }
+        ],
+        activeId: activeSearchAspect,
+        onTabChange: (e, id) => this.setState({ activeSearchAspect: id }),
+        ariaLabel: "Search aspects"
+      }),
       activeSearchAspect == this.SearchAspectTypes.sobject
         ? h(AllDataBoxSObject, {
           ref: "showAllDataBoxSObject",

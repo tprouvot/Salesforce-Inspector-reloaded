@@ -156,6 +156,7 @@ export let setupLinks = [
   {label: "Order Settings", link: "/lightning/setup/OrderSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
   {label: "Sales Processes", link: "/lightning/setup/OpportunityProcess/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
   {label: "Social Accounts and Contacts Settings", link: "/lightning/setup/SocialProfileOrgSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
+  {label: "Team Roles", link: "/lightning/setup/OpportunityTeamMemberRoles/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
   {label: "Update Reminders", link: "/lightning/setup/OpportunityUpdateReminders/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
 
   //Platform Tools > Feature Settings > Sales > Account

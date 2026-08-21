@@ -1308,9 +1308,9 @@ class MultiCheckboxButtonGroup extends React.Component {
               h("span", {className: "slds-button slds-checkbox_button", key: this.key + index},
                 h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.tooltip ? undefined : checkbox.title}),
                 h("label", {className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`, title: checkbox.tooltip ? undefined : checkbox.title},
-                  h("span", {className: "slds-checkbox_faux", style: {display: "inline-flex", alignItems: "center", whiteSpace: "nowrap"}},
+                  h("span", {className: "slds-checkbox_faux sfir-checkbox-faux-with-tooltip"},
                     checkbox.label,
-                    checkbox.tooltip && h("span", {onClick: (e) => e.stopPropagation(), style: {marginLeft: "4px", display: "inline-flex"}}, h(Tooltip, {tooltip: checkbox.tooltip, idKey: `${this.key}-${checkbox.name}`}))
+                    checkbox.tooltip && h("span", {className: "sfir-checkbox-tooltip-wrapper", onClick: (e) => e.stopPropagation()}, h(Tooltip, {tooltip: checkbox.tooltip, idKey: `${this.key}-${checkbox.name}`}))
                   )
                 )
               )

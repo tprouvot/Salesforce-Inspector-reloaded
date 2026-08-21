@@ -1368,8 +1368,10 @@ export function formatDuration(minutes) {
 
   return parts.length > 0 ? parts.join(" ") : "Less than a minute";
 }
-const RX_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+// Strictly match Salesforce's dateTime format: YYYY-MM-DDTHH:mm:ss[.SSSSSS][+hhmm]
+const RX_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{4})$/;
 const RX_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_FORMATS = ["iso8601", "us", "european", "asian"];
 
 export const isDateTimeFormat = s => typeof s === "string" && RX_DATETIME.test(s);
 export const isDateFormat = s => typeof s === "string" && RX_DATE.test(s);
@@ -1382,6 +1384,9 @@ export function getDateFormatOptions() {
     } catch {
       format = "iso8601";
     }
+  }
+  if (!DATE_FORMATS.includes(format)) {
+    format = "iso8601";
   }
   return {
     format,
@@ -1405,11 +1410,20 @@ const getOffset = d => {
   return `${off >= 0 ? "+" : "-"}${pad((abs / 60) | 0)}${pad(abs % 60)}`;
 };
 
+// The local timezone doesn't change during the page's lifetime, so this
+// formatter can be built once and reused for every cell instead of on every call.
+let tzNameFormatter = null;
+try {
+  tzNameFormatter = new Intl.DateTimeFormat("en-US", {timeZoneName: "short"});
+} catch {
+  tzNameFormatter = null;
+}
+
 const getTz = (d, utc, show) => {
   if (!show) return "";
   if (utc) return " UTC";
   try {
-    return " " + (new Intl.DateTimeFormat("en-US", {timeZoneName: "short"}).formatToParts(d).find(p => p.type === "timeZoneName")?.value || `UTC${getOffset(d)}`);
+    return " " + (tzNameFormatter?.formatToParts(d).find(p => p.type === "timeZoneName")?.value || `UTC${getOffset(d)}`);
   } catch {
     return ` UTC${getOffset(d)}`;
   }

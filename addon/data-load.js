@@ -1,5 +1,5 @@
 import {sfConn, apiVersion} from "./inspector.js";
-import {formatDateCell, getDateFormatOptions, isRecordId} from "./utils.js";
+import {formatDateCell, isRecordId} from "./utils.js";
 
 const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
@@ -349,9 +349,13 @@ function renderCell(rt, cell, td) {
     );
   } else if (cell == null) {
     td.textContent = "";
-  } else {
-    const formatted = formatDateCell(cell, rt.dateFormatOptions || getDateFormatOptions());
+  } else if (rt.dateFormatOptions) {
+    // Only format dates when the caller (e.g. Data Export) opts in; Data Import
+    // previews leave rt.dateFormatOptions unset so they display raw values.
+    const formatted = formatDateCell(cell, rt.dateFormatOptions);
     td.textContent = formatted !== null ? formatted : cell;
+  } else {
+    td.textContent = cell;
   }
 }
 

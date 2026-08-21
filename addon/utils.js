@@ -1257,6 +1257,20 @@ export function isRecordId(recordId) {
 }
 
 /**
+ * Strictly validates a Flow-related Salesforce ID: exactly 15 or 18
+ * alphanumeric characters and one of the allowed key prefixes. Used before
+ * interpolating an ID into a SOQL query.
+ * @param {string} recordId - The string to validate
+ * @param {string[]} allowedPrefixes - Key prefixes to accept (e.g. ["300", "301", "2aF"])
+ * @returns {boolean} True if the string is a valid ID with an allowed prefix
+ */
+export function isValidFlowRecordId(recordId, allowedPrefixes) {
+  return typeof recordId === "string"
+       && /^[a-zA-Z0-9]{15}([a-zA-Z0-9]{3})?$/.test(recordId)
+       && allowedPrefixes.some(prefix => recordId.startsWith(prefix));
+}
+
+/**
  * Generates a package.xml string from grouped metadata components
  * @param {Map|Object} groupedComponents - Map or Object where keys are metadata types and values are Set or Array of member names
  * @param {Object} [options] - Optional configuration

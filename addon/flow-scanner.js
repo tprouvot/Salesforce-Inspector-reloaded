@@ -10,7 +10,7 @@
 /* global React ReactDOM */
 import {getFlowScannerRules, normalizeSeverity, CORE_SEVERITY_TO_UI} from "./flow-scanner-rules.js";
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate, getFlowCompareUrl} from "./utils.js";
+import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate, getFlowCompareUrl, isValidFlowRecordId} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 
@@ -27,6 +27,19 @@ const FLOW_SCANNER_HISTORY_SIZE_KEY = "flowScannerHistorySize";
  */
 function getPrimaryAffectedElement(result) {
   return result.affectedElements?.[0] || {};
+}
+
+/**
+ * Sanitizes a Flow ID URL parameter, converting anything that isn't a
+ * well-formed Salesforce ID with an allowed key prefix to null. Prevents
+ * malformed or crafted values from reaching the SOQL queries in
+ * resolveFlowIds/FlowScanner.
+ * @param {string|null} param - The URL parameter to sanitize.
+ * @param {string[]} allowedPrefixes - Key prefixes to accept (e.g. ["300", "301"])
+ * @returns {string|null} The sanitized parameter value.
+ */
+function sanitizeUrlParam(param, allowedPrefixes) {
+  return isValidFlowRecordId(param, allowedPrefixes) ? param : null;
 }
 
 /**
@@ -367,6 +380,7 @@ class FlowScanner {
         type = "ScreenFlow";
       }
       const showProcessType = type !== processType;
+      const versionNumber = versions.find(v => v.Id === this.flowId)?.VersionNumber ?? null;
 
       // Construct complete flow information object
       const result = {
@@ -378,6 +392,7 @@ class FlowScanner {
         type,
         status,
         displayStatus,
+        versionNumber,
         xmlData,
         triggerObjectLabel,
         triggerType,
@@ -1166,6 +1181,10 @@ function FlowInfoSection(props) {
                 id: "flow-status-badge"
               }, flow.displayStatus)
             ),
+            h("div", {className: "flow-detail-item flow-version-item"},
+              h("span", {className: "detail-label"}, "Version"),
+              h("span", {className: "detail-value", id: "flow-version-number"}, flow.versionNumber ?? "—")
+            ),
             h("div", {className: "flow-detail-item flow-type-item"},
               h("span", {className: "detail-label"}, "Type"),
               h("span", {className: "detail-value", id: "flow-type"}, flow.type)
@@ -1422,6 +1441,96 @@ function PurgeModal(props) {
 }
 
 /**
+ * Resolves flow IDs from URL parameters, handling cases where flowId is a FlowDefinition ID
+ * or where one of the IDs is missing.
+ * @param {string|null} flowDefId - The flow definition ID from URL params.
+ * @param {string|null} flowId - The flow version ID from URL params.
+ * @returns {Promise<{flowDefId: string, flowId: string}>} Resolved IDs.
+ */
+async function resolveFlowIds(flowDefId, flowId) {
+  let resolvedDefId = flowDefId;
+  let resolvedFlowId = flowId;
+
+  // Both present and correct types - verify they belong together before trusting them
+  if (resolvedDefId?.startsWith("300") && resolvedFlowId?.startsWith("301")) {
+    const actualDefId = await getDefinitionIdFromFlowVersion(resolvedFlowId);
+    if (actualDefId !== resolvedDefId) {
+      throw new Error(`Flow version '${resolvedFlowId}' does not belong to FlowDefinition '${resolvedDefId}'.`);
+    }
+    return {flowDefId: resolvedDefId, flowId: resolvedFlowId};
+  }
+
+  // Handle flowId being a FlowDefinition ID (300xxx)
+  if (resolvedFlowId?.startsWith("300")) {
+    resolvedDefId = resolvedDefId || resolvedFlowId;
+    resolvedFlowId = null;
+  }
+
+  // Resolve missing IDs
+  if (!resolvedDefId && resolvedFlowId?.startsWith("301")) {
+    resolvedDefId = await getDefinitionIdFromFlowVersion(resolvedFlowId);
+  }
+  if (!resolvedFlowId && resolvedDefId?.startsWith("300")) {
+    resolvedFlowId = await getFlowVersionFromDefinition(resolvedDefId);
+  }
+
+  if (!resolvedDefId || !resolvedFlowId) {
+    throw new Error(`Unable to resolve flow IDs: flowDefId=${resolvedDefId}, flowId=${resolvedFlowId}`);
+  }
+
+  return {flowDefId: resolvedDefId, flowId: resolvedFlowId};
+}
+
+/**
+ * Gets the FlowDefinition ID from a Flow version ID.
+ * @param {string} flowVersionId - The Flow version ID (301xxx).
+ * @returns {Promise<string>} The FlowDefinition ID.
+ */
+async function getDefinitionIdFromFlowVersion(flowVersionId) {
+  const query = `SELECT DefinitionId FROM Flow WHERE Id='${flowVersionId}'`;
+  const response = await sfConn.rest(
+    `/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`
+  );
+
+  if (!response?.records?.[0]?.DefinitionId) {
+    throw new Error(`Could not resolve FlowDefinition for Flow version '${flowVersionId}'.`);
+  }
+
+  return response.records[0].DefinitionId;
+}
+
+/**
+ * Gets a Flow version ID from a FlowDefinition ID.
+ * Tries to get the active version first, falls back to latest version.
+ * @param {string} flowDefId - The FlowDefinition ID (300xxx).
+ * @returns {Promise<string>} The Flow version ID.
+ */
+async function getFlowVersionFromDefinition(flowDefId) {
+  // Try active version first
+  const activeQuery = `SELECT Id FROM Flow WHERE DefinitionId='${flowDefId}' AND Status='Active' LIMIT 1`;
+  const activeResponse = await sfConn.rest(
+    `/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(activeQuery)}`
+  );
+
+  if (activeResponse?.records?.[0]?.Id) {
+    return activeResponse.records[0].Id;
+  }
+
+  // Fall back to latest version
+  console.warn(`No active Flow version found for FlowDefinition '${flowDefId}'. Falling back to latest version.`);
+  const latestQuery = `SELECT LatestVersionId FROM FlowDefinitionView WHERE DurableId='${flowDefId}'`;
+  const latestResponse = await sfConn.rest(
+    `/services/data/v${apiVersion}/query/?q=${encodeURIComponent(latestQuery)}`
+  );
+
+  if (!latestResponse?.records?.[0]?.LatestVersionId) {
+    throw new Error(`Could not resolve a Flow version for FlowDefinition '${flowDefId}'.`);
+  }
+
+  return latestResponse.records[0].LatestVersionId;
+}
+
+/**
  * The main React component for the Flow Scanner application.
  */
 class App extends React.Component {
@@ -1581,11 +1690,15 @@ class App extends React.Component {
       this.setState({error: null});
       const params = new URLSearchParams(window.location.search);
       const sfHost = params.get("host");
-      const flowDefId = params.get("flowDefId");
-      const flowId = params.get("flowId");
+      const flowDefId = sanitizeUrlParam(params.get("flowDefId"), ["300"]);
+      // flowId may legitimately be a FlowDefinition ID (300); resolveFlowIds() re-derives it.
+      const flowId = sanitizeUrlParam(params.get("flowId"), ["300", "301"]);
 
-      if (!sfHost || !flowDefId || !flowId) {
-        throw new Error(`Missing required parameters: host=${sfHost}, flowDefId=${flowDefId}, flowId=${flowId}`);
+      if (!sfHost) {
+        throw new Error("Missing required parameter: host");
+      }
+      if (!flowDefId && !flowId) {
+        throw new Error("Missing required parameters: at least one of flowDefId or flowId must be provided.");
       }
 
       window.initButton(sfHost, true);
@@ -1595,6 +1708,9 @@ class App extends React.Component {
       }
 
       await sfConn.getSession(sfHost);
+
+      // Resolve and normalize flow IDs
+      const {flowDefId: resolvedDefId, flowId: resolvedFlowId} = await resolveFlowIds(flowDefId, flowId);
 
       // Set org name from sfHost
       const orgName = sfHost.split(".")[0]?.toUpperCase() || "";
@@ -1610,7 +1726,7 @@ class App extends React.Component {
         });
       });
 
-      this.flowScanner = new FlowScanner(sfHost, flowDefId, flowId);
+      this.flowScanner = new FlowScanner(sfHost, resolvedDefId, resolvedFlowId);
       await this.flowScanner.init();
 
       this.setState({isLoading: false, error: null});

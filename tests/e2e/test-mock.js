@@ -350,6 +350,22 @@ export async function routeMock(route, host) {
         return true;
       }
 
+      // Flow Scanner - resolve FlowDefinition ID from a Flow version ID (SELECT DefinitionId FROM Flow WHERE Id=...)
+      if (path.includes("/tooling/query") && query.includes("select definitionid from flow")) {
+        await fulfillSuccess(route, {
+          records: [{DefinitionId: TEST_CONSTANTS.flowDefId}]
+        });
+        return true;
+      }
+
+      // Flow Scanner - resolve active Flow version ID from a FlowDefinition ID (SELECT Id FROM Flow WHERE DefinitionId=... AND Status='Active')
+      if (path.includes("/tooling/query") && query.includes("select id from flow") && query.includes("status='active'")) {
+        await fulfillSuccess(route, {
+          records: [{Id: TEST_CONSTANTS.flowId}]
+        });
+        return true;
+      }
+
       // Mock Flow versions query (flow-scanner: SELECT Id, VersionNumber, Status FROM Flow)
       if (path.includes("/tooling/") && query.includes("from flow") && query.includes("versionnumber") && !query.includes("definition")) {
         await fulfillSuccess(route, {

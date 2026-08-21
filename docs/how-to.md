@@ -84,7 +84,7 @@ Data Export includes searchable comboboxes for Query History and Saved Queries w
 * **Label badge** (blue) – Appears at the start for saved queries with a label (`label:query` format)
 * **Tooling badge** (orange) – Appears at the end when "Use Tooling API" was checked
 
-To create labeled queries: enter a label in "Query Label", enter your SOQL, then click "Add".
+To create labeled queries: enter a label in "Query Label", enter your SOQL, then click "Save Query".
 
 ### Automatic history saving
 

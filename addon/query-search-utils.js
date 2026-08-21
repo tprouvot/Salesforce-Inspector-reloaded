@@ -13,12 +13,13 @@ export const SearchUtils = {
     return c % 2 === 1;
   },
   extractObjectNames(q) {
-    const re = /select[\s\S]*?from\s+([a-zA-Z0-9_]+)/gi;
+    // Match every FROM clause directly (outer query and subqueries alike).
+    // Pairing "select ... from" non-greedily only finds the nearest FROM after
+    // each SELECT, which skips the outer object when a subquery comes first.
+    const re = /\bfrom\s+([a-zA-Z0-9_]+)/gi;
     const names = new Set();
     let m;
     while ((m = re.exec(q)) !== null) { names.add(m[1].toLowerCase()); }
-    const sub = /\(\s*select[\s\S]*?\sfrom\s+([a-zA-Z0-9_]+)/gi;
-    while ((m = sub.exec(q)) !== null) { names.add(m[1].toLowerCase()); }
     return Array.from(names);
   },
   buildHistoryIndex(queries) {

@@ -239,8 +239,10 @@ export class SldsCombobox extends React.Component {
                 renderItem ? renderItem(entry) : h("span", {className: "slds-truncate", title: entry.query}, entry.query.substring(0, 300))
               ),
               onDelete && h("button", {
+                type: "button",
                 className: "sfir-combobox-delete-btn",
                 title: "Delete this item",
+                "aria-label": "Delete this item",
                 onMouseDown: (e) => {
                   e.preventDefault();
                   e.stopPropagation();

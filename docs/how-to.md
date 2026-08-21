@@ -66,6 +66,51 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
+## Use Query History and Saved Queries in Data Export
+
+Data Export includes searchable comboboxes for Query History and Saved Queries with search, filtering, per-item delete, and visual badges.
+
+### Delete individual queries
+
+1. Open **Query History** or **Saved Queries** dropdown
+2. Hover over a query item
+3. Click the **delete icon** (trash) on the right to remove it
+
+> **Note**
+> Deletion is immediate. The delete button is hidden when using the object search filter (`?`).
+
+### Visual badges
+
+* **Label badge** (blue) – Appears at the start for saved queries with a label (`label:query` format)
+* **Tooling badge** (orange) – Appears at the end when "Use Tooling API" was checked
+
+To create labeled queries: enter a label in "Query Label", enter your SOQL, then click "Save Query".
+
+### Automatic history saving
+
+Queries are saved to history **immediately** when you:
+* Click **Run Export** or **Query Plan**
+* Press **Ctrl+Enter** or **F5**
+
+Failed queries are also saved, so you can reload and fix them from the history.
+
+### Object search filter
+
+Type `?` in the dropdown to filter by Salesforce object:
+* `?` – Show all objects in your history
+* `?Account` – Queries containing Account
+* `?Acc` – Objects starting with "Acc"
+
+Select an object to see its queries. The dropdown stays open so you can browse and select.
+
+### Keyboard shortcuts
+
+* **Escape** – Close dropdown
+* **Arrow Up/Down** – Navigate items
+* **Enter/Tab** – Select highlighted item
+
+---
+
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
 
 1. Open data export page on legacy extension

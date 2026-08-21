@@ -48,6 +48,125 @@ textarea[hidden] {
   margin-bottom: 5px;
 }
 
+.sfir-query-combobox-dropdown .slds-listbox__option {
+  white-space: normal;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+.sfir-query-combobox-dropdown .slds-listbox__item.sfir-hovered .slds-listbox__option {
+  background-color: var(--slds-s-menu-item-color-background-active, var(--slds-g-color-surface-container-2, #f3f3f3));
+  text-decoration: none;
+}
+
+.sfir-query-combobox-dropdown .slds-truncate {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.sfir-combobox-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.sfir-combobox-item .slds-media__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.sfir-combobox-delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.1s ease, background-color 0.1s ease;
+}
+
+.sfir-combobox-item:hover .sfir-combobox-delete-btn,
+.sfir-combobox-delete-btn:focus {
+  opacity: 1;
+}
+
+.sfir-combobox-delete-btn:hover {
+  background-color: #f3f2f2;
+}
+
+.sfir-combobox-delete-btn:active {
+  background-color: #e5e5e5;
+}
+
+.sfir-combobox-delete-icon {
+  width: 16px;
+  height: 16px;
+  fill: #706e6b;
+}
+
+.sfir-combobox-delete-btn:hover .sfir-combobox-delete-icon {
+  fill: #c23934;
+}
+
+.sfir-query-item-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+.sfir-query-badges-start,
+.sfir-query-badges-end {
+  display: flex;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sfir-query-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sfir-query-badge-label {
+  background-color: #e0f3ff;
+  color: #0070d2;
+  border: 1px solid #b3d9ff;
+}
+
+.sfir-query-badge-tooling {
+  background-color: #fff4e5;
+  color: #a66e00;
+  border: 1px solid #ffd580;
+}
+
+.sfir-query-text {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.sfir-query-text .slds-truncate {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
 #query {
   height: 5em;
   min-height: 7em;

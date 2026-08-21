@@ -10,7 +10,7 @@
 /* global React ReactDOM */
 import {getFlowScannerRules, normalizeSeverity, CORE_SEVERITY_TO_UI} from "./flow-scanner-rules.js";
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate, getFlowCompareUrl} from "./utils.js";
+import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate, getFlowCompareUrl, isValidFlowRecordId} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 
@@ -30,12 +30,16 @@ function getPrimaryAffectedElement(result) {
 }
 
 /**
- * Sanitizes URL parameters by converting invalid values to null.
+ * Sanitizes a Flow ID URL parameter, converting anything that isn't a
+ * well-formed Salesforce ID with an allowed key prefix to null. Prevents
+ * malformed or crafted values from reaching the SOQL queries in
+ * resolveFlowIds/FlowScanner.
  * @param {string|null} param - The URL parameter to sanitize.
+ * @param {string[]} allowedPrefixes - Key prefixes to accept (e.g. ["300", "301"])
  * @returns {string|null} The sanitized parameter value.
  */
-function sanitizeUrlParam(param) {
-  return (!param || param === "null" || param === "undefined") ? null : param;
+function sanitizeUrlParam(param, allowedPrefixes) {
+  return isValidFlowRecordId(param, allowedPrefixes) ? param : null;
 }
 
 /**
@@ -1447,8 +1451,12 @@ async function resolveFlowIds(flowDefId, flowId) {
   let resolvedDefId = flowDefId;
   let resolvedFlowId = flowId;
 
-  // Both present and correct types - no resolution needed
+  // Both present and correct types - verify they belong together before trusting them
   if (resolvedDefId?.startsWith("300") && resolvedFlowId?.startsWith("301")) {
+    const actualDefId = await getDefinitionIdFromFlowVersion(resolvedFlowId);
+    if (actualDefId !== resolvedDefId) {
+      throw new Error(`Flow version '${resolvedFlowId}' does not belong to FlowDefinition '${resolvedDefId}'.`);
+    }
     return {flowDefId: resolvedDefId, flowId: resolvedFlowId};
   }
 
@@ -1682,8 +1690,9 @@ class App extends React.Component {
       this.setState({error: null});
       const params = new URLSearchParams(window.location.search);
       const sfHost = params.get("host");
-      const flowDefId = sanitizeUrlParam(params.get("flowDefId"));
-      const flowId = sanitizeUrlParam(params.get("flowId"));
+      const flowDefId = sanitizeUrlParam(params.get("flowDefId"), ["300"]);
+      // flowId may legitimately be a FlowDefinition ID (300); resolveFlowIds() re-derives it.
+      const flowId = sanitizeUrlParam(params.get("flowId"), ["300", "301"]);
 
       if (!sfHost) {
         throw new Error("Missing required parameter: host");

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, isValidFlowRecordId, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -4178,7 +4178,7 @@ class AllDataSelection extends React.PureComponent {
       });
   }
   setFlowDefinitionId(recordId) {
-    if (recordId && !this.state.flowDefinitionId) {
+    if (recordId && !this.state.flowDefinitionId && isValidFlowRecordId(recordId, ["300", "301", "2aF"])) {
       if (recordId.startsWith("301")) {
         this.setState({flowVersionId: recordId});
         sfConn

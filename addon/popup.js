@@ -4505,30 +4505,32 @@ class AllDataSelection extends React.PureComponent {
         selectedValue.sobject.name.endsWith("__e")
           ? h(
             "div",
-            {className: actionWrapperClass},
+            {role: "group", "aria-label": "Event actions"},
             h(
-              "a",
-              {
-                href: this.getSubscribeUrl(selectedValue.sobject.name),
-                target: linkTarget,
-                className: actionControlClass,
-              },
-              h("span", {}, h("u", {}), "Subscribe Event")
-            )
-          )
-          : null,
-        selectedValue.sobject.name.endsWith("__e")
-          ? h(
-            "div",
-            {className: actionWrapperClass},
+              "div",
+              {className: actionWrapperClass},
+              h(
+                "a",
+                {
+                  href: this.getSubscribeUrl(selectedValue.sobject.name),
+                  target: linkTarget,
+                  className: actionControlClass,
+                },
+                h("span", {}, h("u", {}), "Subscribe Event")
+              )
+            ),
             h(
-              "a",
-              {
-                href: this.getGenerateEventUrl(selectedValue.sobject.name),
-                target: linkTarget,
-                className: actionControlClass,
-              },
-              h("span", {}, "Generate Event")
+              "div",
+              {className: actionWrapperClass},
+              h(
+                "a",
+                {
+                  href: this.getGenerateEventUrl(selectedValue.sobject.name),
+                  target: linkTarget,
+                  className: actionControlClass,
+                },
+                h("span", {}, "Generate Event")
+              )
             )
           )
           : null

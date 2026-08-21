@@ -24,6 +24,7 @@ export default defineConfig({
   use: {
     trace: "on-first-retry",
   },
+  globalSetup: "./playwright.global-setup.js",
   projects: [
     {
       name: "chromium",
@@ -34,6 +35,15 @@ export default defineConfig({
           `--disable-extensions-except=${path.join(process.cwd(), "addon")}`,
           `--load-extension=${path.join(process.cwd(), "addon")}`,
         ],
+      },
+    },
+    {
+      name: "firefox",
+      use: {
+        ...devices["Desktop Firefox"],
+        launchOptions: {
+          args: ["--profile", path.join(process.cwd(), "target/firefox-profile")],
+        },
       },
     },
   ],

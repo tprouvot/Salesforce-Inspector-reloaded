@@ -13,6 +13,10 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
     steps:
     - uses: actions/checkout@v6
 
@@ -37,17 +41,17 @@ jobs:
       run: npm ci
 
     - name: Install Playwright Browsers
-      run: npx playwright install chromium
+      run: npx playwright install ${{ matrix.browser }}
 
     - name: Run Playwright tests (mocked)
       run: |
         echo "::notice::🧪 Tests running in MOCKED mode (API calls intercepted, no real Salesforce org)"
-        npm run test:e2e:mock
+        npm run test:e2e:mock -- --project=${{ matrix.browser }}
 
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report-mocked
+        name: playwright-report-mocked-${{ matrix.browser }}
         path: playwright-report/
         retention-days: 30
 
@@ -59,6 +63,10 @@ jobs:
       || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork != true)
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
     steps:
     - uses: actions/checkout@v6
 
@@ -180,14 +188,14 @@ jobs:
       run: npm ci
 
     - name: Install Playwright Browsers
-      run: npx playwright install chromium
+      run: npx playwright install ${{ matrix.browser }}
 
     - name: Run Playwright tests
-      run: npm run test:e2e
+      run: npm run test:e2e -- --project=${{ matrix.browser }}
 
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report
+        name: playwright-report-${{ matrix.browser }}
         path: playwright-report/
         retention-days: 30

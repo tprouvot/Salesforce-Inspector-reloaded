@@ -111,6 +111,13 @@ input.api-input {
   width: 100%;
 }
 
+/* The action row wrappers are slightly wider than their button due to
+   horizontal padding; extend the pointer cursor to the wrappers so hovering
+   the row doesn't fall back to the default cursor at its edges. */
+.sfir-all-data-actions div {
+  cursor: pointer;
+}
+
 .all-data-input {
   font-size: var(--sfir-font-lg);
   font-family: inherit;

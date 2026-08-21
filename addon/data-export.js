@@ -4,6 +4,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 import {SldsCombobox} from "./components/SldsCombobox.js";
 import {SearchUtils, DropdownHelper} from "./query-search-utils.js";
 
@@ -11,7 +12,7 @@ import {SearchUtils, DropdownHelper} from "./query-search-utils.js";
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
-    isValidEntry: (e) => typeof e === "object",
+    isValidEntry: (e) => typeof e === "object" && e !== null && typeof e.query === "string" && e.query.length > 0,
     matchAdd: (e, ent) => e.query === ent.query && e.useToolingApi === ent.useToolingApi,
     matchRemove: (e, ent) => e.query === ent.query && e.useToolingApi === ent.useToolingApi,
     sortComparator: isSaved ? (a, b) => (a.query > b.query ? 1 : b.query > a.query ? -1 : 0) : null,
@@ -1512,9 +1513,10 @@ class App extends React.Component {
       dropTargetIndex: -1,
       contextMenu: null,
       isHistoryDropdownOpen: false,
-      historyActiveIndex: 0,
+      historyActiveIndex: -1,
       isSavedDropdownOpen: false,
-      savedActiveIndex: 0
+      savedActiveIndex: -1,
+      pendingDeleteSaved: null
     };
 
     this.scrollTable = null;
@@ -1897,10 +1899,7 @@ class App extends React.Component {
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
-      let {model} = this.props;
-      model.setHistorySearchValue("");
       this._closeHistoryDropdown();
-      model.didUpdate();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       if (!this.state.isHistoryDropdownOpen) {
@@ -1943,13 +1942,14 @@ class App extends React.Component {
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
-      let {model} = this.props;
-      model.setSavedSearchValue("");
       this._closeSavedDropdown();
-      model.didUpdate();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      this.setState({savedActiveIndex: (savedActiveIndex + 1) % entriesLength});
+      if (!this.state.isSavedDropdownOpen) {
+        this._openSavedDropdown();
+      } else {
+        this.setState({savedActiveIndex: (savedActiveIndex + 1) % entriesLength});
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       this.setState({savedActiveIndex: savedActiveIndex < 0 ? entriesLength - 1 : (savedActiveIndex - 1 + entriesLength) % entriesLength});
@@ -2107,7 +2107,7 @@ class App extends React.Component {
       onInput: this.onSavedSearchInput.bind(this),
       onFocus: () => this._openSavedDropdown(),
       onClick: () => this._openSavedDropdown(),
-      onKeyDown: (e) => this.onSavedKeyDown(e, entries),
+      onKeyDown: (e) => this.onSavedKeyDown(e, entries, isObjectSuggest),
       onSelect: (entry) => {
         if (isObjectSuggest) {
           const completed = `?${entry} `;
@@ -2123,8 +2123,7 @@ class App extends React.Component {
       },
       onClose: () => this._closeSavedDropdown(),
       onDelete: !isObjectSuggest ? (entry) => {
-        model.deleteSavedEntry(entry);
-        model.didUpdate();
+        this.setState({pendingDeleteSaved: entry});
       } : null,
       renderItem: (entry) => {
         if (isObjectSuggest) {
@@ -2507,7 +2506,20 @@ class App extends React.Component {
             )
           )
         )
-        )
+        ),
+        this.state.pendingDeleteSaved && h("div", {className: "sfir-confirm-modal-overlay"}, h(ConfirmModal, {
+          isOpen: true,
+          title: "Delete Saved Query",
+          message: "Are you sure you want to delete this saved query?",
+          onCancel: () => this.setState({pendingDeleteSaved: null}),
+          onConfirm: () => {
+            model.deleteSavedEntry(this.state.pendingDeleteSaved);
+            this.setState({pendingDeleteSaved: null});
+            model.didUpdate();
+          },
+          cancelLabel: "Cancel",
+          confirmLabel: "Delete"
+        }))
       )
     );
   }

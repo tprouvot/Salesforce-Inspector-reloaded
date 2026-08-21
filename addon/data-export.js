@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory, getDateFormatOptions} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -1244,14 +1244,12 @@ function RecordTable(vm) {
       }
     }
   }
+  // Used for search filtering and CSV/clipboard serialization, which must stay raw
+  // regardless of the selected date display format (only on-screen cells are formatted).
   function cellToString(cell) {
-    if (cell == null) {
-      return "";
-    } else if (typeof cell == "object" && cell.attributes && cell.attributes.type) {
-      return "[" + cell.attributes.type + "]";
-    } else {
-      return "" + cell;
-    }
+    if (cell == null) return "";
+    if (typeof cell == "object" && cell.attributes?.type) return "[" + cell.attributes.type + "]";
+    return "" + cell;
   }
 
   let isVisible = (row, filter) => {
@@ -1292,6 +1290,7 @@ function RecordTable(vm) {
     isTooling: false,
     totalSize: -1,
     preventLineWrap: vm.prefPreventLineWrap,
+    dateFormatOptions: getDateFormatOptions(),
     addToTable(expRecords) {
       rt.records = rt.records.concat(expRecords);
       if (rt.table.length == 0 && expRecords.length > 0) {

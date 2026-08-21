@@ -1,5 +1,5 @@
 import {sfConn, apiVersion} from "./inspector.js";
-import {isRecordId} from "./utils.js";
+import {formatDateCell, isRecordId} from "./utils.js";
 
 const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
@@ -305,11 +305,7 @@ function renderCell(rt, cell, td) {
     // test the text to identify if this is a path to an eventLogFile
     return /^\/services\/data\/v[0-9]{2,3}.[0-9]{1}\/sobjects\/EventLogFile\/[a-z0-9]{5}0000[a-z0-9]{9}\/LogFile$/i.exec(text);
   }
-  function isDateTimeFormat(text) {
-    // test the text to identify if this is in Salesforce's dateTime format
-    // YYYY-MM-DDTHH:mm:ss[.SSSSSS][+hhmm]
-    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{4})$/.test(text);
-  }
+
   if (typeof cell == "object" && cell != null && cell.attributes && cell.attributes.type) {
     if (cell.attributes.type == "AggregateResult") {
       td.textContent = cell.attributes.type;
@@ -353,24 +349,11 @@ function renderCell(rt, cell, td) {
     );
   } else if (cell == null) {
     td.textContent = "";
-  } else if (localStorage.getItem("showLocalTime") == "true" && isDateTimeFormat(cell) && typeof cell == "string") {
-    let textDate = new Date(cell);
-
-    // Get the local timezone offset in minutes and convert to hours and minutes
-    let offsetMinutes = textDate.getTimezoneOffset();
-    let offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
-    let offsetMinutesRemainder = Math.abs(offsetMinutes) % 60;
-
-    // Adjust the date to the local time based on the offset
-    textDate.setMinutes(textDate.getMinutes() - offsetMinutes);
-
-    // Format the date in the required format (YYYY-MM-DDTHH:mm:ss.sss+hhmm)
-    let localTime = textDate.toISOString().replace("Z", "") // Remove 'Z' from ISO string (UTC)
-      + (offsetMinutes > 0 ? "-" : "+") // Use the appropriate sign based on offset
-      + String(offsetHours).padStart(2, "0") // Format hours with leading zero
-      + String(offsetMinutesRemainder).padStart(2, "0"); // Format minutes with leading zero
-
-    td.textContent = localTime;
+  } else if (rt.dateFormatOptions) {
+    // Only format dates when the caller (e.g. Data Export) opts in; Data Import
+    // previews leave rt.dateFormatOptions unset so they display raw values.
+    const formatted = formatDateCell(cell, rt.dateFormatOptions);
+    td.textContent = formatted !== null ? formatted : cell;
   } else {
     td.textContent = cell;
   }

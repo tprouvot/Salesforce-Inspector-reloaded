@@ -227,7 +227,23 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
-          {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
+          {option: MultiCheckboxButtonGroup,
+            props: {
+              title: "Date/Time Display Format",
+              key: "dateTimeFormat",
+              unique: true,
+              requireSelection: true,
+              tooltip: "Choose how date and time values are displayed in the data export table",
+              checkboxes: [
+                {label: "Salesforce Default (ISO 8601)", name: "iso8601", checked: true, tooltip: "YYYY-MM-DDTHH:MM:SS.sss+0000"},
+                {label: "American", name: "us", tooltip: "MM/DD/YYYY HH:MM:SS AM/PM"},
+                {label: "European", name: "european", tooltip: "DD/MM/YYYY HH:MM:SS"},
+                {label: "Asian", name: "asian", tooltip: "YYYY/MM/DD HH:MM:SS"}
+              ]
+            }
+          },
+          {option: Option, props: {type: "toggle", title: "Use Local Timezone", key: "showLocalTime", default: false, tooltip: "When enabled, converts date/time values to your local timezone instead of UTC"}},
+          {option: Option, props: {type: "toggle", title: "Display Timezone", key: "displayTimezone", default: false, tooltip: "When enabled, displays the timezone abbreviation (e.g., PST, UTC) after the time"}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImpoltrink", default: true}},
           {option: Option, props: {type: "toggle", title: "Enable List View Export", key: "enableListViewExport", default: false, tooltip: "If enabled, Data Export link will be automatically populated with current ListView"}},
           {option: MultiCheckboxButtonGroup,
@@ -1237,7 +1253,9 @@ class MultiCheckboxButtonGroup extends React.Component {
     this.title = props.title;
     this.key = props.storageKey;
     this.unique = props.unique || false;
+    this.requireSelection = props.requireSelection || false;
     this.length = props.length || 6;
+    this.tooltip = props.tooltip;
 
     // Load checkboxes from localStorage or default to props.checkboxes
     const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
@@ -1260,8 +1278,15 @@ class MultiCheckboxButtonGroup extends React.Component {
 
   handleCheckboxChange = (event) => {
     const {name, checked} = event.target;
+
+    // Prevent unchecking the last item if selection is required
+    if (this.requireSelection && !checked && !this.state.checkboxes.some(cb => cb.name !== name && cb.checked)) {
+      return;
+    }
+
     const updatedCheckboxes = this.state.checkboxes.map((checkbox) => ({
       ...checkbox,
+      // Unique mode: uncheck others if selecting this one. Otherwise standard toggle.
       checked: this.unique && checked ? checkbox.name === name : checkbox.name === name ? checked : checkbox.checked
     }));
 
@@ -1272,16 +1297,21 @@ class MultiCheckboxButtonGroup extends React.Component {
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
-        h("span", {}, this.title)
+        h("span", {}, this.title,
+          this.tooltip && h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+        )
       ),
       h("div", {className: "slds-col slds-size_" + this.length + "-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>
               h("span", {className: "slds-button slds-checkbox_button", key: this.key + index},
-                h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.title}),
-                h("label", {className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`},
-                  h("span", {className: "slds-checkbox_faux"}, checkbox.label)
+                h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.tooltip ? undefined : checkbox.title}),
+                h("label", {className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`, title: checkbox.tooltip ? undefined : checkbox.title},
+                  h("span", {className: "slds-checkbox_faux sfir-checkbox-faux-with-tooltip"},
+                    checkbox.label,
+                    checkbox.tooltip && h("span", {className: "sfir-checkbox-tooltip-wrapper", onClick: (e) => e.stopPropagation()}, h(Tooltip, {tooltip: checkbox.tooltip, idKey: `${this.key}-${checkbox.name}`}))
+                  )
                 )
               )
             )

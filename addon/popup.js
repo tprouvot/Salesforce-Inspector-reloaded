@@ -412,7 +412,16 @@ class App extends React.PureComponent {
       h("div", {},
         h("div", {
           className: "slds-page-header slds-theme_shade popup-header" + popupTheme + (this.state.isHeaderHovered ? " popup-header-linked-hover" : ""),
+          role: "button",
+          tabIndex: 0,
+          "aria-label": "Close popup",
           onClick: closePopup,
+          onKeyDown: (e) => {
+            if (e.key == "Enter" || e.key == " ") {
+              e.preventDefault();
+              closePopup();
+            }
+          },
           onMouseEnter: () => { this.setState({isHeaderHovered: true}); parent.postMessage({insextBtnHover: true}, "*"); },
           onMouseLeave: () => { this.setState({isHeaderHovered: false}); parent.postMessage({insextBtnHover: false}, "*"); }
         },

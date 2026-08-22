@@ -10,21 +10,32 @@ MEGALINTER_VERSION: v10
 # all, none, or list of linter keys
 APPLY_FIXES: all
 
-# If you use ENABLE variable, all other languages/formats/tooling-formats will
-# be disabled by default
-# ENABLE:
-
-# If you use ENABLE_LINTERS variable, all other linters will be disabled by
-# default
-# ENABLE_LINTERS:
-
-# DISABLE:
-  # - COPYPASTE # Uncomment to disable checks of excessive copy-pastes
-  # - SPELL # Uncomment to disable checks of spelling mistakes
+DISABLE_LINTERS:
+  # standard.js enforces single quotes and no semicolons, the exact opposite of
+  # the rules defined in eslint.config.mjs. Running both rewrites every JS file
+  # back and forth: eslint (JAVASCRIPT_ES) is the source of truth here.
+  - JAVASCRIPT_STANDARD
 
 # Vendored third-party libraries, Salesforce Lightning Design System assets,
-# generated files and Python virtualenvs must not be linted
-FILTER_REGEX_EXCLUDE: '(addon/lib/|addon/styles/slds/|addon/react(-dom)?(\.min)?\.js|venv/|target/|megalinter-reports/|package-lock\.json|\.eslintrc\.js\.old)'
+# generated files, Python virtualenvs and local coding-agent resources
+FILTER_REGEX_EXCLUDE: '(addon/lib/|addon/styles/slds/|addon/react(-dom)?(\.min)?\.js|\.claude/|venv/|target/|megalinter-reports/|package-lock\.json|\.eslintrc\.js\.old)'
+
+# eslint.config.mjs is an ESM flat config importing globals/@eslint/js by bare
+# specifier. Native ESM resolution ignores NODE_PATH, so the project's own
+# dependencies must be installed for eslint to resolve them.
+JAVASCRIPT_ES_PRE_COMMANDS:
+  - command: npm ci --ignore-scripts
+    cwd: workspace
+
+# zizmor queries the GitHub API to resolve `uses:` refs and gets a 401 without a token
+ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
+  - GITHUB_TOKEN
+
+# developer.salesforce.com, npmjs.com and linkedin.com answer 403/999 to bots,
+# and 429/503 are transient: none of these mean the link is broken.
+SPELL_LYCHEE_ARGUMENTS:
+  - --accept
+  - 200,204,206,301,302,403,429,503,999
 
 SHOW_ELAPSED_TIME: true
 

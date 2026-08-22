@@ -1,0 +1,2 @@
+# GitHub user-attachment assets answer 404 to unauthenticated requests
+https://github.com/user-attachments/.*

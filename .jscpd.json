@@ -4,12 +4,19 @@
   "ignore": [
     "**/node_modules/**",
     "**/.git/**",
+    "**/.claude/**",
     "**/.rbenv/**",
     "**/.venv/**",
     "**/*cache*/**",
     "**/.github/**",
     "**/.idea/**",
     "**/report/**",
-    "**/*.svg"
+    "**/*.svg",
+    "**/addon/lib/**",
+    "**/addon/styles/slds/**",
+    "**/addon/react.js",
+    "**/addon/react.min.js",
+    "**/addon/react-dom.js",
+    "**/addon/react-dom.min.js"
   ]
 }

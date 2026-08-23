@@ -2177,7 +2177,6 @@ class App extends React.Component {
   }
 
   render() {
-    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
 
     // Define utility items for this page (injected as "slots")

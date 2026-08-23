@@ -45,6 +45,7 @@ SPELL_LYCHEE_ARGUMENTS:
   - 200,204,206,301,302,403,429,503,999
 
 SHOW_ELAPSED_TIME: true
+FLAVOR_SUGGESTIONS: false
 
 # Uncomment if you want MegaLinter to detect errors but not block CI to pass
 # DISABLE_ERRORS: true

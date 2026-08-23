@@ -610,7 +610,7 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  toggleQueryMoreMenu(event) {
+  toggleQueryMoreMenu(_event) {
     this.refs.buttonQueryMenu?.classList.toggle("slds-is-open");
   }
   render() {

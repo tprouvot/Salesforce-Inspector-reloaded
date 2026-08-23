@@ -759,9 +759,9 @@ export async function routeMock(route, host) {
     // REST API - OAuth UserInfo
     if (url.includes("/oauth2/userinfo")) {
       await fulfillSuccess(route, {
-        // eslint-disable-next-line camelcase
+
         user_id: "005000000000001AAA",
-        // eslint-disable-next-line camelcase
+
         organization_id: "00D000000000001AAA"
       });
       return true;
@@ -783,7 +783,7 @@ export async function handleGetUserInfoSoap(route) {
   const method = request.method();
 
   if (method === "POST") {
-    const requestBody = await request.postData();
+    await request.postData();
 
   }
   return false; // Not handled, continue to next handler

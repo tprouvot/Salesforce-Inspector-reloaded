@@ -513,7 +513,7 @@ Please structure your response in a clear, organized manner using these sections
         const detail = deriveActionFromBody(text) || parseAction(log.Operation);
         this.actionSummary.set(log.Id, detail);
         this.didUpdate();
-      } catch (e) {
+      } catch {
         // leave the seeded value
       }
     }
@@ -563,7 +563,7 @@ Please structure your response in a clear, organized manner using these sections
           }
           this.didUpdate();
         }
-      } catch (e) {
+      } catch {
         // ignore; keep showing ID
       } finally {
         this.resolvingUsers.delete(id);
@@ -825,7 +825,7 @@ Please structure your response in a clear, organized manner using these sections
             await navigator.share({title: subject, text: "", files: [file]});
             return;
           }
-        } catch (_) {
+        } catch {
           // Ignore and try text-only share below
         }
 
@@ -835,7 +835,7 @@ Please structure your response in a clear, organized manner using these sections
             await navigator.share({title: subject, text: `Salesforce debug log: ${fileName}`});
             return;
           }
-        } catch (_) {
+        } catch {
           // User canceled or unsupported; continue to fallback
         }
 
@@ -886,7 +886,7 @@ Please structure your response in a clear, organized manner using these sections
           a.remove();
           URL.revokeObjectURL(url);
           return;
-        } catch (_) {
+        } catch {
           // If EML generation fails, fall back to simple download + mailto subject only
         }
 
@@ -1339,7 +1339,6 @@ function LogsTable({model, hideButtonsOption}) {
   };
 
   // Compute smarter display counts and offset
-  const offset = model.pageIndex * model.pageSize;
   const total = model.totalCount;
   const filteredCount = filteredLogs.length;
   const displayedCountBase = (model.pageIndex + 1) * model.pageSize;
@@ -1663,7 +1662,7 @@ function PreviewModal({model, hideButtonsOption}) {
       try {
         // Let Prism highlight the syntax first
         processedBody = window.Prism.highlight(displayBody, window.Prism.languages.log || window.Prism.languages.markup, "log");
-      } catch (e) {
+      } catch {
         // If Prism fails, use raw body
         processedBody = escapeHtml(displayBody);
       }

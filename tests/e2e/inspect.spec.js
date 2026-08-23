@@ -289,7 +289,7 @@ test.describe("Inspect", () => {
     const downloadLink = page.locator("a:has-text('Download CSV')");
 
     // Set up download listener
-    const downloadPromise = page.waitForEvent("download", {timeout: 1000}).catch(() => null);
+    page.waitForEvent("download", {timeout: 1000}).catch(() => null);
     await downloadLink.click();
 
     // Note: In test environment, downloads may not trigger, so we just verify the click works

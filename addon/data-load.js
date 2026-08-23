@@ -439,7 +439,6 @@ export function initScrollTable(scroller) {
   let rowHeights = [];
   let rowVisible = [];
   let rowCount = 0;
-  let totalHeight = 0;
   let firstRowIdx = 0;
   let firstRowTop = 0;
   let lastRowIdx = 0;
@@ -447,7 +446,6 @@ export function initScrollTable(scroller) {
   let colWidths = [];
   let colVisible = [];
   let colCount = 0;
-  let totalWidth = 0;
   let firstColIdx = 0;
   let firstColLeft = 0;
   let lastColIdx = 0;
@@ -467,7 +465,6 @@ export function initScrollTable(scroller) {
       rowHeights = [];
       rowVisible = [];
       rowCount = 0;
-      totalHeight = 0;
       firstRowIdx = 0;
       firstRowTop = 0;
       lastRowIdx = 0;
@@ -476,7 +473,6 @@ export function initScrollTable(scroller) {
       colWidths = [];
       colVisible = [];
       colCount = 0;
-      totalWidth = 0;
       firstColIdx = 0;
       firstColLeft = 0;
       lastColIdx = 0;
@@ -492,7 +488,6 @@ export function initScrollTable(scroller) {
       for (let r = 0; r < rowCount; r++) {
         let newVisible = Number(data.rowVisibilities[r]);
         let visibilityChange = newVisible - rowVisible[r];
-        totalHeight += visibilityChange * rowHeights[r];
         if (r < firstRowIdx) {
           firstRowTop += visibilityChange * rowHeights[r];
         }
@@ -507,7 +502,6 @@ export function initScrollTable(scroller) {
       for (let c = 0; c < colCount; c++) {
         let newVisible = Number(data.colVisibilities[c]);
         let visibilityChange = newVisible - colVisible[c];
-        totalWidth += visibilityChange * colWidths[c];
         if (c < firstColIdx) {
           firstColLeft += visibilityChange * colWidths[c];
         }
@@ -679,7 +673,6 @@ export function initScrollTable(scroller) {
           let oldHeight = rowHeights[r];
           let newHeight = Math.max(oldHeight, rowRect.height);
           rowHeights[r] = newHeight;
-          totalHeight += newHeight - oldHeight;
           lastRowTop += newHeight - oldHeight;
           tr = tr.nextElementSibling;
         }
@@ -692,7 +685,6 @@ export function initScrollTable(scroller) {
           let oldWidth = colWidths[c];
           let newWidth = Math.max(oldWidth, colRect.width);
           colWidths[c] = newWidth;
-          totalWidth += newWidth - oldWidth;
           lastColLeft += newWidth - oldWidth;
           td = td.nextElementSibling;
         }

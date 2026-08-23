@@ -240,7 +240,7 @@ export let sfConn = {
       try {
         errorMessage = err.detail.map(err => `${err.errorCode}: ${err.message}${err.fields && err.fields.length > 0 ? ` [${err.fields.join(", ")}]` : ""}`).join("\n");
         err.message = errorMessage;
-      } catch (ex) {
+      } catch {
         errorMessage = JSON.stringify(xhr.response);
         err.message = errorMessage;
       }
@@ -349,7 +349,7 @@ export let sfConn = {
       try {
         errorMessage = xhr.response.querySelector("faultstring").textContent;
         err.message = errorMessage;
-      } catch (ex) {
+      } catch {
         errorMessage = `HTTP error ${xhr.status} ${xhr.statusText}`;
         err.message = errorMessage;
       }

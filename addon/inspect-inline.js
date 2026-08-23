@@ -1,4 +1,6 @@
-/* exported showStdPageDetails */
+// Content-script entry point declared in manifest.json; it is invoked from the
+// injected page, so nothing in this codebase references it.
+
 
 function showStdPageDetails(metadataResponse, allFieldSetupLinks) {
   let fieldDetailsByLabel = new Map();

@@ -53,7 +53,7 @@ test.describe("Flow Scanner", () => {
             allTypes: () => ["Flow", "AutoLaunchedFlow", "Workflow", "ScreenFlow"],
             unsupportedTypes: []
           },
-          scan: (flows, config) =>
+          scan: (flows, _config) =>
             // Return mock scan results (empty for now - no violations)
             [{
               flow: flows[0],
@@ -91,8 +91,6 @@ test.describe("Flow Scanner", () => {
       }
 
       const request = route.request();
-      const url = request.url();
-      const method = request.method();
 
       //we check if we have a mock for this request
       if (await routeMock(route, mockHost)) {

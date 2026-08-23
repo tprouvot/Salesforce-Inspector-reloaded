@@ -535,9 +535,9 @@ export async function getPKCEParameters(sfHost) {
     }
     const data = await response.json();
     return {
-      // eslint-disable-next-line camelcase
+
       code_verifier: data.code_verifier,
-      // eslint-disable-next-line camelcase
+
       code_challenge: data.code_challenge
     };
   } catch (error) {

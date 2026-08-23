@@ -330,7 +330,6 @@ class App extends React.PureComponent {
     }
   }
   componentDidMount() {
-    let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
@@ -1000,8 +999,6 @@ class AllDataBox extends React.PureComponent {
 
     // Check if popup just became expanded or Objects tab just became active
     const popupJustExpanded = !prevProps.isPopupExpanded && this.props.isPopupExpanded;
-    const objectsTabJustActivated = prevState.activeSearchAspect !== activeSearchAspect
-      && activeSearchAspect === this.SearchAspectTypes.sobject;
 
     if (prevState.activeSearchAspect !== activeSearchAspect) {
       switch (activeSearchAspect) {
@@ -1370,7 +1367,7 @@ class AllDataBoxUsers extends React.PureComponent {
     try {
       const parsed = JSON.parse(userSearchExclusions);
       return Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, parsed.find(cb => cb.name === o.name)?.checked || false]));
-    } catch (e) {
+    } catch {
       return defaultExclusions;
     }
   }
@@ -1421,7 +1418,7 @@ class AllDataBoxUsers extends React.PureComponent {
       }
       const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
       return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
-    } catch (e) {
+    } catch {
       return defaultFields;
     }
   }
@@ -1742,7 +1739,6 @@ class AllDataBoxSObject extends React.PureComponent {
 
   loadRecordIdDetails() {
     let {selectedValue} = this.state;
-    let {sfHost} = this.props;
     //If a recordId is selected and the object supports regularApi
     if (
       selectedValue
@@ -3984,7 +3980,7 @@ class AllDataSelection extends React.PureComponent {
     }
   }
   getUrl(basePath, params) {
-    const {sfHost, selectedValue} = this.props;
+    const {sfHost} = this.props;
     const args = new URLSearchParams({host: sfHost, ...params});
     return `${basePath}?${args}`;
   }
@@ -4164,13 +4160,11 @@ class AllDataSelection extends React.PureComponent {
   render() {
     let {
       sfHost,
-      showDetailsSupported,
       contextRecordId,
       selectedValue,
       linkTarget,
       recordIdDetails,
       isFieldsPresent,
-      eventMonitorHref,
     } = this.props;
     let {flowDefinitionId} = this.state;
     // Show buttons for the available APIs.
@@ -5015,7 +5009,6 @@ class Autocomplete extends React.PureComponent {
       showResults,
       selectedIndex,
       scrollTopIndex,
-      itemHeight,
       resultsMouseIsDown,
     } = this.state;
 

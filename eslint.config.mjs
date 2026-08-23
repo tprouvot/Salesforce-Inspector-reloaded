@@ -24,6 +24,14 @@ export default [
   eslintReact.configs.recommended,
   {
     rules: {
+      // A leading underscore marks a deliberately unused positional argument,
+      // e.g. (_, index) => ... where the position still matters.
+      "no-unused-vars": ["error", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }],
       // addon/react.js bundles React 15.4.0, which has no createRoot API:
       // ReactDOM.render is the only way to mount here.
       "@eslint-react/dom-no-render": "off"

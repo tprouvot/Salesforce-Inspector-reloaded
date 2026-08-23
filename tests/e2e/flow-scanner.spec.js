@@ -4,7 +4,7 @@ import {
   injectSessionData,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Flow Scanner", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -85,7 +85,7 @@ test.describe("Flow Scanner", () => {
     // Mock Salesforce API calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }

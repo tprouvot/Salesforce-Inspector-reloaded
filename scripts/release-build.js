@@ -1,4 +1,3 @@
-/* eslint-env node */
 // This script makes Release builds of Salesforce Inspector Reloaded.
 // Dev builds use a different method.
 // This script must be run through "npm run" so the PATH includes NPM dependencies.

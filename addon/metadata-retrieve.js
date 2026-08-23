@@ -1,3 +1,4 @@
+/* global React ReactDOM initButton */
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";

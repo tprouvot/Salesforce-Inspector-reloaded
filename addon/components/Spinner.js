@@ -46,9 +46,9 @@ export function Spinner(props) {
     role: "status",
     className: spinnerClasses
   },
-    h("span", {className: "slds-assistive-text"}, text),
-    h("div", {className: "slds-spinner__dot-a"}),
-    h("div", {className: "slds-spinner__dot-b"})
+  h("span", {className: "slds-assistive-text"}, text),
+  h("div", {className: "slds-spinner__dot-a"}),
+  h("div", {className: "slds-spinner__dot-b"})
   );
 
   if (centered) {

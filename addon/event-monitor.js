@@ -1,4 +1,4 @@
-/* global React ReactDOM */
+/* global React ReactDOM initButton */
 import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library

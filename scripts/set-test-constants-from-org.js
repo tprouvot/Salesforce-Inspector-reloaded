@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 /**
  * Generates tests/e2e/test-constants.local.js from the default Salesforce org.
  * Uses Salesforce CLI (sf) to get org info and run SOQL queries.

@@ -106,5 +106,8 @@
     "xlink",
     "xport"
   ],
-  "version": "0.2"
+  "version": "0.2",
+  "ignoreWords": [
+    "updateable"
+  ]
 }

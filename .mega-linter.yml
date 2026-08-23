@@ -23,9 +23,16 @@ FILTER_REGEX_EXCLUDE: '(addon/lib/|addon/styles/slds/|addon/react(-dom)?(\.min)?
 # eslint.config.mjs is an ESM flat config importing globals/@eslint/js by bare
 # specifier. Native ESM resolution ignores NODE_PATH, so the project's own
 # dependencies must be installed for eslint to resolve them.
+# --include=dev is required: the MegaLinter image runs with NODE_ENV=production,
+# which makes npm skip devDependencies (eslint, globals, @eslint/js...).
 JAVASCRIPT_ES_PRE_COMMANDS:
-  - command: npm ci --ignore-scripts
+  - command: npm ci --include=dev --ignore-scripts
     cwd: workspace
+    continue_if_failed: false
+
+# Run the project's own eslint 9 rather than MegaLinter's bundled eslint 10,
+# so eslint.config.mjs resolves its imports from the workspace node_modules.
+JAVASCRIPT_ES_CLI_EXECUTABLE: node_modules/.bin/eslint
 
 # zizmor queries the GitHub API to resolve `uses:` refs and gets a 401 without a token
 ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:

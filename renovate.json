@@ -1,0 +1,43 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "description": [
+    "Dependabot (.github/dependabot.yml) already covers package.json and the",
+    "GitHub Actions used in the workflows. This file exists for the one vendored",
+    "library Dependabot cannot see: lightning-flow-scanner-core is built from a",
+    "GitHub tag because the npm package lags far behind (6.0.4 against 6.19.3",
+    "upstream), so its version lives in vendors.json instead of package.json.",
+    "Renovate is only needed if the project adopts it; nothing breaks without it."
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track the lightning-flow-scanner-core version pinned in vendors.json",
+      "managerFilePatterns": ["/^vendors\\.json$/"],
+      "matchStrings": [
+        "\"purl\":\\s*\"pkg:github/Flow-Scanner/lightning-flow-scanner@core-v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "depNameTemplate": "Flow-Scanner/lightning-flow-scanner",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^core-v(?<version>.*)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "A version bump here is not enough on its own: the committed artifact has to be rebuilt and its checksum updated, or `npm run sync-vendors -- --check` will fail in CI.",
+      "matchPackageNames": ["Flow-Scanner/lightning-flow-scanner"],
+      "addLabels": ["vendored"],
+      "prBodyNotes": [
+        "After merging, run `npm run build-flow-scanner <version>` and `npm run sync-vendors -- --sbom`, then commit `addon/lib/flow-scanner-core.js`, `vendors.json` and `vendored.cdx.json`."
+      ]
+    },
+    {
+      "description": "The vendored npm libraries are committed into addon/ as build output, so a version bump must be followed by a re-sync.",
+      "matchPackageNames": ["react", "react-dom", "cometd", "prismjs"],
+      "addLabels": ["vendored"],
+      "prBodyNotes": [
+        "After merging, run `npm run sync-vendors` and commit the regenerated files under `addon/`."
+      ]
+    }
+  ]
+}

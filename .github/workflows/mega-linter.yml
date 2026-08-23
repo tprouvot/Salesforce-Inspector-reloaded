@@ -71,6 +71,17 @@ jobs:
           # improve performance
           fetch-depth: 0
 
+      # Third-party code is committed under addon/ and can only be trusted if it
+      # still matches what vendors.json declares. This catches both a hand-edit
+      # or formatter touching a vendored file, and a dependency bump landing in
+      # package.json without the committed copies being regenerated.
+      - name: Verify vendored third-party code
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - run: node scripts/sync-vendors.js --check
+
       # MegaLinter
       - name: MegaLinter
 

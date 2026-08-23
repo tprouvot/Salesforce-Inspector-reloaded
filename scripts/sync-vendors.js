@@ -92,10 +92,37 @@ function writeOut(dest, buffer, results) {
   results.push({dest, changed: before !== after, sha256: after});
 }
 
+/**
+ * The npm-sourced vendors are also declared as exact devDependencies, so that
+ * Dependabot proposes upgrades for them and every vulnerability scanner sees
+ * them through package-lock.json. That only helps if the two stay in step: when
+ * Dependabot bumps package.json, this check fails until someone re-runs the
+ * sync and commits the regenerated files.
+ */
+function verifyPinnedVersion(vendor) {
+  "use strict";
+  if (!vendor.source || !vendor.source.startsWith("npm:")) {
+    return null;
+  }
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+  const declared = (pkg.devDependencies || {})[vendor.name];
+  if (!declared) {
+    return `${vendor.name} is not declared in devDependencies, so Dependabot and the vulnerability scanners cannot see it`;
+  }
+  if (declared !== vendor.version) {
+    return `devDependencies has ${vendor.name}@${declared} but vendors.json pins ${vendor.version} — run \`npm run sync-vendors\` and commit the result`;
+  }
+  return null;
+}
+
 /** --check: hash what is on disk and compare against the manifest. */
 function verify(vendor) {
   "use strict";
   const problems = [];
+  const versionProblem = verifyPinnedVersion(vendor);
+  if (versionProblem) {
+    problems.push(versionProblem);
+  }
   const entries = [...(vendor.files || [])];
   if (vendor.bundle && vendor.bundle.sha256) {
     entries.push(vendor.bundle);

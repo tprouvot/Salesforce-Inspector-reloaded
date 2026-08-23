@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
@@ -68,6 +70,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
@@ -176,8 +180,10 @@ jobs:
       run: cp tests/e2e/test-constants.template.js tests/e2e/test-constants.local.js
 
     - name: Display test mode
+      env:
+        SF_TEST_MOCKENABLED: ${{ vars.SF_TEST_MOCKENABLED }}
       run: |
-        if [ "${{ vars.SF_TEST_MOCKENABLED }}" = "false" ]; then
+        if [ "$SF_TEST_MOCKENABLED" = "false" ]; then
           echo "::notice::🔗 Tests running against REAL Salesforce org (SF_TEST_MOCKENABLED=false)"
         else
           echo "::notice::🧪 Tests running in MOCKED mode (SF_TEST_MOCKENABLED not set to false, API calls intercepted)"

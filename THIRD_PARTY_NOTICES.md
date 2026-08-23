@@ -6,7 +6,7 @@ This project includes code from the following open source projects:
 
 - **License**: MIT License
 - **Copyright**: Flow-Scanner Contributors
-- **Source**: https://github.com/Flow-Scanner/lightning-flow-scanner
+- **Source**: <https://github.com/Flow-Scanner/lightning-flow-scanner>
 - **Files**: `addon/lib/flow-scanner-core.js`
 
 MIT License
@@ -23,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 - **License**: MIT License
 - **Copyright**: 2012-2022 Lea Verou, Prism contributors
-- **Source**: https://prismjs.com/
+- **Source**: <https://prismjs.com/>
 - **Files**: `addon/lib/prism/prism.js`, `addon/lib/prism/prism.css`
 
 MIT License

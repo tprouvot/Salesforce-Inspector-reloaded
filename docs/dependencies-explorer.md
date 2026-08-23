@@ -20,15 +20,15 @@ The Dependencies Explorer page allows users to analyze Salesforce metadata depen
 
 The Dependencies Explorer supports 20 metadata types across several categories:
 
-| Category | Types |
-|---|---|
-| **Code** | Apex Classes, Apex Triggers |
-| **UI (Classic)** | Visualforce Pages, Visualforce Components |
-| **UI (Lightning)** | Lightning Components (Aura), Lightning Web Components |
-| **Pages & Layouts** | Page Layouts, Lightning Pages (FlexiPage) |
-| **Data Model** | Custom Objects, Custom Fields, Global Picklists, Validation Rules |
-| **Automation** | Flows, Workflow Alerts (Email Alerts) |
-| **Resources** | Static Resources, Email Templates, Custom Labels, Custom Buttons (WebLinks) |
+| Category            | Types                                                                       |
+|---------------------|-----------------------------------------------------------------------------|
+| **Code**            | Apex Classes, Apex Triggers                                                 |
+| **UI (Classic)**    | Visualforce Pages, Visualforce Components                                   |
+| **UI (Lightning)**  | Lightning Components (Aura), Lightning Web Components                       |
+| **Pages & Layouts** | Page Layouts, Lightning Pages (FlexiPage)                                   |
+| **Data Model**      | Custom Objects, Custom Fields, Global Picklists, Validation Rules           |
+| **Automation**      | Flows, Workflow Alerts (Email Alerts)                                       |
+| **Resources**       | Static Resources, Email Templates, Custom Labels, Custom Buttons (WebLinks) |
 
 ## Usage Instructions
 

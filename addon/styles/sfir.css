@@ -42,7 +42,7 @@ html:has(body.sfir-prod),
 }
 
 body{
-    margin: 0px;
+    margin: 0;
 }
 
 .sfir-border-none{
@@ -68,42 +68,42 @@ a .icon {
 }
 
 a.view-salesforce .icon {
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1rem;
-    -webkit-mask-image: url(../images/salesforce1.svg);
-    -webkit-mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: 1rem;
+    mask-image: url("../images/salesforce1.svg");
+    mask-position: center;
     background-color: #009DDC;
 }
 
 a.view-inspector .icon {
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1rem;
-    -webkit-mask-image: url(../images/salesforce-inspector-logo.svg);
-    -webkit-mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: 1rem;
+    mask-image: url("../images/salesforce-inspector-logo.svg");
+    mask-position: center;
     background-color: #D8BE5F;
 }
 
 a.query-record .icon {
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1rem;
-    -webkit-mask-image: url(../images/record_lookup.svg);
-    -webkit-mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: 1rem;
+    mask-image: url("../images/record_lookup.svg");
+    mask-position: center;
     background-color: #706E6B;
 }
 
 a.copy-id .icon {
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1rem;
-    -webkit-mask-image: url(../images/copy.svg);
-    -webkit-mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: 1rem;
+    mask-image: url("../images/copy.svg");
+    mask-position: center;
     background-color: #706E6B;
 }
 
 a.download-salesforce .icon {
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1rem;
-    -webkit-mask-image: url(../images/down.svg);
-    -webkit-mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: 1rem;
+    mask-image: url("../images/down.svg");
+    mask-position: center;
     background-color: #61fab8;
 }
 
@@ -115,10 +115,7 @@ a.download-salesforce {
 /* Confirmation modal overlay - ensures it appears above parent modal with dimmed backdrop */
 .sfir-confirm-modal-overlay {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   z-index: 9002;
 }
 
@@ -134,11 +131,8 @@ a.download-salesforce {
 /* Backdrop for modals */
 .slds-backdrop {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgb(0 0 0 / 50%);
   z-index: 9000;
 }
 

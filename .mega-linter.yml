@@ -45,6 +45,11 @@ SPELL_LYCHEE_ARGUMENTS:
   - --accept
   - 200,204,206,301,302,403,429,503,999
 
+# GITHUB_TOKEN is never allowed to push changes to .github/workflows/**, so an
+# auto-fix there can only fail the "Commit and push applied linter fixes" step.
+# actionlint, zizmor and yamllint still cover these files.
+YAML_PRETTIER_FILTER_REGEX_EXCLUDE: '\.github/workflows/'
+
 SHOW_ELAPSED_TIME: true
 FLAVOR_SUGGESTIONS: false
 

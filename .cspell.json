@@ -241,7 +241,5 @@
     "zizmor"
   ],
   "version": "0.2",
-  "ignoreWords": [
-    "updateable"
-  ]
+  "ignoreWords": ["updateable"]
 }

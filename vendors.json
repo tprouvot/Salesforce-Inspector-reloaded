@@ -66,10 +66,7 @@
       "copyDir": {
         "from": ".",
         "to": "addon/lib/cometd",
-        "include": [
-          "*.js",
-          "*.d.ts"
-        ]
+        "include": ["*.js", "*.d.ts"]
       },
       "files": [
         {

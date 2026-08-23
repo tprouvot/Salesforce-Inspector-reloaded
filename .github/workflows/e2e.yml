@@ -28,17 +28,10 @@ jobs:
         with:
           node-version: "24"
           cache: "npm"
-
-      - name: Restore node_modules cache
-        id: cache-npm
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+          # Skip the cache on workflow_dispatch: zizmor treats a manually
+          # dispatched run as a publishing context, where restoring a cache
+          # that a pull_request run could have poisoned is the risk.
+          package-manager-cache: ${{ github.event_name != 'workflow_dispatch' }}
 
       - name: Install dependencies
         run: npm ci
@@ -78,17 +71,10 @@ jobs:
         with:
           node-version: "24"
           cache: "npm"
-
-      - name: Restore node_modules cache
-        id: cache-npm
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+          # Skip the cache on workflow_dispatch: zizmor treats a manually
+          # dispatched run as a publishing context, where restoring a cache
+          # that a pull_request run could have poisoned is the risk.
+          package-manager-cache: ${{ github.event_name != 'workflow_dispatch' }}
 
       - name: Setup Salesforce CLI and authenticate
         if: ${{ vars.SF_TEST_MOCKENABLED == 'false' }}

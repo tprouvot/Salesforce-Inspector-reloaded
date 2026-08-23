@@ -1203,7 +1203,7 @@ class SldsPicklist extends React.Component {
   }
   toggle(e){
     e && e.preventDefault();
-    this.setState({open: !this.state.open});
+    this.setState(prevState => ({open: !prevState.open}));
   }
   onSelect(value){
     const {onChange} = this.props;
@@ -1954,7 +1954,7 @@ class App extends React.Component {
     super(props);
     this.model = new Model(props.sfHost);
     this.state = {tick: 0};
-    this.model.render = () => this.setState({tick: this.state.tick + 1});
+    this.model.render = () => this.setState(prevState => ({tick: prevState.tick + 1}));
   }
 
   componentDidMount() {

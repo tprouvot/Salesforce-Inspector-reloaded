@@ -464,7 +464,7 @@ export async function routeMock(route, host) {
           done: true,
           records: []
         });
-        return;
+        return true;
       }
 
       if (query.includes(" from permissionset") || query.includes("from+permissionset")) {

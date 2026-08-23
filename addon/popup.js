@@ -1350,6 +1350,7 @@ class AllDataBoxUsers extends React.PureComponent {
       const merged = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => ({
         name: o.name,
         label: o.label,
+        // eslint-disable-next-line @eslint-react/no-access-state-in-setstate -- this is the setState callback, which runs after the update
         checked: this.state[o.stateKey],
       }));
       localStorage.setItem(sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY, JSON.stringify(merged));
@@ -4803,11 +4804,11 @@ class Autocomplete extends React.PureComponent {
     this.onScroll = this.onScroll.bind(this);
   }
   handleInput() {
-    this.setState({
+    this.setState(prevState => ({
       showResults: true,
       selectedIndex: 0,
-      scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
-    });
+      scrollToSelectedIndex: prevState.scrollToSelectedIndex + 1,
+    }));
   }
   handleFocus() {
     let {recentItems} = this.props;
@@ -4859,12 +4860,12 @@ class Autocomplete extends React.PureComponent {
             itemsIds.add(recentItem.Id);
           }
         });
-        this.setState({
+        this.setState(prevState => ({
           recentItems,
           showResults: true,
           selectedIndex: 0,
-          scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
-        });
+          scrollToSelectedIndex: prevState.scrollToSelectedIndex + 1,
+        }));
       });
   }
   handleBlur() {
@@ -4958,10 +4959,10 @@ class Autocomplete extends React.PureComponent {
     navigateWithExtensionCheck(e, url, navigationParams);
   }
   onResultMouseEnter(index) {
-    this.setState({
+    this.setState(prevState => ({
       selectedIndex: index,
-      scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
-    });
+      scrollToSelectedIndex: prevState.scrollToSelectedIndex + 1,
+    }));
   }
   onScroll() {
     let scrollTopIndex = Math.floor(

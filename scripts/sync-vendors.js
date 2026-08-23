@@ -210,7 +210,9 @@ function writeSbom(manifest) {
     components,
   };
   const out = path.join(ROOT, "vendored.cdx.json");
-  fs.writeFileSync(out, JSON.stringify(sbom, null, 2) + os.EOL);
+  // A literal newline, not os.EOL: this file is committed, and CRLF on Windows
+  // would make the tree differ by platform.
+  fs.writeFileSync(out, JSON.stringify(sbom, null, 2) + String.fromCharCode(10));
   say(`Wrote ${components.length} components to vendored.cdx.json`, "green");
   say("Vulnerability scanners read this; they only see package-lock.json otherwise.", "dim");
 }

@@ -50,6 +50,11 @@ SPELL_LYCHEE_ARGUMENTS:
 # actionlint, zizmor and yamllint still cover these files.
 YAML_PRETTIER_FILTER_REGEX_EXCLUDE: '\.github/workflows/'
 
+# vendors.json and vendored.cdx.json are rewritten by scripts/sync-vendors.js,
+# which emits expanded JSON. Letting prettier collapse short arrays afterwards
+# means the two tools would fight over the formatting on every sync.
+JSON_PRETTIER_FILTER_REGEX_EXCLUDE: '(vendors\.json|vendored\.cdx\.json)'
+
 SHOW_ELAPSED_TIME: true
 FLAVOR_SUGGESTIONS: false
 

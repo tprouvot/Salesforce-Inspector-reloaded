@@ -193,7 +193,7 @@ export let sfConn = {
 
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    let errorMessage = null;
+    let errorMessage;
 
     if (rawResponse){
       apiStatistics.trackApiCall("rest", url, method, duration, false);
@@ -334,7 +334,7 @@ export let sfConn = {
 
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    let errorMessage = null;
+    let errorMessage;
 
     if (xhr.status == 200) {
       apiStatistics.trackApiCall("soap", null, method, duration, false);

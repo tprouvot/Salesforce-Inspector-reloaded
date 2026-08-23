@@ -166,7 +166,7 @@ class Model {
   selectSavedEntry() {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
-      let queryStr = "";
+      let queryStr;
       if (this.selectedSavedEntry.query.includes(delimiter)) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];

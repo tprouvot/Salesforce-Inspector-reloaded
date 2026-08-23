@@ -1,7 +1,6 @@
 // Content-script entry point declared in manifest.json; it is invoked from the
 // injected page, so nothing in this codebase references it.
-
-
+// eslint-disable-next-line no-unused-vars
 function showStdPageDetails(metadataResponse, allFieldSetupLinks) {
   let fieldDetailsByLabel = new Map();
   // Loop through all label elements, add event listeners

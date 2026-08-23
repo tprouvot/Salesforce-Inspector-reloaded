@@ -90,8 +90,6 @@ test.describe("Flow Scanner", () => {
         return;
       }
 
-      const request = route.request();
-
       //we check if we have a mock for this request
       if (await routeMock(route, mockHost)) {
         return;

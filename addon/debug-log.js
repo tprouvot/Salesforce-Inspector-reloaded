@@ -1624,30 +1624,6 @@ function PreviewModal({model, hideButtonsOption}) {
 
   // build highlighted HTML with current selection
   const escapeHtml = (s) => (s || "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
-  const buildHighlighted = (text, term, currentIdx) => {
-    const src = text || "";
-    const q = term || "";
-    if (!q) return {html: escapeHtml(src), count: 0};
-    const pattern = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(pattern, "gi");
-    let out = "",
-      last = 0,
-      m,
-      i = 0,
-      count = 0;
-    while ((m = re.exec(src))){
-      const start = m.index,
-        end = start + m[0].length;
-      out += escapeHtml(src.slice(last, start));
-      const isCurrent = i === currentIdx;
-      out += `<mark class="sfir-highlight${isCurrent ? " current" : ""}" ${isCurrent ? 'id="sfir-current-match"' : ""}>${escapeHtml(src.slice(start, end))}</mark>`;
-      last = end; i++; count++;
-      // Hard cap to avoid excessive DOM for insanely frequent matches
-      if (count > 2000) { out += escapeHtml(src.slice(last)); return {html: out, count}; }
-    }
-    out += escapeHtml(src.slice(last));
-    return {html: out, count};
-  };
   // First, let Prism do its syntax highlighting (if available) - with caching
   // Skip Prism for large files (>1.5MB) or when filter is being processed to avoid browser crash
   let processedBody;

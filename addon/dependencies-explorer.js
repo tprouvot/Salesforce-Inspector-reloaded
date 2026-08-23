@@ -2869,7 +2869,7 @@ const PerformanceUtils = {
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey);
     }
-    const result = fn.apply(null, args);
+    const result = fn(...args);
     this.cache.set(cacheKey, result);
     return result;
   }

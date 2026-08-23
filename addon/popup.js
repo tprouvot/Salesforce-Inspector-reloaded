@@ -11,6 +11,7 @@ const RECENT_ITEMS_RENDERED_COUNT = 100;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
+  // eslint-disable-next-line no-var -- var is required here: `let` would be block-scoped and not provide the global fallback
   var browser = chrome;
 }
 

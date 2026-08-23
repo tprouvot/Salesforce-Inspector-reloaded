@@ -51,7 +51,9 @@ export default [
       "array-bracket-spacing": "error",
       "block-spacing": "error",
       "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
-      "camelcase": "error",
+      // Properties are excluded: OAuth token params (grant_type, client_id...) are an
+      // external API contract and must keep their snake_case names.
+      "camelcase": ["error", {"properties": "never"}],
       "comma-dangle": ["error", "only-multiline"],
       "comma-spacing": "error",
       "comma-style": "error",
@@ -124,7 +126,10 @@ export default [
       }
     },
     rules: {
-      "strict": "off"
+      "strict": "off",
+      // Playwright fixtures take a parameter named `use`, which the plugin
+      // mistakes for the React `use` hook. There is no React in tests/.
+      "@eslint-react/rules-of-hooks": "off"
     }
   },
   {

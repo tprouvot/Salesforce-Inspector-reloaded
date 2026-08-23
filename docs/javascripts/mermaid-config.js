@@ -16,8 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // Dark theme configuration
         ...(isDark && {
           primaryColor: "#4a90e2",
-          primaryTextColor: "#ffffff",
-          primaryBorderColor: "#ffffff",
           lineColor: "#ffffff",
           secondaryColor: "#8e44ad",
           tertiaryColor: "#f39c12",

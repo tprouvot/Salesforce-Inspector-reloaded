@@ -808,7 +808,7 @@ class App extends React.Component {
   onUpdateDeployOptions(e) {
     let {model} = this.props;
     const key = e.target.name || e.target.id;
-    if (key && model.deployOptions.hasOwnProperty(key)) {
+    if (key && Object.prototype.hasOwnProperty.call(model.deployOptions, key)) {
       model.deployOptions[key] = e.target.checked;
       model.didUpdate();
       localStorage.setItem("deployOptions", JSON.stringify(model.deployOptions));

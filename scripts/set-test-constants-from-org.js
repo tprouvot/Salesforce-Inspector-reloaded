@@ -43,7 +43,7 @@
         ...options
       });
     } catch (error) {
-      throw new Error(`Command failed: sf ${args.join(" ")}\n${error.stderr || error.message}`);
+      throw new Error(`Command failed: sf ${args.join(" ")}\n${error.stderr || error.message}`, {cause: error});
     }
   }
 

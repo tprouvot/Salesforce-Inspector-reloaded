@@ -437,9 +437,8 @@ export async function routeMock(route, host) {
               RefMetadataComponentType: "CustomObject",
               RefMetadataComponentNamespace: null
             }];
-          }
-          // Flow RecordTrigger_InspectorTest references Inspector_Test__c
-          else if (query.includes(flowIdLower)) {
+          } else if (query.includes(flowIdLower)) {
+            // Flow RecordTrigger_InspectorTest references Inspector_Test__c
             records = [{
               MetadataComponentId: TEST_CONSTANTS.flowId,
               MetadataComponentName: "RecordTrigger_InspectorTest",

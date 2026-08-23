@@ -858,7 +858,7 @@ Please structure your response in a clear, organized manner using these sections
           const emlParts = [
             "MIME-Version: 1.0",
             `Subject: ${encodeHeader(subject)}`,
-            `Content-Type: multipart/mixed; boundary=\"${boundary}\"`,
+            `Content-Type: multipart/mixed; boundary="${boundary}"`,
             "",
             `--${boundary}`,
             "Content-Type: text/plain; charset=UTF-8",
@@ -867,9 +867,9 @@ Please structure your response in a clear, organized manner using these sections
             `Attached Salesforce debug log: ${fileName}.`,
             "",
             `--${boundary}`,
-            `Content-Type: text/plain; name=\"${fileName}\"`,
+            `Content-Type: text/plain; name="${fileName}"`,
             "Content-Transfer-Encoding: base64",
-            `Content-Disposition: attachment; filename=\"${fileName}\"`,
+            `Content-Disposition: attachment; filename="${fileName}"`,
             "",
             base64,
             `--${boundary}--`,
@@ -1028,7 +1028,7 @@ function deriveActionFromBody(text) {
 
   // 1. PRIORITY: Look for apex:// actions (LWC/Aura) in CODE_UNIT_STARTED
   // Match: CODE_UNIT_STARTED|[EXTERNAL]|apex://ClassName/ACTION$methodName
-  const apexAction = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|apex:\/\/([A-Za-z0-9_]+)\/ACTION\$([A-Za-z0-9_]+)/m);
+  const apexAction = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|[^|]*\|apex:\/\/([A-Za-z0-9_]+)\/ACTION\$([A-Za-z0-9_]+)/m);
   if (apexAction) {
     return {label: `${apexAction[1]}.${apexAction[2]}`};
   }
@@ -1036,7 +1036,7 @@ function deriveActionFromBody(text) {
   // 2a. VFRemote and similar patterns with ID in 3rd field and description in 4th
   // Match: CODE_UNIT_STARTED|[EXTERNAL]|<ID>|VFRemote: ClassName invoke(methodName)
   // Match: CODE_UNIT_STARTED|[EXTERNAL]|<ID>|ClassName.methodName(params)
-  const codeUnitWithIdAndDesc = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|[0-9a-zA-Z]{15,18}\|(.+?)$/m);
+  const codeUnitWithIdAndDesc = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|[^|]*\|[0-9a-zA-Z]{15,18}\|(.+?)$/m);
   if (codeUnitWithIdAndDesc) {
     const description = codeUnitWithIdAndDesc[1].trim();
 
@@ -1066,7 +1066,7 @@ function deriveActionFromBody(text) {
   // 2b. Look for CODE_UNIT_STARTED with full signature: Class.Method(params)
   // Use ^ and \d to match at line start with timestamp to avoid matching other event types
   // Handles both 3-field and 4-field variants (with/without ID)
-  const codeUnitWithSignature = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|(?:[^\|]*\|)?([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\([^\)]*\)/m);
+  const codeUnitWithSignature = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|[^|]*\|(?:[^|]*\|)?([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\([^)]*\)/m);
   if (codeUnitWithSignature) {
     const cls = codeUnitWithSignature[1];
     const method = codeUnitWithSignature[2];
@@ -1082,7 +1082,7 @@ function deriveActionFromBody(text) {
   //   ...|CODE_UNIT_STARTED|[EXTERNAL]|01q...|MyTrigger on Object__c trigger event BeforeUpdate|__sfdc_trigger/MyTrigger
   //   ...|CODE_UNIT_STARTED|[EXTERNAL]|TRIGGERS
   // Try to capture descriptive text and the trigger name from the __sfdc_trigger path in one go
-  let triggerDetail = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^|\n]+?)\|__sfdc_trigger\/([A-Za-z0-9_]+)/im);
+  let triggerDetail = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|[^|]*\|[^|]*\|([^|\n]+?)\|__sfdc_trigger\/([A-Za-z0-9_]+)/im);
   if (triggerDetail) {
     const desc = triggerDetail[1].trim();
     const trigFromPath = triggerDetail[2];
@@ -1111,7 +1111,7 @@ function deriveActionFromBody(text) {
 
   // 4. Look for CODE_UNIT_STARTED with just a class name (no method signature)
   // This catches trigger handlers and other classes where only the class name appears
-  const codeUnitClassName = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|(?:[^\|]*\|)?([A-Za-z0-9_]+)(?:\||$)/m);
+  const codeUnitClassName = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|[^|]*\|(?:[^|]*\|)?([A-Za-z0-9_]+)(?:\||$)/m);
   if (codeUnitClassName) {
     const className = codeUnitClassName[1];
     // Make sure it's not a special keyword or path (those are handled by other patterns)
@@ -1121,7 +1121,7 @@ function deriveActionFromBody(text) {
   }
 
   // 5. Fallback to METHOD_ENTRY lines: "...|METHOD_ENTRY|[line]|classId|Class.Method(params)"
-  const methodEntry = text.match(/\bMETHOD_ENTRY\|[^\|]*\|[^\|]*\|([A-Za-z0-9_\.]+)\(.*?\)/);
+  const methodEntry = text.match(/\bMETHOD_ENTRY\|[^|]*\|[^|]*\|([A-Za-z0-9_.]+)\(.*?\)/);
   if (methodEntry && methodEntry[1]) {
     const full = methodEntry[1];
     const parts = full.split(".");
@@ -1139,7 +1139,7 @@ function deriveActionFromBody(text) {
   }
 
   // 6. Look for Execute Anonymous: CODE_UNIT_STARTED|[EXTERNAL]|execute_anonymous_apex (no ID field)
-  const executeAnon = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|\[EXTERNAL\]\|execute_anonymous_apex/m);
+  const executeAnon = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|\[EXTERNAL\]\|execute_anonymous_apex/m);
   if (executeAnon) {
     return {label: "execute_anonymous_apex"};
   }
@@ -1147,8 +1147,8 @@ function deriveActionFromBody(text) {
   // 7. Look for other CODE_UNIT_STARTED entries
   // Try to capture the more descriptive fourth field first, then fallback to the third
   // Use ^ and \d to match at line start with timestamp to avoid matching other event types
-  const codeUnitFourth = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^\|\n]+)/m);
-  const codeUnitThird = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|([^\|\n]+)/m);
+  const codeUnitFourth = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|[^|]*\|[^|]*\|([^|\n]+)/m);
+  const codeUnitThird = text.match(/^\d+[^|]*\|CODE_UNIT_STARTED\|[^|]*\|([^|\n]+)/m);
   const unit = (codeUnitFourth && codeUnitFourth[1].trim()) || (codeUnitThird && codeUnitThird[1].trim());
   if (unit) {
     // Trigger-like description (when not captured by the specific pattern above)
@@ -1167,8 +1167,8 @@ function deriveActionFromBody(text) {
     }
 
     // Class with dot notation ("Class.ClassName.Method")
-    if (/^Class[\.:]/i.test(unit)) {
-      const withoutPrefix = unit.replace(/^Class[\.:]/i, "");
+    if (/^Class[.:]/i.test(unit)) {
+      const withoutPrefix = unit.replace(/^Class[.:]/i, "");
       const parts = withoutPrefix.split(".");
       const method = parts[parts.length - 1];
       const className = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
@@ -1176,8 +1176,8 @@ function deriveActionFromBody(text) {
     }
 
     // Flow
-    if (/^Flow[:\.]?/i.test(unit)) {
-      const name = unit.split(/[:\.]/)[1] || unit.replace(/^Flow[:\.]?/i, "");
+    if (/^Flow[:.]?/i.test(unit)) {
+      const name = unit.split(/[:.]/)[1] || unit.replace(/^Flow[:.]?/i, "");
       return {label: `Flow · ${name}`};
     }
 
@@ -1185,7 +1185,7 @@ function deriveActionFromBody(text) {
   }
 
   // 8. Look for FLOW start lines
-  const flowMatch = text.match(/FLOW_(?:START|CREATE)_INTERVIEW[^\|]*\|([^\n\|]+)/);
+  const flowMatch = text.match(/FLOW_(?:START|CREATE)_INTERVIEW[^|]*\|([^\n|]+)/);
   if (flowMatch) {
     return {label: `Flow · ${flowMatch[1].trim()}`};
   }

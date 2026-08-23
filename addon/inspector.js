@@ -150,7 +150,7 @@ export let sfConn = {
     }
 
     // Set default Content-Type header if body is present and Content-Type not provided by custom headers
-    if (body !== undefined && !headers.hasOwnProperty("Content-Type")) {
+    if (body !== undefined && !Object.prototype.hasOwnProperty.call(headers, "Content-Type")) {
       xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
     }
 
@@ -165,7 +165,7 @@ export let sfConn = {
     }
 
     // Set default Accept header if not provided by custom headers
-    if (!headers.hasOwnProperty("Accept")) {
+    if (!Object.prototype.hasOwnProperty.call(headers, "Accept")) {
       xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
     }
 

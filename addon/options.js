@@ -2172,7 +2172,7 @@ class App extends React.Component {
 
   hideToast() {
     let {model} = this.props;
-    this.state = {showToast: false, toastMessage: ""};
+    this.setState({showToast: false, toastMessage: ""});
     model.didUpdate();
   }
 

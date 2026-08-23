@@ -3,6 +3,7 @@
   "version": "2.1.0",
   "scripts": {
     "eslint": "eslint .",
+    "sync-vendors": "node scripts/sync-vendors.js",
     "firefox-release-build": "node scripts/release-build.js firefox",
     "chrome-release-build": "node scripts/release-build.js chrome",
     "build-flow-scanner": "node scripts/build-flow-scanner.js",

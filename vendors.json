@@ -1,0 +1,213 @@
+{
+  "$comment": [
+    "Manifest of third-party code committed into this repository.",
+    "Run `npm run sync-vendors` to refresh it, `npm run sync-vendors -- --check` to verify.",
+    "`sha256` values are recorded per destination file and checked on every run;",
+    "a mismatch means the file drifted from its declared upstream source."
+  ],
+  "vendors": [
+    {
+      "name": "react",
+      "version": "15.4.0",
+      "source": "npm:react@15.4.0",
+      "homepage": "https://react.dev",
+      "license": "BSD-3-Clause AND additional-patents-grant",
+      "licenseNote": "React was relicensed to MIT in v16. 15.4.0 predates that and ships the BSD-3 licence plus the separate PATENTS grant.",
+      "purl": "pkg:npm/react@15.4.0",
+      "files": [
+        {
+          "from": "dist/react.js",
+          "to": "addon/react.js",
+          "sha256": "00f82cb52b38e9cd76802037e7ec129fbdb3f263d49e3d8d70378d852eaf68a7"
+        },
+        {
+          "from": "dist/react.min.js",
+          "to": "addon/react.min.js",
+          "sha256": "40028c1058e3d88521822cf779380de52fd5b5ba731c6df48af700c26b8fae96"
+        }
+      ],
+      "syncNote": "The committed addon/react.js is not pristine upstream: an ESLint autofix in 2024 (commit 2b9dc48f) removed two trailing spaces and rewrote `!!x ? a : b` to `x ? a : b` in three places. Those edits are semantically neutral, and syncing restores the published file. The other three React files already match npm byte for byte."
+    },
+    {
+      "name": "react-dom",
+      "version": "15.4.0",
+      "source": "npm:react-dom@15.4.0",
+      "homepage": "https://react.dev",
+      "license": "BSD-3-Clause AND additional-patents-grant",
+      "purl": "pkg:npm/react-dom@15.4.0",
+      "files": [
+        {
+          "from": "dist/react-dom.js",
+          "to": "addon/react-dom.js",
+          "sha256": "f8417149f900f4fba762ae5980c33a2b7fe381b5c449f6927170ca007bc4b884"
+        },
+        {
+          "from": "dist/react-dom.min.js",
+          "to": "addon/react-dom.min.js",
+          "sha256": "268339ec0dcc57c98762e34670535ad95312d7bafc21da38fbbbf6c60d4c0752"
+        }
+      ]
+    },
+    {
+      "name": "cometd",
+      "version": "8.0.4",
+      "source": "npm:cometd@8.0.4",
+      "homepage": "https://cometd.org",
+      "license": "Apache-2.0",
+      "purl": "pkg:npm/cometd@8.0.4",
+      "versionNote": "The committed copy carries no version marker. Identified by fingerprint: cometd.d.ts matches the 8.0.x line exactly (and differs from 7.x and 9.x), and cometd.js matches 8.0.1+. 8.0.4 was the latest release when these files were added on 2024-09-06.",
+      "syncNote": "The committed copy was minified locally, which is not reproducible. Syncing replaces it with the published (unminified) sources: Client.js grows from ~24 KB to ~81 KB.",
+      "copyDir": {
+        "from": ".",
+        "to": "addon/lib/cometd",
+        "include": [
+          "*.js",
+          "*.d.ts"
+        ]
+      },
+      "files": [
+        {
+          "from": "AckExtension.js",
+          "to": "addon/lib/cometd/AckExtension.js",
+          "sha256": "a5d8d8cf5d866b91dd32ded5b31861b6b2437458df67ca7c3a3718a8629b38b6"
+        },
+        {
+          "from": "BinaryExtension.js",
+          "to": "addon/lib/cometd/BinaryExtension.js",
+          "sha256": "77b94b32cb5ba54da32b2f08cd5f0bf511b1bb590d18da881dd1f4ea8d796aeb"
+        },
+        {
+          "from": "CallbackPollingTransport.js",
+          "to": "addon/lib/cometd/CallbackPollingTransport.js",
+          "sha256": "cb86eebe0c7ce3abb974fea9906a6034b830ce90808481db6cd3056fe46a8264"
+        },
+        {
+          "from": "Client.js",
+          "to": "addon/lib/cometd/Client.js",
+          "sha256": "962259b4b3a5d13762760a939cca2b3e0cd140779435bfb0362a54599d6e4c74"
+        },
+        {
+          "from": "Extension.js",
+          "to": "addon/lib/cometd/Extension.js",
+          "sha256": "87b282603802023d1f8d3bf6aa6757fe6a986bf3c719bf2f6882ff3d0a50a7fd"
+        },
+        {
+          "from": "LongPollingTransport.js",
+          "to": "addon/lib/cometd/LongPollingTransport.js",
+          "sha256": "6dd62ea970675aec5e6a9ac16230ab47bdca47e2d5f34a9b69e459fd91b4353b"
+        },
+        {
+          "from": "ReloadExtension.js",
+          "to": "addon/lib/cometd/ReloadExtension.js",
+          "sha256": "00d14acbb6dea56e73572a1a30807661b51ecff7a14fdeef0c8c916a6abf4980"
+        },
+        {
+          "from": "RequestTransport.js",
+          "to": "addon/lib/cometd/RequestTransport.js",
+          "sha256": "e35bb905c9003130b6ab79aaaa58948f45c2ba66e6959911cdafb2a192ae284c"
+        },
+        {
+          "from": "TimeStampExtension.js",
+          "to": "addon/lib/cometd/TimeStampExtension.js",
+          "sha256": "09343ecfddb1d1004f2eaea0c5542d00bebee337d61099d5cf8dd15a8b989321"
+        },
+        {
+          "from": "TimeSyncExtension.js",
+          "to": "addon/lib/cometd/TimeSyncExtension.js",
+          "sha256": "21f9e22ca7a6ec4e19d5c2491bd6545eb92ba2e074cfab147822b69ce673d52b"
+        },
+        {
+          "from": "Transport.js",
+          "to": "addon/lib/cometd/Transport.js",
+          "sha256": "899c69ea0f06d33d419c64e9bb8dd044227c6b90da35eddf04ac97b7da85e743"
+        },
+        {
+          "from": "TransportRegistry.js",
+          "to": "addon/lib/cometd/TransportRegistry.js",
+          "sha256": "207ad8e45c6dffbc8f431a7ffc95fec828aa76c5a33361771cc1aecfd2d5b5e9"
+        },
+        {
+          "from": "WebSocketTransport.js",
+          "to": "addon/lib/cometd/WebSocketTransport.js",
+          "sha256": "e30a663c0980d17523c80d0508337ac480c719723575f8ec47cdaeb9f5e23c15"
+        },
+        {
+          "from": "Z85.js",
+          "to": "addon/lib/cometd/Z85.js",
+          "sha256": "5bb6030a7e6c0427ba91fcfc13f60ca7a679e2009df52a118618d85878eca97c"
+        },
+        {
+          "from": "cometd.d.ts",
+          "to": "addon/lib/cometd/cometd.d.ts",
+          "sha256": "8c3baff35d3dc8d93b75c4619a68fa887e444e1447f490002940d6274f4a3f2e"
+        },
+        {
+          "from": "cometd.js",
+          "to": "addon/lib/cometd/cometd.js",
+          "sha256": "a144afe78c986f4fa4e60074e201cd0c0a451a2709cd262e4007ae7b2a273800"
+        }
+      ]
+    },
+    {
+      "name": "prismjs",
+      "version": "1.30.0",
+      "source": "npm:prismjs@1.30.0",
+      "homepage": "https://prismjs.com",
+      "license": "MIT",
+      "purl": "pkg:npm/prismjs@1.30.0",
+      "syncNote": "The committed bundle came from the prismjs.com download builder (themes=prism-coy, languages=markup+clike+apex+json+log+sql), whose output is not reproducible by concatenating the npm files. Syncing rebuilds an equivalent bundle from npm in dependency order; the result is functionally equivalent but not byte-identical to the builder output.",
+      "bundle": {
+        "to": "addon/lib/prism/prism.js",
+        "parts": [
+          "prism.js",
+          "components/prism-markup.min.js",
+          "components/prism-clike.min.js",
+          "components/prism-apex.min.js",
+          "components/prism-json.min.js",
+          "components/prism-log.min.js",
+          "components/prism-sql.min.js"
+        ],
+        "sha256": "fffbaf3f4318dba49b2b9e34c4251d9ee6c931caf2063bbe5235359e34518aef",
+        "note": "Committed bundle is the download-builder output. `npm run sync-vendors -- --name prismjs` rebuilds an equivalent bundle from npm, but the bytes differ, so check syntax highlighting before committing the result."
+      },
+      "files": [
+        {
+          "from": "themes/prism-coy.css",
+          "to": "addon/lib/prism/prism.css",
+          "sha256": "63b78347dec3da8fdc9086c7f33f85f9690714dbb6c0996397d8b436e20a9b1b",
+          "note": "Committed file is the prismjs.com download-builder output, not the published prism-coy theme. Syncing replaces it; verify the UI before adopting."
+        }
+      ]
+    },
+    {
+      "name": "lightning-flow-scanner-core",
+      "version": "6.17.0",
+      "source": "script:scripts/build-flow-scanner.js",
+      "homepage": "https://github.com/Flow-Scanner/lightning-flow-scanner",
+      "license": "MIT",
+      "purl": "pkg:github/Flow-Scanner/lightning-flow-scanner@core-v6.17.0",
+      "syncNote": "Built from source by `npm run build-flow-scanner`, which clones the upstream repository at tag core-v<version> and builds it. Not fetched by sync-vendors; run that script instead.",
+      "files": [
+        {
+          "to": "addon/lib/flow-scanner-core.js",
+          "sha256": "18292b7fe8226af0d85bc9095d18e15c77c10da87470c024fe708100874a9547"
+        }
+      ]
+    },
+    {
+      "name": "salesforce-lightning-design-system",
+      "version": "unknown",
+      "source": "manual",
+      "homepage": "https://www.lightningdesignsystem.com",
+      "license": "BSD-3-Clause",
+      "licenseNote": "The committed file is the internal \"SLDS Plus\" build. Its own banner states it is \"for Design Systems Engineering team use only\" and \"may be withdrawn anytime\", so its redistribution terms differ from the published @salesforce-ux/design-system package.",
+      "syncNote": "No published artifact matches this build, so sync-vendors cannot fetch it. It is checksummed here so drift is still detected. Replacing it with the published @salesforce-ux/design-system package would make it automatable.",
+      "files": [
+        {
+          "to": "addon/styles/slds/slds.css",
+          "sha256": "73ff18cd11e1b0ba6aaa0719206a0c593580551b4e28f5cb3335e19e72d381b0"
+        }
+      ]
+    }
+  ]
+}

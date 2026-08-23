@@ -82,8 +82,8 @@
     {
       "type": "library",
       "name": "cometd",
-      "version": "8.0.4",
-      "purl": "pkg:npm/cometd@8.0.4",
+      "version": "9.0.1",
+      "purl": "pkg:npm/cometd@9.0.1",
       "licenses": [
         {
           "license": {
@@ -100,35 +100,35 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "a5d8d8cf5d866b91dd32ded5b31861b6b2437458df67ca7c3a3718a8629b38b6"
+          "content": "ea7c4617c020271cdb7329458cc7abcb889d3e18559bc4cac3c8e3380b2b648b"
         },
         {
           "alg": "SHA-256",
-          "content": "77b94b32cb5ba54da32b2f08cd5f0bf511b1bb590d18da881dd1f4ea8d796aeb"
+          "content": "c365affa9e7f71e7f09489979d43aeaa46c25fecf9dd4ba2db94dedc9cebabd6"
         },
         {
           "alg": "SHA-256",
-          "content": "cb86eebe0c7ce3abb974fea9906a6034b830ce90808481db6cd3056fe46a8264"
+          "content": "a04f2db2b8800e7d30014534633b798546747612594994ce1b8d3e27b0d3e84b"
         },
         {
           "alg": "SHA-256",
-          "content": "962259b4b3a5d13762760a939cca2b3e0cd140779435bfb0362a54599d6e4c74"
+          "content": "c2dc555d23fd550a0ee9e3e239cd23d7f0853d7b873adf64435ca5ca801d51a6"
         },
         {
           "alg": "SHA-256",
-          "content": "87b282603802023d1f8d3bf6aa6757fe6a986bf3c719bf2f6882ff3d0a50a7fd"
+          "content": "f1fbbbaee2d653d58974683703f2b569b6f5573fca36ebf6ff80a3c4affa2a70"
         },
         {
           "alg": "SHA-256",
-          "content": "6dd62ea970675aec5e6a9ac16230ab47bdca47e2d5f34a9b69e459fd91b4353b"
+          "content": "8e0864e56bd3606017cf8a969725f3676c9e2b3419420a4a8ea68b96fc2770ba"
         },
         {
           "alg": "SHA-256",
-          "content": "00d14acbb6dea56e73572a1a30807661b51ecff7a14fdeef0c8c916a6abf4980"
+          "content": "34b77abdadc7d9069553d677ca277edacb4155485a3ac0a3f8cc7cbf4893af79"
         },
         {
           "alg": "SHA-256",
-          "content": "e35bb905c9003130b6ab79aaaa58948f45c2ba66e6959911cdafb2a192ae284c"
+          "content": "4fdd91d222c226e8c1b7e8f2b16dd4809b8d91188771d45ba4f2fa9bce6348c0"
         },
         {
           "alg": "SHA-256",
@@ -136,27 +136,27 @@
         },
         {
           "alg": "SHA-256",
-          "content": "21f9e22ca7a6ec4e19d5c2491bd6545eb92ba2e074cfab147822b69ce673d52b"
+          "content": "e0d947212c370658db04ffc17ecd914042a9e223e383ab8d1680ed732dca67ef"
         },
         {
           "alg": "SHA-256",
-          "content": "899c69ea0f06d33d419c64e9bb8dd044227c6b90da35eddf04ac97b7da85e743"
+          "content": "0efb0faeeacabf5ce082f586990e406b592761057967fe88d77e4816592896cb"
         },
         {
           "alg": "SHA-256",
-          "content": "207ad8e45c6dffbc8f431a7ffc95fec828aa76c5a33361771cc1aecfd2d5b5e9"
+          "content": "aa200347a5780b1f6a504c1d16c0fb9487191853d5b0a97f1b0a36bd620cd9e0"
         },
         {
           "alg": "SHA-256",
-          "content": "e30a663c0980d17523c80d0508337ac480c719723575f8ec47cdaeb9f5e23c15"
+          "content": "212ba041ea77471877fd28c87b7f0e27ea26d17823cbc7db1b308380fe786bb4"
         },
         {
           "alg": "SHA-256",
-          "content": "5bb6030a7e6c0427ba91fcfc13f60ca7a679e2009df52a118618d85878eca97c"
+          "content": "26d53ad496585bf7fb9f49e0411040ad53dc69adf05adeecbb70d97e2d195ed7"
         },
         {
           "alg": "SHA-256",
-          "content": "8c3baff35d3dc8d93b75c4619a68fa887e444e1447f490002940d6274f4a3f2e"
+          "content": "feff6feb532fe696cf665f65959c932ad751360f53068a8c048ec94e24c9be00"
         },
         {
           "alg": "SHA-256",
@@ -208,8 +208,8 @@
     {
       "type": "library",
       "name": "lightning-flow-scanner-core",
-      "version": "6.17.0",
-      "purl": "pkg:github/Flow-Scanner/lightning-flow-scanner@core-v6.17.0",
+      "version": "6.19.3",
+      "purl": "pkg:github/Flow-Scanner/lightning-flow-scanner@core-v6.19.3",
       "licenses": [
         {
           "license": {
@@ -226,7 +226,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "18292b7fe8226af0d85bc9095d18e15c77c10da87470c024fe708100874a9547"
+          "content": "ff8bb6a0f88947487b190f9b210410c22473df9411fe2a73e1db44f88a5cf061"
         }
       ],
       "properties": [

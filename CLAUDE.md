@@ -29,7 +29,8 @@ npm run chrome-beta-build
 
 npm run sync-vendors                 # refresh committed third-party code from upstream
 npm run sync-vendors -- --check      # verify it (no network) — use before committing vendored changes
-npm run build-flow-scanner           # rebuild addon/lib/flow-scanner-core.js from upstream
+npm run sync-vendors -- --sbom       # regenerate vendored.cdx.json
+npm run build-flow-scanner 6.19.3    # rebuild flow-scanner-core.js at an explicit upstream tag
 ```
 
 First e2e run also needs `npx playwright install --with-deps chromium`.
@@ -88,9 +89,20 @@ Sessions are not obtained by OAuth on the normal path. `sfConn.getSession(sfHost
 
 ### Vendored third-party code
 
-`addon/lib/` (cometd, prism, flow-scanner-core), `addon/react*.js` and `addon/styles/slds/` are committed third-party code, ~1.9 MB. They are declared in `vendors.json` with an upstream source, version, license and SHA-256 per file, and managed by `scripts/sync-vendors.js`.
+`addon/lib/` (cometd, prism, flow-scanner-core), `addon/react*.js` and `addon/styles/slds/` are committed third-party code, ~2 MB. They are declared in `vendors.json` with an upstream source, version, license and SHA-256 per file, and managed by `scripts/sync-vendors.js`.
 
-Do not hand-edit these files, and do not let a formatter touch them — a 2024 ESLint autofix silently rewrote the vendored React bundle and went unnoticed for two years. They are excluded from linting in `.mega-linter.yml` and `eslint.config.mjs` for that reason. Run `npm run sync-vendors -- --check` if you suspect drift.
+Do not hand-edit these files, and do not let a formatter touch them — a 2024 ESLint autofix silently rewrote the vendored React bundle and went unnoticed for two years. They are excluded from linting in `.mega-linter.yml` and `eslint.config.mjs` for that reason.
+
+Upgrading one is two steps, and CI enforces both:
+
+1. bump the version (in `package.json` for the npm-sourced ones, or `vendors.json` for flow-scanner-core)
+2. regenerate the committed artifact — `npm run sync-vendors`, or `npm run build-flow-scanner <version>` — then `npm run sync-vendors -- --sbom` and commit everything
+
+The MegaLinter workflow runs `sync-vendors --check` on every push, which fails if a committed file no longer matches its recorded hash, or if `devDependencies` and `vendors.json` disagree on a version. So a Dependabot PR that bumps `package.json` alone will not go green.
+
+`react`, `react-dom`, `cometd` and `prismjs` are declared as exact `devDependencies` even though the pages never import them from `node_modules`. That is deliberate: it is what puts them in `package-lock.json`, which is the file Dependabot and the vulnerability scanners (osv-scanner, grype, trivy) actually read. Do not remove them for being "unused". `vendored.cdx.json` is a CycloneDX SBOM of the same set — useful as a provenance record, but the scanner logs give no evidence it is read, so `devDependencies` is the mechanism to rely on.
+
+`lightning-flow-scanner-core` cannot use that route: its npm package is stalled far behind the GitHub tags it is built from, so its version lives only in `vendors.json`, tracked by a custom manager in `renovate.json`. SLDS has no published source at all and is only checksummed.
 
 ## Conventions
 

@@ -27,10 +27,10 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "24"
-          cache: "npm"
           # Skip the cache on workflow_dispatch: zizmor treats a manually
           # dispatched run as a publishing context, where restoring a cache
           # that a pull_request run could have poisoned is the risk.
+          cache: ${{ github.event_name != 'workflow_dispatch' && 'npm' || '' }}
           package-manager-cache: ${{ github.event_name != 'workflow_dispatch' }}
 
       - name: Install dependencies
@@ -70,10 +70,10 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "24"
-          cache: "npm"
           # Skip the cache on workflow_dispatch: zizmor treats a manually
           # dispatched run as a publishing context, where restoring a cache
           # that a pull_request run could have poisoned is the risk.
+          cache: ${{ github.event_name != 'workflow_dispatch' && 'npm' || '' }}
           package-manager-cache: ${{ github.event_name != 'workflow_dispatch' }}
 
       - name: Setup Salesforce CLI and authenticate

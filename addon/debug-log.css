@@ -7,14 +7,17 @@
   display: inline-flex;
   align-items: center;
 }
+
 .sfir-actions .slds-button .slds-button__icon {
   height: 16px;
   width: 16px;
 }
+
 .sfir-actions .slds-button[title="Share"] {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
+
 /* Icon-only action buttons: enforce same size */
 .sfir-actions .slds-button[title="Share"],
 .sfir-actions .slds-button[title="Delete"] {
@@ -25,11 +28,13 @@
   align-items: center;
   justify-content: center;
 }
+
 .sfir-actions .slds-button[title="Share"] .slds-button__icon,
 .sfir-actions .slds-button[title="Delete"] .slds-button__icon {
   width: 16px;
   height: 16px;
 }
+
 .sfir-actions .slds-button[title="Download"] {
   height: 32px;
   width: 32px;
@@ -38,6 +43,7 @@
   align-items: center;
   justify-content: center;
 }
+
 .sfir-actions .slds-button[title="Download"] .slds-button__icon {
   width: 16px;
   height: 16px;
@@ -114,10 +120,7 @@ mark.sfir-highlight.current {
 
 .sfir-preview-spinner-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 9002;
 }
 

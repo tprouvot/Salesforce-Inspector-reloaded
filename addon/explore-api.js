@@ -90,7 +90,7 @@ class Model {
   }
   parseResponse(result, status) {
     /*
-    Transform an arbitrary JSON structure (the `result` vaiable) into a list of two-dimensional TSV tables (the `textViews` variable), that can easily be copied into for example Excel.
+    Transform an arbitrary JSON structure (the `result` variable) into a list of two-dimensional TSV tables (the `textViews` variable), that can easily be copied into for example Excel.
     Each two-dimensional table corresponds to an array or set of related arrays in the JSON data.
 
     For example in a Sobject Describe, the list of fields is one table. Each row is a field, and each column is a property of that field.

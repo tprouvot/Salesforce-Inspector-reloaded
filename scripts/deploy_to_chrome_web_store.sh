@@ -15,13 +15,13 @@ CHROME_ACCESS_TOKEN=""
 export ZIP_FILE_NAME="target/chrome/salesforceInspectorForChrome-$CI_COMMIT_ID-$ENVIRONMENT_TYPE.zip"
 
 log_message() {
-     printf "** $1\n";
+     printf "** %s\n" "$1";
 }
 log_error() {
-     printf "!! $1\n";
+     printf "!! %s\n" "$1";
 }
 log_detail() {
-     printf "   -------- \n$1\n   --------\n";
+     printf "   -------- \n%s\n   --------\n" "$1";
 }
 
 log_message "0) Auth"; # could also be "should release?" but currently there's no good mechanism to determine that. Currently released version cannot be queried from google store
@@ -52,18 +52,18 @@ UPLOAD_RESULT=$(curl \
      -H "Authorization: Bearer $CHROME_ACCESS_TOKEN" \
      -H "x-goog-api-version: 2" \
      -X PUT -s \
-     -T $ZIP_FILE_NAME https://www.googleapis.com/upload/chromewebstore/v1.1/items/$CHROME_APP_ID \
+     -T "$ZIP_FILE_NAME" "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$CHROME_APP_ID" \
      | jq '.')
 
-if [[ $(echo $UPLOAD_RESULT | jq '.uploadState') == '"SUCCESS"' ]]
+if [[ $(echo "$UPLOAD_RESULT" | jq '.uploadState') == '"SUCCESS"' ]]
      then
-     log_message "2.2.1) Upload succesful! - v$SOURCE_VERSION_NUMBER";
+     log_message "2.2.1) Upload successful! - v$SOURCE_VERSION_NUMBER";
 else
      log_message "2.2.1) Upload failed";
-     if [[ $(echo $UPLOAD_RESULT | jq '.itemError[0].error_code') == '"PKG_INVALID_VERSION_NUMBER"' ]]
+     if [[ $(echo "$UPLOAD_RESULT" | jq '.itemError[0].error_code') == '"PKG_INVALID_VERSION_NUMBER"' ]]
           then
-          log_message "2.2.2) But that's ok, upload should only suceed on version increments."
-          log_message "$(echo $UPLOAD_RESULT | jq '.itemError[0].error_detail')"
+          log_message "2.2.2) But that's ok, upload should only succeed on version increments."
+          log_message "$(echo "$UPLOAD_RESULT" | jq '.itemError[0].error_detail')"
      else
           log_error "2.2.2) With an unexpected reason:"
           log_error "$UPLOAD_RESULT"
@@ -80,12 +80,12 @@ then
           -H "x-goog-api-version: 2" \
           -H "Content-Type: application/json" -d '{"target":"trustedTesters"}' \
           -X POST -v \
-          https://www.googleapis.com/chromewebstore/v1.1/items/$CHROME_APP_ID/publish \
+          "https://www.googleapis.com/chromewebstore/v1.1/items/$CHROME_APP_ID/publish" \
           | jq '.')
 
-     if [[ $(echo $PUBLISH_RESULT | jq '.status[0]') == '"OK"' ]]
+     if [[ $(echo "$PUBLISH_RESULT" | jq '.status[0]') == '"OK"' ]]
           then
-          log_message "2.3.1) Publish succesful!";
+          log_message "2.3.1) Publish successful!";
      else
           log_error "2.3.1) Publish failed";
           log_detail "$PUBLISH_RESULT";

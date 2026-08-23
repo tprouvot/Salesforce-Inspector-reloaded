@@ -3,9 +3,10 @@
 **********/
 figure {
   display: table;
-  margin: 0 auto 1rem auto;
+  margin: 0 auto 1rem;
   width: 100%;
 }
+
 figcaption {
   text-align: center;
   font-weight: bold;
@@ -14,11 +15,13 @@ figcaption {
   line-height: 1.2;
   font-size: 1.1em;
 }
+
 figcaption > div {
   font-weight: normal;
   font-size: 0.9em;
   margin-top: 2px;
 }
+
 .gauge {
   display: block;
   position: relative;
@@ -27,31 +30,36 @@ figcaption > div {
   overflow: hidden;
   margin: 0 auto;
 }
-.gauge:before,
-.gauge:after,
+
+.gauge::before,
+.gauge::after,
 .meter {
   position: absolute;
   display: block;
   content: "";
 }
-.gauge:before,
+
+.gauge::before,
 .meter {
   width: 10rem;
   height: 5rem;
 }
-.gauge:before {
+
+.gauge::before {
   border-radius: 5rem 5rem 0 0;
   background: grey;
 }
-.gauge:after {
+
+.gauge::after {
   position: absolute;
   bottom: 0;
   left: 2.5rem;
   width: 5rem;
   height: 2.5rem;
-  background: #ffffff;
+  background: #fff;
   border-radius: 2.5rem 2.5rem 0 0;
 }
+
 .meter {
   top: 100%;
   transition: 1.5s;
@@ -59,6 +67,7 @@ figcaption > div {
   border-radius: 0 0 6rem 6rem;
   background: deepskyblue;
 }
+
 .meter-value-container {
   position: absolute;
   bottom: -0.75rem;
@@ -69,6 +78,7 @@ figcaption > div {
   overflow: hidden;
   text-align: center;
 }
+
 .meter-value {
   font: bold 1.25rem/1.6 sans-serif;
   color: #333;

@@ -55,7 +55,7 @@ After scanning, you'll see a results panel with:
 - **Warning:** Potential problems or risky patterns
 - **Info:** Recommendations or minor suggestions
 
-Exemple of a scan result:
+Example of a scan result:
 ![image](https://github.com/user-attachments/assets/0a1879e1-ee4f-489b-970c-785fe8ed083f)
 
 **No Issues?**

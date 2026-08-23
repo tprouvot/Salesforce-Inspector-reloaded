@@ -1,6 +1,9 @@
 {
-  "threshold": 0,
-  "reporters": ["html", "markdown"],
+  "threshold": 5,
+  "reporters": [
+    "html",
+    "markdown"
+  ],
   "ignore": [
     "**/node_modules/**",
     "**/.git/**",

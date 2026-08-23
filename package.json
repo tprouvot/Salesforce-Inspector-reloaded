@@ -1,5 +1,6 @@
 {
   "name": "salesforce-inspector",
+  "version": "2.1.0",
   "scripts": {
     "eslint": "eslint .",
     "firefox-release-build": "node scripts/release-build.js firefox",
@@ -28,7 +29,7 @@
       "brace-expansion": "1.1.17"
     },
     "minimatch@9.0.9": {
-      "brace-expansion": "2.1.3"
+      "brace-expansion": "2.1.4"
     }
   }
 }

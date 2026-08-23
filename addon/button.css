@@ -1,11 +1,11 @@
 :root {
   /* Button-specific variables */
-  --sfir-btn-white: #ffffff;
+  --sfir-btn-white: #fff;
   --sfir-btn-border: #c9c9c9;
   --sfir-btn-border-active: #0176d3;
-  --sfir-btn-shadow: rgba(0, 0, 0, 0.15);
-  --sfir-btn-shadow-inset: rgba(255, 255, 255, 0.1);
-  --sfir-btn-shadow-light: rgba(0, 0, 0, 0.16);
+  --sfir-btn-shadow: rgb(0 0 0 / 15%);
+  --sfir-btn-shadow-inset: rgb(255 255 255 / 10%);
+  --sfir-btn-shadow-light: rgb(0 0 0 / 16%);
   --sfir-btn-radius: 25px;
   --sfir-btn-radius-sm: 4px;
   --sfir-btn-z-base: 1000;
@@ -43,7 +43,7 @@
   }
 
   #insext .insext-popup-vertical.insext-popup-vertical-up {
-    /*bottom: 100%;*/
+    /* bottom: 100%; */
     top: calc(100% - 400px);
   }
 
@@ -65,17 +65,18 @@
   #insext.insext-active .insext-popup {
     display: block;
   }
+
   #insext button.insext-btn {
     appearance: none;
-    -webkit-appearance: none;
     padding: 0;
     margin: 0;
     font: inherit;
     color: inherit;
   }
+
   #insext .insext-btn {
     box-sizing: border-box;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgb(255 255 255 / 90%);
     border: 1px solid var(--sfir-btn-border);
     cursor: pointer;
     opacity: 0.85;
@@ -83,6 +84,7 @@
     align-items: center;
     justify-content: center;
   }
+
   #insext .insext-btn-vertical {
     width: 24px;
     height: 38px;
@@ -93,8 +95,9 @@
     box-shadow: -3px 0 8px var(--sfir-btn-shadow),
       0 0 0 1px var(--sfir-btn-shadow-inset) inset;
     position: absolute;
-    right: 0px;
+    right: 0;
   }
+
   #insext .insext-btn-horizontal {
       height: 24px;
       width: 38px;
@@ -118,7 +121,7 @@
     #insext.insext-active .insext-btn-horizontal {
       left: 4px;
       bottom: 416px;
-      border-top-right-radius: 0px;
+      border-top-right-radius: 0;
     }
 
     #insext.insext-active .insext-btn-horizontal.insext-btn-dynamic-height {
@@ -129,21 +132,21 @@
   #insext.insext-active .insext-btn-vertical {
     opacity: 1;
     width: 22px;
-    background: rgba(255, 255, 255, 1);
+    background: rgb(255 255 255 / 100%);
     border-color: var(--sfir-btn-border-active);
   }
 
   #insext.insext-active .insext-btn-vertical{
     right: 255px !important;
     position: absolute;
-    border-bottom-left-radius: 0px;
+    border-bottom-left-radius: 0;
   }
 
   #insext .insext-btn-horizontal:hover,
   #insext.insext-active .insext-btn-horizontal {
     opacity: 1;
     height: 22px;
-    background: rgba(255, 255, 255, 1);
+    background: rgb(255 255 255 / 100%);
     border-color: var(--sfir-btn-border-active);
     transform: translateY(-2px);
   }
@@ -199,12 +202,14 @@
     right: 78px;
     z-index: var(--sfir-btn-z-fixed);
   }
+
   .checkboxScrollProd {
     position: fixed;
     top: 21px;
     right: 78px;
     z-index: var(--sfir-btn-z-fixed);
   }
+
   .labelCheckboxScrollSandbox {
     position: fixed;
     top: 7px;
@@ -212,6 +217,7 @@
     color: white;
     z-index: var(--sfir-btn-z-fixed);
   }
+
   .labeCheckboxScrollProd {
     position: fixed;
     top: 15px;
@@ -219,6 +225,7 @@
     color: white;
     z-index: var(--sfir-btn-z-fixed);
   }
+
   .copiedText {
     font-family: "Salesforce Sans", Arial, sans-serif;
     color: var(--sfir-btn-success);

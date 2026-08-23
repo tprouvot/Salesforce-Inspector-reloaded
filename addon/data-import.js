@@ -263,7 +263,7 @@ class Model {
     this.didUpdate();
   }
 
-  // Used only for requried fields that will prevent us from building a valid API request or definitely cause an error if missing.
+  // Used only for required fields that will prevent us from building a valid API request or definitely cause an error if missing.
   getRequiredMissingFields() {
     let missingFields = [];
 
@@ -928,7 +928,7 @@ class Model {
       // If a whole batch has failed (as opposed to individual records failing),
       // too many times in a row, we stop the import.
       // This is useful when an error will affect all batches, for example a field name being misspelled.
-      // This also helps prevent throtteling in Chrome.
+      // This also helps prevent throttling in Chrome.
       // A batch failing might not affect all batches, so we wait for a few consecutive errors before we stop.
       // For example, a whole batch will fail if one of the field values is of an incorrect type or format.
       if (this.consecutiveFailures >= 3) {

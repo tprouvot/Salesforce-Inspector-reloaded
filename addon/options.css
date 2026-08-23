@@ -1,7 +1,6 @@
 .text-align-middle {
   display: flex;
-  justify-content: center;
-  align-content: center;
+  place-content: center center;
   flex-direction: column;
 }
 
@@ -17,7 +16,7 @@
   background-color: #f7f9fb;
   position: sticky;
   top: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
   z-index: 1;
 }
 
@@ -26,7 +25,7 @@
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid #dddbda;
-  margin: 12px 12px 0 12px;
+  margin: 12px 12px 0;
   flex-grow: 1;
   overflow: auto;
   max-height: 100vh;
@@ -67,11 +66,13 @@
   background: #fdeaea;
   border-color: #c23934;
 }
+
 .severity-warning {
   color: #8a6d1b;
   background: #fff8e1;
   border-color: #ffb75d;
 }
+
 .severity-info {
   color: #0070d2;
   background: #e3f2fd;
@@ -161,7 +162,7 @@
 
 .enhanced-option-expand-btn:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgb(0 0 0 / 5%);
 }
 
 .expand-icon {
@@ -193,8 +194,8 @@
 }
 
 /* ColorPicker nubbin color override to match SLDS footer */
-.slds-popover.slds-popover_medium.slds-nubbin_bottom-left:before,
-.slds-popover.slds-popover_medium.slds-nubbin_bottom-left:after {
+.slds-popover.slds-popover_medium.slds-nubbin_bottom-left::before,
+.slds-popover.slds-popover_medium.slds-nubbin_bottom-left::after {
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
 }
 

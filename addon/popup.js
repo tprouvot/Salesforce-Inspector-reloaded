@@ -2501,7 +2501,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       let metadataShortcutSearchOptions = localStorage.getItem(
         "metadataShortcutSearchOptions"
       );
-      //handle previous option which was not detailled by metadata type
+      //handle previous option which was not detailed by metadata type
       let metadataShortcutSearch
         = localStorage.getItem("metadataShortcutSearch") != "false";
       if (metadataShortcutSearchOptions) {
@@ -3156,7 +3156,7 @@ class UserDetails extends React.PureComponent {
         debugTimeInMs
       );
       /*If an old trace flag is found on the user and with this debug level
-       *Update the trace flag extending the experiation date.
+       *Update the trace flag extending the expiration date.
        */
       if (traceFlags.size > 0) {
         await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
@@ -3214,10 +3214,10 @@ class UserDetails extends React.PureComponent {
 
   toggleDisplay(event, refKey) {
     event.target.style.display = "none";
-    this.fectchLocalesAndLanguages(refKey);
+    this.fetchLocalesAndLanguages(refKey);
   }
 
-  fectchLocalesAndLanguages(refKey) {
+  fetchLocalesAndLanguages(refKey) {
     if (!this.state.userLocales) {
       sfConn
         .rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {

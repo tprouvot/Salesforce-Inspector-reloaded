@@ -7,9 +7,14 @@ on:
   push:
     branches: [ releaseCandidate, beta, main ]
 
+# The tests only need to read the repository
+permissions: {}
+
 jobs:
   # Fork PRs: run tests with mocks (no access to secrets)
   test-mocked:
+    permissions:
+      contents: read
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
     timeout-minutes: 60
     runs-on: ubuntu-latest
@@ -53,6 +58,8 @@ jobs:
 
   # Repo PRs + manual dispatch + post-merge push: run tests against real org
   test-real-org:
+    permissions:
+      contents: read
     if: >-
       github.event_name == 'workflow_dispatch'
       || github.event_name == 'push'
@@ -92,16 +99,16 @@ jobs:
       run: |
         # Install Salesforce CLI
         echo "Installing Salesforce CLI from $SF_CLI_URL"
-        wget $SF_CLI_URL -O sf-cli.tar.xz
+        wget "$SF_CLI_URL" -O sf-cli.tar.xz
         mkdir -p sf-cli
         tar xJf sf-cli.tar.xz -C sf-cli --strip-components=1
-        echo "$PWD/sf-cli/bin" >> $GITHUB_PATH
+        echo "$PWD/sf-cli/bin" >> "$GITHUB_PATH"
         export PATH="$PWD/sf-cli/bin:$PATH"
         sf --version
         
         # Authenticate and get access token
         echo "Authenticating to Salesforce org using SF_AUTH_URL..."
-        echo $SF_AUTH_URL > ./SFDX_AUTH_URL.txt
+        echo "$SF_AUTH_URL" > ./SFDX_AUTH_URL.txt
         sf org login sfdx-url -f ./SFDX_AUTH_URL.txt -a cicdorg -d
 
         # Display the authenticated org and extract the instance url

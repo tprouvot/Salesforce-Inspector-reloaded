@@ -32,7 +32,8 @@ JAVASCRIPT_ES_PRE_COMMANDS:
 
 # Run the project's own eslint 9 rather than MegaLinter's bundled eslint 10,
 # so eslint.config.mjs resolves its imports from the workspace node_modules.
-JAVASCRIPT_ES_CLI_EXECUTABLE: node_modules/.bin/eslint
+JAVASCRIPT_ES_CLI_EXECUTABLE:
+  - node_modules/.bin/eslint
 
 # zizmor queries the GitHub API to resolve `uses:` refs and gets a 401 without a token
 ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:

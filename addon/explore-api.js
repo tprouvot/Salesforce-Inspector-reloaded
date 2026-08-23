@@ -295,7 +295,7 @@ class App extends React.Component {
             )
           )
         ),
-        h("div", {className: "slds-card__body slds-card__body_inner", ref: "scroller"},
+        h("div", {className: "slds-card__body slds-card__body_inner", ref: el => { this.refs.scroller = el; }},
           model.apiResponse && h("div", {},
             h("fieldset", {className: "slds-form-element"},
               h("legend", {className: "slds-form-element__legend slds-form-element__label"}, "View Options"),

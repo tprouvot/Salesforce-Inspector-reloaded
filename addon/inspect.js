@@ -1867,7 +1867,7 @@ class App extends React.Component {
           h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
             h("use", {xlinkHref: "symbols.svg#search"})
           ),
-          h("input", {className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
+          h("input", {className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: el => { this.refs.rowsFilter = el; }}),
           h("a", {href: "about:blank", className: "sfir-filter-clear", onClick: this.onClearAndFocusFilter},
             h("svg", {className: "sfir-filter-clear-icon"},
               h("use", {xlinkHref: "symbols.svg#clear"})
@@ -2642,7 +2642,7 @@ class DetailsBox extends React.Component {
             className: "slds-modal__title slds-hyphenate",
             tabIndex: -1
           }, "All available metadata for \"" + model.detailsBox.name + "\""),
-          h("input", {className: "slds-input slds-m-top_small", placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: "detailsFilter"}),
+          h("input", {className: "slds-input slds-m-top_small", placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: el => { this.refs.detailsFilter = el; }}),
         ),
         h("div", {className: "slds-modal__content slds-p-around_medium", id: "modal-content-id-1"},
           h("table", {className: "slds-table slds-table_cell-buffer"},
@@ -2754,7 +2754,7 @@ class HeaderCellWithAction extends React.Component {
       col.label,
       " ",
       h("button", {
-        ref: "usageBtnRef",
+        ref: el => { this.refs.usageBtnRef = el; },
         className: "slds-button slds-button_icon",
         onClick: this.onActionClick,
         title: actionTitle,

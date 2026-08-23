@@ -2204,7 +2204,7 @@ class App extends React.Component {
         h("input", {
           type: "file",
           style: {display: "none"},
-          ref: "fileInput",
+          ref: el => { this.refs.fileInput = el; },
           onChange: this.importOptions,
           accept: "application/json"
         })

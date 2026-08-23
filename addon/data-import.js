@@ -1381,7 +1381,7 @@ class App extends React.Component {
           h(
             "div",
             {
-              ref: "scroller",
+              ref: el => { this.refs.scroller = el; },
               style: {
                 flex: "1 1 0",
                 minHeight: 0,

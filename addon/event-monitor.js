@@ -1106,7 +1106,7 @@ class App extends React.Component {
                   placeholder: "Filter events...",
                   value: model.eventFilter,
                   onChange: this.onEventFilterInput,
-                  ref: "eventFilter"
+                  ref: el => { this.refs.eventFilter = el; }
                 }),
                 model.eventFilter ? h("button", {
                   className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",

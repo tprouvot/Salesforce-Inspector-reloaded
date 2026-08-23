@@ -117,7 +117,7 @@ class LimitData extends React.Component {
           },
           h("div", {
             className: "meter",
-            ref: "meter"
+            ref: el => { this.refs.meter = el; }
           },
           ""
           ),

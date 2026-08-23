@@ -100,6 +100,11 @@ function verify(vendor) {
   if (vendor.bundle && vendor.bundle.sha256) {
     entries.push(vendor.bundle);
   }
+  for (const g of vendor.browserGlobals || []) {
+    if (g.sha256) {
+      entries.push(g);
+    }
+  }
   for (const f of entries) {
     if (!f.sha256) {
       continue;
@@ -146,6 +151,30 @@ function syncVendor(vendor, tmp) {
     }
   }
 
+  for (const g of vendor.browserGlobals || []) {
+    // React 19 no longer publishes UMD builds, and these pages load React with a
+    // plain <script> tag rather than through a bundler. esbuild turns the npm
+    // package into an IIFE assigning the same globals the pages already use, so
+    // page code keeps working unchanged.
+    //
+    // The JS API is used rather than the CLI: it resolves bare imports from
+    // resolveDir (the throwaway install tree) and takes `define` as real values,
+    // where a Windows shell would strip the quotes around "production".
+    const esbuild = require("esbuild");
+    const result = esbuild.buildSync({
+      stdin: {contents: vendor.browserGlobalEntry, resolveDir: path.resolve(pkgDir, "..", ".."), loader: "js"},
+      bundle: true,
+      minify: Boolean(g.minify),
+      format: "iife",
+      define: {"process.env.NODE_ENV": JSON.stringify(g.nodeEnv)},
+      write: false,
+      logLevel: "warning",
+    });
+    const banner = Buffer.from(`/* ${vendor.name} ${vendor.version} (${g.nodeEnv}) — bundled as a browser global by scripts/sync-vendors.js. Do not edit. */
+`);
+    writeOut(g.to, Buffer.concat([banner, Buffer.from(result.outputFiles[0].contents)]), results);
+  }
+
   if (vendor.bundle) {
     const parts = vendor.bundle.parts.map(p => fs.readFileSync(path.join(pkgDir, p)));
     const header = Buffer.from(`/* ${vendor.name} ${vendor.version} — assembled by scripts/sync-vendors.js from ${vendor.bundle.parts.join(", ")} */\n`);
@@ -158,7 +187,7 @@ function syncVendor(vendor, tmp) {
 function writeSbom(manifest) {
   "use strict";
   const components = manifest.vendors.filter(v => v.purl).map(v => {
-    const files = [...(v.files || [])];
+    const files = [...(v.files || []), ...(v.browserGlobals || [])];
     if (v.bundle && v.bundle.sha256) {
       files.push(v.bundle);
     }

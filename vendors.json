@@ -8,43 +8,49 @@
   "vendors": [
     {
       "name": "react",
-      "version": "15.4.0",
-      "source": "npm:react@15.4.0",
+      "version": "19.2.8",
+      "source": "npm:react@19.2.8",
       "homepage": "https://react.dev",
-      "license": "BSD-3-Clause AND additional-patents-grant",
-      "licenseNote": "React was relicensed to MIT in v16. 15.4.0 predates that and ships the BSD-3 licence plus the separate PATENTS grant.",
-      "purl": "pkg:npm/react@15.4.0",
-      "files": [
+      "license": "MIT",
+      "purl": "pkg:npm/react@19.2.8",
+      "syncNote": "React 19 publishes no UMD build, so sync-vendors bundles the package into an IIFE that assigns window.React. The pages keep loading it with a plain <script> tag.",
+      "browserGlobalEntry": "import * as React from \"react\";\nwindow.React = React;\n",
+      "browserGlobals": [
         {
-          "from": "dist/react.js",
           "to": "addon/react.js",
-          "sha256": "00f82cb52b38e9cd76802037e7ec129fbdb3f263d49e3d8d70378d852eaf68a7"
+          "nodeEnv": "development",
+          "minify": false,
+          "sha256": "2cb0c4d78e216f41ef41b74ba8b4b456f3dcab0d0c1f99b634df6f6f1c62907b"
         },
         {
-          "from": "dist/react.min.js",
           "to": "addon/react.min.js",
-          "sha256": "40028c1058e3d88521822cf779380de52fd5b5ba731c6df48af700c26b8fae96"
+          "nodeEnv": "production",
+          "minify": true,
+          "sha256": "861c0c9a27333073d00265c2210248d28dd6b4944542d94abb8911573f711d10"
         }
-      ],
-      "syncNote": "The committed addon/react.js is not pristine upstream: an ESLint autofix in 2024 (commit 2b9dc48f) removed two trailing spaces and rewrote `!!x ? a : b` to `x ? a : b` in three places. Those edits are semantically neutral, and syncing restores the published file. The other three React files already match npm byte for byte."
+      ]
     },
     {
       "name": "react-dom",
-      "version": "15.4.0",
-      "source": "npm:react-dom@15.4.0",
+      "version": "19.2.8",
+      "source": "npm:react-dom@19.2.8",
       "homepage": "https://react.dev",
-      "license": "BSD-3-Clause AND additional-patents-grant",
-      "purl": "pkg:npm/react-dom@15.4.0",
-      "files": [
+      "license": "MIT",
+      "purl": "pkg:npm/react-dom@19.2.8",
+      "syncNote": "React 19 publishes no UMD build and removed ReactDOM.render. The bundle entry exposes window.ReactDOM with createRoot plus a render() shim that caches one root per container and uses flushSync, so the existing pages keep working unchanged.",
+      "browserGlobalEntry": "import * as ReactDOM from \"react-dom\";\nimport {createRoot} from \"react-dom/client\";\n\n// React 19 removed ReactDOM.render. createRoot must be called once per\n// container, whereas the pages call render repeatedly through the model's\n// reactCallback, so roots are cached per container. root.render is also\n// asynchronous and takes no completion callback, and didUpdate(cb) relies on\n// the callback running after the DOM is updated, so flushSync restores the\n// synchronous ordering the pages were written against.\nconst roots = new WeakMap();\n\nfunction render(element, container, callback) {\n  let root = roots.get(container);\n  if (!root) {\n    root = createRoot(container);\n    roots.set(container, root);\n  }\n  ReactDOM.flushSync(() => root.render(element));\n  if (callback) {\n    callback();\n  }\n  // React 15 returned the component instance here; nothing in this codebase\n  // uses it, and React 19 has no equivalent.\n  return null;\n}\n\nwindow.ReactDOM = Object.assign({}, ReactDOM, {createRoot, render});\n",
+      "browserGlobals": [
         {
-          "from": "dist/react-dom.js",
           "to": "addon/react-dom.js",
-          "sha256": "f8417149f900f4fba762ae5980c33a2b7fe381b5c449f6927170ca007bc4b884"
+          "nodeEnv": "development",
+          "minify": false,
+          "sha256": "f3716faabe4bbb131c4cd46469c69068cc2ada065aba74aabda5897d37783830"
         },
         {
-          "from": "dist/react-dom.min.js",
           "to": "addon/react-dom.min.js",
-          "sha256": "268339ec0dcc57c98762e34670535ad95312d7bafc21da38fbbbf6c60d4c0752"
+          "nodeEnv": "production",
+          "minify": true,
+          "sha256": "630c501389e0d51868cde219d02dcc3c870e656de1b5039dd29e717a7db61445"
         }
       ]
     },

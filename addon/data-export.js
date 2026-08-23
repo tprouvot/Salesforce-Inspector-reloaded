@@ -1981,7 +1981,7 @@ class App extends React.Component {
             ),
             h("textarea", {
               id: "query",
-              ref: "query",
+              ref: el => { this.refs.query = el; },
               style: {maxHeight: (model.winInnerHeight - 200) + "px"},
               onChange: this.onQueryInput
             }),
@@ -2038,7 +2038,7 @@ class App extends React.Component {
             h("div", {hidden: !model.showAI},
               h("h3", {className: "slds-text-heading_small slds-m-top_medium slds-m-left_xxx-small"}, "Agentforce SOQL query builder"),
               h("p", {className: "slds-m-bottom_xx-small slds-m-left_xxx-small"}, "Enter a description of the SOQL you want to be generated"),
-              h("textarea", {id: "prompt", ref: "prompt"}),
+              h("textarea", {id: "prompt", ref: el => { this.refs.prompt = el; }}),
               h("div", {className: "slds-text-align_right slds-m-top_small"},
                 h("button", {tabIndex: 1, onClick: this.onGenerateSoql, title: "Generate SOQL", className: "slds-button slds-button_brand"}, "Generate SOQL")
               )
@@ -2130,7 +2130,7 @@ class App extends React.Component {
               style: {flex: "1 1 0", minHeight: 0, resize: "none"}
             }),
             h("div", {
-              ref: "scroller",
+              ref: el => { this.refs.scroller = el; },
               hidden: model.exportError != null,
               style: {flex: "1 1 0", minHeight: 0, maxHeight: "100%", overflowY: "auto"}
             }

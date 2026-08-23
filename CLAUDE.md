@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Chrome/Firefox extension (Manifest V3) that adds developer and admin tooling to Salesforce orgs. There is no build step for development: `addon/` **is** the extension, loaded unpacked. Builds only exist to produce store-ready zips.
+A Chrome/Firefox extension (Manifest V3) that adds developer and admin tooling to Salesforce orgs. `addon/` **is** the extension, loaded unpacked, and page code is never bundled. The only build steps produce store-ready zips and regenerate vendored libraries; neither runs per-change.
 
 ## Commands
 
@@ -61,11 +61,18 @@ Consequences when editing:
 - `this.setState` is used only for component-local UI state (open/closed, hover, selection index).
 - Never assign `this.state` directly outside a constructor, and derive new state from `prevState` in the updater form — `@eslint-react/no-access-state-in-setstate` enforces this.
 
-### React 15, no JSX
+### React 19 as a global, no JSX
 
-`addon/react.js` / `react-dom.js` are vendored **React 15.4.0**, loaded as plain `<script>` tags, not imported. Every page starts with `/* global React ReactDOM */` and `let h = React.createElement;`, and the UI is written as `h("div", {...}, children)`. There is no JSX anywhere and no build step to add it.
+`addon/react.js` / `react-dom.js` are **React 19**, loaded as plain `<script>` tags, not imported. Every page starts with `/* global React ReactDOM */` and `let h = React.createElement;`, and the UI is written as `h("div", {...}, children)`. There is no JSX anywhere.
 
-Practical limits this imposes: no hooks, no `createRoot` (`ReactDOM.render` is the only mount API), and string refs (`ref: "foo"` + `this.refs.foo`) are still in use in ~22 files.
+React 19 publishes no UMD build, so `npm run sync-vendors` bundles the npm package with esbuild into an IIFE that assigns `window.React` / `window.ReactDOM`. This is the only build step in the project, it runs on demand rather than per-change, and the page code stays bundler-free. Never edit those four files by hand — regenerate them.
+
+Two compatibility details live in that bundle rather than in the pages:
+
+- `ReactDOM.render` was removed in React 19. The bundle re-adds it over `createRoot`, caching one root per container (React errors if `createRoot` runs twice on the same node, and pages re-render repeatedly through `reactCallback`) and wrapping in `flushSync` so `didUpdate(cb)` keeps running its callback after the DOM is updated.
+- Class components are still used throughout; hooks are not.
+
+String refs were removed in React 19 and are fully migrated: write `ref: el => { this.refs.foo = el; }`, which keeps `this.refs.foo` readable as before. Do not reintroduce `ref: "foo"` — React 19 throws on it, and an uncaught error in render unmounts the whole tree rather than leaving a partial DOM, so the symptom is a blank page far from the cause.
 
 ### Salesforce session flow
 
@@ -98,6 +105,8 @@ Do not hand-edit these files, and do not let a formatter touch them — a 2024 E
 Branch from `releaseCandidate` (the default branch and the work-in-progress next version); it merges to `beta`, then to the release branch when published. PRs are expected to update `CHANGES.md` (newest entry on top) and the relevant page under `docs/`.
 
 CI runs MegaLinter (31 linters, all blocking except markdownlint) and Playwright. `test-real-org` is skipped on fork PRs by design.
+
+The e2e suite is flaky when run locally. `playwright.config.js` uses `retries: 2` and one worker only under `CI`, so a local run has no retries and defaults to one worker per core; repeated local runs of unchanged code fail on different tests each time. Reproduce with `--workers=1 --retries=2` before concluding a change broke something, and confirm any suspected regression by re-running the single test against stashed code.
 
 ## Design principles
 

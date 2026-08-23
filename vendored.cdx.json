@@ -12,12 +12,12 @@
     {
       "type": "library",
       "name": "react",
-      "version": "15.4.0",
-      "purl": "pkg:npm/react@15.4.0",
+      "version": "19.2.8",
+      "purl": "pkg:npm/react@19.2.8",
       "licenses": [
         {
           "license": {
-            "name": "BSD-3-Clause AND additional-patents-grant"
+            "name": "MIT"
           }
         }
       ],
@@ -30,11 +30,11 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "00f82cb52b38e9cd76802037e7ec129fbdb3f263d49e3d8d70378d852eaf68a7"
+          "content": "2cb0c4d78e216f41ef41b74ba8b4b456f3dcab0d0c1f99b634df6f6f1c62907b"
         },
         {
           "alg": "SHA-256",
-          "content": "40028c1058e3d88521822cf779380de52fd5b5ba731c6df48af700c26b8fae96"
+          "content": "861c0c9a27333073d00265c2210248d28dd6b4944542d94abb8911573f711d10"
         }
       ],
       "properties": [
@@ -47,12 +47,12 @@
     {
       "type": "library",
       "name": "react-dom",
-      "version": "15.4.0",
-      "purl": "pkg:npm/react-dom@15.4.0",
+      "version": "19.2.8",
+      "purl": "pkg:npm/react-dom@19.2.8",
       "licenses": [
         {
           "license": {
-            "name": "BSD-3-Clause AND additional-patents-grant"
+            "name": "MIT"
           }
         }
       ],
@@ -65,11 +65,11 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "f8417149f900f4fba762ae5980c33a2b7fe381b5c449f6927170ca007bc4b884"
+          "content": "f3716faabe4bbb131c4cd46469c69068cc2ada065aba74aabda5897d37783830"
         },
         {
           "alg": "SHA-256",
-          "content": "268339ec0dcc57c98762e34670535ad95312d7bafc21da38fbbbf6c60d4c0752"
+          "content": "630c501389e0d51868cde219d02dcc3c870e656de1b5039dd29e717a7db61445"
         }
       ],
       "properties": [

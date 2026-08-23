@@ -1036,7 +1036,7 @@ class App extends React.Component {
               h("svg", {className: "filter-icon"},
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
-              h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+              h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: el => { this.refs.metadataFilter = el; }}),
               h("a", {href: "about:blank", className: "filter-clear", title: "Clear filter", onClick: this.onClearAndFocusFilter},
                 h("svg", {className: "filter-clear-icon"},
                   h("use", {xlinkHref: "symbols.svg#clear"})
@@ -1103,7 +1103,7 @@ class App extends React.Component {
               h("input", {
                 type: "file",
                 style: {display: "none"},
-                ref: "fileInput",
+                ref: el => { this.refs.fileInput = el; },
                 onChange: this.onImportPackage,
                 accept: "text/xml,.xml,application/zip,.zip"
               })
@@ -1173,7 +1173,7 @@ class App extends React.Component {
               )
             )
           ),
-          h("div", {id: "result-table", ref: "scroller"},
+          h("div", {id: "result-table", ref: el => { this.refs.scroller = el; }},
             model.metadataObjects
               ? h("div", {className: "result slds-grid"},
                 h("div", {className: "slds-col"},

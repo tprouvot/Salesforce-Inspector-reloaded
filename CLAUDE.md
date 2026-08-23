@@ -88,7 +88,7 @@ Sessions are not obtained by OAuth on the normal path. `sfConn.getSession(sfHost
 
 ### Vendored third-party code
 
-`addon/lib/` (cometd, prism, flow-scanner-core), `addon/react*.js` and `addon/styles/slds/` are committed third-party code, ~1.9 MB. They are declared in `vendors.json` with an upstream source, version, licence and SHA-256 per file, and managed by `scripts/sync-vendors.js`.
+`addon/lib/` (cometd, prism, flow-scanner-core), `addon/react*.js` and `addon/styles/slds/` are committed third-party code, ~1.9 MB. They are declared in `vendors.json` with an upstream source, version, license and SHA-256 per file, and managed by `scripts/sync-vendors.js`.
 
 Do not hand-edit these files, and do not let a formatter touch them — a 2024 ESLint autofix silently rewrote the vendored React bundle and went unnoticed for two years. They are excluded from linting in `.mega-linter.yml` and `eslint.config.mjs` for that reason. Run `npm run sync-vendors -- --check` if you suspect drift.
 
@@ -98,7 +98,7 @@ Do not hand-edit these files, and do not let a formatter touch them — a 2024 E
 - `ignores` in `eslint.config.mjs` must stay a standalone config object. Merging it into a block that also has `rules` silently scopes it to that block only, which previously left all vendored code being linted.
 - A leading underscore marks a private member; `no-underscore-dangle` is off deliberately.
 - Files carry their globals in a header comment (`/* global React ReactDOM initButton */`) rather than declaring them in the shared ESLint config.
-- Line endings are not normalised (`.gitattributes` is `* -text`), so preserve a file's existing CRLF/LF when editing.
+- Line endings are not normalized (`.gitattributes` is `* -text`), so preserve a file's existing CRLF/LF when editing.
 
 ## Contributing
 

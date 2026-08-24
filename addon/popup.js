@@ -404,7 +404,7 @@ class App extends React.PureComponent {
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
     const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
-      h("div", {},
+      h("div", {className: "sfir-popup"},
         h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
@@ -790,7 +790,7 @@ class App extends React.PureComponent {
           "div",
           {
             className:
-            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
+            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top sfir-popup-footer",
           },
           h(
             "div",

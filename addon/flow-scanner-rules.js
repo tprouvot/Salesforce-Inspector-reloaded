@@ -25,10 +25,12 @@ export const CORE_SEVERITY_TO_UI = {
 };
 
 // Flow Scanner Rules Configuration
+// The core library describes what a rule accepts through its `configurableOptions`, this map
+// only lists the rules for which the Options page presents a different input than the core type.
 export const flowScannerKnownConfigurableRules = {
+  // The core rule takes a comparison expression (">= 50"), the Options page asks for a minimum
+  // API version and turns it into an expression when the scan configuration is built.
   APIVersion: {configType: "threshold", defaultValue: 50},
-  FlowName: {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
-  CyclomaticComplexity: {configType: "threshold", defaultValue: 25},
 };
 
 /**
@@ -56,6 +58,26 @@ export const normalizeSeverity = (sev, direction = "ui") => {
 };
 
 /**
+ * Reads the configuration a rule accepts from its core definition.
+ * @param {Object} rule - The raw rule from flowScannerCore.
+ * @returns {Object|null} The config type and default value, or null when the rule takes no option.
+ */
+function getRuleConfigDefinition(rule) {
+  const [option] = Array.isArray(rule.configurableOptions) ? rule.configurableOptions : [];
+  if (option) {
+    return {
+      configType: option.type === "number" ? "threshold" : "expression",
+      defaultValue: option.defaultValue
+    };
+  }
+  // Older core versions only exposed the threshold on the rule instance.
+  if (rule.defaultThreshold != null) {
+    return {configType: "threshold", defaultValue: rule.defaultThreshold};
+  }
+  return null;
+}
+
+/**
  * Transforms a raw rule from the scanner library into a default rule object.
  * @param {Object} rule - The raw rule from flowScannerCore.
  * @returns {Object} The transformed default rule.
@@ -73,10 +95,11 @@ function transformRule(rule) {
     severity: rule.defaultSeverity || rule.severity || "error"
   };
 
-  // For some rules, config is on the instance not the definition
-  if (rule.defaultThreshold) {
-    def.configType = "threshold";
-    def.defaultValue = rule.defaultThreshold;
+  // Rules describe the option they accept (a threshold or an expression) themselves
+  const configDefinition = getRuleConfigDefinition(rule);
+  if (configDefinition) {
+    def.configType = configDefinition.configType;
+    def.defaultValue = configDefinition.defaultValue;
     def.isConfigurable = true;
   }
 
@@ -91,24 +114,16 @@ function transformRule(rule) {
  * @returns {Object} The merged rule object.
  */
 function mergeRuleWithOverrides(def, stored, known) {
-  let config = {};
-  let configType = def.configType;
-  let configurable = def.isConfigurable;
+  // The Options page can ask for a different input than the one the core rule declares
+  const configType = known ? known.configType : def.configType;
+  const defaultValue = known ? known.defaultValue : def.defaultValue;
+  const configurable = known ? true : def.isConfigurable;
 
+  let config = {};
   if (stored && hasValidConfig(stored.config)) {
     config = stored.config;
-  } else if (known) {
-    config = {[known.configType]: known.defaultValue};
-    configType = known.configType;
-    configurable = true;
-  } else if (def.defaultValue != null) {
-    config = {[def.configType]: def.defaultValue};
-  }
-
-  // Override configurable and configType if known
-  if (known) {
-    configurable = true;
-    configType = configType || known.configType;
+  } else if (defaultValue != null) {
+    config = {[configType]: defaultValue};
   }
 
   return {
@@ -116,7 +131,8 @@ function mergeRuleWithOverrides(def, stored, known) {
     checked: stored?.checked ?? def.checked,
     config,
     configType,
-    configurable,
+    defaultValue,
+    isConfigurable: configurable,
     configValue: stored?.configValue,
     severity: stored?.severity || def.severity
   };
@@ -136,17 +152,30 @@ function getStoredRules() {
   }
 }
 
-export function getFlowScannerRules(flowScannerCore) {
-  // Retrieve core and beta rules from the scanner library
-  const coreRules = typeof flowScannerCore.getRules === "function"
-    ? flowScannerCore.getRules()
-    : [];
-  const betaRules = typeof flowScannerCore.getBetaRules === "function"
-    ? flowScannerCore.getBetaRules().map(r => ({...r, isBeta: true}))
-    : [];
+/**
+ * Retrieves the core and beta rule definitions from the scanner library.
+ * @param {Object} flowScannerCore - The core scanner library.
+ * @returns {Array} The rule definitions, beta rules flagged with `isBeta`.
+ */
+function getRuleDefinitions(flowScannerCore) {
+  if (typeof flowScannerCore.getRules !== "function") {
+    return [];
+  }
 
+  const coreRules = flowScannerCore.getRules();
+  // Beta rules no longer have a dedicated accessor, they are returned by getRules when beta
+  // mode is enabled, so everything the beta run adds on top of the core run is a beta rule
+  const coreRuleNames = new Set(coreRules.map(rule => rule.name));
+  const betaRules = typeof flowScannerCore.getBetaRules === "function"
+    ? flowScannerCore.getBetaRules()
+    : flowScannerCore.getRules(undefined, {betaMode: true}).filter(rule => !coreRuleNames.has(rule.name));
+
+  return [...coreRules, ...betaRules.map(rule => ({...rule, isBeta: true}))];
+}
+
+export function getFlowScannerRules(flowScannerCore) {
   // Build the default rule list
-  const defaultRules = [...coreRules, ...betaRules].map(transformRule);
+  const defaultRules = getRuleDefinitions(flowScannerCore).map(transformRule);
 
   // Convert stored overrides to Map for O(1) lookups
   const storedRulesArray = getStoredRules();

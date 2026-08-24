@@ -88,7 +88,7 @@ function transformRule(rule) {
     label: rule.label || rule.name,
     description: rule.description,
     isBeta: rule.isBeta || false,
-    checked: true,
+    checked: !rule.isBeta,
     configType: rule.configType,
     defaultValue: rule.defaultValue,
     isConfigurable: rule.isConfigurable,
@@ -133,7 +133,7 @@ function mergeRuleWithOverrides(def, stored, known) {
     configType,
     defaultValue,
     isConfigurable: configurable,
-    configValue: stored?.configValue,
+    configValue: stored?.configValue ?? config[configType],
     severity: stored?.severity || def.severity
   };
 }

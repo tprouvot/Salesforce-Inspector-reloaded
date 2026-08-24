@@ -4,7 +4,7 @@ import {
   injectSessionData,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Flow Scanner", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -12,87 +12,152 @@ test.describe("Flow Scanner", () => {
   test.beforeEach(async ({context, extensionId}) => {
     TEST_CONSTANTS.extensionId = extensionId;
 
-    // Inject session data with model exposure
+    // Inject session data and the core mock before page scripts run.
     await injectSessionData(context, {
       host: mockHost,
       token: mockToken,
-      version: apiVersion,
-      additionalSetup: () => {
-        // Enable flow scanner rules in localStorage
-        const flowScannerRules = [
-          {
-            name: "APIVersion",
-            checked: true,
-            config: {threshold: 50},
-            severity: "error"
-          },
-          {
-            name: "FlowName",
-            checked: true,
-            config: {expression: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
-            severity: "warning"
-          }
-        ];
-        window.localStorage.setItem("flowScannerRules", JSON.stringify(flowScannerRules));
+      version: apiVersion
+    });
+    await context.addInitScript(() => {
+      // Enable flow scanner rules in localStorage
+      const flowScannerRules = [
+        {
+          name: "APIVersion",
+          checked: true,
+          config: {threshold: "58.0"},
+          severity: "error"
+        },
+        {
+          name: "FlowName",
+          checked: true,
+          config: {expression: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
+          severity: "warning"
+        },
+        {
+          name: "StoredBetaRule",
+          checked: true,
+          severity: "warning"
+        }
+      ];
+      window.localStorage.setItem("flowScannerRules", JSON.stringify(flowScannerRules));
 
-        // Mock flow-scanner-core library
-        // Set library name first (flow-scanner.js checks this)
-        window.flowScannerLibraryName = "lightningflowscanner";
-        window.lightningflowscanner = {
-          version: "1.0.0",
-          Flow: class MockFlow {
-            constructor(name, xmlData) {
-              this.name = name;
-              this.xmlData = xmlData;
-            }
-            get flowNodes() { return []; }
-            get flowResources() { return []; }
-            get flowVariables() { return []; }
-          },
-          FlowType: {
-            allTypes: () => ["Flow", "AutoLaunchedFlow", "Workflow", "ScreenFlow"],
-            unsupportedTypes: []
-          },
-          scan: (flows, config) =>
-            // Return mock scan results (empty for now - no violations)
-            [{
-              flow: flows[0],
-              ruleResults: []
-            }],
-          getRules: () => [
-            {
-              name: "APIVersion",
-              label: "API Version",
-              description: "Check flow API version",
-              defaultSeverity: "error",
-              configType: "threshold",
-              defaultValue: 50
-            },
-            {
-              name: "FlowName",
-              label: "Flow Name",
-              description: "Check flow naming convention",
-              defaultSeverity: "warning",
-              configType: "expression",
-              defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"
-            }
-          ],
-          getBetaRules: () => []
-        };
+      // Mock flow-scanner-core library
+      // Set library name first (flow-scanner.js checks this)
+      window.flowScannerLibraryName = "lightningflowscanner";
+      class MockFlow {
+        static NODE_TAGS = ["actionCalls"];
+        static RESOURCE_TAGS = ["textTemplates"];
+        static VARIABLE_TAGS = ["constants"];
+
+        constructor(name, xmlData) {
+          this.name = name;
+          this.xmlData = xmlData;
+          this.xmlData.actionCalls = [{
+            name: "Static_Action",
+            label: "Static Action"
+          }];
+          this.xmlData.textTemplates = [{
+            name: "Static_Template",
+            label: "Static Template"
+          }];
+          this.xmlData.constants = [{
+            name: "Static_Constant",
+            label: "Static Constant"
+          }];
+        }
       }
+      const coreRules = [
+        {
+          name: "APIVersion",
+          label: "API Version",
+          description: "Check flow API version",
+          severity: "error",
+          configurableOptions: [{type: "expression", defaultValue: ">= 50"}]
+        },
+        {
+          name: "FlowName",
+          label: "Flow Name",
+          description: "Check flow naming convention",
+          severity: "warning",
+          configurableOptions: [{
+            type: "expression",
+            defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"
+          }]
+        }
+      ];
+      const betaRules = [
+        {
+          name: "DefaultBetaRule",
+          label: "Default Beta Rule",
+          description: "Beta rule without stored settings",
+          severity: "warning"
+        },
+        {
+          name: "StoredBetaRule",
+          label: "Stored Beta Rule",
+          description: "Beta rule with stored settings",
+          severity: "warning"
+        }
+      ];
+      window.lightningflowscanner = {
+        version: "6.19.3",
+        Flow: MockFlow,
+        FlowType: {
+          allTypes: () => ["Flow", "AutoLaunchedFlow", "Workflow", "ScreenFlow"],
+          unsupportedTypes: []
+        },
+        scan: (flows, config) => {
+          window.flowScannerScanConfig = config;
+          return [{
+            flow: flows[0],
+            ruleResults: [
+              {
+                occurs: false,
+                errorMessage: "Rule execution failed"
+              },
+              {
+                occurs: true,
+                ruleName: "StaticTagRule",
+                severity: "warning",
+                ruleDefinition: {
+                  label: "Static Tag Rule",
+                  description: "Checks static Flow tags"
+                },
+                details: [{
+                  name: "Static_Action",
+                  type: "Action"
+                }, {
+                  name: "Static_Template",
+                  type: "Text Template"
+                }, {
+                  name: "Static_Constant",
+                  type: "Constant"
+                }]
+              }
+            ]
+          }];
+        },
+        getRules: (ruleNames, options = {}) => options.betaMode
+          ? [...coreRules, ...betaRules]
+          : coreRules
+      };
     });
 
     // Mock Salesforce API calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
 
       const request = route.request();
       const url = request.url();
-      const method = request.method();
+
+      if (url.endsWith("/lib/flow-scanner-core.js")) {
+        await route.fulfill({contentType: "application/javascript", body: ""});
+        return;
+      }
 
       //we check if we have a mock for this request
       if (await routeMock(route, mockHost)) {
@@ -104,13 +169,16 @@ test.describe("Flow Scanner", () => {
   });
 
   async function initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId = null, mockFlowId = null) {
+    const flowDefinitionResponse = mockFlowDefId && mockFlowId
+      ? waitSuccessfulHttpResponse(page, "FlowDefinitionView")
+      : null;
     await page.goto(`chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}${mockFlowDefId ? `&flowDefId=${mockFlowDefId}` : ""}${mockFlowId ? `&flowId=${mockFlowId}` : ""}`);
     await page.waitForSelector("#root", {timeout: 10000});
     await page.waitForSelector("text=Flow Scanner", {timeout: 10000});
 
     //if mockFlowDefId and mockFlowId are provided, wait for the flow info section to be visible
-    if (mockFlowDefId && mockFlowId) {
-      await waitSuccessfulHttpResponse(page, "FlowDefinitionView");
+    if (flowDefinitionResponse) {
+      await flowDefinitionResponse;
     }
 
     // Wait for loading to complete
@@ -154,6 +222,34 @@ test.describe("Flow Scanner", () => {
     await expect(page.locator(".scan-results-area, .summary-body").first()).toBeVisible({timeout: 5000});
   });
 
+  test("Use Flow Scanner Core 6.19.3 configuration and results", async ({page, extensionId}) => {
+    test.skip(!TEST_CONSTANTS.mockEnabled, "Requires the mocked Flow Scanner Core");
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+
+    const scanConfig = await page.evaluate(() => window.flowScannerScanConfig);
+    expect(scanConfig, await page.locator("body").innerText()).toBeDefined();
+    expect.soft(scanConfig.rules.DefaultBetaRule.enabled).toBe(false);
+    expect.soft(scanConfig.rules.StoredBetaRule.enabled).toBe(true);
+    expect.soft(scanConfig.rules.APIVersion.expression).toBe(">=58");
+    const apiVersionRule = await page.evaluate(async () => {
+      const {getFlowScannerRules} = await import(chrome.runtime.getURL("flow-scanner-rules.js"));
+      return getFlowScannerRules(window.lightningflowscanner).find(rule => rule.name === "APIVersion");
+    });
+    expect.soft(apiVersionRule.configValue).toBe("58.0");
+    const scanErrorSection = page.locator(".rule-section").filter({hasText: "Scan Error"});
+    await expect.soft(scanErrorSection.locator("tbody")).toContainText("Rule execution failed");
+
+    const staticTagRow = page.locator(".details-table tbody tr").filter({hasText: "Static_Action"});
+    await expect.soft(staticTagRow).toContainText("Static Action");
+    await expect.soft(staticTagRow).toContainText("Action");
+    const staticResourceRow = page.locator(".details-table tbody tr").filter({hasText: "Static_Template"});
+    await expect.soft(staticResourceRow).toContainText("Static Template");
+    await expect.soft(staticResourceRow).toContainText("Text Template");
+    const staticVariableRow = page.locator(".details-table tbody tr").filter({hasText: "Static_Constant"});
+    await expect.soft(staticVariableRow).toContainText("Static Constant");
+    await expect.soft(staticVariableRow).toContainText("Constant");
+  });
+
   test("Expand All Results", async ({page, extensionId}) => {
     await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
@@ -191,10 +287,10 @@ test.describe("Flow Scanner", () => {
     const exportButton = page.locator("button:has-text('Export')");
     await exportButton.isVisible();
     if (!(await exportButton.isDisabled())) {
+      const downloadPromise = page.waitForEvent("download");
       await exportButton.click();
-
-      // Verify download was triggered (in test mode, we can't verify actual download)
-      // But we can verify the button was clicked successfully
+      const download = await downloadPromise;
+      await download.cancel();
     }
   });
 

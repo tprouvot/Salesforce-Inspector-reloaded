@@ -824,7 +824,10 @@ class FlowScanner {
         } else if (configType === "threshold" && config.threshold != null) {
           if (name === "APIVersion") {
             // The core rule compares the API version through an expression.
-            entry.expression = `>=${config.threshold}`;
+            const threshold = config.threshold;
+            const isIntegerVersion = Number.isInteger(threshold)
+              || (typeof threshold === "string" && /^\d+(?:\.0+)?$/.test(threshold));
+            entry.expression = `>=${isIntegerVersion ? Number(threshold) : threshold}`;
           } else {
             entry.threshold = config.threshold;
           }
@@ -918,6 +921,20 @@ class FlowScanner {
       const ruleResults = flowResult.ruleResults || flowResult.results || flowResult.issues || [];
 
       for (const ruleResult of ruleResults) {
+        if (ruleResult.errorMessage) {
+          results.push(createResult(
+            "Scan Error",
+            "Failed to scan flow: " + ruleResult.errorMessage,
+            "error",
+            [createAffectedElement({
+              elementName: this.currentFlow.apiName,
+              elementLabel: "Flow",
+              expression: ruleResult.errorMessage
+            })]
+          ));
+          continue;
+        }
+
         if (!ruleResult.occurs) continue;
 
         const ruleDescription = ruleResult.ruleDefinition?.description || "No description available";

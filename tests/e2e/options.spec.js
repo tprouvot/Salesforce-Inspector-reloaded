@@ -29,8 +29,8 @@ test.describe("Options", () => {
     });
   });
 
-  async function initOptionsPage(page, extensionId, selectedTab = null, gotoTab = null) {
-    await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}${selectedTab ? `&selectedTab=${selectedTab}` : ""}`);
+  async function initOptionsPage(page, extensionUrl, selectedTab = null, gotoTab = null) {
+    await page.goto(`${extensionUrl}/options.html?host=${mockHost}${selectedTab ? `&selectedTab=${selectedTab}` : ""}`);
     await page.waitForSelector(".sfir-options-tab-container", {timeout: 1000});
     if (gotoTab) {
       await page.locator(`a[role='tab']:has-text('${gotoTab}')`).click();
@@ -43,7 +43,7 @@ test.describe("Options", () => {
   }
 
   test.describe("User Experience", () => {
-    test("Load Options Page", async ({page, extensionId}) => {
+    test("Load Options Page", async ({page, extensionUrl}) => {
       // Set up console error listener to debug
       const consoleErrors = [];
       page.on("console", msg => {
@@ -52,7 +52,7 @@ test.describe("Options", () => {
         }
       });
 
-      await initOptionsPage(page, extensionId);
+      await initOptionsPage(page, extensionUrl);
 
       // Wait for root element to exist
       await page.waitForSelector("#root", {timeout: 1000});
@@ -64,8 +64,8 @@ test.describe("Options", () => {
       await expect(page.locator(".slds-text-heading_small:has-text('Options')").first()).toBeVisible();
     });
 
-    test("Verify Tabs Exist", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId);
+    test("Verify Tabs Exist", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl);
 
       // Verify all main tabs are present (use role="tab" to be specific)
       await expect(page.locator("a[role='tab']:has-text('User Experience')")).toBeVisible();
@@ -79,8 +79,8 @@ test.describe("Options", () => {
       await expect(page.locator("a[role='tab']:has-text('Custom Shortcuts')")).toBeVisible();
     });
 
-    test("Toggle Option - Popup Dark Theme", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId);
+    test("Toggle Option - Popup Dark Theme", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl);
 
       // Find Popup Dark theme checkbox by key
       const checkbox = page.locator("input#popupDarkTheme");
@@ -102,8 +102,8 @@ test.describe("Options", () => {
       await expect(newChecked).toBe(!initialChecked);
     });
 
-    test("MultiCheckboxButtonGroup - Show Buttons", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId);
+    test("MultiCheckboxButtonGroup - Show Buttons", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl);
 
       // Find "Show buttons" checkbox group - use first occurrence (User Experience tab)
       const showButtonsText = page.locator("text=Show buttons").first();
@@ -130,8 +130,8 @@ test.describe("Options", () => {
       await expect(newChecked).toBe(!initialChecked);
     });
 
-    test("MultiCheckboxButtonGroup - Metadata Shortcut Search Options", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId);
+    test("MultiCheckboxButtonGroup - Metadata Shortcut Search Options", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl);
 
       // Find "Searchable metadata from Shortcut tab" checkbox group
       const metadataGroup = page.locator("text=Searchable metadata from Shortcut tab").locator("..").locator("..");
@@ -156,8 +156,8 @@ test.describe("Options", () => {
       expect(newChecked).toBe(!initialChecked);
     });
 
-    test("Arrow Button Orientation and Position", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId);
+    test("Arrow Button Orientation and Position", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl);
 
       // Find arrow orientation select
       await page.waitForSelector("select[name='arrowPosition']", {timeout: 1000});
@@ -184,8 +184,8 @@ test.describe("Options", () => {
   });
 
   test.describe("API", () => {
-    test("Switch to API Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "API");
+    test("Switch to API Tab", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "API");
 
       // Verify API tab is active
       await expect(page.locator(".options-tab:has-text('API')")).toHaveClass(/slds-is-active/);
@@ -194,8 +194,8 @@ test.describe("Options", () => {
       await expect(page.locator("span:has-text('API Version')").first()).toBeVisible();
     });
 
-    test("Change API Version", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "API");
+    test("Change API Version", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "API");
 
       // Wait for API version input
       await page.waitForSelector("#api input[type='number']", {timeout: 1000});
@@ -216,15 +216,15 @@ test.describe("Options", () => {
       await expect(parseInt(value)).toBeGreaterThanOrEqual(60);
     });
 
-    test("URL Parameter - Select Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, "api");
+    test("URL Parameter - Select Tab", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, "api");
 
       // Verify API tab is active by default
       await expect(page.locator(".options-tab:has-text('API')")).toHaveClass(/slds-is-active/);
     });
 
-    test("Restore Default API Version", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "API");
+    test("Restore Default API Version", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "API");
 
       // Wait for API version input
       await page.waitForSelector("#api input[type='number']", {timeout: 1000});
@@ -248,8 +248,8 @@ test.describe("Options", () => {
       }
     });
 
-    test("Delete Token Button", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "API");
+    test("Delete Token Button", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "API");
 
       // Wait for Delete Token button
       await page.waitForSelector("button:has-text('Delete Token')", {timeout: 1000});
@@ -263,14 +263,14 @@ test.describe("Options", () => {
   });
 
   test.describe("Data Export", () => {
-    test("Switch to Data Export Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Data Export");
+    test("Switch to Data Export Tab", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Data Export");
       // Verify CSV Separator option is visible
       await expect(page.locator("text=CSV Separator")).toBeVisible();
     });
 
-    test("Change CSV Separator", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Data Export");
+    test("Change CSV Separator", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Data Export");
 
       // Wait for CSV Separator input
       await page.waitForSelector("input#csvSeparatorInput", {timeout: 1000});
@@ -288,15 +288,15 @@ test.describe("Options", () => {
   });
 
   test.describe("Data Import", () => {
-    test("Switch to Data Import Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Data Import");
+    test("Switch to Data Import Tab", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Data Import");
 
       // Verify Default batch size option is visible
       await expect(page.locator("text=Default batch size")).toBeVisible();
     });
 
-    test("Change Default Batch Size", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Data Import");
+    test("Change Default Batch Size", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Data Import");
 
       // Wait for batch size input
       await page.waitForSelector("input[placeholder='200']", {timeout: 1000});
@@ -314,15 +314,15 @@ test.describe("Options", () => {
   });
 
   test.describe("Field Creator", () => {
-    test("Switch to Field Creator Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Field Creator");
+    test("Switch to Field Creator Tab", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Field Creator");
 
       // Verify Field Naming Convention option is visible
       await expect(page.locator("text=Field Naming Convention")).toBeVisible();
     });
 
-    test("Change Field Naming Convention", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Field Creator");
+    test("Change Field Naming Convention", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Field Creator");
 
       // Wait for Field Naming Convention select (find by looking for the text first)
       await page.waitForSelector("text=Field Naming Convention", {timeout: 1000});
@@ -341,15 +341,15 @@ test.describe("Options", () => {
   });
 
   test.describe("Custom Shortcuts", () => {
-    test("Switch to Custom Shortcuts Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
+    test("Switch to Custom Shortcuts Tab", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Custom Shortcuts");
 
       // Verify search input is visible
       await expect(page.locator("input[placeholder='Search shortcuts...']")).toBeVisible();
     });
 
-    test("Add Custom Shortcut", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
+    test("Add Custom Shortcut", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Custom Shortcuts");
 
       // Wait for shortcuts table
       await page.waitForSelector("table.slds-table", {timeout: 1000});
@@ -385,8 +385,8 @@ test.describe("Options", () => {
       await expect(page.locator("text=Test Shortcut")).toBeVisible();
     });
 
-    test("Edit Custom Shortcut", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
+    test("Edit Custom Shortcut", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Custom Shortcuts");
 
       // Wait for shortcuts table
       await page.waitForSelector("table.slds-table", {timeout: 1000});
@@ -427,8 +427,8 @@ test.describe("Options", () => {
       await expect(page.locator("text=Updated Label")).toBeVisible();
     });
 
-    test("Delete Custom Shortcut", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
+    test("Delete Custom Shortcut", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Custom Shortcuts");
 
       // Wait for shortcuts table
       await page.waitForSelector("table.slds-table", {timeout: 1000});
@@ -463,8 +463,8 @@ test.describe("Options", () => {
       await expect(page.locator("text=To Delete")).not.toBeVisible();
     });
 
-    test("Search Custom Shortcuts", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
+    test("Search Custom Shortcuts", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Custom Shortcuts");
 
       // Wait for search input
       await page.waitForSelector("input[placeholder='Search shortcuts...']", {timeout: 1000});
@@ -501,8 +501,8 @@ test.describe("Options", () => {
   });
 
   test.describe("General", () => {
-    test("Export Options", async ({page, extensionId}) => {
-      await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}`);
+    test("Export Options", async ({page, extensionUrl}) => {
+      await page.goto(`${extensionUrl}/options.html?host=${mockHost}`);
 
       await page.waitForSelector("button[title='Export Options']", {timeout: 1000});
 
@@ -519,8 +519,8 @@ test.describe("Options", () => {
       expect(download.suggestedFilename()).toBe("reloadedConfiguration.json");
     });
 
-    test("Import Options", async ({page, extensionId}) => {
-      await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}`);
+    test("Import Options", async ({page, extensionUrl}) => {
+      await page.goto(`${extensionUrl}/options.html?host=${mockHost}`);
 
       await page.waitForSelector("button[title='Import Options']", {timeout: 1000});
 
@@ -556,8 +556,8 @@ test.describe("Options", () => {
   });
 
   test.describe("Metadata", () => {
-    test("Switch to Metadata Tab", async ({page, extensionId}) => {
-      const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
+    test("Switch to Metadata Tab", async ({page, extensionUrl}) => {
+      const optionsUrl = `${extensionUrl}/options.html?host=${mockHost}`;
       await page.goto(optionsUrl);
 
       await page.waitForSelector(".sfir-options-tab-container", {timeout: 1000});
@@ -572,8 +572,8 @@ test.describe("Options", () => {
       await expect(page.locator("text=Include managed packages metadata")).toBeVisible();
     });
 
-    test("Toggle Include Managed Packages Metadata", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Metadata");
+    test("Toggle Include Managed Packages Metadata", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Metadata");
 
       // Find Include managed packages metadata checkbox by key
       const checkbox = page.locator("input#includeManagedMetadata");
@@ -595,8 +595,8 @@ test.describe("Options", () => {
       expect(newChecked).toBe(!initialChecked);
     });
 
-    test("Change Sort Metadata By", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Metadata");
+    test("Change Sort Metadata By", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Metadata");
 
       // Wait for Sort metadata components text
       await page.waitForSelector("text=Sort metadata components", {timeout: 1000});
@@ -615,8 +615,8 @@ test.describe("Options", () => {
   });
 
   test.describe("Enable Logs", () => {
-    test("Switch to Enable Logs Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Enable Logs");
+    test("Switch to Enable Logs Tab", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Enable Logs");
 
       // Verify Enable Logs tab is active
       await expect(page.locator(".options-tab:has-text('Enable Logs')")).toHaveClass(/slds-is-active/);
@@ -625,8 +625,8 @@ test.describe("Options", () => {
       await expect(page.locator("text=Debug Level (DeveloperName)")).toBeVisible();
     });
 
-    test("Change Debug Level", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Enable Logs");
+    test("Change Debug Level", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Enable Logs");
 
       // Wait for debug level input
       await page.waitForSelector("input#debugLogDebugLevel", {timeout: 1000});
@@ -642,8 +642,8 @@ test.describe("Options", () => {
       await expect(debugLevelInput).toHaveValue("CustomDebugLevel");
     });
 
-    test("Change Debug Log Time", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Enable Logs");
+    test("Change Debug Log Time", async ({page, extensionUrl}) => {
+      await initOptionsPage(page, extensionUrl, null, "Enable Logs");
 
       // Wait for debug log time input
       await page.waitForSelector("input#debugLogTimeMinutes", {timeout: 1000});

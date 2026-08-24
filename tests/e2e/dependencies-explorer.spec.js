@@ -33,16 +33,16 @@ test.describe("Dependencies Explorer", () => {
     });
   });
 
-  async function initDependenciesExplorerPage(page, extensionId, metadataType = "ApexClass") {
-    await page.goto(`chrome-extension://${extensionId}/dependencies-explorer.html?host=${mockHost}&metadataType=${metadataType}`);
+  async function initDependenciesExplorerPage(page, extensionUrl, metadataType = "ApexClass") {
+    await page.goto(`${extensionUrl}/dependencies-explorer.html?host=${mockHost}&metadataType=${metadataType}`);
 
     // Wait for metadata items to load (tooling query)
     await page.waitForSelector(".dep-dropdown-trigger:not(:has-text('Loading...'))", {timeout: 5000});
     await page.waitForTimeout(300);
   }
 
-  test("Load page with ApexClass and verify SalesforceInspectorTest", async ({page, extensionId}) => {
-    await initDependenciesExplorerPage(page, extensionId, "ApexClass");
+  test("Load page with ApexClass and verify SalesforceInspectorTest", async ({page, extensionUrl}) => {
+    await initDependenciesExplorerPage(page, extensionUrl, "ApexClass");
 
     await expect(page).toHaveTitle(/Dependencies Explorer/);
 
@@ -53,8 +53,8 @@ test.describe("Dependencies Explorer", () => {
   });
 
   // Skipped: MetadataComponentDependency mock in test-mock.js returns empty in E2E context
-  test.skip("Analyze ApexClass dependencies shows Inspector_Test__c", async ({page, extensionId}) => {
-    await initDependenciesExplorerPage(page, extensionId, "ApexClass");
+  test.skip("Analyze ApexClass dependencies shows Inspector_Test__c", async ({page, extensionUrl}) => {
+    await initDependenciesExplorerPage(page, extensionUrl, "ApexClass");
 
     await page.locator(".dep-dropdown-trigger").click();
     await page.locator(".dep-dropdown-item:has-text('SalesforceInspectorTest')").click();
@@ -68,8 +68,8 @@ test.describe("Dependencies Explorer", () => {
     await expect(page.locator("text=CustomObject")).toBeVisible();
   });
 
-  test("Load page with Flow and verify RecordTrigger_InspectorTest", async ({page, extensionId}) => {
-    await initDependenciesExplorerPage(page, extensionId, "Flow");
+  test("Load page with Flow and verify RecordTrigger_InspectorTest", async ({page, extensionUrl}) => {
+    await initDependenciesExplorerPage(page, extensionUrl, "Flow");
 
     await page.locator(".dep-dropdown-trigger").click();
     // Flow display: "RecordTrigger_InspectorTest (AutoLaunchedFlow, v1, Active)"
@@ -77,8 +77,8 @@ test.describe("Dependencies Explorer", () => {
   });
 
   // Skipped: same MetadataComponentDependency mock issue as ApexClass
-  test.skip("Analyze Flow dependencies shows Inspector_Test__c", async ({page, extensionId}) => {
-    await initDependenciesExplorerPage(page, extensionId, "Flow");
+  test.skip("Analyze Flow dependencies shows Inspector_Test__c", async ({page, extensionUrl}) => {
+    await initDependenciesExplorerPage(page, extensionUrl, "Flow");
 
     // Select RecordTrigger_InspectorTest (from test/main/default/flows/)
     await page.locator(".dep-dropdown-trigger").click();
@@ -96,8 +96,8 @@ test.describe("Dependencies Explorer", () => {
     await expect(page.locator("text=CustomObject")).toBeVisible();
   });
 
-  test("Analyze button disabled until item selected", async ({page, extensionId}) => {
-    await initDependenciesExplorerPage(page, extensionId, "ApexClass");
+  test("Analyze button disabled until item selected", async ({page, extensionUrl}) => {
+    await initDependenciesExplorerPage(page, extensionUrl, "ApexClass");
 
     const analyzeBtn = page.locator("button:has-text('Analyze Dependencies')");
     await expect(analyzeBtn).toBeDisabled();
@@ -108,8 +108,8 @@ test.describe("Dependencies Explorer", () => {
     await expect(analyzeBtn).toBeEnabled();
   });
 
-  test("Welcome message when no analysis run", async ({page, extensionId}) => {
-    await initDependenciesExplorerPage(page, extensionId, "ApexClass");
+  test("Welcome message when no analysis run", async ({page, extensionUrl}) => {
+    await initDependenciesExplorerPage(page, extensionUrl, "ApexClass");
 
     await expect(page.locator("text=Welcome to the Dependencies Explorer!")).toBeVisible();
     await expect(page.locator("text=Select a metadata type and item to analyze")).toBeVisible();

@@ -10,8 +10,8 @@ test.describe("Field Creator", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
   /** @desc Initializes the field creator page, waits for objects to load and selects an object */
-  async function initPage(page, extensionId, objectName){
-    await page.goto(`chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`);
+  async function initPage(page, extensionUrl, objectName){
+    await page.goto(`${extensionUrl}/field-creator.html?host=${mockHost}`);
     await page.waitForSelector("#object_select");
 
     // Wait for objects and entity definitions to load (utils.js fetches sobjects, tooling/sobjects, and EntityDefinition via COUNT + batched queries)
@@ -60,8 +60,8 @@ test.describe("Field Creator", () => {
     });
   });
 
-  test("Load Page and Verify Initial State", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Load Page and Verify Initial State", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     // Wait for page to load
@@ -83,8 +83,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("button:has-text('Add Row')")).toBeVisible();
   });
 
-  test("Search and Select Object", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Search and Select Object", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Verify object is selected
     await expect(page.locator("#object_select")).toHaveValue("Account");
@@ -93,8 +93,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("a:has-text('(Fields)')")).toBeVisible();
   });
 
-  test("Add Field Row", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Add Field Row", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("#add_row");
@@ -108,8 +108,8 @@ test.describe("Field Creator", () => {
     await expect(fieldRows).toHaveCount(2);
   });
 
-  test("Edit Field Label and Name", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Edit Field Label and Name", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("#fields_table tbody tr");
@@ -123,8 +123,8 @@ test.describe("Field Creator", () => {
     await expect(nameInput).toHaveValue("TestField");
   });
 
-  test("Change Field Type", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Change Field Type", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Find the type select in the first row
     const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.form-control");
@@ -134,8 +134,8 @@ test.describe("Field Creator", () => {
     await expect(typeSelect).toHaveValue("Number");
   });
 
-  test("Open Field Options Modal", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Open Field Options Modal", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Set field label and type
     await page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']").fill("Test Field");
@@ -150,8 +150,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("label:has-text('Description')")).toBeVisible();
   });
 
-  test("Field Options Modal - Text Field", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Field Options Modal - Text Field", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Set field type to Text
     const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.form-control");
@@ -169,8 +169,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("input#externalId")).toBeVisible();
   });
 
-  test("Field Options Modal - Picklist Field", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Field Options Modal - Picklist Field", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Set field type to Picklist
     const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.form-control");
@@ -187,8 +187,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("input[name='firstvaluedefault']")).toBeVisible();
   });
 
-  test("Save Field Options", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Save Field Options", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Set field label and type
     const labelInput = page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']");
@@ -216,8 +216,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("text=Set Field Options")).not.toBeVisible();
   });
 
-  test("Open Field Permissions Modal", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Open Field Permissions Modal", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Click Permissions button
     await page.locator("#fields_table tbody tr").first().locator("button:has-text('Permissions')").click();
@@ -227,8 +227,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("input[placeholder='Search profiles and permission sets...']")).toBeVisible();
   });
 
-  test("Field Permissions Modal - Search", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Field Permissions Modal - Search", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Click Permissions button
     const permissionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Permissions')");
@@ -255,8 +255,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator(".modal-dialog table.slds-table")).toBeVisible();
   });
 
-  test("Field Permissions Modal - Select Permissions", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Field Permissions Modal - Select Permissions", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("#fields_table tbody tr");
@@ -294,8 +294,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("text=Set Field Permissions")).not.toBeVisible();
   });
 
-  test("Delete Field Row", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Delete Field Row", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("#add_row");
@@ -312,8 +312,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("#fields_table tbody tr")).toHaveCount(1);
   });
 
-  test("Clone Field Row", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Clone Field Row", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("#fields_table tbody tr");
@@ -332,8 +332,8 @@ test.describe("Field Creator", () => {
     await expect(clonedLabelInput).toHaveValue("Test Field");
   });
 
-  test("Open Import Modal", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Open Import Modal", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("button:has-text('Import')");
@@ -347,8 +347,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("textarea.importTextarea")).toBeVisible();
   });
 
-  test("Import CSV Fields", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Import CSV Fields", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("button:has-text('Import')");
@@ -373,8 +373,8 @@ test.describe("Field Creator", () => {
     await expect(page.locator("#fields_table tbody tr")).toHaveCount(3); // 1 initial + 2 imported
   });
 
-  test("Deploy Fields - Success", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Deploy Fields - Success", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Set field label and name
     await page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']").focus();
@@ -419,8 +419,8 @@ test.describe("Field Creator", () => {
     }
   });
 
-  test("Toggle Managed Package Filter", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Toggle Managed Package Filter", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Find the managed package toggle label (click on the label instead of checkbox)
     const managedToggleLabel = page.locator("label.slds-checkbox_toggle");
@@ -436,8 +436,8 @@ test.describe("Field Creator", () => {
     await expect(checkbox).toBeChecked();
   });
 
-  test("Deploy Button Disabled Without Object Selection", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
+  test("Deploy Button Disabled Without Object Selection", async ({page, extensionUrl}) => {
+    const creatorUrl = `${extensionUrl}/field-creator.html?host=${mockHost}`;
     await page.goto(creatorUrl);
 
     await page.waitForSelector("button:has-text('Deploy Fields')");
@@ -447,8 +447,8 @@ test.describe("Field Creator", () => {
     await expect(deployButton).toBeDisabled();
   });
 
-  test("Field Type Validation for Platform Events", async ({page, extensionId}) => {
-    await initPage(page, extensionId, "Account");
+  test("Field Type Validation for Platform Events", async ({page, extensionUrl}) => {
+    await initPage(page, extensionUrl, "Account");
 
     // Note: We would need to mock a platform event object for this test
     // For now, we'll test that the field type dropdown exists and works

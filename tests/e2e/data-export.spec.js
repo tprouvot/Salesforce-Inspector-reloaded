@@ -34,8 +34,8 @@ test.describe("Data Export", () => {
     });
   });
 
-  test("Execute Simple Export", async ({page, context, extensionId}) => {
-    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+  test("Execute Simple Export", async ({page, context, extensionUrl}) => {
+    await page.goto(`${extensionUrl}/data-export.html?host=${mockHost}`);
 
     // Wait for the query box to appear
     await page.waitForSelector("textarea#query", {timeout: 2000});
@@ -71,8 +71,8 @@ test.describe("Data Export", () => {
     await expect(firstDataRow.locator("td").nth(2)).toContainText("Test Account 1");
   });
 
-  test("Autocomplete Suggestions", async ({page, context, extensionId}) => {
-    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+  test("Autocomplete Suggestions", async ({page, context, extensionUrl}) => {
+    await page.goto(`${extensionUrl}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
     const queryInput = page.locator("textarea#query");
@@ -127,11 +127,11 @@ test.describe("Data Export", () => {
     await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account");
   });
 
-  test("Copy as CSV", async ({page, context, extensionId}) => {
+  test("Copy as CSV", async ({page, context, extensionUrl}) => {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
-    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.goto(`${extensionUrl}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
     // Run a query first

@@ -37,11 +37,11 @@ test.describe("Event Monitor", () => {
 
   /** @description Initializes the event monitor page
    * @param {Object} page - Playwright page object
-   * @param {Object} extensionId - Extension ID
+   * @param {string} extensionUrl - Extension base URL
    * @returns {Promise<void>}
    */
-  async function initEventMonitorPage(page, extensionId) {
-    await page.goto(`chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`);
+  async function initEventMonitorPage(page, extensionUrl) {
+    await page.goto(`${extensionUrl}/event-monitor.html?host=${mockHost}`);
 
     // Wait for page to load
     await page.waitForSelector("select.slds-select");
@@ -75,8 +75,8 @@ test.describe("Event Monitor", () => {
     });
   }
 
-  test("Load Page and Verify Channel Types", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Load Page and Verify Channel Types", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Verify channel type dropdown exists and has options
     const channelTypeSelect = page.locator("select.slds-select").first();
@@ -86,8 +86,8 @@ test.describe("Event Monitor", () => {
     await expect(channelTypeSelect).toHaveValue("standardPlatformEvent");
   });
 
-  test("Load Standard Platform Events", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Load Standard Platform Events", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Longer wait needed when run in full suite (org API load); do not reduce
     await page.waitForTimeout(1000);
@@ -98,8 +98,8 @@ test.describe("Event Monitor", () => {
     await expect(options.length).toBeGreaterThan(0);
   });
 
-  test("Change Channel Type to Custom Platform Event", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Change Channel Type to Custom Platform Event", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Select "Custom Platform Event" channel type
     await page.locator("select.slds-select").first().selectOption("platformEvent");
@@ -112,8 +112,8 @@ test.describe("Event Monitor", () => {
     await expect(options.some(text => text.includes("Event"))).toBeTruthy();
   });
 
-  test("Change Channel Type to Change Event", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Change Channel Type to Change Event", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Select "Change Event" channel type
     await page.locator("select.slds-select").first().selectOption("changeEvent");
@@ -124,8 +124,8 @@ test.describe("Event Monitor", () => {
     await expect(channelSelect.locator("option").filter({hasText: "All Change Events"})).toHaveCount(1);
   });
 
-  test("Enter Custom Channel Path", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Enter Custom Channel Path", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     await page.waitForSelector("input[type='text']");
 
@@ -137,8 +137,8 @@ test.describe("Event Monitor", () => {
     await expect(customChannelInput).toHaveValue("/event/CustomChannel");
   });
 
-  test("Change Replay ID", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Change Replay ID", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     await page.waitForSelector("input[type='number']");
 
@@ -150,8 +150,8 @@ test.describe("Event Monitor", () => {
     await expect(replayIdInput).toHaveValue("12345");
   });
 
-  test("Subscribe Button State", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Subscribe Button State", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     await page.waitForSelector("button[title='Subscribe to channel']");
 
@@ -165,8 +165,8 @@ test.describe("Event Monitor", () => {
     await expect(unsubscribeButton).toBeDisabled();
   });
 
-  test("Toggle Help", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Toggle Help", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Find and click help button
     const helpButton = page.locator("button[title='Event Monitor Help']");
@@ -177,8 +177,8 @@ test.describe("Event Monitor", () => {
     await expect(page.locator("text=Subscribe to a channel to see events")).toBeVisible();
   });
 
-  test("Toggle Metrics", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Toggle Metrics", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Find and click metrics button
     const metricsButton = page.locator("button[title='Show Metrics']");
@@ -190,8 +190,8 @@ test.describe("Event Monitor", () => {
     await expect(page.locator(".slds-card__body.slds-card__body_inner p.slds-m-bottom_x-small").first()).toContainText("Platform Events: Remaining");
   });
 
-  test("Event Filter Input", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Event Filter Input", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Wait for filter input to appear
     await page.waitForSelector("input[placeholder='Filter events...']");
@@ -205,8 +205,8 @@ test.describe("Event Monitor", () => {
     // which is complex. This test verifies the UI element exists and is properly disabled.
   });
 
-  test("Copy and Clear Buttons State", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Copy and Clear Buttons State", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Wait for buttons to appear
     await page.waitForSelector("button:has-text('Copy')");
@@ -220,10 +220,10 @@ test.describe("Event Monitor", () => {
     await expect(clearButton).toBeDisabled();
   });
 
-  test("Copy as JSON with Events", async ({page, extensionId, context}) => {
+  test("Copy as JSON with Events", async ({page, extensionUrl, context}) => {
     // Grant clipboard permissions
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await initEventMonitorPage(page, extensionId);
+    await initEventMonitorPage(page, extensionUrl);
     await addFakeTestEvent(page);
 
     // Copy button should now be enabled
@@ -242,8 +242,8 @@ test.describe("Event Monitor", () => {
     await expect(clipboardContent).toContain("TestEvent");
   });
 
-  test("Clear Events", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Clear Events", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
     await addFakeTestEvent(page);
 
     // Clear button should be enabled
@@ -258,8 +258,8 @@ test.describe("Event Monitor", () => {
     await expect(page.locator("button:has-text('Clear')")).toBeDisabled();
   });
 
-  test("Replay ID -2 Confirmation Popup", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Replay ID -2 Confirmation Popup", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     await page.waitForSelector("input[type='number']");
 
@@ -281,8 +281,8 @@ test.describe("Event Monitor", () => {
     await expect(page.locator(".slds-modal button:has-text('Cancel').slds-modal__close")).toBeEnabled();
   });
 
-  test("Generate and Publish Platform Event", async ({page, extensionId}) => {
-    await initEventMonitorPage(page, extensionId);
+  test("Generate and Publish Platform Event", async ({page, extensionUrl}) => {
+    await initEventMonitorPage(page, extensionUrl);
 
     // Select Custom Platform Event channel type
     await page.locator("select.slds-select").first().selectOption("platformEvent");

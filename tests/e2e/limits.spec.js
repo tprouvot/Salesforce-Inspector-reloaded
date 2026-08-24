@@ -32,8 +32,8 @@ test.describe("Org Limits", () => {
     });
   });
 
-  async function initLimitsPage(page, extensionId) {
-    await page.goto(`chrome-extension://${extensionId}/limits.html?host=${mockHost}`);
+  async function initLimitsPage(page, extensionUrl) {
+    await page.goto(`${extensionUrl}/limits.html?host=${mockHost}`);
 
     // Wait for limits API response and page to load
     await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/limits", 5000);
@@ -42,15 +42,15 @@ test.describe("Org Limits", () => {
     await page.waitForSelector("h2:has-text('Limits snapshot')", {timeout: 3000});
   }
 
-  test("Load page and verify title", async ({page, extensionId}) => {
-    await initLimitsPage(page, extensionId);
+  test("Load page and verify title", async ({page, extensionUrl}) => {
+    await initLimitsPage(page, extensionUrl);
 
     await expect(page).toHaveTitle(/Org Limits/);
     await expect(page.locator("h2:has-text('Limits snapshot')")).toBeVisible();
   });
 
-  test("Display limits data from API", async ({page, extensionId}) => {
-    await initLimitsPage(page, extensionId);
+  test("Display limits data from API", async ({page, extensionUrl}) => {
+    await initLimitsPage(page, extensionUrl);
 
     // At least one limit gauge should be visible
     const limitGauges = page.locator("figure .meter-value");
@@ -62,16 +62,16 @@ test.describe("Org Limits", () => {
     await expect(page.locator("figcaption").first()).toContainText("consumed");
   });
 
-  test("Copy button is enabled when limits load", async ({page, extensionId}) => {
-    await initLimitsPage(page, extensionId);
+  test("Copy button is enabled when limits load", async ({page, extensionUrl}) => {
+    await initLimitsPage(page, extensionUrl);
 
     const copyButton = page.locator("button:has-text('Copy')");
     await expect(copyButton).toBeVisible();
     await expect(copyButton).toBeEnabled();
   });
 
-  test("Sort dropdown has options", async ({page, extensionId}) => {
-    await initLimitsPage(page, extensionId);
+  test("Sort dropdown has options", async ({page, extensionUrl}) => {
+    await initLimitsPage(page, extensionUrl);
 
     const sortSelect = page.locator("select.slds-select");
     await expect(sortSelect).toBeVisible();
@@ -82,8 +82,8 @@ test.describe("Org Limits", () => {
     await expect(sortSelect.locator("option[value='asc']")).toHaveCount(1);
   });
 
-  test("Change sort order", async ({page, extensionId}) => {
-    await initLimitsPage(page, extensionId);
+  test("Change sort order", async ({page, extensionUrl}) => {
+    await initLimitsPage(page, extensionUrl);
 
     const sortSelect = page.locator("select.slds-select");
     await sortSelect.selectOption("consumption");
@@ -93,9 +93,9 @@ test.describe("Org Limits", () => {
     await expect(page).toHaveURL(/sort=consumption/);
   });
 
-  test("Copy as JSON to clipboard", async ({page, extensionId, context}) => {
+  test("Copy as JSON to clipboard", async ({page, extensionUrl, context}) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await initLimitsPage(page, extensionId);
+    await initLimitsPage(page, extensionUrl);
 
     const copyButton = page.locator("button:has-text('Copy')");
     await copyButton.click();

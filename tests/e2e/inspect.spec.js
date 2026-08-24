@@ -9,8 +9,8 @@ import {routeMock} from "./test-mock";
 test.describe("Inspect", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
-  test.beforeEach(async ({context, extensionId}) => {
-    TEST_CONSTANTS.extensionId = extensionId;
+  test.beforeEach(async ({context, extensionUrl}) => {
+    TEST_CONSTANTS.extensionUrl = extensionUrl;
 
     // Inject session data with model exposure
     await injectSessionData(context, {
@@ -39,23 +39,23 @@ test.describe("Inspect", () => {
 
   /** @description Initializes the inspect page
    * @param {Object} page - Playwright page object
-   * @param {Object} extensionId - Extension ID
+   * @param {string} extensionUrl - Extension base URL
    * @param {string} recordId - Record ID
    * @returns {Promise<void>}
    */
-  async function initInspectPage(page, extensionId, recordId = null, useToolingApi = false) {
-    await page.goto(`chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account${recordId ? `&recordId=${recordId}` : ""}${useToolingApi ? "&useToolingApi=1" : ""}`);
+  async function initInspectPage(page, extensionUrl, recordId = null, useToolingApi = false) {
+    await page.goto(`${extensionUrl}/inspect.html?host=${mockHost}&objectType=Account${recordId ? `&recordId=${recordId}` : ""}${useToolingApi ? "&useToolingApi=1" : ""}`);
     await page.waitForSelector("#root", {timeout: 2000});
     await page.waitForSelector("text=Inspect", {timeout: 2000});
   }
 
-  async function initInspectPageWaitRecordName(page, extensionId) {
-    await initInspectPage(page, extensionId, TEST_CONSTANTS.accountRecordId);
+  async function initInspectPageWaitRecordName(page, extensionUrl) {
+    await initInspectPage(page, extensionUrl, TEST_CONSTANTS.accountRecordId);
     await page.waitForSelector(`td:has-text('${TEST_CONSTANTS.accountRecordId}')`, {timeout: 2000});
   }
 
-  test("Load Inspect Page - Object Only", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Load Inspect Page - Object Only", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     // Wait for table so the page is fully loaded before asserting
     await page.waitForSelector("table.slds-table", {timeout: 2000});
@@ -69,15 +69,15 @@ test.describe("Inspect", () => {
     await expect(page.locator("button:has-text('Relationships')")).toBeVisible();
   });
 
-  test("Load Inspect Page - With Record ID", async ({page, extensionId}) => {
-    await initInspectPageWaitRecordName(page, extensionId);
+  test("Load Inspect Page - With Record ID", async ({page, extensionUrl}) => {
+    await initInspectPageWaitRecordName(page, extensionUrl);
 
     // Verify record name appears in table (more specific)
     await expect(page.locator(`td:has-text('${TEST_CONSTANTS.accountRecordName}')`).first()).toBeVisible();
   });
 
-  test("Switch Tabs", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Switch Tabs", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 
@@ -91,8 +91,8 @@ test.describe("Inspect", () => {
     await page.locator(".slds-builder-header_container li span[title=All]").click();
   });
 
-  test("Filter Fields", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Filter Fields", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     // Wait for table first so the page is fully loaded (filter is in header, same render)
     await page.waitForSelector("table.slds-table", {timeout: 2000});
@@ -109,8 +109,8 @@ test.describe("Inspect", () => {
     await expect(page.locator("text=Name").first()).toBeVisible();
   });
 
-  test("Toggle Column Visibility", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Toggle Column Visibility", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 
@@ -135,8 +135,8 @@ test.describe("Inspect", () => {
     }
   });
 
-  test("Calculate Field Usage", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Calculate Field Usage", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 
@@ -168,8 +168,8 @@ test.describe("Inspect", () => {
     }
   });
 
-  test("Enter Edit Mode - Update", async ({page, extensionId}) => {
-    await initInspectPageWaitRecordName(page, extensionId);
+  test("Enter Edit Mode - Update", async ({page, extensionUrl}) => {
+    await initInspectPageWaitRecordName(page, extensionUrl);
 
     // Click Edit button
     const editButton = page.locator("button:has-text('Edit')");
@@ -183,8 +183,8 @@ test.describe("Inspect", () => {
     await expect(page.locator("button:has-text('Cancel')")).toBeVisible();
   });
 
-  test("Edit Field Value", async ({page, extensionId}) => {
-    await initInspectPageWaitRecordName(page, extensionId);
+  test("Edit Field Value", async ({page, extensionUrl}) => {
+    await initInspectPageWaitRecordName(page, extensionUrl);
 
     // Enter edit mode
     await page.locator("button:has-text('Edit')").click();
@@ -205,8 +205,8 @@ test.describe("Inspect", () => {
     await expect(textarea).toHaveValue("Updated Account Name");
   });
 
-  test("Cancel Edit", async ({page, extensionId}) => {
-    await initInspectPageWaitRecordName(page, extensionId);
+  test("Cancel Edit", async ({page, extensionUrl}) => {
+    await initInspectPageWaitRecordName(page, extensionUrl);
 
     // Enter edit mode
     await page.locator("button:has-text('Edit')").click();
@@ -220,8 +220,8 @@ test.describe("Inspect", () => {
     await expect(page.locator("button:has-text('Save')")).not.toBeVisible();
   });
 
-  test("Enter Delete Mode", async ({page, extensionId}) => {
-    await initInspectPageWaitRecordName(page, extensionId);
+  test("Enter Delete Mode", async ({page, extensionUrl}) => {
+    await initInspectPageWaitRecordName(page, extensionUrl);
 
     // Click Delete button
     const deleteButton = page.locator("button:has-text('Delete')");
@@ -234,8 +234,8 @@ test.describe("Inspect", () => {
     await expect(page.locator("button:has-text('Confirm delete')")).toBeVisible();
   });
 
-  test("Enter Create Mode", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Enter Create Mode", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     // Click New button
     const newButton = page.locator("button:has-text('New')");
@@ -248,10 +248,10 @@ test.describe("Inspect", () => {
     await expect(page.locator("button:has-text('Save new')")).toBeVisible();
   });
 
-  test("Export Table - Copy", async ({page, context, extensionId}) => {
+  test("Export Table - Copy", async ({page, context, extensionUrl}) => {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await initInspectPage(page, extensionId);
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector("table.slds-table", {timeout: 1000});
     await page.waitForTimeout(250); // Wait for table to fully render
@@ -273,8 +273,8 @@ test.describe("Inspect", () => {
     await expect(clipboardValue).toContain("Field API Name");
   });
 
-  test("Export Table - Download CSV", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Export Table - Download CSV", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector("table.slds-table", {timeout: 1000});
     await page.waitForTimeout(250); // Wait for table to fully render
@@ -296,8 +296,8 @@ test.describe("Inspect", () => {
     await page.waitForTimeout(250);
   });
 
-  test("Toggle Table Borders", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Toggle Table Borders", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector("table.slds-table", {timeout: 1000});
     await page.waitForTimeout(250); // Wait for table to fully render
@@ -322,8 +322,8 @@ test.describe("Inspect", () => {
     }
   });
 
-  test("Show Object Metadata", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Show Object Metadata", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector("a:has-text('More')", {timeout: 1000});
 
@@ -336,8 +336,8 @@ test.describe("Inspect", () => {
     await expect(page.locator("text=All available metadata")).toBeVisible();
   });
 
-  test("Field Actions Menu", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Field Actions Menu", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector("table.slds-table", {timeout: 1000});
 
@@ -354,8 +354,8 @@ test.describe("Inspect", () => {
     }
   });
 
-  test("Relationship Actions Menu", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Relationship Actions Menu", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector("text=Relationships", {timeout: 1000});
 
@@ -376,8 +376,8 @@ test.describe("Inspect", () => {
     }
   });
 
-  test("Object Actions Menu", async ({page, extensionId}) => {
-    await initInspectPageWaitRecordName(page, extensionId);
+  test("Object Actions Menu", async ({page, extensionUrl}) => {
+    await initInspectPageWaitRecordName(page, extensionUrl);
 
     // Find object actions dropdown button - look in utility items area
     const objectActionsContainer = page.locator(".object-actions").first();
@@ -392,15 +392,15 @@ test.describe("Inspect", () => {
     }
   });
 
-  test("Tooling API Support", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId, null, true);
+  test("Tooling API Support", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl, null, true);
 
     // Verify Tooling API indicator appears
     await expect(page.locator("text=Tooling API")).toBeVisible();
   });
 
-  test("Record ID Popup", async ({page, extensionId}) => {
-    await initInspectPageWaitRecordName(page, extensionId);
+  test("Record ID Popup", async ({page, extensionUrl}) => {
+    await initInspectPageWaitRecordName(page, extensionUrl);
 
     // Find a reference field value (ID) and click it
     const idLink = page.locator("a:has-text('" + TEST_CONSTANTS.accountRecordId + "')").first();
@@ -414,8 +414,8 @@ test.describe("Inspect", () => {
     }
   });
 
-  test("Column Filtering", async ({page, extensionId}) => {
-    await initInspectPage(page, extensionId);
+  test("Column Filtering", async ({page, extensionUrl}) => {
+    await initInspectPage(page, extensionUrl);
 
     await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 

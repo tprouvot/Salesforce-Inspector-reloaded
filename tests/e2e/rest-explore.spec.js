@@ -35,8 +35,8 @@ test.describe("REST Explore", () => {
     });
   });
 
-  test("Execute SOQL Query (GET)", async ({page, extensionId}) => {
-    await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
+  test("Execute SOQL Query (GET)", async ({page, extensionUrl}) => {
+    await page.goto(`${extensionUrl}/rest-explore.html?host=${mockHost}`);
 
     // Wait for app load
     await page.waitForSelector("select.slds-select", {timeout: 1000});
@@ -60,8 +60,8 @@ test.describe("REST Explore", () => {
     await expect(responseCode).toContainText('"Name": "Test Account');
   });
 
-  test("CRUD Flow (POST, PATCH, GET, DELETE)", async ({page, extensionId}) => {
-    await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
+  test("CRUD Flow (POST, PATCH, GET, DELETE)", async ({page, extensionUrl}) => {
+    await page.goto(`${extensionUrl}/rest-explore.html?host=${mockHost}`);
     // Wait for app load
     await page.waitForSelector("select.slds-select", {timeout: 1000});
 

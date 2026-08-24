@@ -1,10 +1,15 @@
 import fs from "fs-extra";
-import path from "path";
+
+export const FIREFOX_EXTENSION_ID = "salesforceinspector@reloaded";
+// Fixed internal UUID seeded via extensions.webextensions.uuids so the
+// moz-extension:// origin is deterministic across test runs.
+export const FIREFOX_EXTENSION_UUID = "9c04c81d-73d5-4a34-8feb-1c4bcd571c4a";
 
 export default async function globalSetup() {
   const addonTarget = "target/firefox-test";
-  const profileDir = "target/firefox-profile";
 
+  // Build an unpacked Firefox version of the addon; tests/e2e/fixtures.js
+  // installs it as a temporary add-on (no signing required) at browser launch
   fs.emptyDirSync(addonTarget);
   fs.copySync("addon", addonTarget, {
     filter(src) {
@@ -14,15 +19,4 @@ export default async function globalSetup() {
   });
   fs.copySync("addon/manifest-firefox.json", `${addonTarget}/manifest.json`);
   fs.removeSync(`${addonTarget}/manifest-firefox.json`);
-
-  // Install extension into a Firefox profile using the gecko extension ID as folder name
-  const extInstallDir = path.join(profileDir, "extensions", "salesforceinspector@reloaded");
-  fs.emptyDirSync(extInstallDir);
-  fs.copySync(addonTarget, extInstallDir);
-
-  fs.ensureDirSync(profileDir);
-  fs.writeFileSync(
-    path.join(profileDir, "prefs.js"),
-    'user_pref("extensions.autoDisableScopes", 0);\n'
-  );
 }

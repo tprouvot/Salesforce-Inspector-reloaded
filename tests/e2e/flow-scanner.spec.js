@@ -9,8 +9,8 @@ import { routeMock } from "./test-mock";
 test.describe("Flow Scanner", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
-  test.beforeEach(async ({context, extensionId}) => {
-    TEST_CONSTANTS.extensionId = extensionId;
+  test.beforeEach(async ({context, extensionUrl}) => {
+    TEST_CONSTANTS.extensionUrl = extensionUrl;
 
     // Inject session data with model exposure
     await injectSessionData(context, {
@@ -103,8 +103,8 @@ test.describe("Flow Scanner", () => {
     });
   });
 
-  async function initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId = null, mockFlowId = null) {
-    await page.goto(`chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}${mockFlowDefId ? `&flowDefId=${mockFlowDefId}` : ""}${mockFlowId ? `&flowId=${mockFlowId}` : ""}`);
+  async function initFlowScannerPage(page, extensionUrl, mockHost, mockFlowDefId = null, mockFlowId = null) {
+    await page.goto(`${extensionUrl}/flow-scanner.html?host=${mockHost}${mockFlowDefId ? `&flowDefId=${mockFlowDefId}` : ""}${mockFlowId ? `&flowId=${mockFlowId}` : ""}`);
     await page.waitForSelector("#root", {timeout: 10000});
     await page.waitForSelector("text=Flow Scanner", {timeout: 10000});
 
@@ -125,15 +125,15 @@ test.describe("Flow Scanner", () => {
     await page.waitForTimeout(500);
   }
 
-  test("Load Flow Scanner Page", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Load Flow Scanner Page", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify Flow Information section appears (use more specific selector)
     await expect(page.locator("h2:has-text('Flow Information')").first()).toBeVisible();
   });
 
-  test("Display Flow Information", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Display Flow Information", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify flow information section exists
     const flowInfoSection = page.locator(".flow-info-section");
@@ -147,15 +147,15 @@ test.describe("Flow Scanner", () => {
     await expect(hasFlowContent).toBe(true);
   });
 
-  test("Display Scan Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Display Scan Results", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify Scan Results section appears (check for results area)
     await expect(page.locator(".scan-results-area, .summary-body").first()).toBeVisible({timeout: 5000});
   });
 
-  test("Expand All Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Expand All Results", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Click Expand All button
     const expandAllButton = page.locator("button:has-text('Expand All')");
@@ -164,8 +164,8 @@ test.describe("Flow Scanner", () => {
     }
   });
 
-  test("Collapse All Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Collapse All Results", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Click Collapse All button
     const collapseAllButton = page.locator("button:has-text('Collapse All')");
@@ -174,8 +174,8 @@ test.describe("Flow Scanner", () => {
     }
   });
 
-  test("Toggle Severity Group", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Toggle Severity Group", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find and click a severity group header (e.g., Errors)
     const errorHeader = page.locator(".severity-title-left:has-text('Errors')").first();
@@ -184,8 +184,8 @@ test.describe("Flow Scanner", () => {
     }
   });
 
-  test("Export Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Export Results", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Click Export button
     const exportButton = page.locator("button:has-text('Export')");
@@ -198,8 +198,8 @@ test.describe("Flow Scanner", () => {
     }
   });
 
-  test("Toggle Flow Description", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Toggle Flow Description", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find and click description toggle button
     const descriptionToggle = page.locator("button.description-toggle-btn, button:has-text('Show description'), button:has-text('Hide description')").first();
@@ -207,8 +207,8 @@ test.describe("Flow Scanner", () => {
     await descriptionToggle.click();
   });
 
-  test("Open Purge Versions Modal", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Open Purge Versions Modal", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     const versionsText = await page.locator("text=/\\d+ versions?/i").first().textContent().catch(() => "");
     const versionCount = parseInt(versionsText) || 0;
@@ -223,8 +223,8 @@ test.describe("Flow Scanner", () => {
     await expect(page.locator("text=Purge Old Versions")).toBeVisible();
   }, {timeout: 45000});
 
-  test("Open Agentforce Modal", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Open Agentforce Modal", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find Agentforce button (Einstein icon)
     const agentforceButton = page.locator("button[title='Open Agentforce Flow Scanner'], button:has(svg use[xlinkHref*='einstein'])").first();
@@ -235,8 +235,8 @@ test.describe("Flow Scanner", () => {
     await expect(page.locator("text=Agentforce Flow Scanner")).toBeVisible();
   });
 
-  test("Open Help/Settings", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Open Help/Settings", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find settings/help button
     const settingsButton = page.locator("button[title='Open Flow Scanner Options'], button:has(svg use[xlinkHref*='settings'])").first();
@@ -247,8 +247,8 @@ test.describe("Flow Scanner", () => {
 
   });
 
-  test("Display Flow Versions", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
+  test("Display Flow Versions", async ({page, extensionUrl}) => {
+    await initFlowScannerPage(page, extensionUrl, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify flow info section loaded successfully (which includes versions)
     await expect(page.locator(".flow-info-section")).toBeVisible({timeout: 5000});
@@ -262,10 +262,10 @@ test.describe("Flow Scanner", () => {
     expect(hasFlowData).toBe(true);
   });
 
-  test.skip("Error Handling - Missing Parameters", async ({page, extensionId}) => {
+  test.skip("Error Handling - Missing Parameters", async ({page, extensionUrl}) => {
     // Skip this test as it requires specific error handling that may not work in test environment
     // The error occurs during initialization before React renders
-    await initFlowScannerPage(page, extensionId, mockHost);
+    await initFlowScannerPage(page, extensionUrl, mockHost);
 
     // Wait for error to appear - check for error text anywhere on page
     await page.waitForFunction(
@@ -280,10 +280,10 @@ test.describe("Flow Scanner", () => {
     await expect(page.locator("text=Missing required parameters").first()).toBeVisible({timeout: 5000});
   });
 
-  test.skip("Retry After Error", async ({page, extensionId}) => {
+  test.skip("Retry After Error", async ({page, extensionUrl}) => {
     // Skip this test as it requires specific error handling that may not work in test environment
     // The error occurs during initialization before React renders
-    await initFlowScannerPage(page, extensionId, mockHost);
+    await initFlowScannerPage(page, extensionUrl, mockHost);
 
     // Wait for error - check for error text anywhere on page
     await page.waitForFunction(

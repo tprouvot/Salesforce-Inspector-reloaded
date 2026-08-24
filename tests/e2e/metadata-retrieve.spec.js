@@ -33,8 +33,8 @@ test.describe("Metadata Retrieve", () => {
     });
   });
 
-  async function initMetadataRetrievePage(page, extensionId) {
-    await page.goto(`chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`);
+  async function initMetadataRetrievePage(page, extensionUrl) {
+    await page.goto(`${extensionUrl}/metadata-retrieve.html?host=${mockHost}`);
 
     // Wait for metadata objects to load
     await page.waitForSelector(".filter-input", {timeout: 10000});
@@ -43,8 +43,8 @@ test.describe("Metadata Retrieve", () => {
     await page.waitForTimeout(500);
   }
 
-  test("Load Page and Verify Initial State", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Load Page and Verify Initial State", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Verify filter input exists
     const filterInput = page.locator(".filter-input");
@@ -58,8 +58,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(page.locator("button[title='Copy package.xml']")).toBeVisible();
   });
 
-  test("Load Metadata Objects", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Load Metadata Objects", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Verify metadata objects are displayed
     const metadataItems = page.locator(".slds-accordion__list-item");
@@ -69,8 +69,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(page.locator("text=ApexClass")).toBeVisible();
   });
 
-  test("Filter Metadata Objects", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Filter Metadata Objects", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Type in filter
     const filterInput = page.locator(".filter-input");
@@ -88,8 +88,8 @@ test.describe("Metadata Retrieve", () => {
     }
   });
 
-  test("Clear Filter", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Clear Filter", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Type in filter
     const filterInput = page.locator(".filter-input");
@@ -103,8 +103,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(filterInput).toHaveValue("");
   });
 
-  test("Select All Metadata Objects", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Select All Metadata Objects", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Find and click Select All label (click on label instead of checkbox to avoid interception)
     const selectAllLabel = page.locator("label.slds-checkbox_toggle").first();
@@ -119,8 +119,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(retrieveButton).toBeEnabled();
   });
 
-  test("Select Individual Metadata Object", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Select Individual Metadata Object", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Find first metadata object checkbox
     const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
@@ -135,8 +135,8 @@ test.describe("Metadata Retrieve", () => {
     expect(packageXml).toContain("<Package");
   });
 
-  test("Expand Metadata Object to List Children", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Expand Metadata Object to List Children", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Click on ApexClass to expand
     const apexClassItem = page.locator(".slds-accordion__list-item:has-text('ApexClass')");
@@ -150,8 +150,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(children.first()).toBeVisible({timeout: 1000});
   });
 
-  test("Toggle Managed Packages Filter", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Toggle Managed Packages Filter", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Find managed packages toggle (second checkbox toggle)
     const managedToggle = page.locator("label.slds-checkbox_toggle").nth(1);
@@ -167,8 +167,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(checkbox).toBeChecked();
   });
 
-  test("Generate Package XML", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Generate Package XML", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Select a metadata object
     const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
@@ -184,10 +184,10 @@ test.describe("Metadata Retrieve", () => {
     expect(packageXml).toContain("</Package>");
   });
 
-  test("Copy Package XML", async ({page, context, extensionId}) => {
+  test("Copy Package XML", async ({page, context, extensionUrl}) => {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await initMetadataRetrievePage(page, extensionId);
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Select a metadata object
     const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
@@ -204,8 +204,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(clipboardContent).toContain("<Package");
   });
 
-  test("Show Deployment Options", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Show Deployment Options", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Wait for page to load
     await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 1000});
@@ -222,8 +222,8 @@ test.describe("Metadata Retrieve", () => {
     await expect(page.locator("label:has-text('Test Level')")).toBeVisible();
   });
 
-  test("Change Test Level", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Change Test Level", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Wait for page to load
     await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 1000});
@@ -243,16 +243,16 @@ test.describe("Metadata Retrieve", () => {
     await expect(testLevelSelect).toHaveValue("RunLocalTests");
   });
 
-  test("Retrieve Metadata Button Disabled When Nothing Selected", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Retrieve Metadata Button Disabled When Nothing Selected", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Verify Retrieve Metadata button is disabled initially
     const retrieveButton = page.locator("button:has-text('Retrieve Metadata')");
     await expect(retrieveButton).toBeDisabled();
   });
 
-  test("Import Package XML", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Import Package XML", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     // Wait for page to load
     await page.waitForSelector("button[title='Import package.xml or package zip file']", {timeout: 1000});
@@ -300,8 +300,8 @@ test.describe("Metadata Retrieve", () => {
     expect(retrieveRequestCount).toBe(0);
   });
 
-  test("Save Status Info Downloads Retrieve Status JSON", async ({page, extensionId}) => {
-    await initMetadataRetrievePage(page, extensionId);
+  test("Save Status Info Downloads Retrieve Status JSON", async ({page, extensionUrl}) => {
+    await initMetadataRetrievePage(page, extensionUrl);
 
     const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
     await firstCheckbox.click();

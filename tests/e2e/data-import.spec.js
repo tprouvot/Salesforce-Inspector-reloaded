@@ -44,13 +44,13 @@ test.describe("Data Import", () => {
  * Initializes the import page
  * @param {Object} page - Playwright page object
  * @param {Object} context - Playwright browser context
- * @param {string} extensionId - Extension ID
+ * @param {string} extensionUrl - Extension base URL
  * @returns {Promise<void>}
  */
-  async function initImportPage(page, context, extensionId) {
+  async function initImportPage(page, context, extensionUrl) {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await page.goto(`chrome-extension://${extensionId}/data-import.html?host=${mockHost}`);
+    await page.goto(`${extensionUrl}/data-import.html?host=${mockHost}`);
 
     // Inject localStorage data after page loads (init script might fail due to security restrictions)
     await page.evaluate(({host, token, version}) => {
@@ -230,15 +230,15 @@ test.describe("Data Import", () => {
     await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("4 Succeeded");
   }
 
-  test("Load Page and Verify Autocomplete Lists", async ({page, context, extensionId}) => {
-    const objectInput = await initImportPage(page, context, extensionId);
+  test("Load Page and Verify Autocomplete Lists", async ({page, context, extensionUrl}) => {
+    const objectInput = await initImportPage(page, context, extensionUrl);
 
     // Verify the object input has the value
     await expect(objectInput).toHaveValue("Inspector_Test__c");
   });
 
-  test("All Records Operations from CSV", async ({page, context, extensionId}) => {
-    await initImportPage(page, context, extensionId);
+  test("All Records Operations from CSV", async ({page, context, extensionUrl}) => {
+    await initImportPage(page, context, extensionUrl);
     //create records and get the record ids
     const createdRecordIds = await createRecords(page, "create");
     await updateRecords(page, new Array(createdRecordIds[0]));
@@ -246,8 +246,8 @@ test.describe("Data Import", () => {
     await deleteRecords(page, createdRecordIds.concat(upsertedRecordIds));
   });
 
-  test("Create Records from Excel Format", async ({page, context, extensionId}) => {
-    await initImportPage(page, context, extensionId);
+  test("Create Records from Excel Format", async ({page, context, extensionUrl}) => {
+    await initImportPage(page, context, extensionUrl);
 
     // Set action to Insert
     await page.locator("#form-import-action").selectOption("create");
@@ -276,8 +276,8 @@ test.describe("Data Import", () => {
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
   });
 
-  test("Copy Options", async ({page, context, extensionId}) => {
-    await initImportPage(page, context, extensionId);
+  test("Copy Options", async ({page, context, extensionUrl}) => {
+    await initImportPage(page, context, extensionUrl);
 
     // Set action to Update
     await page.locator("#form-import-action").selectOption("update");
@@ -293,8 +293,8 @@ test.describe("Data Import", () => {
     await expect(clipboardContent).toContain("object=Inspector_Test__c");
   });
 
-  test("Validation Errors - Empty Data", async ({page, context, extensionId}) => {
-    await initImportPage(page, context, extensionId);
+  test("Validation Errors - Empty Data", async ({page, context, extensionUrl}) => {
+    await initImportPage(page, context, extensionUrl);
 
     // Try to paste empty data
     await pasteData(page, "#data-paste", "");
@@ -305,8 +305,8 @@ test.describe("Data Import", () => {
     await expect(errorDiv).not.toHaveAttribute("hidden", "");
   });
 
-  test("Validation Errors - Invalid Field Name", async ({page, context, extensionId}) => {
-    await initImportPage(page, context, extensionId);
+  test("Validation Errors - Invalid Field Name", async ({page, context, extensionUrl}) => {
+    await initImportPage(page, context, extensionUrl);
 
     // Paste data with invalid field name
     const csvData = "Na*me\r\ntest0";

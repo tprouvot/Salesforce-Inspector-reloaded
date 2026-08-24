@@ -39,11 +39,11 @@ export default defineConfig({
     },
     {
       name: "firefox",
+      // The extension is preinstalled in a Firefox profile prepared by
+      // playwright.global-setup.js; tests/e2e/fixtures.js launches a
+      // persistent context on a per-worker copy of that profile.
       use: {
         ...devices["Desktop Firefox"],
-        launchOptions: {
-          args: ["--profile", path.join(process.cwd(), "target/firefox-profile")],
-        },
       },
     },
   ],

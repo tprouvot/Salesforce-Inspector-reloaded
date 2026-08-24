@@ -344,8 +344,8 @@ test.describe("Popup", () => {
     });
   });
 
-  async function initPopupPage(page, extensionId) {
-    await page.goto(`chrome-extension://${extensionId}/test-popup.html?host=${mockHost}`);
+  async function initPopupPage(page, extensionUrl) {
+    await page.goto(`${extensionUrl}/test-popup.html?host=${mockHost}`);
 
     //click on the button to open the popup
     await page.locator(".insext-btn").click();
@@ -374,8 +374,8 @@ test.describe("Popup", () => {
   }
 
   test.describe("General", () => {
-    test("Load Popup Page", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Load Popup Page", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       // Verify basic page structure (may not have React content if init didn't work)
       const rootContent = await page.frameLocator(".insext-popup").locator("#root").textContent();
 
@@ -383,8 +383,8 @@ test.describe("Popup", () => {
       await expect(rootContent !== null).toBeTruthy();
     });
 
-    test("Verify Main Sections Exist", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Verify Main Sections Exist", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Verify Data & Metadata section
       await expect(page.frameLocator(".insext-popup").locator("text=Data & Metadata")).toBeVisible();
@@ -399,8 +399,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("a:has-text('Event Monitor')")).toBeVisible();
     });
 
-    test("Change API Version", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Change API Version", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Find API version input
       const apiInput = page.frameLocator(".insext-popup").locator("input#idApiInput");
@@ -414,8 +414,8 @@ test.describe("Popup", () => {
       await expect(apiInput).toHaveValue("64");
     });
 
-    test("Click Data Export Link", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Click Data Export Link", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Find Data Export link
       const exportLink = page.frameLocator(".insext-popup").locator("a:has-text('Data Export')");
@@ -426,8 +426,8 @@ test.describe("Popup", () => {
       expect(href).toContain("data-export.html");
     });
 
-    test("Click Data Import Link", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Click Data Import Link", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Find Data Import link
       const importLink = page.frameLocator(".insext-popup").locator("a:has-text('Data Import')");
@@ -438,8 +438,8 @@ test.describe("Popup", () => {
       expect(href).toContain("data-import.html");
     });
 
-    test("Click REST Explorer Link", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Click REST Explorer Link", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Find REST Explorer link
       const restLink = page.frameLocator(".insext-popup").locator("a:has-text('REST Explorer')");
@@ -450,8 +450,8 @@ test.describe("Popup", () => {
       expect(href).toContain("rest-explore.html");
     });
 
-    test("Click Event Monitor Link", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Click Event Monitor Link", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Find Event Monitor link
       const eventLink = page.frameLocator(".insext-popup").locator("a:has-text('Event Monitor')");
@@ -462,8 +462,8 @@ test.describe("Popup", () => {
       expect(href).toContain("event-monitor.html");
     });
 
-    test("Footer Links Exist", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Footer Links Exist", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Wait for footer to load
       await page.frameLocator(".insext-popup").locator("#footer").waitFor({timeout: 1000});
@@ -485,8 +485,8 @@ test.describe("Popup", () => {
   });
 
   test.describe("Objects Tab", () => {
-    test("Search and Select Object", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search and Select Object", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       await waitForObjectsTabToLoad(page);
       // Type in search input
@@ -504,8 +504,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator(".tab-container .slds-card__body .slds-text-body_small").locator("text=Account")).toBeVisible();
     });
 
-    test("Select Record ID", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Select Record ID", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       await waitForObjectsTabToLoad(page);
 
       // Type a record ID
@@ -522,8 +522,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=" + TEST_CONSTANTS.accountRecordId)).toBeVisible({timeout: 1000});
     });
 
-    test("Show All Data Button", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Show All Data Button", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       await waitForObjectsTabToLoad(page);
 
       // Type and select an object
@@ -540,8 +540,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("a:has-text('Show all data')")).toBeVisible({timeout: 1000});
     });
 
-    test("Object Links (Fields, List, etc.)", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Object Links (Fields, List, etc.)", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       await waitForObjectsTabToLoad(page);
 
       // Type and select an object
@@ -561,8 +561,8 @@ test.describe("Popup", () => {
   });
 
   test.describe("Users Tab", () => {
-    test("Switch to Users Tab", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Switch to Users Tab", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Users tab
       const usersTab = page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')");
@@ -575,8 +575,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']")).toBeVisible({timeout: 1000});
     });
 
-    test("Search User", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search User", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Users tab
       await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -595,8 +595,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first()).toBeVisible({timeout: 2000});
     });
 
-    test("Select User and View Details", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Select User and View Details", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Users tab
       await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -624,8 +624,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=" + username).first()).toBeVisible();
     });
 
-    test("User Action Buttons", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("User Action Buttons", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Users tab
       await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -648,8 +648,8 @@ test.describe("Popup", () => {
       await expect(await page.frameLocator(".insext-popup").locator("a:has-text('PSet')").count()).toBe(2);
     });
 
-    test("Enable Debug Logs", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Enable Debug Logs", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Users tab
       await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -711,8 +711,8 @@ test.describe("Popup", () => {
       return {referenceIds, stop: () => page.off("request", handler)};
     }
 
-    test("Switch to Shortcuts Tab", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Switch to Shortcuts Tab", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Shortcuts tab
       const shortcutsTab = page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Shortcuts')");
@@ -725,8 +725,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator(shortcutInputSelector)).toBeVisible({timeout: 1000});
     });
 
-    test("Search Shortcut (default: links + metadata)", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search Shortcut (default: links + metadata)", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       const searchInput = await openShortcutsTab(page);
       const capture = captureShortcutMetadataRequests(page);
 
@@ -740,8 +740,8 @@ test.describe("Popup", () => {
       expect(capture.referenceIds).toContain("flowsSelect");
     });
 
-    test("Search Shortcut with '/' prefix returns setup links only", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search Shortcut with '/' prefix returns setup links only", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       const searchInput = await openShortcutsTab(page);
       const capture = captureShortcutMetadataRequests(page);
 
@@ -757,8 +757,8 @@ test.describe("Popup", () => {
       expect(capture.referenceIds).toEqual([]);
     });
 
-    test("Search Shortcut with '!' prefix returns metadata only", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search Shortcut with '!' prefix returns metadata only", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       const searchInput = await openShortcutsTab(page);
       const capture = captureShortcutMetadataRequests(page);
 
@@ -778,8 +778,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=Sf Inspector")).toBeVisible({timeout: 3000});
     });
 
-    test("Search Shortcut with '!flow' prefix returns flows only", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search Shortcut with '!flow' prefix returns flows only", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       const searchInput = await openShortcutsTab(page);
       const capture = captureShortcutMetadataRequests(page);
 
@@ -792,8 +792,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=RecordTrigger InspectorTest")).toBeVisible({timeout: 3000});
     });
 
-    test("Search Shortcut with '!profile' prefix returns profiles only", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search Shortcut with '!profile' prefix returns profiles only", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       const searchInput = await openShortcutsTab(page);
       const capture = captureShortcutMetadataRequests(page);
 
@@ -806,8 +806,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=System Administrator")).toBeVisible({timeout: 3000});
     });
 
-    test("Search Shortcut with '!class' prefix returns Apex classes only", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search Shortcut with '!class' prefix returns Apex classes only", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       const searchInput = await openShortcutsTab(page);
       const capture = captureShortcutMetadataRequests(page);
 
@@ -824,8 +824,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=SalesforceInspectorTest").first()).toBeVisible({timeout: 3000});
     });
 
-    test("Search Shortcut with '!perm' prefix returns Permission Sets only", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Search Shortcut with '!perm' prefix returns Permission Sets only", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
       const searchInput = await openShortcutsTab(page);
       const capture = captureShortcutMetadataRequests(page);
 
@@ -840,8 +840,8 @@ test.describe("Popup", () => {
   });
 
   test.describe("Org Tab", () => {
-    test("Switch to Org Tab", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Switch to Org Tab", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Org tab
       const orgTab = page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Org')");
@@ -854,8 +854,8 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=Org Id")).toBeVisible({timeout: 1000});
     });
 
-    test("Delete Apex Logs Button", async ({page, extensionId}) => {
-      await initPopupPage(page, extensionId);
+    test("Delete Apex Logs Button", async ({page, extensionUrl}) => {
+      await initPopupPage(page, extensionUrl);
 
       // Click Org tab
       await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Org')").click();

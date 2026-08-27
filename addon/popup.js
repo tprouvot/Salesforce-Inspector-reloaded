@@ -181,17 +181,22 @@ class App extends React.PureComponent {
     });
   }
   onContextUrlMessage(e) {
-    if (e.source == parent && e.data.insextUpdateRecordId) {
-      let {locationHref} = e.data;
-      this.setState({
-        isInSetup: locationHref.includes("/lightning/setup/"),
-        contextUrl: locationHref,
-        isPopupExpanded: true, // Popup is expanded when we receive this message
-      });
+    if (e.source == parent && e.data) {
+      if (e.data.insextUpdateRecordId) {
+        let {locationHref} = e.data;
+        this.setState({
+          isInSetup: locationHref.includes("/lightning/setup/"),
+          contextUrl: locationHref,
+          isPopupExpanded: true, // Popup is expanded when we receive this message
+        });
+      }
+      
+      if ('isFieldsPresent' in e.data) {
+        this.setState({
+          isFieldsPresent: e.data.isFieldsPresent,
+        });
+      }
     }
-    this.setState({
-      isFieldsPresent: e.data.isFieldsPresent,
-    });
   }
   async getListViewQuery(sobjectName, filterName) {
     if (localStorage.getItem("enableListViewExport") !== "true" || !sobjectName || !filterName) {

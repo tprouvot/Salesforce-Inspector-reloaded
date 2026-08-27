@@ -3346,8 +3346,7 @@ class UserDetails extends React.PureComponent {
     let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
     //No API to determine if user is allowed to login as given user. See https://salesforce.stackexchange.com/questions/224342/query-can-i-login-as-for-users
-    const isFrozen = !!user?.UserLogins?.records?.[0]?.IsFrozen;
-    if (!user || user.Id == currentUserId || !user.IsActive || isFrozen) {
+    if (!user || user.Id == currentUserId || !user.IsActive) {
       return false;
     }
     return true;

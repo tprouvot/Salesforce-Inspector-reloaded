@@ -972,8 +972,9 @@ class Model {
       }).then(result => {
         if (result.result){
           // Extract SOQL from the result
-          const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
-          const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+          const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/s);
+          let extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+          extractedSoql = extractedSoql.replace(/```(?:sql|soql|apex)?\s*/gi, "").trim();
           this.updateCurrentTabQuery(extractedSoql);
           this.queryAutocompleteHandler();
           if (this.queryInput) {

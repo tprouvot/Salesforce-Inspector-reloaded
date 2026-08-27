@@ -34,6 +34,7 @@ class Model {
     this.sfHost = sfHost;
     this.importData = undefined;
     this.consecutiveFailures = 0;
+    this.individualRetryRows = new Set();
 
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
@@ -538,6 +539,7 @@ class Model {
     };
 
     this.consecutiveFailures = 0;
+    this.individualRetryRows = new Set();
     this.isProcessingQueue = true;
     this.executeBatch();
   }
@@ -767,11 +769,19 @@ class Model {
       importArgs.sObjects = [];
     }
 
+    // When retrying rows individually after a batch-level failure, process one at a time
+    // and only pick rows that are pending individual retry.
+    const hasIndividualRetries = this.individualRetryRows.size > 0;
+    const effectiveBatchSize = hasIndividualRetries ? 1 : batchSize;
+
     for (let row of data) {
-      if (batchRows.length == batchSize) {
+      if (batchRows.length == effectiveBatchSize) {
         break;
       }
       if (row[statusColumnIndex] != "Queued") {
+        continue;
+      }
+      if (hasIndividualRetries && !this.individualRetryRows.has(row)) {
         continue;
       }
       batchRows.push(row);
@@ -912,27 +922,42 @@ class Model {
           + " [" + sfConn.asArray(errorNode.fields).join(", ") + "]"
         ).join(", ");
       }
+      // Remove successfully processed rows from the individual retry set
+      for (let row of batchRows) {
+        this.individualRetryRows.delete(row);
+      }
       this.consecutiveFailures = 0;
     }, err => {
       if (err.name != "SalesforceSoapError") {
         throw err; // Not an HTTP error response
       }
       let errorText = err.message;
-      for (let row of batchRows) {
-        row[statusColumnIndex] = "Failed";
-        row[resultIdColumnIndex] = "";
-        row[actionColumnIndex] = "";
-        row[errorColumnIndex] = errorText;
-      }
-      this.consecutiveFailures++;
-      // If a whole batch has failed (as opposed to individual records failing),
-      // too many times in a row, we stop the import.
-      // This is useful when an error will affect all batches, for example a field name being misspelled.
-      // This also helps prevent throtteling in Chrome.
-      // A batch failing might not affect all batches, so we wait for a few consecutive errors before we stop.
-      // For example, a whole batch will fail if one of the field values is of an incorrect type or format.
-      if (this.consecutiveFailures >= 3) {
-        this.isProcessingQueue = false;
+      // If multiple rows failed as a batch-level error, retry them individually
+      // so that only the truly invalid rows get marked as Failed.
+      if (batchRows.length > 1) {
+        for (let row of batchRows) {
+          row[statusColumnIndex] = "Queued";
+          this.individualRetryRows.add(row);
+        }
+      } else {
+        // Single row failed — mark it as Failed and track consecutive failures
+        for (let row of batchRows) {
+          this.individualRetryRows.delete(row);
+          row[statusColumnIndex] = "Failed";
+          row[resultIdColumnIndex] = "";
+          row[actionColumnIndex] = "";
+          row[errorColumnIndex] = errorText;
+        }
+        this.consecutiveFailures++;
+        // If a whole batch has failed (as opposed to individual records failing),
+        // too many times in a row, we stop the import.
+        // This is useful when an error will affect all batches, for example a field name being misspelled.
+        // This also helps prevent throtteling in Chrome.
+        // A batch failing might not affect all batches, so we wait for a few consecutive errors before we stop.
+        // For example, a whole batch will fail if one of the field values is of an incorrect type or format.
+        if (this.consecutiveFailures >= 3) {
+          this.isProcessingQueue = false;
+        }
       }
     }).then(() => {
       this.activeBatches--;

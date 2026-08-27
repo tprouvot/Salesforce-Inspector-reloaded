@@ -29,7 +29,7 @@ test.describe("Metadata Retrieve", () => {
         return;
       }
 
-      return route.continue();
+      await route.continue();
     });
   });
 

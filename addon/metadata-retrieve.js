@@ -1,3 +1,4 @@
+/* global React ReactDOM initButton */
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -807,7 +808,7 @@ class App extends React.Component {
   onUpdateDeployOptions(e) {
     let {model} = this.props;
     const key = e.target.name || e.target.id;
-    if (key && model.deployOptions.hasOwnProperty(key)) {
+    if (key && Object.prototype.hasOwnProperty.call(model.deployOptions, key)) {
       model.deployOptions[key] = e.target.checked;
       model.didUpdate();
       localStorage.setItem("deployOptions", JSON.stringify(model.deployOptions));
@@ -1035,7 +1036,7 @@ class App extends React.Component {
               h("svg", {className: "filter-icon"},
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
-              h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+              h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: el => { this.refs.metadataFilter = el; }}),
               h("a", {href: "about:blank", className: "filter-clear", title: "Clear filter", onClick: this.onClearAndFocusFilter},
                 h("svg", {className: "filter-clear-icon"},
                   h("use", {xlinkHref: "symbols.svg#clear"})
@@ -1102,7 +1103,7 @@ class App extends React.Component {
               h("input", {
                 type: "file",
                 style: {display: "none"},
-                ref: "fileInput",
+                ref: el => { this.refs.fileInput = el; },
                 onChange: this.onImportPackage,
                 accept: "text/xml,.xml,application/zip,.zip"
               })
@@ -1172,7 +1173,7 @@ class App extends React.Component {
               )
             )
           ),
-          h("div", {id: "result-table", ref: "scroller"},
+          h("div", {id: "result-table", ref: el => { this.refs.scroller = el; }},
             model.metadataObjects
               ? h("div", {className: "result slds-grid"},
                 h("div", {className: "slds-col"},
@@ -1528,7 +1529,6 @@ class ObjectSelector extends React.Component {
       );
     };
 
-    const isHovered = this.state.hoveredItem === metadataObject.xmlName;
     return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden, key: metadataObject.xmlName},
       h("section", {className: metadataObject.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
         h("div", {

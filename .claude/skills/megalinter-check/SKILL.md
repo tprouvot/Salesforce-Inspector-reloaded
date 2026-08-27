@@ -1,0 +1,244 @@
+---
+name: megalinter-check
+description: Collect MegaLinter lint errors for the current repository. Use when the user wants to know if the code passes linting, why the MegaLinter CI job fails, or before/after fixing lint errors. Two modes - watch a CI job (GitHub Actions, GitLab CI, Azure Pipelines, Bitbucket Pipelines) and parse its logs, or run MegaLinter locally with Docker (full run or fast parallel standalone linter runs).
+argument-hint: "[mode: watch|local] [PR/job URL or linter keys]"
+allowed-tools: Bash, Read, Grep, Glob, Write, Agent, AskUserQuestion
+user-invocable: true
+licence: MegaLinter by OX Security, Copyright 2026 - https://megalinter.io/
+---
+
+# MegaLinter check
+
+Collect the current MegaLinter errors and produce a compact error list that the `megalinter-fix` skill can consume.
+
+## Choose a mode
+
+- **Watch mode** — a MegaLinter CI job exists for the current branch/PR (running or completed): parse its logs. No Docker needed.
+- **Local mode** — no CI job available, or the user wants a pre-push check: run MegaLinter with Docker via `npx mega-linter-runner`.
+- **Targeted re-check** (local, after fixes): re-run only the previously-failing linters in parallel standalone images.
+
+## Watch mode
+
+1. Detect the provider from `git remote get-url origin` and the CI config files present.
+2. Load the matching provider guide from this skill's directory — **only the one you need**:
+   - GitHub Actions → `providers/github.md`
+   - GitLab CI → `providers/gitlab.md`
+   - Azure Pipelines → `providers/azure.md`
+   - Bitbucket Pipelines → `providers/bitbucket.md`
+3. Follow the guide: locate the MegaLinter job, wait for completion if running, fetch the logs of the MegaLinter step.
+4. Parse the MegaLinter summary (the `❌`/`✅` table) and per-linter error sections.
+5. Check whether MegaLinter pushed its own fixes onto the branch (see below).
+
+### MegaLinter auto-fix commits
+
+A repository using `APPLY_FIXES` with `APPLY_FIXES_MODE: commit` lets the MegaLinter job **push its fixes back onto the watched branch**, as a commit whose subject is `[MegaLinter] Apply linters fixes` (the `commit_message` of the CI templates — adapt the pattern below if the repository customized it). This has two consequences:
+
+- Your local branch is behind, so any later work must start by pulling.
+- **The checks are not re-run.** CI providers deliberately ignore pushes made with the CI token to prevent workflow loops, so the branch keeps the now-stale results of the run that produced the fixes — commonly leaving the PR stuck on pending or failed checks that the fixes have already resolved.
+
+Re-pushing that same commit under the user's own credentials produces a genuine push event and re-triggers the checks. Amending its message with a 🤖 prefix does exactly that, while making the re-push visible in the history. **This is the only situation in which these skills may force-push**, and only ever with `--force-with-lease`.
+
+Detection is pure git, so it works identically on GitHub, GitLab, Azure and Bitbucket:
+
+```bash
+BRANCH="$(git branch --show-current)"
+git fetch origin "$BRANCH"
+
+TIP_SUBJECT="$(git log -1 --format='%s' "origin/$BRANCH")"          # tip commit of the remote branch
+LOCAL_AHEAD="$(git rev-list --count "origin/$BRANCH..HEAD")"        # local commits not pushed yet
+```
+
+Amend **only when all of these hold** — otherwise do nothing and simply report what you saw:
+
+- `TIP_SUBJECT` is the auto-fix subject. If other commits landed **after** it, do nothing: those pushes already re-triggered the checks.
+- `TIP_SUBJECT` does not already start with 🤖 — it was amended by a previous pass, and re-amending would loop.
+- `LOCAL_AHEAD` is `0`. If you have local commits, just push them normally: that re-triggers the checks by itself and no amend is needed.
+- The working tree is clean (`git status --porcelain` is empty), otherwise the fast-forward below fails — commit or stash first.
+- The branch is **not** the default branch. On `main`/`master`, ask the user before amending and force-pushing.
+
+```bash
+git merge --ff-only "origin/$BRANCH"                     # fast-forward onto the auto-fix commit
+git commit --amend -m "🤖 $(git log -1 --format='%B')"   # keeps the original author, changes the SHA
+git push --force-with-lease origin "$BRANCH"             # never --force
+```
+
+Name the remote and branch explicitly on the push: a bare `git push --force-with-lease` fails on branches that have no upstream tracking configured. The lease is checked against the `origin/<branch>` ref you refreshed in the detection step, so the push is refused if anything landed meanwhile.
+
+Then tell the user the commit was amended and the checks re-triggered, and resume watching the new run. If `--force-with-lease` is rejected, the remote moved after your fetch: re-run the detection from the start instead of retrying with `--force`.
+
+## Local mode
+
+Before the first local run, make sure the user is aware that running MegaLinter locally is **resource-consuming**:
+it needs a reasonably powerful machine (CPU, RAM, free disk space) and a good internet connection — MegaLinter is
+Docker-based and the first run downloads a large image (can be several GB depending on the flavor).
+Because of this, **watch mode (CI does the work) is usually the recommended option**.
+When both modes are possible (a MegaLinter CI job exists for the repository, or a branch/PR could be pushed to
+trigger one) and the user did not explicitly choose, **ask them** which mode to use (use your platform's structured
+question mechanism if it has one, with watch mode first/recommended) instead of starting a local run.
+
+### Engine preflight (before every local run)
+
+Requires a container engine (docker or podman) that actually **responds** - an installed binary proves nothing: with a stopped backend (e.g. Docker Desktop's Windows service), the `docker` CLI can hang indefinitely instead of failing fast. Probe with a bound before starting any run:
+
+```bash
+timeout 10 docker info --format '{{.ServerVersion}}'    # exit 124 = installed but not answering
+timeout 10 podman info --format '{{.Version.Version}}'
+```
+
+- Chosen engine answers → proceed (pass `--container-engine podman` when using podman).
+- Chosen engine errors or times out → probe the other engine the same way; if it answers, use it instead.
+- Neither answers → do **not** start a run (it would hang the same way). Tell the user what you found ("Docker Desktop appears installed but is not responding - is it running?") and **ask** whether you should install or start an engine — then (and only then) load `container-engine.md` from this skill's directory for the setup instructions (prefer podman: free of charge even in enterprise contexts). If the user declines, fall back to watch mode.
+
+Flavor and version are resolved automatically from `MEGALINTER_FLAVOR` / `MEGALINTER_VERSION` in `.mega-linter.yml` — do not pass `--flavor` or `--release` yourself.
+
+```bash
+npx mega-linter-runner                            # docker
+npx mega-linter-runner --container-engine podman  # podman
+```
+
+Tip: for repeated local runs (e.g. fix → re-check loops), install the runner once with `npm install -g mega-linter-runner` and call `mega-linter-runner` directly — it avoids the `npx` package resolution overhead on every invocation.
+
+- Add `--fix` if `.mega-linter.yml` defines `APPLY_FIXES` other than `none` (the repository has opted into auto-fixing).
+- **Cap parallelism on local machines**: MegaLinter defaults to one parallel linter process per CPU core, which can saturate a dev machine where Docker shares resources with everything else. When running on a local computer — not in CI (no `CI`/`GITHUB_ACTIONS`/`GITLAB_CI`-style environment variable set) — add `-e PARALLEL_PROCESS_NUMBER=4` to full runs (use the machine's core count instead if it has fewer than 4). Skip this when the repository configuration already sets `PARALLEL_PROCESS_NUMBER`; never write it into `.mega-linter.yml`, where it would also slow down CI.
+- **Always add `-e JSON_REPORTER=true`** to full runs: the JSON report is **not generated by default** (`JSON_REPORTER` defaults to `false`), and this env variable overrides the repository configuration, guaranteeing `megalinter-reports/mega-linter-report.json`.
+- Then read `megalinter-reports/mega-linter-report.json` and `megalinter-reports/linters_logs/ERROR-*.log` instead of parsing the console output, and extract the console tips from the persisted log file (see "Console tips" below) - do not re-read the whole console stream for them.
+- **A missing report file never means "wait"**: the runner is synchronous — once the command has exited, no report
+  file will ever appear afterwards. Do not poll, sleep, or re-run for it. If the expected files are absent (the
+  repository may set `REPORT_OUTPUT_FOLDER` to a custom folder or `none`, `TEXT_REPORTER: false`, or a different
+  `TEXT_REPORTER_SUB_FOLDER`), fall back in order: check `REPORT_OUTPUT_FOLDER` in `.mega-linter.yml` and glob
+  `**/mega-linter-report.json` / `**/linters_logs/` under it, then parse the console output — the `❌`/`✅` summary
+  table and per-linter error sections are always printed there.
+
+### Run with a time bound - never wait unbounded
+
+Local runs can hang for environmental reasons (engine backend down, Windows bind-mount stalls - see below), so give **every** local invocation (prerun, full run, targeted re-check) an explicit bound:
+
+1. Prefer the runner's own flag when available: check `npx mega-linter-runner --help` for `--timeout`, and pass `--timeout <seconds>` if listed - on expiry it also stops and removes the container. Do not assume it exists (older runner versions / pinned `MEGALINTER_VERSION`).
+2. Fallback: wrap with the shell coreutils command - `timeout <seconds> npx mega-linter-runner ...`. This kills the wrapper only, **not** the container: after it fires, do the orphan cleanup below.
+3. Launch in the background with output going to a log file and check it every 1-2 minutes; never sit in a single indefinite blocking call.
+
+Suggested bounds: **full run 30 min**, **prerun or targeted single-linter run 10 min** - a full flavor run on a mid-size repo normally takes minutes, not hours. First run on a machine: pre-pull the image separately (`docker pull <image>` / `podman pull <image>`) so the multi-GB download does not eat the bound.
+
+### Stalled or just slow? Diagnose, don't keep waiting
+
+No new log output for ~5 minutes is a possible stall, not proof of work. Diagnose actively (`<engine>` = docker or podman):
+
+1. `<engine> ps -a` - is the container still there, and how long has it been "Up"?
+2. `<engine> logs --tail 30 <name>` - what was the last line? A phase boundary that never advances (e.g. "...collects the files to analyse", "Processing linters on [N] parallel cores") shows where it is stuck.
+3. `<engine> exec <name> ps aux` - what is running inside, and how much cumulative CPU TIME do those processes show vs the container's wall-clock uptime? **Seconds of CPU over hours of uptime = I/O stall** (filesystem or network), not real computation: stop waiting, kill the run, clean up (below), and report the diagnosis instead of polling further. On Windows the usual culprit is the WSL2 bind-mount penalty - see "Windows bind-mount slowness" in `performance.md`.
+
+### Orphaned containers after a forced kill
+
+Killing the wrapping command (shell `timeout` expiring, Ctrl-C, killing the npx process) does **not** reliably stop the container - especially on Windows, where signal forwarding is unreliable. Only the runner's own `--timeout` guarantees cleanup. After any forced interrupt:
+
+1. `<engine> ps -a` - look for a still-"Up" container running a megalinter image.
+2. `<engine> stop <name>`, then `<engine> rm <name>`, for each match.
+
+### First local run: prerun analysis
+
+Before the **first** local full run on a repository (fresh `megalinter-setup`, or no `megalinter-reports/mega-linter-report.json` from a previous run), start with a prerun analysis so the real run is not wasted on a badly tuned configuration. Also use it later whenever the user asks to tune MegaLinter performances.
+
+Prerun requires MegaLinter v10 or beta: check `MEGALINTER_VERSION` in `.mega-linter.yml` and skip this step (go straight to the full run) when the pinned version is older.
+
+1. Run MegaLinter in analysis-only mode (fast: no linter is run, and the image pull is reused by the real run right after):
+
+   ```bash
+   npx mega-linter-runner --prerun
+   ```
+
+2. Read `megalinter-reports/prerun-report.json`. Each entry of `suggestions` describes a `.mega-linter.yml` change: `variable`, `operation` (`append` to a list / `set`), `values`, `safe`, `reason`, `details`.
+3. Review the suggestions with the user:
+   - `safe: true` suggestions (directories containing only gitignored files) do not change the linting scope - present them grouped, recommend applying them.
+   - `safe: false` suggestions (well-known generated folder names still containing lintable files, flavor change) need an explicit user decision - ask about each one, with the file counts from `details`. A flavor change also requires updating the image reference in the CI workflow files.
+4. Apply the accepted changes to `.mega-linter.yml`, then continue with the normal full run.
+
+If the report file is missing after the run (image older than v10 that ignored `MEGALINTER_PRERUN` and linted everything), treat the output as a normal full run instead of re-running.
+
+## Targeted re-check (after fixes)
+
+Re-run only what previously failed, in parallel (max 4 concurrent containers):
+
+```bash
+npx mega-linter-runner --linter PYTHON_RUFF -e JSON_REPORTER=true src/a.py src/b.py &
+npx mega-linter-runner --linter MARKDOWN_MARKDOWNLINT -e JSON_REPORTER=true README.md &
+wait
+```
+
+(`-e JSON_REPORTER=true` for the same reason as in full runs: the JSON report is not generated by default.)
+
+**Version rule (all skills)**: runner and Docker image versions always follow `MEGALINTER_VERSION` from `.mega-linter.yml` — invoke `npx mega-linter-runner@beta` when it is `beta`, plain `npx mega-linter-runner` otherwise, and never pass `--release` yourself. Caveat until MegaLinter v10: standalone `megalinter-only-*` images are only multi-arch on the `beta` tag, so if a standalone run fails with a platform error while `MEGALINTER_VERSION` is not `beta`, inform the user and propose either pinning `MEGALINTER_VERSION: beta` or falling back to a full-image re-check.
+
+- Pass the fixed files as arguments for file-scoped linters; omit the file list for project-scoped linters (e.g. `REPOSITORY_*`, `COPYPASTE_JSCPD`).
+- Each run writes its reports to `megalinter-reports/<linter_key_lower>/` — no conflict between parallel runs.
+- Local-mode guardrails apply here too: engine preflight first, bound each run (~10 min per standalone linter), and check for orphaned containers after any forced kill.
+
+## Output contract
+
+Whatever the mode, summarize the result in this shape (this is what `megalinter-fix` consumes):
+
+```json
+{
+  "status": "success|errors|failure",
+  "linters": [
+    {
+      "key": "PYTHON_RUFF",
+      "errors": 12,
+      "fixable": true,
+      "blocking": true,
+      "files": ["src/a.py"],
+      "samples": ["src/a.py:10:5 E501 line too long"]
+    }
+  ]
+}
+```
+
+Distinguish **blocking** linters (❌, fail the job) from non-blocking ones (⚠️, `DISABLE_ERRORS: true`). A `failure` status means the job/run itself broke (container engine, network, configuration): include a `"failure_reason"` field with a short cause excerpt instead of linter errors. In watch mode, a `"job_url"` field may be added for reference. Add the optional `"tips"` field when console tips were found (see below).
+
+In watch mode, add the optional `"auto_fix_commit"` field when MegaLinter pushed its own fixes onto the branch, so the caller knows the working copy is behind and whether the checks were re-triggered:
+
+```json
+"auto_fix_commit": {
+  "sha": "94873de",
+  "subject": "[MegaLinter] Apply linters fixes",
+  "is_branch_tip": true,
+  "amended": true
+}
+```
+
+## Console tips (even when the run is green)
+
+MegaLinter's console output is full of actionable advice for agents that never reaches the JSON report: performance warnings (">300 .gitignored files... consider ADDITIONAL_EXCLUDED_DIRECTORIES", "Heavy folders detected"), flavor suggestions, `[Activation]` notices explaining why a linter did not run, deprecation and removed-linter notices, timeout kills, forwarded-exclusion traces. Always collect them:
+
+- **Local mode**: the full console stream is persisted in the report folder - glob `megalinter-reports/mega*linter.log` (file name from `LOG_FILE`, default `mega-linter.log`; `LOG_FILE: none` disables it, then use the captured console output). Grep it instead of re-reading the console: `grep -E "⚠|WARNING|\[Activation\]|Heavy folders|To improve|[Ff]lavor|deprecat|Timed out|[Cc]onsider" <log-file>`.
+- **Watch mode**: the CI job log IS the console output - apply the same grep to the downloaded log.
+
+Curate the matches into at most 10 one-line entries: keep lines that suggest a configuration, performance, or upgrade action; drop per-file lint errors, banners, and progress lines; dedupe repeats. Add them to the output as:
+
+```json
+"tips": [
+  "More than 300 .gitignored files detected (612): consider adding directories to ADDITIONAL_EXCLUDED_DIRECTORIES (heaviest: site, coverage)",
+  "[Activation] MARKDOWN_RUMDL inactive: set MARKDOWN_DEFAULT_STYLE=rumdl to activate"
+]
+```
+
+Relay the tips to the user after the error summary, and feed the configuration-related ones into the `megalinter-setup` refinement step or the prerun suggestions review when one is in progress. Like performance suggestions, never apply a tip without the user's agreement.
+
+## Performance check (even when the run is green)
+
+MegaLinter's summary table includes an `Elapsed time` column per linter — always collect it. Add a `"slow_linters"` field to the output when any linter took **more than 30 seconds** or more than **25% of the total lint time**:
+
+```json
+"slow_linters": [{"key": "REPOSITORY_GRYPE", "elapsed_seconds": 116.6}]
+```
+
+When `slow_linters` is non-empty, load `performance.md` from this skill's directory and report the matching improvement suggestions to the user — explicitly noting that nothing is failing and these are pure speed wins. Never apply a performance change (exclusions, caching, disabling a linter) without the user's agreement.
+
+## Optimization: sub-agents (Claude Code and compatible agents)
+
+If sub-agents are available and the agent definitions are installed (see `megalinter-setup`):
+
+- Watch mode → spawn `megalinter-watcher` with the branch/PR reference; it polls, fetches and parses, and returns the output contract.
+- Local mode → spawn `megalinter-runner` with the command to run; it executes and digests the reports.
+- Targeted re-check → spawn one `megalinter-runner` per standalone linter run, in parallel (max 4).
+
+This keeps multi-megabyte CI logs and linter output out of your context. Without sub-agents, do everything inline.

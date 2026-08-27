@@ -1,0 +1,240 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "salesforce-inspector-reloaded"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "react",
+      "version": "19.2.8",
+      "purl": "pkg:npm/react@19.2.8",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://react.dev"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2cb0c4d78e216f41ef41b74ba8b4b456f3dcab0d0c1f99b634df6f6f1c62907b"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "861c0c9a27333073d00265c2210248d28dd6b4944542d94abb8911573f711d10"
+        }
+      ],
+      "properties": [
+        {
+          "name": "sif:committedPaths",
+          "value": "addon/react.js addon/react.min.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "19.2.8",
+      "purl": "pkg:npm/react-dom@19.2.8",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://react.dev"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f3716faabe4bbb131c4cd46469c69068cc2ada065aba74aabda5897d37783830"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "630c501389e0d51868cde219d02dcc3c870e656de1b5039dd29e717a7db61445"
+        }
+      ],
+      "properties": [
+        {
+          "name": "sif:committedPaths",
+          "value": "addon/react-dom.js addon/react-dom.min.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cometd",
+      "version": "9.0.1",
+      "purl": "pkg:npm/cometd@9.0.1",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://cometd.org"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ea7c4617c020271cdb7329458cc7abcb889d3e18559bc4cac3c8e3380b2b648b"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "c365affa9e7f71e7f09489979d43aeaa46c25fecf9dd4ba2db94dedc9cebabd6"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "a04f2db2b8800e7d30014534633b798546747612594994ce1b8d3e27b0d3e84b"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "c2dc555d23fd550a0ee9e3e239cd23d7f0853d7b873adf64435ca5ca801d51a6"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "f1fbbbaee2d653d58974683703f2b569b6f5573fca36ebf6ff80a3c4affa2a70"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "8e0864e56bd3606017cf8a969725f3676c9e2b3419420a4a8ea68b96fc2770ba"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "34b77abdadc7d9069553d677ca277edacb4155485a3ac0a3f8cc7cbf4893af79"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "4fdd91d222c226e8c1b7e8f2b16dd4809b8d91188771d45ba4f2fa9bce6348c0"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "09343ecfddb1d1004f2eaea0c5542d00bebee337d61099d5cf8dd15a8b989321"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "e0d947212c370658db04ffc17ecd914042a9e223e383ab8d1680ed732dca67ef"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "0efb0faeeacabf5ce082f586990e406b592761057967fe88d77e4816592896cb"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "aa200347a5780b1f6a504c1d16c0fb9487191853d5b0a97f1b0a36bd620cd9e0"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "212ba041ea77471877fd28c87b7f0e27ea26d17823cbc7db1b308380fe786bb4"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "26d53ad496585bf7fb9f49e0411040ad53dc69adf05adeecbb70d97e2d195ed7"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "feff6feb532fe696cf665f65959c932ad751360f53068a8c048ec94e24c9be00"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "a144afe78c986f4fa4e60074e201cd0c0a451a2709cd262e4007ae7b2a273800"
+        }
+      ],
+      "properties": [
+        {
+          "name": "sif:committedPaths",
+          "value": "addon/lib/cometd/AckExtension.js addon/lib/cometd/BinaryExtension.js addon/lib/cometd/CallbackPollingTransport.js addon/lib/cometd/Client.js addon/lib/cometd/Extension.js addon/lib/cometd/LongPollingTransport.js addon/lib/cometd/ReloadExtension.js addon/lib/cometd/RequestTransport.js addon/lib/cometd/TimeStampExtension.js addon/lib/cometd/TimeSyncExtension.js addon/lib/cometd/Transport.js addon/lib/cometd/TransportRegistry.js addon/lib/cometd/WebSocketTransport.js addon/lib/cometd/Z85.js addon/lib/cometd/cometd.d.ts addon/lib/cometd/cometd.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "prismjs",
+      "version": "1.30.0",
+      "purl": "pkg:npm/prismjs@1.30.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://prismjs.com"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "63b78347dec3da8fdc9086c7f33f85f9690714dbb6c0996397d8b436e20a9b1b"
+        },
+        {
+          "alg": "SHA-256",
+          "content": "fffbaf3f4318dba49b2b9e34c4251d9ee6c931caf2063bbe5235359e34518aef"
+        }
+      ],
+      "properties": [
+        {
+          "name": "sif:committedPaths",
+          "value": "addon/lib/prism/prism.css addon/lib/prism/prism.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lightning-flow-scanner-core",
+      "version": "6.19.3",
+      "purl": "pkg:github/Flow-Scanner/lightning-flow-scanner@core-v6.19.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/Flow-Scanner/lightning-flow-scanner"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ff8bb6a0f88947487b190f9b210410c22473df9411fe2a73e1db44f88a5cf061"
+        }
+      ],
+      "properties": [
+        {
+          "name": "sif:committedPaths",
+          "value": "addon/lib/flow-scanner-core.js"
+        }
+      ]
+    }
+  ]
+}

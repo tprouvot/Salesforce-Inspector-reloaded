@@ -1,5 +1,5 @@
 .sfir-inspect-table-text {
-  word-wrap: break-word;
+  overflow-wrap: break-word;
   white-space: pre-wrap;
 }
 
@@ -40,6 +40,7 @@ tr.fieldHidden a[href] {
 
 .sfir-field-column {
   max-width: 200px;
+
   /* To handle long words. This is not actually 200px but scales with the table. Table layout magic. */
 }
 
@@ -55,5 +56,5 @@ tr.fieldHidden a[href] {
 .sfir-filter-clear-icon {
   width: 0.875rem;
   height: 0.875rem;
-  fill: currentColor;
+  fill: currentcolor;
 }

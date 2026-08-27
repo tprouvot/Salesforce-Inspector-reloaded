@@ -1,1 +1,106 @@
-export class TransportRegistry{#a=[];#b={};getTransportTypes(){return this.#a.slice(0)}add(t,s,e){let r=!1;for(let p=0;p<this.#a.length;++p)if(this.#a[p]===t){r=!0;break}return r||("number"!=typeof e?this.#a.push(t):this.#a.splice(e,0,t),this.#b[t]=s),!r}find(t){for(let s=0;s<this.#a.length;++s)if(this.#a[s]===t)return this.#b[t];return null}negotiateTransport(t,s,e,r){for(let p=0;p<this.#a.length;++p){let i=this.#a[p];for(let n=0;n<t.length;++n)if(i===t[n]){let h=this.#b[i];if(!0===h.accept(s,e,r))return h}}return null}clear(){this.#a=[],this.#b={}}reset(t){for(let s=0;s<this.#a.length;++s)this.#b[this.#a[s]].reset(t)}findTransportTypes(t,s,e){let r=[];for(let p=0;p<this.#a.length;++p){let i=this.#a[p];!0===this.#b[i].accept(t,s,e)&&r.push(i)}return r}remove(t){for(let s=0;s<this.#a.length;++s)if(this.#a[s]===t){this.#a.splice(s,1);let e=this.#b[t];return delete this.#b[t],e}return null}}
+/*
+ * Copyright (c) 2008 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * A registry for transports used by the CometD object.
+ */
+export class TransportRegistry {
+    #types = [];
+    #transports = {};
+
+    getTransportTypes() {
+        return this.#types.slice(0);
+    }
+
+    add(type, transport, index) {
+        let existing = false;
+        for (let i = 0; i < this.#types.length; ++i) {
+            if (this.#types[i] === type) {
+                existing = true;
+                break;
+            }
+        }
+
+        if (!existing) {
+            if (typeof index !== "number") {
+                this.#types.push(type);
+            } else {
+                this.#types.splice(index, 0, type);
+            }
+            this.#transports[type] = transport;
+        }
+
+        return !existing;
+    }
+
+    find(type) {
+        for (let i = 0; i < this.#types.length; ++i) {
+            if (this.#types[i] === type) {
+                return this.#transports[type];
+            }
+        }
+        return null;
+    }
+
+    negotiateTransport(types, version, crossDomain, url) {
+        for (let i = 0; i < this.#types.length; ++i) {
+            const type = this.#types[i];
+            for (let j = 0; j < types.length; ++j) {
+                if (type === types[j]) {
+                    const transport = this.#transports[type];
+                    if (transport.accept(version, crossDomain, url) === true) {
+                        return transport;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    clear() {
+        this.#types = [];
+        this.#transports = {};
+    }
+
+    reset(init) {
+        for (let i = 0; i < this.#types.length; ++i) {
+            this.#transports[this.#types[i]].reset(init);
+        }
+    }
+
+    findTransportTypes(version, crossDomain, url) {
+        const result = [];
+        for (let i = 0; i < this.#types.length; ++i) {
+            const type = this.#types[i];
+            if (this.#transports[type].accept(version, crossDomain, url) === true) {
+                result.push(type);
+            }
+        }
+        return result;
+    }
+
+    remove(type) {
+        for (let i = 0; i < this.#types.length; ++i) {
+            if (this.#types[i] === type) {
+                this.#types.splice(i, 1);
+                const transport = this.#transports[type];
+                delete this.#transports[type];
+                return transport;
+            }
+        }
+        return null;
+    }
+}

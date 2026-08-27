@@ -11,6 +11,7 @@ const RECENT_ITEMS_RENDERED_COUNT = 100;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
+  // eslint-disable-next-line no-var -- var is required here: `let` would be block-scoped and not provide the global fallback
   var browser = chrome;
 }
 
@@ -329,7 +330,6 @@ class App extends React.PureComponent {
     }
   }
   componentDidMount() {
-    let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
@@ -404,7 +404,7 @@ class App extends React.PureComponent {
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
     const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
-      h("div", {},
+      h("div", {className: "sfir-popup"},
         h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
@@ -487,7 +487,7 @@ class App extends React.PureComponent {
           "div",
           {className: "main", id: "mainTabs"},
           h(AllDataBox, {
-            ref: "showAllDataBox",
+            ref: el => { this.refs.showAllDataBox = el; },
             sfHost,
             showDetailsSupported: !inLightning && !inInspector,
             inInspector,
@@ -522,7 +522,7 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "dataExportBtn",
+                  ref: el => { this.refs.dataExportBtn = el; },
                   href: exportHref,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
@@ -539,7 +539,7 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "dataImportBtn",
+                  ref: el => { this.refs.dataImportBtn = el; },
                   href: importHref,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
@@ -548,7 +548,7 @@ class App extends React.PureComponent {
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
-              h("a", {ref: "logsViewerBtn", href: "debug-log.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+              h("a", {ref: el => { this.refs.logsViewerBtn = el; }, href: "debug-log.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, "Logs ", h("u", {}, "V"), "iewer (beta)")
               )
             ),
@@ -561,7 +561,7 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "fieldCreatorBtn",
+                  ref: el => { this.refs.fieldCreatorBtn = el; },
                   href: fieldCreatorHref,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
@@ -570,12 +570,12 @@ class App extends React.PureComponent {
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
-              h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+              h("a", {ref: el => { this.refs.metaRetrieveBtn = el; }, href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, h("u", {}, "D"), "ownload Metadata")
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
-              h("a", {ref: "dependenciesExplorerBtn", href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+              h("a", {ref: el => { this.refs.dependenciesExplorerBtn = el; }, href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, "Dependen", h("u", {}, "c"), "ies Explorer")
               )
             )
@@ -604,7 +604,7 @@ class App extends React.PureComponent {
                 h(
                   "a",
                   {
-                    ref: "limitsBtn",
+                    ref: el => { this.refs.limitsBtn = el; },
                     href: limitsHref,
                     target: linkTarget,
                     className:
@@ -624,7 +624,7 @@ class App extends React.PureComponent {
                 h(
                   "a",
                   {
-                    ref: "apiExploreBtn",
+                    ref: el => { this.refs.apiExploreBtn = el; },
                     href: "explore-api.html?" + hostArg,
                     target: linkTarget,
                     className: "page-button slds-button slds-button_neutral",
@@ -642,7 +642,7 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "restExploreBtn",
+                  ref: el => { this.refs.restExploreBtn = el; },
                   href: "rest-explore.html?" + hostArg,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
@@ -659,7 +659,7 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "eventMonitorBtn",
+                  ref: el => { this.refs.eventMonitorBtn = el; },
                   href: eventMonitorHref,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
@@ -692,7 +692,7 @@ class App extends React.PureComponent {
                 h(
                   "a",
                   {
-                    ref: "generateToken",
+                    ref: el => { this.refs.generateToken = el; },
                     href: bannerUrlAction.url,
                     target: linkTarget,
                     className: !clientId
@@ -715,7 +715,7 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "homeBtn",
+                  ref: el => { this.refs.homeBtn = el; },
                   href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`,
                   title:
                     "You can choose if you want to open in a new tab or not",
@@ -735,7 +735,7 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "homeBtn",
+                  ref: el => { this.refs.homeBtn = el; },
                   href: `https://${sfHost}/lightning/page/home`,
                   title:
                     "You can choose if you want to open in a new tab or not",
@@ -755,7 +755,7 @@ class App extends React.PureComponent {
                 h(
                   "a",
                   {
-                    ref: "optionsBtn",
+                    ref: el => { this.refs.optionsBtn = el; },
                     href: "options.html?" + hostArg,
                     target: linkTarget,
                     className: "page-button slds-button slds-button_neutral",
@@ -774,7 +774,7 @@ class App extends React.PureComponent {
                 h(
                   "a",
                   {
-                    ref: "apiStatisticsBtn",
+                    ref: el => { this.refs.apiStatisticsBtn = el; },
                     href: apiStatisticsHref,
                     target: linkTarget,
                     className:
@@ -790,7 +790,7 @@ class App extends React.PureComponent {
           "div",
           {
             className:
-            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
+            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top sfir-popup-footer",
           },
           h(
             "div",
@@ -914,7 +914,7 @@ class App extends React.PureComponent {
             h(
               "a",
               {
-                ref: "optionsBtn",
+                ref: el => { this.refs.optionsBtn = el; },
                 href: "options.html?" + hostArg,
                 target: linkTarget,
               },
@@ -999,8 +999,6 @@ class AllDataBox extends React.PureComponent {
 
     // Check if popup just became expanded or Objects tab just became active
     const popupJustExpanded = !prevProps.isPopupExpanded && this.props.isPopupExpanded;
-    const objectsTabJustActivated = prevState.activeSearchAspect !== activeSearchAspect
-      && activeSearchAspect === this.SearchAspectTypes.sobject;
 
     if (prevState.activeSearchAspect !== activeSearchAspect) {
       switch (activeSearchAspect) {
@@ -1174,7 +1172,7 @@ class AllDataBox extends React.PureComponent {
         h(
           "li",
           {
-            ref: "objectTab",
+            ref: el => { this.refs.objectTab = el; },
             onClick: this.onAspectClick,
             "data-aspect": this.SearchAspectTypes.sobject,
             className:
@@ -1192,7 +1190,7 @@ class AllDataBox extends React.PureComponent {
         h(
           "li",
           {
-            ref: "userTab",
+            ref: el => { this.refs.userTab = el; },
             onClick: this.onAspectClick,
             "data-aspect": this.SearchAspectTypes.users,
             className:
@@ -1210,7 +1208,7 @@ class AllDataBox extends React.PureComponent {
         h(
           "li",
           {
-            ref: "shortcutTab",
+            ref: el => { this.refs.shortcutTab = el; },
             onClick: this.onAspectClick,
             "data-aspect": this.SearchAspectTypes.shortcuts,
             className:
@@ -1228,7 +1226,7 @@ class AllDataBox extends React.PureComponent {
         h(
           "li",
           {
-            ref: "orgTab",
+            ref: el => { this.refs.orgTab = el; },
             onClick: this.onAspectClick,
             "data-aspect": this.SearchAspectTypes.org,
             className:
@@ -1247,7 +1245,7 @@ class AllDataBox extends React.PureComponent {
       ),
       activeSearchAspect == this.SearchAspectTypes.sobject
         ? h(AllDataBoxSObject, {
-          ref: "showAllDataBoxSObject",
+          ref: el => { this.refs.showAllDataBoxSObject = el; },
           sfHost,
           showDetailsSupported,
           sobjectsList,
@@ -1265,7 +1263,7 @@ class AllDataBox extends React.PureComponent {
           ? h(
             AllDataBoxUsers,
             {
-              ref: "showAllDataBoxUsers",
+              ref: el => { this.refs.showAllDataBoxUsers = el; },
               sfHost,
               linkTarget,
               contextUserId,
@@ -1282,7 +1280,7 @@ class AllDataBox extends React.PureComponent {
             ? h(
               AllDataBoxShortcut,
               {
-                ref: "showAllDataBoxShortcuts",
+                ref: el => { this.refs.showAllDataBoxShortcuts = el; },
                 sfHost,
                 linkTarget,
                 contextUserId,
@@ -1299,7 +1297,7 @@ class AllDataBox extends React.PureComponent {
               ? h(
                 AllDataBoxOrg,
                 {
-                  ref: "showAllDataBoxOrg",
+                  ref: el => { this.refs.showAllDataBoxOrg = el; },
                   sfHost,
                   linkTarget,
                   contextUserId,
@@ -1352,6 +1350,7 @@ class AllDataBoxUsers extends React.PureComponent {
       const merged = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => ({
         name: o.name,
         label: o.label,
+        // eslint-disable-next-line @eslint-react/no-access-state-in-setstate -- this is the setState callback, which runs after the update
         checked: this.state[o.stateKey],
       }));
       localStorage.setItem(sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY, JSON.stringify(merged));
@@ -1369,7 +1368,7 @@ class AllDataBoxUsers extends React.PureComponent {
     try {
       const parsed = JSON.parse(userSearchExclusions);
       return Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, parsed.find(cb => cb.name === o.name)?.checked || false]));
-    } catch (e) {
+    } catch {
       return defaultExclusions;
     }
   }
@@ -1420,7 +1419,7 @@ class AllDataBoxUsers extends React.PureComponent {
       }
       const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
       return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
-    } catch (e) {
+    } catch {
       return defaultFields;
     }
   }
@@ -1609,11 +1608,11 @@ class AllDataBoxUsers extends React.PureComponent {
     return h(
       "div",
       {
-        ref: "usersBox",
+        ref: el => { this.refs.usersBox = el; },
         className: "users-box tab-container slds-p-horizontal_x-small",
       },
       h(AllDataSearch, {
-        ref: "allDataSearch",
+        ref: el => { this.refs.allDataSearch = el; },
         getMatches: this.getMatches,
         onDataSelect: this.onDataSelect,
         inputSearchDelay: 400,
@@ -1622,7 +1621,7 @@ class AllDataBoxUsers extends React.PureComponent {
         rightIcon: h(
           "div",
           {
-            ref: "filterDropdownRef",
+            ref: el => { this.refs.filterDropdownRef = el; },
             className: "slds-dropdown-trigger slds-dropdown-trigger_click" + (filterDropdownOpen ? " slds-is-open" : ""),
           },
           h(
@@ -1741,7 +1740,6 @@ class AllDataBoxSObject extends React.PureComponent {
 
   loadRecordIdDetails() {
     let {selectedValue} = this.state;
-    let {sfHost} = this.props;
     //If a recordId is selected and the object supports regularApi
     if (
       selectedValue
@@ -2010,7 +2008,7 @@ class AllDataBoxSObject extends React.PureComponent {
       "div",
       {className: "tab-container slds-p-horizontal_x-small"},
       h(AllDataSearch, {
-        ref: "allDataSearch",
+        ref: el => { this.refs.allDataSearch = el; },
         sfHost,
         onDataSelect: this.onDataSelect,
         onMatchingResultsChange: this.onMatchingResultsChange,
@@ -2023,7 +2021,7 @@ class AllDataBoxSObject extends React.PureComponent {
       }),
       selectedValue
         ? h(AllDataSelection, {
-          ref: "allDataSelection",
+          ref: el => { this.refs.allDataSelection = el; },
           sfHost,
           showDetailsSupported,
           selectedValue,
@@ -2503,7 +2501,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       let metadataShortcutSearchOptions = localStorage.getItem(
         "metadataShortcutSearchOptions"
       );
-      //handle previous option which was not detailled by metadata type
+      //handle previous option which was not detailed by metadata type
       let metadataShortcutSearch
         = localStorage.getItem("metadataShortcutSearch") != "false";
       if (metadataShortcutSearchOptions) {
@@ -2730,11 +2728,11 @@ class AllDataBoxShortcut extends React.PureComponent {
     return h(
       "div",
       {
-        ref: "shortcutsBox",
+        ref: el => { this.refs.shortcutsBox = el; },
         className: "users-box tab-container slds-p-horizontal_x-small",
       },
       h(AllDataSearch, {
-        ref: "allDataSearch",
+        ref: el => { this.refs.allDataSearch = el; },
         getMatches: this.getMatches,
         onDataSelect: this.onDataSelect,
         inputSearchDelay: 200,
@@ -2793,8 +2791,15 @@ class AllDataBoxOrg extends React.PureComponent {
   getNextMajorRelease(maintenances) {
     if (maintenances) {
       let event = maintenances.find((event) =>
-        event.name.endsWith("Major Release")
+        event.name?.endsWith("Major Release")
       );
+      // find() returns undefined when the org has maintenances but none of them
+      // is a major release. Reading event.name here used to throw, which React
+      // 15 tolerated by leaving the half-rendered DOM in place; React unmounts
+      // the whole tree on an uncaught render error, so the tab went blank.
+      if (!event) {
+        return null;
+      }
       return (
         event.name.replace(" Major Release", "")
         + " on "
@@ -2807,7 +2812,7 @@ class AllDataBoxOrg extends React.PureComponent {
   getApiVersion(instanceStatus) {
     let {sfHost} = this.props;
     if (instanceStatus) {
-      let apiVersion = instanceStatus.releaseNumber.substring(0, 3) / 2 - 64;
+      let apiVersion = (instanceStatus.releaseNumber.substring(0, 3) / 2) - 64;
       //store it for maximum version allowed
       sessionStorage.setItem(
         sfHost + "_latestApiVersionFromOrg",
@@ -2923,7 +2928,7 @@ class AllDataBoxOrg extends React.PureComponent {
     return h(
       "div",
       {
-        ref: "orgBox",
+        ref: el => { this.refs.orgBox = el; },
         className: "users-box tab-container slds-p-horizontal_x-small",
       },
       h(
@@ -3051,7 +3056,7 @@ class AllDataBoxOrg extends React.PureComponent {
         h(
           "div",
           {
-            ref: "orgButtons",
+            ref: el => { this.refs.orgButtons = el; },
             className: "user-buttons center small-font slds-m-bottom_x-small",
           },
           h(
@@ -3158,7 +3163,7 @@ class UserDetails extends React.PureComponent {
         debugTimeInMs
       );
       /*If an old trace flag is found on the user and with this debug level
-       *Update the trace flag extending the experiation date.
+       *Update the trace flag extending the expiration date.
        */
       if (traceFlags.size > 0) {
         await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
@@ -3216,10 +3221,10 @@ class UserDetails extends React.PureComponent {
 
   toggleDisplay(event, refKey) {
     event.target.style.display = "none";
-    this.fectchLocalesAndLanguages(refKey);
+    this.fetchLocalesAndLanguages(refKey);
   }
 
-  fectchLocalesAndLanguages(refKey) {
+  fetchLocalesAndLanguages(refKey) {
     if (!this.state.userLocales) {
       sfConn
         .rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {
@@ -3734,7 +3739,7 @@ class UserDetails extends React.PureComponent {
                 h(
                   "select",
                   {
-                    ref: "LanguageLocaleKey",
+                    ref: el => { this.refs.LanguageLocaleKey = el; },
                     name: "LanguageLocaleKey",
                     className: "hide",
                     defaultValue: user.LanguageLocaleKey,
@@ -3759,7 +3764,7 @@ class UserDetails extends React.PureComponent {
                 h(
                   "select",
                   {
-                    ref: "LocaleSidKey",
+                    ref: el => { this.refs.LocaleSidKey = el; },
                     name: "LocaleSidKey",
                     className: "hide",
                     defaultValue: user.LanguageLocaleKey,
@@ -3778,7 +3783,7 @@ class UserDetails extends React.PureComponent {
       ),
       h(
         "div",
-        {ref: "userButtons", className: "slds-button-group justify-center"},
+        {ref: el => { this.refs.userButtons = el; }, className: "slds-button-group justify-center"},
         h(
           "a",
           {
@@ -3982,7 +3987,7 @@ class AllDataSelection extends React.PureComponent {
     }
   }
   getUrl(basePath, params) {
-    const {sfHost, selectedValue} = this.props;
+    const {sfHost} = this.props;
     const args = new URLSearchParams({host: sfHost, ...params});
     return `${basePath}?${args}`;
   }
@@ -4162,13 +4167,11 @@ class AllDataSelection extends React.PureComponent {
   render() {
     let {
       sfHost,
-      showDetailsSupported,
       contextRecordId,
       selectedValue,
       linkTarget,
       recordIdDetails,
       isFieldsPresent,
-      eventMonitorHref,
     } = this.props;
     let {flowDefinitionId} = this.state;
     // Show buttons for the available APIs.
@@ -4203,7 +4206,7 @@ class AllDataSelection extends React.PureComponent {
               {className: "slds-card__body"},
               selectedValue.sobject.isEverCreatable && isOptionEnabled("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
                 ? h("a", {
-                  ref: "showNewBtn",
+                  ref: el => { this.refs.showNewBtn = el; },
                   href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
                   target: linkTarget,
                   onClick: handleLightningLinkClick,
@@ -4446,7 +4449,7 @@ class AllDataSelection extends React.PureComponent {
             {
               key: button,
               // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
-              ref: index == 0 ? "showAllDataBtn" : null,
+              ref: index == 0 ? (el => { this.refs.showAllDataBtn = el; }) : null,
               href: this.getAllDataUrl(button == "toolingApi"),
               target: linkTarget,
               className:
@@ -4467,7 +4470,7 @@ class AllDataSelection extends React.PureComponent {
         ? h(
           "button",
           {
-            ref: "showFieldApiNameBtn",
+            ref: el => { this.refs.showFieldApiNameBtn = el; },
             onClick: showApiName,
             "data-target-link": linkTarget,
             className:
@@ -4719,7 +4722,7 @@ class AllDataSearch extends React.PureComponent {
       },
       h("input", {
         className: "slds-input sfir-font-size_11px",
-        ref: "showAllDataInp",
+        ref: el => { this.refs.showAllDataInp = el; },
         placeholder: placeholderText,
         onInput: this.onAllDataInput,
         onFocus: this.onAllDataFocus,
@@ -4728,7 +4731,7 @@ class AllDataSearch extends React.PureComponent {
         value: queryString,
       }),
       h(Autocomplete, {
-        ref: "autoComplete",
+        ref: el => { this.refs.autoComplete = el; },
         updateInput: this.updateAllDataInput,
         matchingResults: resultRender(matchingResults, queryString),
         recentItems: resultRender(recentItems, queryString),
@@ -4807,11 +4810,11 @@ class Autocomplete extends React.PureComponent {
     this.onScroll = this.onScroll.bind(this);
   }
   handleInput() {
-    this.setState({
+    this.setState(prevState => ({
       showResults: true,
       selectedIndex: 0,
-      scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
-    });
+      scrollToSelectedIndex: prevState.scrollToSelectedIndex + 1,
+    }));
   }
   handleFocus() {
     let {recentItems} = this.props;
@@ -4863,12 +4866,12 @@ class Autocomplete extends React.PureComponent {
             itemsIds.add(recentItem.Id);
           }
         });
-        this.setState({
+        this.setState(prevState => ({
           recentItems,
           showResults: true,
           selectedIndex: 0,
-          scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
-        });
+          scrollToSelectedIndex: prevState.scrollToSelectedIndex + 1,
+        }));
       });
   }
   handleBlur() {
@@ -4962,10 +4965,10 @@ class Autocomplete extends React.PureComponent {
     navigateWithExtensionCheck(e, url, navigationParams);
   }
   onResultMouseEnter(index) {
-    this.setState({
+    this.setState(prevState => ({
       selectedIndex: index,
-      scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
-    });
+      scrollToSelectedIndex: prevState.scrollToSelectedIndex + 1,
+    }));
   }
   onScroll() {
     let scrollTopIndex = Math.floor(
@@ -5013,7 +5016,6 @@ class Autocomplete extends React.PureComponent {
       showResults,
       selectedIndex,
       scrollTopIndex,
-      itemHeight,
       resultsMouseIsDown,
     } = this.state;
 
@@ -5045,7 +5047,7 @@ class Autocomplete extends React.PureComponent {
         {
           className: "slds-dropdown__list",
           onScroll: this.onScroll,
-          ref: "scrollBox",
+          ref: el => { this.refs.scrollBox = el; },
         },
         autocompleteResults
           .slice(firstRenderedIndex, lastRenderedIndex + 1)

@@ -1,1 +1,163 @@
-import{RequestTransport as e}from"./RequestTransport.js";export class CallbackPollingTransport extends e{#a=0;accept(e,s,t){return!0}jsonpSend(e){console.log("jsonpSend...."),console.log("packet : "),console.log(e),console.log(e.url);let s=window.document.getElementsByTagName("head")[0],t=window.document.createElement("script"),n="_cometd_jsonp_"+this.#a++;window[n]=r=>{s.removeChild(t),delete window[n],e.onSuccess(r)};let r=e.url;r+=0>r.indexOf("?")?"?":"&",r+="jsonp="+n,r+="&message="+encodeURIComponent(e.body),t.src=r,t.async=!0!==e.sync,t.type="text/javascript",t.onerror=s=>{e.onError("jsonp "+s.type)},s.appendChild(t)}transportSend(e,s){let t=0,n=e.messages.length,r=[];for(;n>0;){let o=JSON.stringify(e.messages.slice(t,t+n)),i=e.url.length+encodeURI(o).length,a=this.configuration.maxURILength;if(i>a){if(1===n){let l="Bayeux message too big ("+i+" bytes, max is "+a+") for transport "+this;return this.setTimeout(()=>this.transportFailure(e,s,{exception:l}),0),!1}--n;continue}r.push(n),t+=n,n=e.messages.length-t}let c=e;if(r.length>1){let h=0,u=r[0];this.debug("Transport",this.type,"split",e.messages.length,"messages into",r.join(" + ")),(c=this.cometd._mixin(!1,{},e)).messages=e.messages.slice(h,u),c.onSuccess=e.onSuccess,c.onFailure=e.onFailure;for(let p=1;p<r.length;++p){let g=this.cometd._mixin(!1,{},e);h=u,u+=r[p],g.messages=e.messages.slice(h,u),g.onSuccess=e.onSuccess,g.onFailure=e.onFailure,this.send(g,s.metaConnect)}}this.debug("Transport",this.type,"sending request",s.id,"envelope",c);try{let m=!0;return this.jsonpSend({transport:this,url:c.url,sync:c.sync,headers:this.configuration.requestHeaders,body:JSON.stringify(c.messages),onSuccess:e=>{let t=!1;try{let n=this.convertToMessages(e);0===n.length?this.transportFailure(c,s,{httpCode:204}):(t=!0,this.transportSuccess(c,s,n))}catch(r){this.debug(r),t||this.transportFailure(c,s,{exception:r})}},onError:(e,t)=>{let n={reason:e,exception:t};m?this.setTimeout(()=>{this.transportFailure(c,s,n)},0):this.transportFailure(c,s,n)}}),m=!1,!0}catch(d){return this.setTimeout(()=>{this.transportFailure(c,s,{exception:d})},0),!1}}}
+/*
+ * Copyright (c) 2008 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {RequestTransport} from "./RequestTransport.js";
+
+export class CallbackPollingTransport extends RequestTransport {
+    #jsonp = 0;
+
+    accept(version, crossDomain, url) {
+        return true;
+    }
+
+    jsonpSend(packet) {
+        const head = window.document.getElementsByTagName("head")[0];
+        const script = window.document.createElement("script");
+
+        const callbackName = "_cometd_jsonp_" + this.#jsonp++;
+        window[callbackName] = (responseText) => {
+            head.removeChild(script);
+            delete window[callbackName];
+            packet.onSuccess(responseText);
+        };
+
+        let url = packet.url;
+        url += url.indexOf("?") < 0 ? "?" : "&";
+        url += "jsonp=" + callbackName;
+        url += "&message=" + encodeURIComponent(packet.body);
+        script.src = url;
+        script.async = packet.sync !== true;
+        script.type = "text/javascript";
+        script.onerror = (e) => {
+            packet.onError("jsonp " + e.type);
+        };
+        head.appendChild(script);
+    };
+
+    transportSend(envelope, request) {
+        // Microsoft Internet Explorer has a 2083 URL max length
+        // We must ensure that we stay within that length.
+        let start = 0;
+        let length = envelope.messages.length;
+        const lengths = [];
+        while (length > 0) {
+            // Encode the messages because all brackets, quotes, commas, colons, etc.
+            // present in the JSON will be URL encoded, taking many more characters.
+            const json = JSON.stringify(envelope.messages.slice(start, start + length));
+            const urlLength = envelope.url.length + encodeURI(json).length;
+
+            const maxLength = this.configuration.maxURILength;
+            if (urlLength > maxLength) {
+                if (length === 1) {
+                    const x = "Bayeux message too big (" + urlLength + " bytes, max is " + maxLength + ") " +
+                        "for transport " + this;
+                    // Keep the semantic of calling callbacks asynchronously.
+                    this.setTimeout(() => this.transportFailure(envelope, request, {
+                        exception: x
+                    }), 0);
+                    return false;
+                }
+                --length;
+                continue;
+            }
+
+            lengths.push(length);
+            start += length;
+            length = envelope.messages.length - start;
+        }
+
+        // Here we are sure that the messages can be sent within the URL limit
+
+        let envelopeToSend = envelope;
+        if (lengths.length > 1) {
+            let begin = 0;
+            let end = lengths[0];
+            this.debug("Transport", this.type, "split", envelope.messages.length, "messages into", lengths.join(" + "));
+            envelopeToSend = this.cometd._mixin(false, {}, envelope);
+            envelopeToSend.messages = envelope.messages.slice(begin, end);
+            envelopeToSend.onSuccess = envelope.onSuccess;
+            envelopeToSend.onFailure = envelope.onFailure;
+
+            for (let i = 1; i < lengths.length; ++i) {
+                const nextEnvelope = this.cometd._mixin(false, {}, envelope);
+                begin = end;
+                end += lengths[i];
+                nextEnvelope.messages = envelope.messages.slice(begin, end);
+                nextEnvelope.onSuccess = envelope.onSuccess;
+                nextEnvelope.onFailure = envelope.onFailure;
+                this.send(nextEnvelope, request.metaConnect);
+            }
+        }
+
+        this.debug("Transport", this.type, "sending request", request.id, "envelope", envelopeToSend);
+
+        try {
+            let sameStack = true;
+            this.jsonpSend({
+                transport: this,
+                url: envelopeToSend.url,
+                sync: envelopeToSend.sync,
+                headers: this.configuration.requestHeaders,
+                body: JSON.stringify(envelopeToSend.messages),
+                onSuccess: (responses) => {
+                    let success = false;
+                    try {
+                        const received = this.convertToMessages(responses);
+                        if (received.length === 0) {
+                            this.transportFailure(envelopeToSend, request, {
+                                httpCode: 204
+                            });
+                        } else {
+                            success = true;
+                            this.transportSuccess(envelopeToSend, request, received);
+                        }
+                    } catch (x) {
+                        this.debug(x);
+                        if (!success) {
+                            this.transportFailure(envelopeToSend, request, {
+                                exception: x
+                            });
+                        }
+                    }
+                },
+                onError: (reason, exception) => {
+                    const failure = {
+                        reason: reason,
+                        exception: exception
+                    };
+                    if (sameStack) {
+                        // Keep the semantic of calling callbacks asynchronously.
+                        this.setTimeout(() => {
+                            this.transportFailure(envelopeToSend, request, failure);
+                        }, 0);
+                    } else {
+                        this.transportFailure(envelopeToSend, request, failure);
+                    }
+                }
+            });
+            sameStack = false;
+            return true;
+        } catch (xx) {
+            // Keep the semantic of calling callbacks asynchronously.
+            this.setTimeout(() => {
+                this.transportFailure(envelopeToSend, request, {
+                    exception: xx
+                });
+            }, 0);
+            return false;
+        }
+    };
+}

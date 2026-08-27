@@ -44,9 +44,9 @@ body:
         - "1.27"
         - "1.26"
         - "beta"
+      default: 0
     validations:
       required: true
-      default: 0
   - type: dropdown
     id: browsers
     attributes:

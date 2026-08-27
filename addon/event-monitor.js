@@ -1,4 +1,4 @@
-/* global React ReactDOM */
+/* global React ReactDOM initButton */
 import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
@@ -434,6 +434,7 @@ class App extends React.Component {
     cometd.websocketEnabled = false;
 
     //Load Salesforce Replay Extension
+    // eslint-disable-next-line new-cap -- constructor name comes from the cometd library
     let replayExtension = new cometdReplayExtension();
 
     let channelPath;
@@ -855,7 +856,7 @@ class App extends React.Component {
       try {
         payload = JSON.parse(model.generateEventPayload || "{}");
       } catch (parseErr) {
-        throw new Error("Invalid JSON: " + (parseErr.message || String(parseErr)));
+        throw new Error("Invalid JSON: " + (parseErr.message || String(parseErr)), {cause: parseErr});
       }
 
       if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
@@ -1105,7 +1106,7 @@ class App extends React.Component {
                   placeholder: "Filter events...",
                   value: model.eventFilter,
                   onChange: this.onEventFilterInput,
-                  ref: "eventFilter"
+                  ref: el => { this.refs.eventFilter = el; }
                 }),
                 model.eventFilter ? h("button", {
                   className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",

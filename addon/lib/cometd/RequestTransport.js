@@ -1,1 +1,270 @@
-import{Transport as e}from"./Transport.js";export class RequestTransport extends e{#a=0;#b=null;#c=[];#d=[];#e(t){for(;this.#d.length>0;){let s=this.#d[0],i=s[0],r=s[1];if(i.url===t.url&&i.sync===t.sync){this.#d.shift(),t.messages=t.messages.concat(i.messages),this.debug("Coalesced",i.messages.length,"messages from request",r.id);continue}break}}#f(n,o,a){let h=this.notifyTransportTimeout(n.messages);if(h>0)this.debug("Transport",this.type,"extended waiting for message replies of request",o.id,":",h,"ms"),o.timeout=this.setTimeout(()=>{this.#f(n,o,a+h)},h);else{o.expired=!0;let u="Transport "+this+" expired waiting for message replies of request "+o.id+": "+a+" ms",l={reason:u},p=o.xhr;l.httpCode=this.xhrStatus(p),this.abortXHR(p),this.debug(u),this.complete(o,!1,o.metaConnect),n.onFailure(p,n.messages,l)}}#g(c,m){if(this.transportSend(c,m)&&(m.expired=!1,!c.sync)){let d=this.configuration.maxNetworkDelay;!0===m.metaConnect&&(d+=this.advice.timeout),this.debug("Transport",this.type,"started waiting for message replies of request",m.id,":",d,"ms"),m.timeout=this.setTimeout(()=>{this.#f(c,m,d)},d)}}#h(g){let q=++this.#a,f={id:q,metaConnect:!1,envelope:g};this.#c.length<this.configuration.maxConnections-1?(this.#c.push(f),this.#g(g,f)):(this.debug("Transport",this.type,"queueing request",q,"envelope",g),this.#d.push([g,f]))}#i(b){let C=b.id;if(this.debug("Transport",this.type,"/meta/connect complete, request",C),null!==this.#b&&this.#b.id!==C)throw Error("/meta/connect request mismatch, completing request "+C);this.#b=null}#j(T,x){let y=this.#c.indexOf(T);if(y>=0&&this.#c.splice(y,1),this.#d.length>0){let $=this.#d.shift(),v=$[0],R=$[1];this.debug("Transport dequeued request",R.id),x?(this.configuration.autoBatch&&this.#e(v),this.#h(v),this.debug("Transport",this.type,"completed request",T.id,v)):this.setTimeout(()=>{this.complete(R,!1,R.metaConnect);let e={reason:"Previous request failed"},t=R.xhr;e.httpCode=this.xhrStatus(t),v.onFailure(t,v.messages,e)},0)}}complete(e,t,s){s?this.#i(e):this.#j(e,t)}transportSend(e,t){throw Error("Abstract")}transportSuccess(e,t,s){t.expired||(this.clearTimeout(t.timeout),this.debug("Transport",this.type,"cancelled waiting for message replies"),this.complete(t,!0,t.metaConnect),s&&s.length>0?e.onSuccess(s):e.onFailure(t.xhr,e.messages,{httpCode:204}))}transportFailure(e,t,s){t.expired||(this.clearTimeout(t.timeout),this.debug("Transport",this.type,"cancelled waiting for failed message replies"),this.complete(t,!1,t.metaConnect),e.onFailure(t.xhr,e.messages,s))}#k(S){if(null!==this.#b)throw Error("Concurrent /meta/connect requests not allowed, request id="+this.#b.id+" not yet completed");let _=++this.#a;this.debug("Transport",this.type,"/meta/connect send, request",_,"envelope",S);let w={id:_,metaConnect:!0,envelope:S};this.#g(S,w),this.#b=w}send(e,t){t?this.#k(e):this.#h(e)}abort(){super.abort();for(let e=0;e<this.#c.length;++e){let t=this.#c[e];t&&(this.debug("Aborting request",t),this.abortXHR(t.xhr)||this.transportFailure(t.envelope,t,{reason:"abort"}))}let s=this.#b;s&&(this.debug("Aborting /meta/connect request",s),this.abortXHR(s.xhr)||this.transportFailure(s.envelope,s,{reason:"abort"})),this.reset(!0)}reset(e){super.reset(e),this.#b=null,this.#c=[],this.#d=[]}abortXHR(e){if(e)try{let t=e.readyState;return e.abort(),t!==window.XMLHttpRequest.UNSENT}catch(s){this.debug(s)}return!1}xhrStatus(e){if(e)try{return e.status}catch(t){this.debug(t)}return -1}}
+/*
+ * Copyright (c) 2008 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {Transport} from "./Transport.js";
+
+/**
+ * Base class with the common functionality for transports based on requests.
+ * The key responsibility is to allow at most 2 outstanding requests to the server,
+ * to avoid that requests are sent behind a long poll.
+ * To achieve this, we have one reserved request for the long poll, and all other
+ * requests are serialized one after the other.
+ */
+export class RequestTransport extends Transport {
+    #requestIds = 0;
+    #metaConnectRequest = null;
+    #requests = [];
+    #envelopes = [];
+
+    #coalesceEnvelopes(envelope) {
+        while (this.#envelopes.length > 0) {
+            const envelopeAndRequest = this.#envelopes[0];
+            const newEnvelope = envelopeAndRequest[0];
+            const newRequest = envelopeAndRequest[1];
+            if (newEnvelope.url === envelope.url &&
+                newEnvelope.sync === envelope.sync) {
+                this.#envelopes.shift();
+                envelope.messages = envelope.messages.concat(newEnvelope.messages);
+                this.debug("Coalesced", newEnvelope.messages.length, "messages from request", newRequest.id);
+                continue;
+            }
+            break;
+        }
+    }
+
+    #onTransportTimeout(envelope, request, delay) {
+        const result = this.notifyTransportTimeout(envelope.messages);
+        if (result > 0) {
+            this.debug("Transport", this.type, "extended waiting for message replies of request", request.id, ":", result, "ms");
+            request.timeout = this.setTimeout(() => {
+                this.#onTransportTimeout(envelope, request, delay + result);
+            }, result);
+        } else {
+            request.expired = true;
+            const errorMessage = "Transport " + this + " expired waiting for message replies of request " + request.id + ": " + delay + " ms";
+            const failure = {
+                reason: errorMessage
+            };
+            const xhr = request.xhr;
+            failure.httpCode = this.xhrStatus(xhr);
+            this.abortXHR(xhr);
+            this.debug(errorMessage);
+            this.complete(request, false, request.metaConnect);
+            envelope.onFailure(xhr, envelope.messages, failure);
+        }
+    }
+
+    #transportSend(envelope, request) {
+        if (this.transportSend(envelope, request)) {
+            request.expired = false;
+
+            if (!envelope.sync) {
+                let delay = this.configuration.maxNetworkDelay;
+                if (request.metaConnect === true) {
+                    delay += this.advice.timeout;
+                }
+
+                this.debug("Transport", this.type, "started waiting for message replies of request", request.id, ":", delay, "ms");
+
+                request.timeout = this.setTimeout(() => {
+                    this.#onTransportTimeout(envelope, request, delay);
+                }, delay);
+            }
+        }
+    }
+
+    #queueSend(envelope) {
+        const requestId = ++this.#requestIds;
+        const request = {
+            id: requestId,
+            metaConnect: false,
+            envelope: envelope
+        };
+
+        // Consider the /meta/connect requests which should always be present.
+        if (this.#requests.length < this.configuration.maxConnections - 1) {
+            this.#requests.push(request);
+            this.#transportSend(envelope, request);
+        } else {
+            this.debug("Transport", this.type, "queueing request", requestId, "envelope", envelope);
+            this.#envelopes.push([envelope, request]);
+        }
+    }
+
+    #metaConnectComplete(request) {
+        const requestId = request.id;
+        this.debug("Transport", this.type, "/meta/connect complete, request", requestId);
+        if (this.#metaConnectRequest !== null && this.#metaConnectRequest.id !== requestId) {
+            throw new Error("/meta/connect request mismatch, completing request " + requestId);
+        }
+        this.#metaConnectRequest = null;
+    }
+
+    #complete(request, success) {
+        const index = this.#requests.indexOf(request);
+        // The index can be negative if the request has been aborted
+        if (index >= 0) {
+            this.#requests.splice(index, 1);
+        }
+
+        if (this.#envelopes.length > 0) {
+            const envelopeAndRequest = this.#envelopes.shift();
+            const nextEnvelope = envelopeAndRequest[0];
+            const nextRequest = envelopeAndRequest[1];
+            this.debug("Transport dequeued request", nextRequest.id);
+            if (success) {
+                if (this.configuration.autoBatch) {
+                    this.#coalesceEnvelopes(nextEnvelope);
+                }
+                this.#queueSend(nextEnvelope);
+                this.debug("Transport", this.type, "completed request", request.id, nextEnvelope);
+            } else {
+                // Keep the semantic of calling callbacks asynchronously.
+                this.setTimeout(() => {
+                    this.complete(nextRequest, false, nextRequest.metaConnect);
+                    const failure = {
+                        reason: "Previous request failed"
+                    };
+                    const xhr = nextRequest.xhr;
+                    failure.httpCode = this.xhrStatus(xhr);
+                    nextEnvelope.onFailure(xhr, nextEnvelope.messages, failure);
+                }, 0);
+            }
+        }
+    }
+
+    complete(request, success, metaConnect) {
+        if (metaConnect) {
+            this.#metaConnectComplete(request);
+        } else {
+            this.#complete(request, success);
+        }
+    };
+
+    /**
+     * Performs the actual send depending on the transport type details.
+     * @param envelope the envelope to send
+     * @param request the request information
+     * @return {boolean} whether the send succeeded
+     */
+    transportSend(envelope, request) {
+        throw new Error("Abstract");
+    };
+
+    transportSuccess(envelope, request, responses) {
+        if (!request.expired) {
+            this.clearTimeout(request.timeout);
+            this.debug("Transport", this.type, "cancelled waiting for message replies");
+            this.complete(request, true, request.metaConnect);
+            if (responses && responses.length > 0) {
+                envelope.onSuccess(responses);
+            } else {
+                envelope.onFailure(request.xhr, envelope.messages, {
+                    httpCode: 204
+                });
+            }
+        }
+    };
+
+    transportFailure(envelope, request, failure) {
+        if (!request.expired) {
+            this.clearTimeout(request.timeout);
+            this.debug("Transport", this.type, "cancelled waiting for failed message replies");
+            this.complete(request, false, request.metaConnect);
+            envelope.onFailure(request.xhr, envelope.messages, failure);
+        }
+    };
+
+    #metaConnectSend(envelope) {
+        if (this.#metaConnectRequest !== null) {
+            throw new Error("Concurrent /meta/connect requests not allowed, request id=" + this.#metaConnectRequest.id + " not yet completed");
+        }
+
+        const requestId = ++this.#requestIds;
+        this.debug("Transport", this.type, "/meta/connect send, request", requestId, "envelope", envelope);
+        const request = {
+            id: requestId,
+            metaConnect: true,
+            envelope: envelope
+        };
+        this.#transportSend(envelope, request);
+        this.#metaConnectRequest = request;
+    }
+
+    send(envelope, metaConnect) {
+        if (metaConnect) {
+            this.#metaConnectSend(envelope);
+        } else {
+            this.#queueSend(envelope);
+        }
+    };
+
+    abort() {
+        super.abort();
+        for (let i = 0; i < this.#requests.length; ++i) {
+            const request = this.#requests[i];
+            if (request) {
+                this.debug("Aborting request", request);
+                if (!this.abortXHR(request.xhr)) {
+                    this.transportFailure(request.envelope, request, {
+                        reason: "abort"
+                    });
+                }
+            }
+        }
+        const metaConnectRequest = this.#metaConnectRequest;
+        if (metaConnectRequest) {
+            this.debug("Aborting /meta/connect request", metaConnectRequest);
+            if (!this.abortXHR(metaConnectRequest.xhr)) {
+                this.transportFailure(metaConnectRequest.envelope, metaConnectRequest, {
+                    reason: "abort"
+                });
+            }
+        }
+        this.reset(true);
+    };
+
+    reset(init) {
+        super.reset(init);
+        this.#metaConnectRequest = null;
+        this.#requests = [];
+        this.#envelopes = [];
+    };
+
+    abortXHR(xhr) {
+        if (xhr) {
+            try {
+                const state = xhr.readyState;
+                xhr.abort();
+                return state !== window.XMLHttpRequest.UNSENT;
+            } catch (x) {
+                this.debug(x);
+            }
+        }
+        return false;
+    };
+
+    xhrStatus(xhr) {
+        if (xhr) {
+            try {
+                return xhr.status;
+            } catch (x) {
+                this.debug(x);
+            }
+        }
+        return -1;
+    };
+}

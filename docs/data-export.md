@@ -86,7 +86,7 @@ After running a query in the "Data Export" page, you can hide columns in the que
 ## Download Event Log Files
 
 To make your life easier and avoid third party tools or login to ELF website, we implemented the download option from the data export page.
-When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
+When querying EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
 
 ![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
 

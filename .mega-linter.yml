@@ -1,0 +1,62 @@
+# Configuration file for MegaLinter
+#
+# See all available variables at https://megalinter.io/latest/config-file/ and in
+# linters documentation
+---
+# MegaLinter Docker image flavor and version, used by mega-linter-runner and coding agents
+MEGALINTER_FLAVOR: javascript
+MEGALINTER_VERSION: v10
+
+# all, none, or list of linter keys
+APPLY_FIXES: all
+
+DISABLE_LINTERS:
+  # standard.js enforces single quotes and no semicolons, the exact opposite of
+  # the rules defined in eslint.config.mjs. Running both rewrites every JS file
+  # back and forth: eslint (JAVASCRIPT_ES) is the source of truth here.
+  - JAVASCRIPT_STANDARD
+
+# Vendored third-party libraries, Salesforce Lightning Design System assets,
+# generated files, Python virtualenvs and local coding-agent resources
+FILTER_REGEX_EXCLUDE: '(addon/lib/|addon/styles/slds/|addon/react(-dom)?(\.min)?\.js|\.claude/|venv/|target/|megalinter-reports/|package-lock\.json|\.eslintrc\.js\.old)'
+
+# eslint.config.mjs is an ESM flat config importing globals/@eslint/js by bare
+# specifier. Native ESM resolution ignores NODE_PATH, so the project's own
+# dependencies must be installed for eslint to resolve them.
+# --include=dev is required: the MegaLinter image runs with NODE_ENV=production,
+# which makes npm skip devDependencies (eslint, globals, @eslint/js...).
+JAVASCRIPT_ES_PRE_COMMANDS:
+  - command: npm ci --include=dev --ignore-scripts
+    cwd: workspace
+    continue_if_failed: false
+
+# Run the project's own eslint 9 rather than MegaLinter's bundled eslint 10,
+# so eslint.config.mjs resolves its imports from the workspace node_modules.
+JAVASCRIPT_ES_CLI_EXECUTABLE:
+  - node_modules/.bin/eslint
+
+# zizmor queries the GitHub API to resolve `uses:` refs and gets a 401 without a token
+ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
+  - GITHUB_TOKEN
+
+# developer.salesforce.com, npmjs.com and linkedin.com answer 403/999 to bots,
+# and 429/503 are transient: none of these mean the link is broken.
+SPELL_LYCHEE_ARGUMENTS:
+  - --accept
+  - 200,204,206,301,302,403,429,503,999
+
+# GITHUB_TOKEN is never allowed to push changes to .github/workflows/**, so an
+# auto-fix there can only fail the "Commit and push applied linter fixes" step.
+# actionlint, zizmor and yamllint still cover these files.
+YAML_PRETTIER_FILTER_REGEX_EXCLUDE: '\.github/workflows/'
+
+# vendors.json and vendored.cdx.json are rewritten by scripts/sync-vendors.js,
+# which emits expanded JSON. Letting prettier collapse short arrays afterwards
+# means the two tools would fight over the formatting on every sync.
+JSON_PRETTIER_FILTER_REGEX_EXCLUDE: '(vendors\.json|vendored\.cdx\.json)'
+
+SHOW_ELAPSED_TIME: true
+FLAVOR_SUGGESTIONS: false
+
+# Uncomment if you want MegaLinter to detect errors but not block CI to pass
+# DISABLE_ERRORS: true

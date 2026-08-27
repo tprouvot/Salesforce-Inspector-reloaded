@@ -1027,7 +1027,7 @@ class Model {
         let groupName = dep.type;
         // Special grouping for CustomField by object
         if (dep.type === "CustomField" && dep.name.includes(".")) {
-          const [objectName, fieldName] = dep.name.split(".");
+          const [objectName] = dep.name.split(".");
           groupKey = `CustomField_${objectName}`;
           groupName = `Custom Fields on ${objectName}`;
         }
@@ -1105,7 +1105,7 @@ class Model {
         let groupName = dep.type;
         // Special grouping for CustomField by object
         if (dep.type === "CustomField" && dep.name.includes(".")) {
-          const [objectName, fieldName] = dep.name.split(".");
+          const [objectName] = dep.name.split(".");
           groupKey = `CustomField_${objectName}`;
           groupName = `Custom Fields on ${objectName}`;
         }
@@ -1491,7 +1491,6 @@ ${(() => {
         const pills = dep.pills && dep.pills.length > 0 ? ` (${dep.pills.map(p => p.label || p.text).join(", ")})` : "";
 
         const isLast = index === sortedItems.length - 1;
-        const level = dep.level || 0;
 
         // Simple list structure for Quick Summary export
         const treePrefix = isLast ? "└─ " : "├─ ";
@@ -1726,7 +1725,7 @@ ${(() => {
   _buildCustomFieldUrl(baseUrl, targetId, dep) {
     // For custom fields, we need to get the object ID first
     if (dep.name && dep.name.includes(".")) {
-      const [objectName, fieldName] = dep.name.split(".");
+      const [objectName] = dep.name.split(".");
       return `${baseUrl}/lightning/setup/ObjectManager/${objectName}/FieldsAndRelationships/${targetId}/view`;
     }
     return `${baseUrl}/lightning/setup/ObjectManager/${targetId}/FieldsAndRelationships/view`;
@@ -1772,7 +1771,7 @@ ${(() => {
 
       // Special grouping for CustomField by object
       if (dep.type === "CustomField" && dep.name.includes(".")) {
-        const [objectName, fieldName] = dep.name.split(".");
+        const [objectName] = dep.name.split(".");
         groupKey = `CustomField_${objectName}`;
         groupName = `Custom Fields on ${objectName}`;
       }
@@ -1944,7 +1943,7 @@ class App extends React.Component {
         );
       }
       // Default: show dependency as before
-      function renderWithChildren(dep, index, level = 0, parentKeyPrefix = "") {
+      function renderWithChildren(dep, index, level = 0, _parentKeyPrefix = "") {
         const nestedKey = `${dep.type}::${dep.name}::${level}`;
         const isExpanded = model.expandedGroups.has(nestedKey);
         const groupedChildren = dep.children && dep.children.length > 0 ? model.getGroupedChildren(dep.children, nestedKey + "::") : [];
@@ -2007,7 +2006,7 @@ class App extends React.Component {
           className: "dep-card-notes"
         }, dep.notes),
         createSalesforceLink(dep, model),
-        groupedChildren.length > 0 && isExpanded && groupedChildren.map((group, groupIdx) =>
+        groupedChildren.length > 0 && isExpanded && groupedChildren.map((group, _groupIdx) =>
           h("div", {
             key: group.groupKey,
             className: "dep-nested-group"
@@ -2204,7 +2203,7 @@ class App extends React.Component {
             let groupName = child.type;
             // Special grouping for CustomField by object
             if (child.type === "CustomField" && child.name.includes(".")) {
-              const [objectName, fieldName] = child.name.split(".");
+              const [objectName] = child.name.split(".");
               groupKey = `CustomField_${objectName}`;
               groupName = `Custom Fields on ${objectName}`;
             }
@@ -2869,7 +2868,7 @@ const PerformanceUtils = {
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey);
     }
-    const result = fn.apply(null, args);
+    const result = fn(...args);
     this.cache.set(cacheKey, result);
     return result;
   }

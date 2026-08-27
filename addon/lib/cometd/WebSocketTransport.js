@@ -1,1 +1,416 @@
-import{Transport as e}from"./Transport.js";export class WebSocketTransport extends e{#a=!0;#b=!1;#c=!0;#d=null;#e=null;#f=!1;#g=null;reset(e){super.reset(e),this.#a=!0,e&&(this.#b=!1),this.#c=!0,e&&(this.#d=null),this.#e=null,this.#f=!1}#h(t,s){t&&(this.#i(t,s.code,s.reason),this.#j(t,s))}#k(o){return o===this.#e||o===this.#d}#l(i,n,c){let r=[];for(let h=0;h<n.messages.length;++h){let l=n.messages[h];l.id&&r.push(l.id)}i.envelopes[r.join(",")]=[n,c],this.debug("Transport",this.type,"stored envelope, envelopes",i.envelopes)}#m(a,p){let d=!1,u=a.envelopes;for(let m=0;m<p.length;++m){let g=p[m];for(let b in u)if(u.hasOwnProperty(b)){let $=b.split(","),T=$.indexOf(g);if(T>=0){d=!0,$.splice(T,1);let k=u[b][0],w=u[b][1];delete u[b],$.length>0&&(u[$.join(",")]=[k,w]);break}}}d&&this.debug("Transport",this.type,"removed envelope, envelopes",u)}#n(y){if(this.#e)return;let f=this.cometd.getURL().replace(/^http/,"ws");this.debug("Transport",this.type,"connecting to URL",f);try{let S=this.configuration.protocol;y.webSocket=S?new window.WebSocket(f,S):new window.WebSocket(f),this.#e=y}catch(x){throw this.#a=!1,this.debug("Exception while creating WebSocket object",x),x}this.#c=!1!==this.configuration.stickyReconnect;let v=this.configuration.connectTimeout;v>0&&(y.connectTimer=this.setTimeout(()=>{this.debug("Transport",this.type,"timed out while connecting to URL",f,":",v,"ms"),this.#h(y,{code:1e3,reason:"Connect Timeout"})},v));let _=()=>{this.debug("Transport",this.type,"onopen",y),y.connectTimer&&this.clearTimeout(y.connectTimer),this.#k(y)?(this.#e=null,this.#d=y,this.#b=!0,this.#o(y)):(this.cometd._warn("Closing extra WebSocket connection",this,"active connection",this.#d),this.#h(y,{code:1e3,reason:"Extra Connection"}))},C=e=>{e=e||{code:1e3},this.debug("Transport",this.type,"onclose",y,e,"connecting",this.#e,"current",this.#d),y.connectTimer&&this.clearTimeout(y.connectTimer),this.#j(y,e)},E=e=>{this.debug("Transport",this.type,"onmessage",e,y),this.#p(y,e)};y.webSocket.onopen=_,y.webSocket.onclose=C,y.webSocket.onerror=()=>{C({code:1e3,reason:"Error"})},y.webSocket.onmessage=E,this.debug("Transport",this.type,"configured callbacks on",y)}#q(O,R,W){let F=this.notifyTransportTimeout([R]);F>0?(this.debug("Transport",this.type,"extended waiting for message replies:",F,"ms"),O.timeouts[R.id]=this.setTimeout(()=>{this.#q(O,R,W+F)},F)):(this.debug("Transport",this.type,"expired waiting for message reply",R.id,":",W,"ms"),this.#h(O,{code:1e3,reason:"Message Timeout"}))}#r(j,P,L){let M;try{M=this.convertToJSON(P.messages)}catch(U){this.debug("Transport",this.type,"exception:",U);let D=[];for(let N=0;N<P.messages.length;++N){let A=P.messages[N];D.push(A.id)}this.#m(j,D),this.setTimeout(()=>{this._notifyFailure(P.onFailure,j,P.messages,{exception:U})},0);return}j.webSocket.send(M),this.debug("Transport",this.type,"sent",P,"/meta/connect =",L);let I=this.configuration.maxNetworkDelay;L&&(I+=this.advice.timeout,this.#f=!0);let J=[];for(let q=0;q<P.messages.length;++q){let z=P.messages[q];z.id&&(J.push(z.id),j.timeouts[z.id]=this.setTimeout(()=>{this.#q(j,z,I)},I))}this.debug("Transport",this.type,"started waiting for message replies",I,"ms, messageIds:",J,", timeouts:",j.timeouts)}_notifySuccess(e,t){e.call(this,t)}_notifyFailure(e,t,s,o){e.call(this,t,s,o)}#s(B,G,H){try{null===B?(B=this.#e||{envelopes:{},timeouts:{}},this.#l(B,G,H),this.#n(B)):(this.#l(B,G,H),this.#r(B,G,H))}catch(K){this.setTimeout(()=>{this.#h(B,{code:1e3,reason:"Exception",exception:K})},0)}}#o(Q){let V=Q.envelopes;for(let X in this.debug("Transport",this.type,"opened",Q,"pending messages",V),V)if(V.hasOwnProperty(X)){let Y=V[X],Z=Y[0],ee=Y[1];this.#g=Z.onSuccess,this.#r(Q,Z,ee)}}#p(et,es){this.debug("Transport",this.type,"received websocket message",es,et);let eo=!1,ei=this.convertToMessages(es.data),en=[];for(let ec=0;ec<ei.length;++ec){let er=ei[ec];if((/^\/meta\//.test(er.channel)||void 0===er.data)&&er.id){en.push(er.id);let eh=et.timeouts[er.id];eh&&(this.clearTimeout(eh),delete et.timeouts[er.id],this.debug("Transport",this.type,"removed timeout for message",er.id,", timeouts",et.timeouts))}"/meta/connect"===er.channel&&(this.#f=!1),"/meta/disconnect"!==er.channel||this.#f||(eo=!0)}this.#m(et,en),this._notifySuccess(this.#g,ei),eo&&this.#i(et,1e3,"Disconnect")}#j(el,ea){this.debug("Transport",this.type,"closed",el,ea),this.#k(el)&&(this.#a=this.#c&&this.#b,this.#e=null,this.#d=null);let ep=el.timeouts;for(let ed in el.timeouts={},ep)ep.hasOwnProperty(ed)&&this.clearTimeout(ep[ed]);let eu=el.envelopes;for(let em in el.envelopes={},eu)if(eu.hasOwnProperty(em)){let eg=eu[em][0],eb=eu[em][1];eb&&(this.#f=!1);let e$={websocketCode:ea.code,reason:ea.reason};ea.exception&&(e$.exception=ea.exception),this._notifyFailure(eg.onFailure,el,eg.messages,e$)}}accept(e,t,s){return this.debug("Transport",this.type,"accept, supported:",this.#a),this.#a&&!!window.WebSocket&&!1!==this.cometd.websocketEnabled}send(e,t){this.debug("Transport",this.type,"sending",e,"/meta/connect =",t),this.#s(this.#d,e,t)}#i(eT,ek,ew){try{eT.webSocket&&eT.webSocket.close(ek,ew)}catch(ey){this.debug(ey)}}abort(){super.abort(),this.#h(this.#d,{code:1e3,reason:"Abort"}),this.reset(!0)}}
+/*
+ * Copyright (c) 2008 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {Transport} from "./Transport.js";
+
+export class WebSocketTransport extends Transport {
+    // By default, WebSocket is supported.
+    #webSocketSupported = true;
+    // Whether we were able to establish a WebSocket connection.
+    #webSocketConnected = false;
+    #stickyReconnect = true;
+    // The context contains the envelopes that have been sent
+    // and the timeouts for the messages that have been sent.
+    #context = null;
+    #connecting = null;
+    #connected = false;
+    #successCallback = null;
+
+    reset(init) {
+        super.reset(init);
+        this.#webSocketSupported = true;
+        if (init) {
+            this.#webSocketConnected = false;
+        }
+        this.#stickyReconnect = true;
+        if (init) {
+            this.#context = null;
+        }
+        this.#connecting = null;
+        this.#connected = false;
+    };
+
+    #forceClose(context, event) {
+        if (context) {
+            this.#webSocketClose(context, event.code, event.reason);
+            // Force immediate failure of pending messages to trigger reconnect.
+            // This is needed because the server may not reply to our close()
+            // and therefore the onclose function is never called.
+            this.#onClose(context, event);
+        }
+    }
+
+    #sameContext(context) {
+        return context === this.#connecting || context === this.#context;
+    }
+
+    #storeEnvelope(context, envelope, metaConnect) {
+        const messageIds = [];
+        for (let i = 0; i < envelope.messages.length; ++i) {
+            const message = envelope.messages[i];
+            if (message.id) {
+                messageIds.push(message.id);
+            }
+        }
+        context.envelopes[messageIds.join(",")] = [envelope, metaConnect];
+        this.debug("Transport", this.type, "stored envelope, envelopes", context.envelopes);
+    }
+
+    #removeEnvelope(context, messageIds) {
+        let removed = false;
+        const envelopes = context.envelopes;
+        for (let j = 0; j < messageIds.length; ++j) {
+            const id = messageIds[j];
+            for (let key in envelopes) {
+                if (envelopes.hasOwnProperty(key)) {
+                    const ids = key.split(",");
+                    const index = ids.indexOf(id);
+                    if (index >= 0) {
+                        removed = true;
+                        ids.splice(index, 1);
+                        const envelope = envelopes[key][0];
+                        const metaConnect = envelopes[key][1];
+                        delete envelopes[key];
+                        if (ids.length > 0) {
+                            envelopes[ids.join(",")] = [envelope, metaConnect];
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        if (removed) {
+            this.debug("Transport", this.type, "removed envelope, envelopes", envelopes);
+        }
+    }
+
+    #websocketConnect(context) {
+        // We may have multiple attempts to open a WebSocket
+        // connection, for example a /meta/connect request that
+        // may take time, along with a user-triggered publish.
+        // Early return if we are already connecting.
+        if (this.#connecting) {
+            return;
+        }
+
+        // Mangle the URL, changing the scheme from "http" to "ws".
+        const url = this.cometd.getURL().replace(/^http/, "ws");
+        this.debug("Transport", this.type, "connecting to URL", url);
+
+        try {
+            const protocol = this.configuration.protocol;
+            context.webSocket = protocol ? new window.WebSocket(url, protocol) : new window.WebSocket(url);
+            this.#connecting = context;
+        } catch (x) {
+            this.#webSocketSupported = false;
+            this.debug("Exception while creating WebSocket object", x);
+            throw x;
+        }
+
+        // By default use sticky reconnects.
+        this.#stickyReconnect = this.configuration.stickyReconnect !== false;
+
+        const connectTimeout = this.configuration.connectTimeout;
+        if (connectTimeout > 0) {
+            context.connectTimer = this.setTimeout(() => {
+                this.debug("Transport", this.type, "timed out while connecting to URL", url, ":", connectTimeout, "ms");
+                // The connection was not opened, close anyway.
+                this.#forceClose(context, {
+                    code: 1000,
+                    reason: "Connect Timeout"
+                });
+            }, connectTimeout);
+        }
+
+        const onopen = () => {
+            this.debug("Transport", this.type, "onopen", context);
+            if (context.connectTimer) {
+                this.clearTimeout(context.connectTimer);
+            }
+
+            if (this.#sameContext(context)) {
+                this.#connecting = null;
+                this.#context = context;
+                this.#webSocketConnected = true;
+                this.#onOpen(context);
+            } else {
+                // We have a valid connection already, close this one.
+                this.cometd._warn("Closing extra WebSocket connection", this, "active connection", this.#context);
+                this.#forceClose(context, {
+                    code: 1000,
+                    reason: "Extra Connection"
+                });
+            }
+        };
+
+        // This callback is invoked when the server sends the close frame.
+        // The close frame for a connection may arrive *after* another
+        // connection has been opened, so we must make sure that actions
+        // are performed only if it's the same connection.
+        const onclose = (event) => {
+            event = event || {code: 1000};
+            this.debug("Transport", this.type, "onclose", context, event, "connecting", this.#connecting, "current", this.#context);
+
+            if (context.connectTimer) {
+                this.clearTimeout(context.connectTimer);
+            }
+
+            this.#onClose(context, event);
+        };
+
+        const onmessage = (wsMessage) => {
+            this.debug("Transport", this.type, "onmessage", wsMessage, context);
+            this.#onMessage(context, wsMessage);
+        };
+
+        context.webSocket.onopen = onopen;
+        context.webSocket.onclose = onclose;
+        context.webSocket.onerror = () => {
+            // Clients should call onclose(), but if they do not we do it here for safety.
+            onclose({
+                code: 1000,
+                reason: "Error"
+            });
+        };
+        context.webSocket.onmessage = onmessage;
+
+        this.debug("Transport", this.type, "configured callbacks on", context);
+    }
+
+    #onTransportTimeout(context, message, delay) {
+        const result = this.notifyTransportTimeout([message]);
+        if (result > 0) {
+            this.debug("Transport", this.type, "extended waiting for message replies:", result, "ms");
+            context.timeouts[message.id] = this.setTimeout(() => {
+                this.#onTransportTimeout(context, message, delay + result);
+            }, result);
+        } else {
+            this.debug("Transport", this.type, "expired waiting for message reply", message.id, ":", delay, "ms");
+            this.#forceClose(context, {
+                code: 1000,
+                reason: "Message Timeout"
+            });
+        }
+    }
+
+    #webSocketSend(context, envelope, metaConnect) {
+        let json;
+        try {
+            json = this.convertToJSON(envelope.messages);
+        } catch (x) {
+            this.debug("Transport", this.type, "exception:", x);
+            const mIds = [];
+            for (let j = 0; j < envelope.messages.length; ++j) {
+                const m = envelope.messages[j];
+                mIds.push(m.id);
+            }
+            this.#removeEnvelope(context, mIds);
+            // Keep the semantic of calling callbacks asynchronously.
+            this.setTimeout(() => {
+                this._notifyFailure(envelope.onFailure, context, envelope.messages, {
+                    exception: x
+                });
+            }, 0);
+            return;
+        }
+
+        context.webSocket.send(json);
+        this.debug("Transport", this.type, "sent", envelope, "/meta/connect =", metaConnect);
+
+        // Manage the timeout waiting for the response.
+        let delay = this.configuration.maxNetworkDelay;
+        if (metaConnect) {
+            delay += this.advice.timeout;
+            this.#connected = true;
+        }
+
+        const messageIds = [];
+        for (let i = 0; i < envelope.messages.length; ++i) {
+            const message = envelope.messages[i];
+            if (message.id) {
+                messageIds.push(message.id);
+                context.timeouts[message.id] = this.setTimeout(() => {
+                    this.#onTransportTimeout(context, message, delay);
+                }, delay);
+            }
+        }
+
+        this.debug("Transport", this.type, "started waiting for message replies", delay, "ms, messageIds:", messageIds, ", timeouts:", context.timeouts);
+    }
+
+    _notifySuccess(fn, messages) {
+        fn.call(this, messages);
+    };
+
+    _notifyFailure(fn, context, messages, failure) {
+        fn.call(this, context, messages, failure);
+    };
+
+    #send(context, envelope, metaConnect) {
+        try {
+            if (context === null) {
+                context = this.#connecting || {
+                    envelopes: {},
+                    timeouts: {}
+                };
+                this.#storeEnvelope(context, envelope, metaConnect);
+                this.#websocketConnect(context);
+            } else {
+                this.#storeEnvelope(context, envelope, metaConnect);
+                this.#webSocketSend(context, envelope, metaConnect);
+            }
+        } catch (x) {
+            // Keep the semantic of calling callbacks asynchronously.
+            this.setTimeout(() => {
+                this.#forceClose(context, {
+                    code: 1000,
+                    reason: "Exception",
+                    exception: x
+                });
+            }, 0);
+        }
+    }
+
+    #onOpen(context) {
+        const envelopes = context.envelopes;
+        this.debug("Transport", this.type, "opened", context, "pending messages", envelopes);
+        for (let key in envelopes) {
+            if (envelopes.hasOwnProperty(key)) {
+                const element = envelopes[key];
+                const envelope = element[0];
+                const metaConnect = element[1];
+                // Store the success callback, which is independent of the envelope,
+                // so that it can be used to notify arrival of messages.
+                this.#successCallback = envelope.onSuccess;
+                this.#webSocketSend(context, envelope, metaConnect);
+            }
+        }
+    };
+
+    #onMessage(context, wsMessage) {
+        this.debug("Transport", this.type, "received websocket message", wsMessage, context);
+
+        let close = false;
+        const messages = this.convertToMessages(wsMessage.data);
+        const messageIds = [];
+        for (let i = 0; i < messages.length; ++i) {
+            const message = messages[i];
+
+            // Detect if the message is a response to a request we made.
+            // If it's a meta message, for sure it's a response; otherwise it's
+            // a publish message and publish responses don't have the data field.
+            if (/^\/meta\//.test(message.channel) || message.data === undefined) {
+                if (message.id) {
+                    messageIds.push(message.id);
+
+                    const timeout = context.timeouts[message.id];
+                    if (timeout) {
+                        this.clearTimeout(timeout);
+                        delete context.timeouts[message.id];
+                        this.debug("Transport", this.type, "removed timeout for message", message.id, ", timeouts", context.timeouts);
+                    }
+                }
+            }
+
+            if ("/meta/connect" === message.channel) {
+                this.#connected = false;
+            }
+            if ("/meta/disconnect" === message.channel && !this.#connected) {
+                close = true;
+            }
+        }
+
+        // Remove the envelope corresponding to the messages.
+        this.#removeEnvelope(context, messageIds);
+
+        this._notifySuccess(this.#successCallback, messages);
+
+        if (close) {
+            this.#webSocketClose(context, 1000, "Disconnect");
+        }
+    };
+
+    #onClose(context, event) {
+        this.debug("Transport", this.type, "closed", context, event);
+
+        if (this.#sameContext(context)) {
+            // Remember if we were able to connect.
+            // This close event could be due to server shutdown,
+            // and if it restarts we want to try websocket again.
+            this.#webSocketSupported = this.#stickyReconnect && this.#webSocketConnected;
+            this.#connecting = null;
+            this.#context = null;
+        }
+
+        const timeouts = context.timeouts;
+        context.timeouts = {};
+        for (let id in timeouts) {
+            if (timeouts.hasOwnProperty(id)) {
+                this.clearTimeout(timeouts[id]);
+            }
+        }
+
+        const envelopes = context.envelopes;
+        context.envelopes = {};
+        for (let key in envelopes) {
+            if (envelopes.hasOwnProperty(key)) {
+                const envelope = envelopes[key][0];
+                const metaConnect = envelopes[key][1];
+                if (metaConnect) {
+                    this.#connected = false;
+                }
+                const failure = {
+                    websocketCode: event.code,
+                    reason: event.reason
+                };
+                if (event.exception) {
+                    failure.exception = event.exception;
+                }
+                this._notifyFailure(envelope.onFailure, context, envelope.messages, failure);
+            }
+        }
+    };
+
+    accept(version, crossDomain, url) {
+        this.debug("Transport", this.type, "accept, supported:", this.#webSocketSupported);
+        // Using !! to return a boolean (and not the WebSocket object).
+        return this.#webSocketSupported && !!window.WebSocket && this.cometd.websocketEnabled !== false;
+    };
+
+    send(envelope, metaConnect) {
+        this.debug("Transport", this.type, "sending", envelope, "/meta/connect =", metaConnect);
+        this.#send(this.#context, envelope, metaConnect);
+    };
+
+    #webSocketClose(context, code, reason) {
+        try {
+            if (context.webSocket) {
+                context.webSocket.close(code, reason);
+            }
+        } catch (x) {
+            this.debug(x);
+        }
+    };
+
+    abort() {
+        super.abort();
+        this.#forceClose(this.#context, {
+            code: 1000,
+            reason: "Abort"
+        });
+        this.reset(true);
+    };
+}

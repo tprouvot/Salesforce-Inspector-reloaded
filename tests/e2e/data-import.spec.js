@@ -161,7 +161,7 @@ test.describe("Data Import", () => {
     await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("1 Succeeded");
   }
 
-  async function upsertRecords(page, recordIds = []) {
+  async function upsertRecords(page, _recordIds = []) {
     // Set action to Upsert
     await page.locator("#form-import-action").selectOption("upsert");
 

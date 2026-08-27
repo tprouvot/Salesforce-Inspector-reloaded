@@ -1,10 +1,42 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
-import pluginReactConfig from "eslint-plugin-react/configs/recommended.js";
-import {fixupConfigRules} from "@eslint/compat";
-
+import eslintReact from "@eslint-react/eslint-plugin";
 
 export default [
+  // Global ignores. This MUST stay a standalone object: an `ignores` key placed
+  // alongside `rules` or `languageOptions` only scopes that single config block,
+  // so the files would still be linted by every other block.
+  {
+    ignores: [
+      "addon/lib/**",
+      "addon/styles/**",
+      "addon/react.js",
+      "addon/react.min.js",
+      "addon/react-dom.js",
+      "addon/react-dom.min.js",
+      "venv/**",
+      "docs/venv/**",
+      "target/**",
+      "megalinter-reports/**"
+    ]
+  },
+  pluginJs.configs.recommended,
+  eslintReact.configs.recommended,
+  {
+    rules: {
+      // A leading underscore marks a deliberately unused positional argument,
+      // e.g. (_, index) => ... where the position still matters.
+      "no-unused-vars": ["error", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }],
+      // addon/react.js bundles React 15.4.0, which has no createRoot API:
+      // ReactDOM.render is the only way to mount here.
+      "@eslint-react/dom-no-render": "off"
+    }
+  },
   {
     languageOptions: {
       ecmaVersion: 2022,
@@ -15,20 +47,6 @@ export default [
         ...globals.browser
       }
     },
-    settings: {
-      react: {
-        version: "detect"
-      },
-    },
-    ignores: [
-      "addon/react-dom.js",
-      "addon/react-dom.min.js",
-      "addon/react.js",
-      "addon/react.min.js",
-      "venv/*",
-      "docs/venv/*",
-      "target/"
-    ],
     rules: {
       "indent": ["error", 2, {"SwitchCase": 1, "flatTernaryExpressions": true}],
       "quotes": ["error", "double", {"avoidEscape": true}],
@@ -41,7 +59,9 @@ export default [
       "array-bracket-spacing": "error",
       "block-spacing": "error",
       "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
-      "camelcase": "error",
+      // Properties are excluded: OAuth token params (grant_type, client_id...) are an
+      // external API contract and must keep their snake_case names.
+      "camelcase": ["error", {"properties": "never"}],
       "comma-dangle": ["error", "only-multiline"],
       "comma-spacing": "error",
       "comma-style": "error",
@@ -58,7 +78,6 @@ export default [
       "no-new-object": "error",
       "no-tabs": "error",
       "no-trailing-spaces": "error",
-      "no-underscore-dangle": ["error", {"allowAfterThis": true, "allowAfterSuper": true}],
       "no-whitespace-before-property": "error",
       "object-curly-spacing": "error",
       "object-property-newline": ["error", {"allowMultiplePropertiesPerLine": true}],
@@ -90,7 +109,7 @@ export default [
       "yield-star-spacing": "error"
     }
   },
-  // Node.js configuration for scripts directory
+  // Node.js configuration for build scripts and the Playwright test harness
   {
     files: ["scripts/**/*.js"],
     languageOptions: {
@@ -104,6 +123,30 @@ export default [
       "strict": ["error", "safe"]
     }
   },
-  pluginJs.configs.recommended,
-  ...fixupConfigRules(pluginReactConfig),
+  {
+    files: ["tests/**/*.js", "playwright.config.js"],
+    languageOptions: {
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        // Injected into the page by the event-monitor e2e fixtures
+        addTestEvent: "readonly"
+      }
+    },
+    rules: {
+      "strict": "off",
+      // Playwright fixtures take a parameter named `use`, which the plugin
+      // mistakes for the React `use` hook. There is no React in tests/.
+      "@eslint-react/rules-of-hooks": "off"
+    }
+  },
+  {
+    files: ["docs/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        mermaid: "readonly"
+      }
+    }
+  }
 ];

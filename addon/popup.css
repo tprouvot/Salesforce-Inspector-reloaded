@@ -4,7 +4,7 @@
   --sfir-blue-color: var(--slds-g-color-palette-electric-blue-50);
 
   /* Color palette */
-  --sfir-white: #ffffff;
+  --sfir-white: #fff;
   --sfir-light-gray: #f3f3f3;
   --sfir-dark-blue: var(--slds-g-color-surface-inverse-1);
   --sfir-text-primary: #16325c;
@@ -61,10 +61,11 @@ body {
 }
 
 #root,
-[data-reactroot] {
+.sfir-popup {
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 a,
@@ -76,6 +77,7 @@ a > span {
 
 .main {
   flex: 1;
+  min-height: 0;
   overflow-y: scroll;
 }
 
@@ -83,6 +85,7 @@ a > span {
   background: var(--sfir-light-gray);
   color: var(--sfir-dark-blue);
 }
+
 .header-light svg {
   fill: var(--sfir-dark-blue);
 }
@@ -91,6 +94,7 @@ a > span {
   background: var(--sfir-dark-blue);
   color: var(--sfir-light-gray);
 }
+
 .header-dark svg {
   fill: var(--sfir-light-gray);
 }
@@ -262,7 +266,7 @@ input.api-input {
 .sfir-input-filter-icon {
   width: var(--sfir-font-sm);
   height: var(--sfir-font-sm);
-  fill: currentColor;
+  fill: currentcolor;
 }
 
 .sfir-user-filter-dropdown {
@@ -300,8 +304,7 @@ input.api-input {
   max-height: 260px;
   position: absolute;
   width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   z-index: var(--sfir-z-dropdown);
 }
 
@@ -355,18 +358,18 @@ input.api-input {
 
 .all-data-box-data table {
   text-align: left;
-  border-spacing: 0px;
+  border-spacing: 0;
   border-collapse: separate;
   table-layout: fixed;
   width: 100%;
 }
 
 .all-data-box-data td {
-  padding: 0px;
+  padding: 0;
 }
 
 .all-data-box-data th {
-  padding: 0px;
+  padding: 0;
   padding-right: 5px;
   width: 25%;
 }
@@ -375,6 +378,7 @@ input.api-input {
   margin-top: var(--sfir-spacing-sm);
   margin-bottom: 0.2em;
 }
+
 .left-space {
   margin-left: var(--sfir-spacing-sm);
 }
@@ -389,6 +393,7 @@ input.api-input {
 .center {
   text-align: center;
 }
+
 .justify-center {
   justify-content: center;
 }
@@ -419,7 +424,7 @@ input.api-input {
 
 .flag {
   vertical-align: middle;
-  opacity: 70%;
+  opacity: 0.7;
 }
 
 .hide {
@@ -432,9 +437,7 @@ input.api-input {
 
 a.icon {
   display: inline-block;
-  -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  -webkit-mask-size: var(--sfir-font-xl);
   mask-size: var(--sfir-font-xl);
   background-color: var(--sfir-icon-color);
   width: 16px;
@@ -442,9 +445,9 @@ a.icon {
 }
 
 a.icon-url {
-  -webkit-mask-image: url(images/link.svg);
-  mask-image: url(images/link.svg);
+  mask-image: url("images/link.svg");
 }
+
 .pointer {
   cursor: pointer;
 }
@@ -457,31 +460,43 @@ a.icon-url {
   padding-top: var(--sfir-spacing-xs);
   padding-left: 0.3rem;
 }
+
 .popup-header__name-title {
   min-width: 0;
   font-size: var(--sfir-font-xl);
   padding-top: 0.4rem;
 }
+
 .popup-header__title {
   font-weight: 600;
   line-height: 1.25;
   display: block;
 }
+
 .popup-title {
   font-size: var(--sfir-font-xl) !important;
   padding-bottom: 0.6rem;
 }
+
 .popup-header {
   border: 0 !important;
   border-radius: 0 !important;
+  flex-shrink: 0;
 }
+
+.sfir-popup-footer {
+  flex-shrink: 0;
+}
+
 .popup-header.slds-page-header {
   padding-inline: 0 !important;
   padding-block: 0 !important;
 }
+
 .popup-header__name-title {
   margin-top: var(--sfir-spacing-xs);
 }
+
 .popup-header__icon {
   width: 1.75rem;
   height: 1.75rem;
@@ -496,14 +511,16 @@ a.icon-url {
     var(--sds-c-icon-color-background, transparent)
   );
 }
+
 .progress-success {
   border-color: var(--sfir-success-color);
 }
+
 .progress-error {
   border-color: var(--sfir-error-color);
 }
 
-/* MAIN TABS*/
+/* MAIN TABS */
 #mainTabs .slds-tabs_scoped__nav {
   position: fixed !important;
   z-index: var(--sfir-z-tabs) !important;
@@ -524,7 +541,8 @@ a.icon-url {
   color: var(--sfir-blue-color) !important;
   border-bottom: none !important;
 }
-/* end of MAIN TABS*/
+
+/* end of MAIN TABS */
 
 /* TAB CONTAINER */
 .tab-container {
@@ -532,6 +550,7 @@ a.icon-url {
   padding-top: 40px;
   width: 100%;
 }
+
 /* end of TAB CONTAINER */
 
 .slds-dropdown__item a,
@@ -584,6 +603,7 @@ a.icon-url {
   width: 17% !important;
   padding: 0 !important;
 }
+
 /* end of OBJECTS INFO */
 
 .slds-button-group.sfir-padding-horizontal_small .slds-button {
@@ -594,9 +614,11 @@ a.icon-url {
 .sfir-vertical-align_top {
   vertical-align: top;
 }
+
 .sfir-vertical-align_sub {
   vertical-align: sub;
 }
+
 .sfir-no-border-right{
   border-right: none;
 }

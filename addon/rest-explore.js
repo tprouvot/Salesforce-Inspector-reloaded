@@ -166,7 +166,7 @@ class Model {
   selectSavedEntry() {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
-      let queryStr = "";
+      let queryStr;
       if (this.selectedSavedEntry.query.includes(delimiter)) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
@@ -610,7 +610,7 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  toggleQueryMoreMenu(event) {
+  toggleQueryMoreMenu(_event) {
     this.refs.buttonQueryMenu?.classList.toggle("slds-is-open");
   }
   render() {
@@ -685,7 +685,7 @@ class App extends React.Component {
                             onClick: this.onAddToHistory,
                             style: {whiteSpace: "nowrap"}
                           }, "Save Query"),
-                          h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last", onClick: (event) => event.currentTarget.classList.toggle("slds-is-open")},
+                          h("div", {ref: el => { this.refs.buttonQueryMenu = el; }, className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last", onClick: (event) => event.currentTarget.classList.toggle("slds-is-open")},
                             h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled"},
                               h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
                                 h("use", {xlinkHref: "symbols.svg#down"})
@@ -731,7 +731,7 @@ class App extends React.Component {
                   )
                 ),
                 h("div", {className: "slds-col sfir-full-width slds-p-horizontal_xx-small"},
-                  h("input", {ref: "endpoint", className: "slds-input", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint})
+                  h("input", {ref: el => { this.refs.endpoint = el; }, className: "slds-input", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint})
                 ),
                 h("div", {className: "slds-col slds-text-align_right slds-p-left_xx-small"},
                   h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-end slds-gutters_xx-small"},
@@ -814,7 +814,7 @@ class App extends React.Component {
             "div",
             {
               className: "slds-card__body slds-card__body_inner",
-              ref: "scroller",
+              ref: el => { this.refs.scroller = el; },
               hidden: model.exportError != null,
               style: {
                 flex: "1 1 0",

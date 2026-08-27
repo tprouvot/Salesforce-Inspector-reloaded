@@ -1,0 +1,18 @@
+# GitHub user-attachment assets answer 404 to unauthenticated requests
+https://github.com/user-attachments/.*
+
+# Contributor profiles credited in CHANGES.md whose GitHub accounts no longer exist
+https://github.com/AntoineLeleu-Salesforce
+https://github.com/mshivakumar2023-debug
+https://github.com/shubhambangad-rubrik
+# Issue in a fork that has since been made private or deleted
+https://github.com/RubenHalman/Salesforce-Inspector-reloaded/issues/1046
+# GitHub answers 404 to unauthenticated requests for the stargazers listing
+https://github.com/tprouvot/Salesforce-Inspector-reloaded/stargazers
+
+# Local links inside docs/ follow mkdocs URL semantics, not filesystem paths:
+# with use_directory_urls (the default), docs/x.md is published at /x/, so
+# "../assets/img.png" correctly resolves to /assets/img.png on the site even
+# though no assets/ directory exists at the repository root. lychee checks these
+# as file paths and reports false positives; mkdocs validates them at build time.
+^file://

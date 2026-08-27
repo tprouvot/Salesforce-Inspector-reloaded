@@ -30,7 +30,7 @@ function initButton(sfHost, inInspector) {
   document.body.appendChild(rootEl);
 
 
-  // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
+  // Calculates default position, left to right for horizontal, and adds boundaries to keep it on screen
   function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos, popupHeighDynamictMode: dynamicHeight}) {
     o = o || "vertical"; // Default to vertical
     const isVertical = o === "vertical";
@@ -115,7 +115,7 @@ function initButton(sfHost, inInspector) {
         //most of the time
         bannerContainer.appendChild(envNameBanner);
       } else {
-        //when login as is displayed the banner is not reachable without mutation obersver
+        //when login as is displayed the banner is not reachable without mutation observer
         observeElement(sandboxBannerSelector, (banner) => {
           banner.appendChild(envNameBanner);
         });

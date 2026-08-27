@@ -52,6 +52,17 @@ function cleanupTempDir(tempDir) {
   }
 }
 
+function getPinnedTag() {
+  "use strict";
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "vendors.json"), "utf8"));
+    const entry = manifest.vendors.find(v => v.name === "lightning-flow-scanner-core");
+    return entry && entry.version ? `core-v${entry.version}` : null;
+  } catch {
+    return null;
+  }
+}
+
 function getLatestTag(cwd) {
   "use strict";
   try {
@@ -93,10 +104,18 @@ function setupAndBuildRepo(tempDir) {
     tagToCheckout = targetVersion.startsWith("core-v") ? targetVersion : `core-v${targetVersion}`;
     logStep(`Using specified version: ${tagToCheckout}`);
   } else {
-    // Auto-detect latest if no version specified
-    tagToCheckout = getLatestTag(cloneDir);
+    // Defaulting to the newest upstream tag would mean this build silently
+    // pulls and executes whatever was published since the last run. Fall back
+    // to the version recorded in vendors.json instead, so an upgrade is always
+    // a deliberate, reviewable change to that file.
+    tagToCheckout = getPinnedTag();
     if (tagToCheckout) {
-      logStep(`Auto-detected latest version: ${tagToCheckout}`);
+      logStep(`Using the version pinned in vendors.json: ${tagToCheckout}`);
+      log("  Pass a version explicitly to upgrade, e.g. npm run build-flow-scanner 6.19.3", "yellow");
+      const latest = getLatestTag(cloneDir);
+      if (latest && latest !== tagToCheckout) {
+        log(`  Newer tag available upstream: ${latest}`, "yellow");
+      }
     }
   }
 
@@ -121,8 +140,14 @@ function setupAndBuildRepo(tempDir) {
 
   // Build using pnpm from monorepo root (Turborepo handles workspace deps)
   logStep("Installing dependencies with pnpm");
-  execSync("pnpm install", {cwd: cloneDir, stdio: "inherit"});
-  logSuccess("Dependencies installed");
+  // --frozen-lockfile installs exactly the tree upstream committed for this tag,
+  // instead of re-resolving version ranges to whatever is newest today.
+  //
+  // Note this build necessarily executes upstream code: pnpm lifecycle scripts
+  // run (esbuild fetches its platform binary in one), and then `pnpm dist` runs
+  // the upstream build. Only run it for a tag you are willing to trust.
+  execSync("pnpm install --frozen-lockfile", {cwd: cloneDir, stdio: "inherit"});
+  logSuccess("Dependencies installed from the committed lockfile");
 
   logStep("Building project with pnpm");
   execSync("pnpm dist", {cwd: cloneDir, stdio: "inherit"});

@@ -2381,7 +2381,6 @@ const SEVERITY_ICONS = {
   if (isFlowScannerPage) {
     let root = document.getElementById("root");
 
-    // eslint-disable-next-line react/no-deprecated
     ReactDOM.render(h(App), root);
   }
 }

@@ -815,37 +815,41 @@ class App extends React.Component {
   }
   onMetadataFilterInput(e) {
     let {model} = this.props;
-    if (model.metadataObjects) {
-      model.metadataFilter = e.target.value.toLowerCase();
+    const filterValue = e.target.value.toLowerCase();
+    model.metadataFilter = filterValue;
 
-      model.metadataObjects.forEach(metadataObject => {
-        metadataObject.hidden = !metadataObject.xmlName.toLowerCase().includes(model.metadataFilter);
+    clearTimeout(this._filterDebounceTimer);
+    this._filterDebounceTimer = setTimeout(() => {
+      if (model.metadataObjects) {
+        model.metadataObjects.forEach(metadataObject => {
+          metadataObject.hidden = !metadataObject.xmlName.toLowerCase().includes(filterValue);
 
-        if (metadataObject.childXmlNames) {
-          // Check if any child matches the filter
-          const anyChildMatches = metadataObject.childXmlNames.some(child =>
-            child.fullName.toLowerCase().includes(model.metadataFilter)
-          );
+          if (metadataObject.childXmlNames) {
+            // Check if any child matches the filter
+            const anyChildMatches = metadataObject.childXmlNames.some(child =>
+              child.fullName.toLowerCase().includes(filterValue)
+            );
 
-          // If any child matches, the parent should be visible
-          if (anyChildMatches) {
-            metadataObject.hidden = false;
-          }
-
-          // Update child visibility while maintaining references
-          metadataObject.childXmlNames.forEach(child => {
-            child.hidden = !child.fullName.toLowerCase().includes(model.metadataFilter);
-
-            if (child.childXmlNames) {
-              child.childXmlNames.forEach(grandchild => {
-                grandchild.hidden = !grandchild.fullName.toLowerCase().includes(model.metadataFilter);
-              });
+            // If any child matches, the parent should be visible
+            if (anyChildMatches) {
+              metadataObject.hidden = false;
             }
-          });
-        }
-      });
-      model.didUpdate();
-    }
+
+            // Update child visibility while maintaining references
+            metadataObject.childXmlNames.forEach(child => {
+              child.hidden = !child.fullName.toLowerCase().includes(filterValue);
+
+              if (child.childXmlNames) {
+                child.childXmlNames.forEach(grandchild => {
+                  grandchild.hidden = !grandchild.fullName.toLowerCase().includes(filterValue);
+                });
+              }
+            });
+          }
+        });
+        model.didUpdate();
+      }
+    }, 150);
   }
 
   onClearAndFocusFilter(e) {

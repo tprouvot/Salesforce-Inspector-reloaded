@@ -1,8 +1,9 @@
 <div align="center">
   
-  <img src="https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png" width="96" alt="">
-
-  # Salesforce Inspector Reloaded
+  <h1>
+    <img src="https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png" width="96" alt=""><br>
+    Salesforce Inspector Reloaded
+  </h1>
 
   [![GitHub release](https://img.shields.io/github/v/release/tprouvot/Salesforce-Inspector-reloaded?sort=semver)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/releases)
   [![License](https://img.shields.io/github/license/tprouvot/Salesforce-Inspector-reloaded)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/LICENSE)

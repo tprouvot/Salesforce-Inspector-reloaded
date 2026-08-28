@@ -100,7 +100,7 @@ Then edit `tests/e2e/test-constants.local.js`:
 export const TEST_CONSTANTS = {
   mockHost: "your-org-instance.sandbox.my.salesforce.com",  // Your Salesforce instance URL
   mockToken: "YOUR_ACCESS_TOKEN_HERE",                      // Valid Salesforce access token
-  apiVersion: "66.0",                                       // API version (must match your org)
+  apiVersion: "67.0",                                       // API version (must match your org)
   accountRecordId: "001000000000001AAA",                    // Valid Account record ID
   accountRecordName: "Test Account 1",                      // Account Name (must match record)
   testUserSearchTerm: "Integration User",                   // User search term (exists in all orgs)

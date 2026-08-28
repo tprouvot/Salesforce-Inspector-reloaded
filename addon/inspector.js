@@ -1,7 +1,7 @@
 import {getRedirectUri, getClientId, isSettingEnabled, Constants} from "./utils.js";
 import {apiStatistics} from "./api-statistics.js";
 
-export let defaultApiVersion = "66.0";
+export let defaultApiVersion = "67.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
 export let sessionError;

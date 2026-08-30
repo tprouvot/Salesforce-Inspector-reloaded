@@ -448,7 +448,7 @@ class Model {
     let sobjectName, isAfterFrom;
     // Find out what sobject we are querying, by using the word after the "from" keyword.
     // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
-    let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
+    let fromKeywordMatch = [...query.matchAll(/(^|\s)from\s+([a-z0-9_]*)/gi)].pop();
     let findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
     let graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
     if (fromKeywordMatch) {

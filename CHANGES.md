@@ -3,7 +3,7 @@
 ## Version 2.1
 
 - `Popup` Restore LoginAs buttons for frozen users [discussion #1270](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1270)
-- `Flow Scanner` Upgrade Lightning Flow Scanner Core to v6.19.3, and read the configurable thresholds from the rule definitions. Beta rules are now opt-in and disabled by default.
+- `Flow Scanner` Upgrade Lightning Flow Scanner Core to v6.19.4, which fixes a ReDoS in the `UnusedVariable` rule ([GHSA-fpvw-w7ff-h7vr](https://github.com/Flow-Scanner/lightning-flow-scanner/releases/tag/action-v3.7.4)), and read the configurable thresholds from the rule definitions. Beta rules are now opt-in and disabled by default.
 - `Metadata` Add 'Run Relevant Tests' option to metadata deploy Test Level picklist [feature 1286](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1286)
 - `Popup` Fix language flag icons for Catalan and Basque on the Users tab [issue #1196](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1196)
 - `Custom Shortcuts` Add "Global" toggle to share a shortcut across all orgs instead of keeping it specific to the current org [feature 191](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/191)

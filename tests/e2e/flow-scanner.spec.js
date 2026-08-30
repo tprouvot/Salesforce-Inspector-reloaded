@@ -100,7 +100,7 @@ test.describe("Flow Scanner", () => {
         }
       ];
       window.lightningflowscanner = {
-        version: "6.19.3",
+        version: "6.19.4",
         Flow: MockFlow,
         FlowType: {
           allTypes: () => ["Flow", "AutoLaunchedFlow", "Workflow", "ScreenFlow"],
@@ -222,7 +222,7 @@ test.describe("Flow Scanner", () => {
     await expect(page.locator(".scan-results-area, .summary-body").first()).toBeVisible({timeout: 5000});
   });
 
-  test("Use Flow Scanner Core 6.19.3 configuration and results", async ({page, extensionId}) => {
+  test("Use Flow Scanner Core 6.19.4 configuration and results", async ({page, extensionId}) => {
     test.skip(!TEST_CONSTANTS.mockEnabled, "Requires the mocked Flow Scanner Core");
     await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 

@@ -59,7 +59,7 @@ export async function injectSessionData(context, {host, token, version, addition
         window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
         window.localStorage.setItem(keyPrefix + "_orgInstance", "FRA12S");
         window.localStorage.setItem(keyPrefix + "_trialExpirationDate", "2026-01-01");
-        window.localStorage.setItem("apiVersion", version);
+        window.localStorage.setItem(keyPrefix + "_apiVersion", version);
       }
     } catch (e) {
       // localStorage might not be accessible in this context, continue anyway

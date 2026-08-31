@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setApiVersionForOrg, resetApiVersionForOrg, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache, applyProductionStyling} from "./utils.js";
 import {getFlowScannerRules, FLOW_SCANNER_RULES_STORAGE_KEY} from "./flow-scanner-rules.js";
 /* global initButton, lightningflowscanner */
@@ -630,31 +630,42 @@ class APIVersionOption extends React.Component {
     super(props);
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
     this.onRestoreDefaultApiVersion = this.onRestoreDefaultApiVersion.bind(this);
-    this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
+    this.state = {apiVersion};
   }
 
   async onChangeApiVersion(e) {
-    let {sfHost} = this.props.model;
     const inputElt = e.target;
     const newApiVersion = e.target.value;
-    if (this.state.apiVersion < newApiVersion) {
-      const latestApiVersion = await getLatestApiVersionFromOrg(sfHost);
-      if (latestApiVersion >= newApiVersion) {
-        localStorage.setItem("apiVersion", newApiVersion + ".0");
-        this.setState({apiVersion: newApiVersion + ".0"});
+    this.setState({apiVersion: newApiVersion});
+    inputElt.setCustomValidity("");
+    inputElt.removeAttribute("max");
+    if (!inputElt.checkValidity()) {
+      return;
+    }
+    const acceptVersion = () => {
+      const normalizedApiVersion = Number(newApiVersion) + ".0";
+      setApiVersionForOrg(normalizedApiVersion);
+      this.setState({apiVersion: normalizedApiVersion});
+    };
+    if (parseFloat(apiVersion) < parseFloat(newApiVersion)) {
+      const latestApiVersion = await getLatestApiVersionFromOrg();
+      if (inputElt.value !== newApiVersion) {
+        return;
+      }
+      if (parseFloat(latestApiVersion) >= parseFloat(newApiVersion)) {
+        acceptVersion();
       } else {
         inputElt.setAttribute("max", latestApiVersion);
         inputElt.setCustomValidity("Maximum version available: " + latestApiVersion);
         inputElt.reportValidity();
       }
     } else {
-      localStorage.setItem("apiVersion", newApiVersion + ".0");
-      this.setState({apiVersion: newApiVersion + ".0"});
+      acceptVersion();
     }
   }
 
   onRestoreDefaultApiVersion(){
-    localStorage.removeItem("apiVersion");
+    resetApiVersionForOrg();
     this.setState({apiVersion: defaultApiVersion});
   }
   render() {
@@ -668,7 +679,19 @@ class APIVersionOption extends React.Component {
         h("div", {className: "slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
           h("div", {className: "slds-col slds-size_1-of-12"},
             h("div", {className: "slds-form-element__control"},
-              h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+              h("input", {
+                type: "number",
+                min: Constants.MIN_API_VERSION,
+                step: "1",
+                required: true,
+                className: "slds-input",
+                value: nullToEmptyString(this.state.apiVersion.split(".0")[0]),
+                onChange: this.onChangeApiVersion,
+                onBlur: (e) => {
+                  e.target.setCustomValidity("");
+                  this.setState({apiVersion});
+                }
+              }),
             )
           ),
           this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-col"},

@@ -19,6 +19,7 @@ export class Constants {
   // API Statistics
   static API_DEBUG_STATISTICS_MODE = "apiDebugStatisticsMode";
   static API_DEBUG_STATISTICS = "apiDebugStatistics";
+  static MIN_API_VERSION = 31;
   // Cache Keys
   static CACHE_SOBJECTS_LIST = "sobjectsList";
   // CustomEvent: dispatched when sobjects list is refreshed in background
@@ -319,16 +320,15 @@ export function isSettingEnabled(settingName, defaultValue = false){
   return value === "true";
 }
 
-export async function getLatestApiVersionFromOrg(sfHost) {
-  let latestApiVersionFromOrg = sessionStorage.getItem(sfHost + "_latestApiVersionFromOrg");
-  if (latestApiVersionFromOrg != null) {
-    return latestApiVersionFromOrg;
-  } else {
-    const res = await sfConn.rest("services/data/");
-    latestApiVersionFromOrg = res[res.length - 1].version; //Extract the value of the last version
-    sessionStorage.setItem(sfHost + "_latestApiVersionFromOrg", latestApiVersionFromOrg);
-    return latestApiVersionFromOrg;
+export async function getLatestApiVersionFromOrg() {
+  const releases = await sfConn.rest("services/data/");
+  if (!Array.isArray(releases) || releases.length === 0) {
+    throw new Error("The org returned no supported API release");
   }
+  const latestRelease = releases.reduce((latest, release) =>
+    parseFloat(release.version) > parseFloat(latest.version) ? release : latest
+  );
+  return latestRelease.version;
 }
 
 export async function setOrgInfo(sfHost) {

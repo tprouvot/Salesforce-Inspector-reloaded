@@ -60,7 +60,7 @@ test.describe("Data Import", () => {
           window.localStorage.setItem(keyPrefix + "_access_token", token);
           window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
           window.localStorage.setItem(keyPrefix + "_orgInstance", "FRA12S");
-          window.localStorage.setItem("apiVersion", version);
+          window.localStorage.setItem(keyPrefix + "_apiVersion", version);
         }
       } catch (e) {
         console.warn("Failed to set localStorage:", e.message);

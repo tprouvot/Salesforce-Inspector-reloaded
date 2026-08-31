@@ -204,16 +204,14 @@ test.describe("Options", () => {
       const apiVersionInput = page.locator("#api input[type='number']").first();
       await expect(apiVersionInput).toBeVisible();
 
-      // Change API version
-      await apiVersionInput.fill("66");
-      await apiVersionInput.press("Enter");
-
-      // Wait for validation/update
-      await page.waitForTimeout(1000);
-
-      // Verify value is updated (or restored if invalid)
-      const value = await apiVersionInput.inputValue();
-      await expect(parseInt(value)).toBeGreaterThanOrEqual(60);
+      // Reject consecutive unsupported values without changing the stored version.
+      await apiVersionInput.fill("99");
+      await apiVersionInput.fill("98");
+      await apiVersionInput.blur();
+      await expect(apiVersionInput).toHaveValue("66");
+      await expect.poll(() => apiVersionInput.evaluate((input, host) =>
+        input.ownerDocument.defaultView.localStorage.getItem(host + "_apiVersion"), mockHost
+      )).toBe("66.0");
     });
 
     test("URL Parameter - Select Tab", async ({page, extensionId}) => {
@@ -231,21 +229,19 @@ test.describe("Options", () => {
 
       // Change API version to non-default
       const apiVersionInput = page.locator("#api input[type='number']").first();
-      await apiVersionInput.fill("66");
+      await apiVersionInput.fill("64");
       await apiVersionInput.press("Enter");
       await page.waitForTimeout(1000);
 
-      // Check if Restore Default button appears
       const restoreButton = page.locator("button:has-text('Restore Default')");
-      if (await restoreButton.count() > 0) {
-        await restoreButton.click();
+      await expect(restoreButton).toBeVisible();
+      await restoreButton.click();
 
-        // Wait for restore
-        await page.waitForTimeout(500);
-
-        // Verify button is gone (version restored to default)
-        await expect(restoreButton).not.toBeVisible();
-      }
+      await expect(restoreButton).not.toBeVisible();
+      await expect.poll(() => apiVersionInput.evaluate((input, host) => ({
+        version: input.ownerDocument.defaultView.localStorage.getItem(host + "_apiVersion"),
+        migrated: input.ownerDocument.defaultView.localStorage.getItem(host + "_apiVersion_migrated")
+      }), mockHost)).toEqual({version: null, migrated: "true"});
     });
 
     test("Delete Token Button", async ({page, extensionId}) => {

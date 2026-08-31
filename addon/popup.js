@@ -2779,11 +2779,14 @@ class AllDataBoxOrg extends React.PureComponent {
 
   async componentDidMount() {
     let {sfHost} = this.props;
-    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
-    if (!orgInfo) {
-      orgInfo = await setOrgInfo(sfHost);
+    const orgInfo = await setOrgInfo(sfHost).catch((e) => {
+      console.error(e);
+      return null;
+    });
+    this.setState({orgInfo});
+    if (orgInfo?.InstanceName) {
+      this.setInstanceStatus(orgInfo.InstanceName);
     }
-    this.setInstanceStatus(orgInfo.InstanceName, sfHost);
   }
 
   contextOrgId() {
@@ -2791,10 +2794,10 @@ class AllDataBoxOrg extends React.PureComponent {
   }
 
   getNextMajorRelease(maintenances) {
-    if (maintenances) {
-      let event = maintenances.find((event) =>
-        event.name.endsWith("Major Release")
-      );
+    let event = maintenances?.find((event) =>
+      event.name.endsWith("Major Release")
+    );
+    if (event) {
       return (
         event.name.replace(" Major Release", "")
         + " on "
@@ -2882,44 +2885,39 @@ class AllDataBoxOrg extends React.PureComponent {
     elt.classList.toggle(success ? "progress-success" : "progress-error");
   }
 
-  setInstanceStatus(instanceName, sfHost) {
-    let instanceStatusLocal = JSON.parse(
-      sessionStorage.getItem(sfHost + "_instanceStatus")
-    );
-    if (instanceStatusLocal == null) {
-      fetch(
-        `https://api.status.salesforce.com/v1/instances/${instanceName}/status`
-      )
-        .then((response) => {
-          response.json().then((result) => {
-            //manually filter to get only the future releases (based on today's date) and sort maintenance since list in not ordered by default
-            result.Maintenances = result.Maintenances.filter(
-              (dt) => dt.plannedEndTime >= new Date().toISOString()
-            ).sort((a, b) =>
-              a.plannedStartTime > b.plannedStartTime
-                ? 1
-                : b.plannedStartTime > a.plannedStartTime
-                  ? -1
-                  : 0
-            );
-            this.setState({instanceStatus: result});
-            sessionStorage.setItem(
-              sfHost + "_instanceStatus",
-              JSON.stringify(result)
-            );
-          });
-        })
-        .catch((e) => {
-          console.error(e);
-        });
-    } else {
-      this.setState({instanceStatus: instanceStatusLocal});
-    }
+  setInstanceStatus(instanceName) {
+    fetch(
+      //credentials are omitted so the load balancer affinity cookie cannot pin the request to an instance reporting a previous release
+      `https://api.status.salesforce.com/v1/instances/${instanceName}/status`,
+      {cache: "no-store", credentials: "omit"}
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Salesforce status API returned ${response.status} for instance ${instanceName}`
+          );
+        }
+        return response.json();
+      })
+      .then((result) => {
+        //manually filter to get only the future releases (based on today's date) and sort maintenance since list in not ordered by default
+        result.Maintenances = (result.Maintenances ?? []).filter(
+          (dt) => dt.plannedEndTime >= new Date().toISOString()
+        ).sort((a, b) =>
+          a.plannedStartTime > b.plannedStartTime
+            ? 1
+            : b.plannedStartTime > a.plannedStartTime
+              ? -1
+              : 0
+        );
+        this.setState({instanceStatus: result});
+      })
+      .catch((e) => console.error(e));
   }
 
   render() {
     let {linkTarget, sfHost} = this.props;
-    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    let {orgInfo} = this.state;
     return h(
       "div",
       {

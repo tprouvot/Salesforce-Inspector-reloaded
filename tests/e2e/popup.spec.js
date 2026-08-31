@@ -157,6 +157,18 @@ test.describe("Popup", () => {
       const url = request.url();
       const method = request.method();
 
+      if (url.includes("api.status.salesforce.com/v1/instances/")) {
+        await fulfillSuccess(route, {
+          key: "FRA12S",
+          location: "EMEA",
+          releaseVersion: "Winter '26 Patch 1.0",
+          releaseNumber: "258.1.0",
+          status: "OK",
+          Maintenances: []
+        });
+        return;
+      }
+
       // REST API - Composite Query (user details + Shortcut tab metadata search).
       // Handled before routeMock() because test-mock.js has a generic composite fallback
       // that would otherwise swallow these requests and respond with empty records.
@@ -852,6 +864,11 @@ test.describe("Popup", () => {
 
       // Verify org info table appears
       await expect(page.frameLocator(".insext-popup").locator("text=Org Id")).toBeVisible({timeout: 1000});
+
+      // Release and API version come from the status response, not from a cached one
+      const orgTable = page.frameLocator(".insext-popup").locator(".all-data-box-data");
+      await expect(orgTable.locator("tr").filter({hasText: "Release"}).locator("td")).toHaveText("Winter '26 Patch 1.0 / 258.1.0");
+      await expect(orgTable.locator("tr").filter({hasText: "API vers."}).locator("td")).toHaveText("65");
     });
 
     test("Delete Apex Logs Button", async ({page, extensionId}) => {

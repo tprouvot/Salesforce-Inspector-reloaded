@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError} from "./inspector.js";
+import {sfConn, apiVersion, setApiVersionForOrg, sessionError} from "./inspector.js";
 import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -308,14 +308,26 @@ class App extends React.PureComponent {
     }
   }
   async onChangeApi(e) {
-    let {sfHost} = this.props;
     const inputElt = e.target;
     const newApiVersion = e.target.value;
-    if (apiVersion < newApiVersion) {
-      const latestApiVersion = await getLatestApiVersionFromOrg(sfHost);
-      if (latestApiVersion >= newApiVersion) {
-        localStorage.setItem("apiVersion", newApiVersion + ".0");
-        this.setState({apiVersionInput: newApiVersion + ".0"});
+    this.setState({apiVersionInput: newApiVersion});
+    inputElt.setCustomValidity("");
+    inputElt.removeAttribute("max");
+    if (!inputElt.checkValidity()) {
+      return;
+    }
+    const acceptVersion = () => {
+      const normalizedApiVersion = Number(newApiVersion) + ".0";
+      setApiVersionForOrg(normalizedApiVersion);
+      this.setState({apiVersionInput: normalizedApiVersion});
+    };
+    if (parseFloat(apiVersion) < parseFloat(newApiVersion)) {
+      const latestApiVersion = await getLatestApiVersionFromOrg();
+      if (inputElt.value !== newApiVersion) {
+        return;
+      }
+      if (parseFloat(latestApiVersion) >= parseFloat(newApiVersion)) {
+        acceptVersion();
       } else {
         inputElt.setAttribute("max", latestApiVersion);
         inputElt.setCustomValidity(
@@ -324,8 +336,7 @@ class App extends React.PureComponent {
         inputElt.reportValidity();
       }
     } else {
-      localStorage.setItem("apiVersion", newApiVersion + ".0");
-      this.setState({apiVersionInput: newApiVersion + ".0"});
+      acceptVersion();
     }
   }
   componentDidMount() {
@@ -815,8 +826,15 @@ class App extends React.PureComponent {
               id: "idApiInput",
               className: "api-input",
               type: "number",
+              min: Constants.MIN_API_VERSION,
+              step: "1",
+              required: true,
               title: "Update api version",
               onChange: this.onChangeApi,
+              onBlur: (e) => {
+                e.target.setCustomValidity("");
+                this.setState({apiVersionInput: apiVersion});
+              },
               value: apiVersionInput.split(".0")[0],
             })
           ),
@@ -2805,15 +2823,8 @@ class AllDataBoxOrg extends React.PureComponent {
   }
 
   getApiVersion(instanceStatus) {
-    let {sfHost} = this.props;
     if (instanceStatus) {
-      let apiVersion = instanceStatus.releaseNumber.substring(0, 3) / 2 - 64;
-      //store it for maximum version allowed
-      sessionStorage.setItem(
-        sfHost + "_latestApiVersionFromOrg",
-        apiVersion + ".0"
-      );
-      return apiVersion;
+      return instanceStatus.releaseNumber.substring(0, 3) / 2 - 64;
     }
     return null;
   }

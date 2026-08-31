@@ -410,8 +410,22 @@ test.describe("Popup", () => {
       await apiInput.fill("64"); //be careful as this value depends on the test-mock.js file and real api versions
       await apiInput.press("Enter");
 
-      // Verify value is updated
+      // Verify value is updated and stored for this org only
       await expect(apiInput).toHaveValue("64");
+      await expect.poll(() => apiInput.evaluate((input, host) =>
+        input.ownerDocument.defaultView.localStorage.getItem(host + "_apiVersion"), mockHost
+      )).toBe("64.0");
+
+      // A partial or unsupported value must never reach storage
+      await apiInput.fill("");
+      await apiInput.blur();
+      await expect(apiInput).toHaveValue("64");
+      await apiInput.fill("9");
+      await apiInput.blur();
+      await expect(apiInput).toHaveValue("64");
+      await expect.poll(() => apiInput.evaluate((input, host) =>
+        input.ownerDocument.defaultView.localStorage.getItem(host + "_apiVersion"), mockHost
+      )).toBe("64.0");
     });
 
     test("Click Data Export Link", async ({page, extensionId}) => {

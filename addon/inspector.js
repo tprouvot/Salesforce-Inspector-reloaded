@@ -2,7 +2,20 @@ import {getRedirectUri, getClientId, isSettingEnabled, Constants} from "./utils.
 import {apiStatistics} from "./api-statistics.js";
 
 export let defaultApiVersion = "66.0";
-export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
+const apiVersionKey = (sfHost) => sfHost + "_apiVersion";
+const apiVersionMigrationKey = (sfHost) => apiVersionKey(sfHost) + "_migrated";
+export let apiVersion = defaultApiVersion;
+
+export function setApiVersionForOrg(value) {
+  apiVersion = value;
+  localStorage.setItem(apiVersionKey(sfConn.instanceHostname), value);
+}
+
+export function resetApiVersionForOrg() {
+  apiVersion = defaultApiVersion;
+  localStorage.removeItem(apiVersionKey(sfConn.instanceHostname));
+  localStorage.setItem(apiVersionMigrationKey(sfConn.instanceHostname), "true");
+}
 
 export let sessionError;
 const clientId = "Salesforce Inspector Reloaded";
@@ -70,6 +83,25 @@ export let sfConn = {
       if (message) {
         this.instanceHostname = getMyDomain(message.hostname);
         this.sessionId = message.key;
+      }
+    }
+    sfHost = this.instanceHostname;
+    const storedApiVersion = localStorage.getItem(apiVersionKey(sfHost));
+    apiVersion = storedApiVersion ?? defaultApiVersion;
+    const legacyApiVersion = localStorage.getItem("apiVersion");
+    if (!storedApiVersion
+      && legacyApiVersion
+      && localStorage.getItem(apiVersionMigrationKey(sfHost)) !== "true") {
+      try {
+        const releases = await this.rest("services/data/");
+        const supportedVersions = releases
+          .map((release) => release.version)
+          .filter((version) => parseFloat(version) <= parseFloat(legacyApiVersion))
+          .sort((a, b) => parseFloat(a) - parseFloat(b));
+        setApiVersionForOrg(supportedVersions.pop() ?? defaultApiVersion);
+        localStorage.setItem(apiVersionMigrationKey(sfHost), "true");
+      } catch (e) {
+        console.error("Unable to migrate the legacy API version:", e);
       }
     }
     if (localStorage.getItem(sfHost + "_trialExpirationDate") == null) {

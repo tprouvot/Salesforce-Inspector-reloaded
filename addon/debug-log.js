@@ -744,6 +744,7 @@ Please structure your response in a clear, organized manner using these sections
     // Process filter change asynchronously to avoid blocking UI
     setTimeout(() => {
       if (applyId !== this.previewFilterApplySeq) return;
+      if (this.previewFilterInput !== filterText) return; // newer input is pending debounce
       try {
         this.previewFilter = filterText;
         // Reset search when filter changes

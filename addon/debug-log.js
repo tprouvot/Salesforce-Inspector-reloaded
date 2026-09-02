@@ -106,7 +106,6 @@ class Model {
 
     // Preview loading state
     this.previewLoading = false;
-    this.previewFilterProcessing = false; // Track when filter is being applied
 
     // Sorting state
     this.sortColumn = "StartTime"; // Default sort column
@@ -645,7 +644,6 @@ Please structure your response in a clear, organized manner using these sections
   async preview(id) {
     this.clearPreviewFilterTimer();
     this.previewFilterApplySeq++;
-    this.previewFilterProcessing = false;
     this.previewLoading = true;
     this.previewLog = {id, body: "", fileName: `${id}.log`}; // Show modal immediately with loading state
     this.didUpdate();
@@ -692,7 +690,6 @@ Please structure your response in a clear, organized manner using these sections
   closePreview() {
     this.clearPreviewFilterTimer();
     this.previewFilterApplySeq++;
-    this.previewFilterProcessing = false;
     this.previewLog = null;
     // Reset search state completely when closing preview
     this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
@@ -728,35 +725,28 @@ Please structure your response in a clear, organized manner using these sections
   applyPreviewFilter(filterText) {
     this.clearPreviewFilterTimer();
     this.previewFilterInput = filterText;
-    if (this.previewFilter === filterText && !this.previewFilterProcessing) {
+    if (this.previewFilter === filterText) {
       this.didUpdate();
       return;
     }
 
     const applyId = ++this.previewFilterApplySeq;
-    // Show loading state immediately
-    this.previewFilterProcessing = true;
-    // Clear cache when filter changes
     this._cachedProcessedBody = null;
     this._cachedFilteredBody = null;
-    this.didUpdate();
 
-    // Process filter change asynchronously to avoid blocking UI
+    // Apply on the next tick so the typed character paints before filtering large logs.
     setTimeout(() => {
       if (applyId !== this.previewFilterApplySeq) return;
-      if (this.previewFilterInput !== filterText) return; // newer input is pending debounce
+      if (this.previewFilterInput !== filterText) return;
       try {
         this.previewFilter = filterText;
-        // Reset search when filter changes
         this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
-        this.previewFilterProcessing = false;
         this.didUpdate();
       } catch (e) {
         console.error("applyPreviewFilter", e);
-        this.previewFilterProcessing = false;
         this.didUpdate();
       }
-    }, 50); // Small delay to let UI update with spinner first
+    }, 0);
   }
 
   getFilteredLogBody() {
@@ -1643,7 +1633,6 @@ function PreviewModal({model, hideButtonsOption}) {
   if (!log) return null;
 
   const isLoading = model.previewLoading || model.isRestoringPreview;
-  const isFilterProcessing = model.previewFilterProcessing;
 
   // Get filtered log body (with caching)
   const currentFilter = model.previewFilter || "";
@@ -1691,14 +1680,14 @@ function PreviewModal({model, hideButtonsOption}) {
   // First, let Prism do its syntax highlighting (if available) - with caching
   // Skip Prism for large files (>1.5MB) or when filter is being processed to avoid browser crash
   let processedBody;
-  const prismCacheKey = `prism_${cacheKey}_${isLargeFile}_${isFilterProcessing}`;
+  const prismCacheKey = `prism_${cacheKey}_${isLargeFile}`;
 
   if (model._cachedProcessedBody && model._cachedProcessedKey === prismCacheKey) {
     // Use cached Prism result
     processedBody = model._cachedProcessedBody;
   } else {
     // Process with Prism and cache the result
-    if (!isLargeFile && !isFilterProcessing && window.Prism && window.Prism.highlight) {
+    if (!isLargeFile && window.Prism && window.Prism.highlight) {
       try {
         // Let Prism highlight the syntax first
         processedBody = window.Prism.highlight(displayBody, window.Prism.languages.log || window.Prism.languages.markup, "log");
@@ -1820,7 +1809,7 @@ function PreviewModal({model, hideButtonsOption}) {
     cancelDisabled: false
   },
   // Large file warning
-  isLargeFile && !isLoading && !isFilterProcessing && h("div", {className: "slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_x-small", role: "alert"},
+  isLargeFile && !isLoading && h("div", {className: "slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_x-small", role: "alert"},
     h("span", {className: "slds-icon_container slds-icon-utility-warning slds-m-right_x-small"},
       h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
         h("use", {xlinkHref: "symbols.svg#warning"})
@@ -1886,7 +1875,7 @@ function PreviewModal({model, hideButtonsOption}) {
               autoComplete: "off",
               onInput: (e) => model.updatePreviewSearchTermLive(e.target.value),
               onKeyDown: (e) => { if (e.key === "Enter") { e.preventDefault(); model.nextPreviewMatch(); } },
-              disabled: isLoading || isFilterProcessing
+              disabled: isLoading
             })
           )
         )
@@ -1894,10 +1883,10 @@ function PreviewModal({model, hideButtonsOption}) {
     ),
     h("div", {className: "slds-col slds-grow-none"},
       h("div", {className: "slds-button_group", role: "group"},
-        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.prevPreviewMatch(), title: "Previous match", disabled: isLoading || isFilterProcessing},
+        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.prevPreviewMatch(), title: "Previous match", disabled: isLoading},
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#left"}))
         ),
-        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.nextPreviewMatch(), title: "Next match", disabled: isLoading || isFilterProcessing},
+        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.nextPreviewMatch(), title: "Next match", disabled: isLoading},
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#right"}))
         )
       ),
@@ -1909,7 +1898,7 @@ function PreviewModal({model, hideButtonsOption}) {
         className: "slds-button slds-button_brand",
         onClick: () => model.openAgentforce(),
         title: "Analyze with Agentforce",
-        disabled: isLoading || isFilterProcessing
+        disabled: isLoading
       },
       h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
         h("use", {xlinkHref: "symbols.svg#einstein"})
@@ -1918,7 +1907,7 @@ function PreviewModal({model, hideButtonsOption}) {
       )
     )
   ),
-  // Loading state, filter processing state, or log body
+  // Loading state or log body
   isLoading
     ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large sfir-preview-loading-container"},
       h("div", {className: "slds-spinner_container sfir-preview-spinner-container"},
@@ -1935,32 +1924,14 @@ function PreviewModal({model, hideButtonsOption}) {
         )
       )
     )
-    : isFilterProcessing
-      ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large sfir-preview-loading-container"},
-        h("div", {className: "slds-spinner_container sfir-preview-spinner-container"},
-          h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
-            h("span", {className: "slds-assistive-text"}, "Processing filter..."),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"})
-          )
-        ),
-        h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-          h("div", {}, "Applying filter..."),
-          h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
-            isLargeFile
-              ? "Processing large file, this may take a moment"
-              : "Please wait"
-          )
-        )
-      )
-      : h("pre", {
-        className: "language-log sfir-preview-code-block"
-      },
-      h("code", {
-        className: "language-log",
-        dangerouslySetInnerHTML: {__html: html}
-      })
-      )
+    : h("pre", {
+      className: "language-log sfir-preview-code-block"
+    },
+    h("code", {
+      className: "language-log",
+      dangerouslySetInnerHTML: {__html: html}
+    })
+    )
   );
 }
 

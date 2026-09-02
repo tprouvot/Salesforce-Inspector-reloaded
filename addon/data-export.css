@@ -645,6 +645,9 @@ svg.icon:hover {
   display: flex;
   padding: 0;
   position: relative;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: thin;
 }
 
 .query-tab {

@@ -22,6 +22,9 @@ class Model {
     this.previewLog = null; // {id, body, fileName}
     this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
     this.previewFilter = ""; // grep-like filter for log lines
+    this.previewFilterInput = ""; // live input value kept separate to avoid focus loss while typing
+    this.previewFilterTimerId = 0;
+    this.previewFilterApplySeq = 0;
     this.filterTemplates = [
       {label: "No filter", value: ""},
       {label: "USER_DEBUG", value: "USER_DEBUG"},
@@ -640,6 +643,9 @@ Please structure your response in a clear, organized manner using these sections
   }
 
   async preview(id) {
+    this.clearPreviewFilterTimer();
+    this.previewFilterApplySeq++;
+    this.previewFilterProcessing = false;
     this.previewLoading = true;
     this.previewLog = {id, body: "", fileName: `${id}.log`}; // Show modal immediately with loading state
     this.didUpdate();
@@ -650,6 +656,7 @@ Please structure your response in a clear, organized manner using these sections
       this.previewLog = {id, body: cachedBody, fileName: `${id}.log`};
       this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
       this.previewFilter = ""; // Reset filter when opening new log
+      this.previewFilterInput = "";
       this.previewLoading = false;
       window.addEventListener("keydown", this._onPreviewKeyDown, true);
       setTimeout(() => {
@@ -666,6 +673,7 @@ Please structure your response in a clear, organized manner using these sections
       this.previewLog = {id, body: text, fileName: `${id}.log`};
       this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
       this.previewFilter = ""; // Reset filter when opening new log
+      this.previewFilterInput = "";
       window.addEventListener("keydown", this._onPreviewKeyDown, true);
       setTimeout(() => {
         const inp = document.querySelector(".sfir-preview-search-input");
@@ -682,10 +690,14 @@ Please structure your response in a clear, organized manner using these sections
   }
 
   closePreview() {
+    this.clearPreviewFilterTimer();
+    this.previewFilterApplySeq++;
+    this.previewFilterProcessing = false;
     this.previewLog = null;
     // Reset search state completely when closing preview
     this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
     this.previewFilter = "";
+    this.previewFilterInput = "";
     // Clear cached processed body
     this._cachedProcessedBody = null;
     this._cachedFilteredBody = null;
@@ -696,10 +708,34 @@ Please structure your response in a clear, organized manner using these sections
     this.didUpdate();
   }
 
+  clearPreviewFilterTimer() {
+    if (this.previewFilterTimerId) {
+      clearTimeout(this.previewFilterTimerId);
+      this.previewFilterTimerId = 0;
+    }
+  }
+
+  schedulePreviewFilter(filterText) {
+    this.previewFilterInput = filterText;
+    this.clearPreviewFilterTimer();
+    this.didUpdate();
+    this.previewFilterTimerId = setTimeout(() => {
+      this.previewFilterTimerId = 0;
+      this.applyPreviewFilter(this.previewFilterInput);
+    }, 200);
+  }
+
   applyPreviewFilter(filterText) {
+    this.clearPreviewFilterTimer();
+    this.previewFilterInput = filterText;
+    if (this.previewFilter === filterText && !this.previewFilterProcessing) {
+      this.didUpdate();
+      return;
+    }
+
+    const applyId = ++this.previewFilterApplySeq;
     // Show loading state immediately
     this.previewFilterProcessing = true;
-    this.previewFilter = filterText;
     // Clear cache when filter changes
     this._cachedProcessedBody = null;
     this._cachedFilteredBody = null;
@@ -707,7 +743,10 @@ Please structure your response in a clear, organized manner using these sections
 
     // Process filter change asynchronously to avoid blocking UI
     setTimeout(() => {
+      if (applyId !== this.previewFilterApplySeq) return;
+      if (this.previewFilterInput !== filterText) return; // newer input is pending debounce
       try {
+        this.previewFilter = filterText;
         // Reset search when filter changes
         this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
         this.previewFilterProcessing = false;
@@ -1803,9 +1842,9 @@ function PreviewModal({model, hideButtonsOption}) {
             h("select", {
               id: "sfir-log-filter-template",
               className: "slds-select",
-              value: model.previewFilter,
+              value: model.previewFilterInput,
               onChange: (e) => model.applyPreviewFilter(e.target.value),
-              disabled: isLoading || isFilterProcessing
+              disabled: isLoading
             },
             ...model.filterTemplates.map(t => h("option", {key: t.value, value: t.value}, t.label))
             )
@@ -1822,9 +1861,9 @@ function PreviewModal({model, hideButtonsOption}) {
             type: "text",
             className: "slds-input",
             placeholder: "e.g., USER_DEBUG|EXCEPTION_THROWN",
-            value: model.previewFilter,
-            onChange: (e) => model.applyPreviewFilter(e.target.value),
-            disabled: isLoading || isFilterProcessing
+            value: model.previewFilterInput,
+            onChange: (e) => model.schedulePreviewFilter(e.target.value),
+            disabled: isLoading
           })
         )
       )

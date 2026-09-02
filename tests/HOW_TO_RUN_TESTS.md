@@ -285,7 +285,7 @@ The real-org workflow will:
 ## Test Files Overview
 
 | Test File | Description | Key Dependencies |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | `inspect.spec.js` | Tests the Inspect page functionality | Account object, Account record |
 | `options.spec.js` | Tests the Options page | User object, API access |
 | `data-export.spec.js` | Tests data export features | Account object, SOQL queries |

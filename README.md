@@ -1,20 +1,13 @@
-<div align="center">
-  
-  <h1>
-    <img src="https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png" width="96" alt=""><br>
-    Salesforce Inspector Reloaded
-  </h1>
+<img src="https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png" align="right">
 
-  [![GitHub release](https://img.shields.io/github/v/release/tprouvot/Salesforce-Inspector-reloaded?sort=semver)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/releases)
-  [![License](https://img.shields.io/github/license/tprouvot/Salesforce-Inspector-reloaded)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/LICENSE)
-  [![Last Commit](https://img.shields.io/github/last-commit/tprouvot/Salesforce-Inspector-reloaded)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/commits/releaseCandidate)
-  [![GitHub stars](https://img.shields.io/github/stars/tprouvot/Salesforce-Inspector-reloaded?cacheSeconds=3600)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/stargazers)
-  [![GitHub forks](https://img.shields.io/github/forks/tprouvot/Salesforce-Inspector-reloaded)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/forks)
-  [![GitHub contributors](https://img.shields.io/github/contributors/tprouvot/Salesforce-Inspector-reloaded.svg)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/graphs/contributors)
-  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pulls)
+# Salesforce Inspector Reloaded
 
-  [![](https://img.shields.io/chrome-web-store/v/hpijlohoihegkfehhibggnkbjhoemldh.svg)](https://chromewebstore.google.com/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh) [![](https://img.shields.io/chrome-web-store/rating/hpijlohoihegkfehhibggnkbjhoemldh.svg)](https://chromewebstore.google.com/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh/reviews) [![](https://img.shields.io/chrome-web-store/users/hpijlohoihegkfehhibggnkbjhoemldh.svg)](https://chromewebstore.google.com/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh) ▪️ [![](https://img.shields.io/badge/dynamic/json?label=edge%20add-on&prefix=v&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fnoclfopoifgfgnflgkakofglfeeambpd)](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd) [![](https://img.shields.io/badge/dynamic/json?label=rating&suffix=/5&query=%24.averageRating&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fnoclfopoifgfgnflgkakofglfeeambpd)](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd) [![](https://img.shields.io/badge/dynamic/json?label=users&query=%24.activeInstallCount&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fnoclfopoifgfgnflgkakofglfeeambpd)](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd) ▪️ [![](https://img.shields.io/amo/v/salesforce-inspector-reloaded.svg)](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/) [![](https://img.shields.io/amo/rating/salesforce-inspector-reloaded.svg)](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/reviews) [![](https://img.shields.io/amo/users/salesforce-inspector-reloaded.svg)](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/) ▪️ [![](https://img.shields.io/chrome-web-store/v/lopjgjcglnncikiocpacfdbkmpbfmkcf.svg?label=beta)](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf) [![](https://img.shields.io/chrome-web-store/rating/lopjgjcglnncikiocpacfdbkmpbfmkcf.svg)](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf/reviews) [![](https://img.shields.io/chrome-web-store/users/lopjgjcglnncikiocpacfdbkmpbfmkcf.svg?label=users)](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf)
-</div>
+![GitHub release](https://img.shields.io/github/v/release/tprouvot/Salesforce-Inspector-reloaded?sort=semver)
+[![Chrome Web Store Installs](https://img.shields.io/chrome-web-store/users/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+[![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+[![GitHub stars](https://img.shields.io/github/stars/tprouvot/Salesforce-Inspector-reloaded?cacheSeconds=3600)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/stargazers/)
+[![GitHub contributors](https://img.shields.io/github/contributors/tprouvot/Salesforce-Inspector-reloaded.svg)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/graphs/contributors/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 

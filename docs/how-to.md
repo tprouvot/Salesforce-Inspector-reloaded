@@ -130,15 +130,15 @@ By default when you enter a keyword in the Shortcut tab, the search is performed
 
 Metadata search can be slow on orgs with a lot of metadata. Use search prefixes to narrow the scope and speed up results:
 
-| Prefix | Scope | Example |
-| --- | --- | --- |
-| _(none)_ | Setup links + metadata (default) | `profiles` |
-| `/` | Setup / custom links only (no API call) | `/profiles` |
-| `!` | All metadata types | `!MyMetadata` |
-| `!flow` | Flows only | `!flow Onboarding` |
-| `!profile` | Profiles only | `!profile System` |
-| `!class` / `!apex` | Apex Classes only | `!class AccountService` |
-| `!perm` / `!pset` | Permission Sets only | `!perm Sales` |
+| Prefix             | Scope                                   | Example                 |
+|--------------------|-----------------------------------------|-------------------------|
+| _(none)_           | Setup links + metadata (default)        | `profiles`              |
+| `/`                | Setup / custom links only (no API call) | `/profiles`             |
+| `!`                | All metadata types                      | `!MyMetadata`           |
+| `!flow`            | Flows only                              | `!flow Onboarding`      |
+| `!profile`         | Profiles only                           | `!profile System`       |
+| `!class` / `!apex` | Apex Classes only                       | `!class AccountService` |
+| `!perm` / `!pset`  | Permission Sets only                    | `!perm Sales`           |
 
 Notes:
 
@@ -486,10 +486,10 @@ The SObjects list cache stores the list of all available objects in your org (Ac
 
 The behavior depends on two options:
 
-| Preload SObjects | Cache Duration | Behavior |
-|------------------|----------------|----------|
-| **Enabled** (default) | Recommended: 8 hours | SObjects list is loaded from cache before the popup opens. Refresh happens every N hours when the popup is opened. |
-| **Disabled** | Recommended: 168 hours (7 days) | SObjects list loads only when the Objects tab is accessed. Cached data is returned immediately; a background refresh updates the cache when the popup is opened. |
+| Preload SObjects      | Cache Duration                  | Behavior                                                                                                                                                         |
+|-----------------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Enabled** (default) | Recommended: 8 hours            | SObjects list is loaded from cache before the popup opens. Refresh happens every N hours when the popup is opened.                                               |
+| **Disabled**          | Recommended: 168 hours (7 days) | SObjects list loads only when the Objects tab is accessed. Cached data is returned immediately; a background refresh updates the cache when the popup is opened. |
 
 > **Note**
 > "Preload SObjects before popup opens" is in the **API** tab of Options. When enabled, the extension preloads the SObjects list for faster context detection (e.g., knowing which object you're viewing). When disabled, the list loads only when you open the Objects tab.

@@ -28,7 +28,7 @@ export {TEST_CONSTANTS} from "./test-constants.local.js";
 export function generateTestGuid() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0;
-    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    const v = c === "x" ? r : ((r & 0x3) | 0x8);
     return v.toString(16);
   });
 }
@@ -94,7 +94,7 @@ export async function injectSessionData(context, {host, token, version, addition
         if (!page.isClosed()) {
           await page.evaluate(initScriptFunction, {host, token, version, additionalSetup});
         }
-      } catch (error) {
+      } catch {
         // Page might not be ready yet or might be closed, ignore errors
         // This is expected for some pages in headless mode
       }
@@ -199,7 +199,7 @@ export function createModelExposureSetup() {
  * Waits for the spinner to finish
  * @param {Object} page - Playwright page object
  */
-export async function waitForSpinner(page, timeout = 10000) {
+export async function waitForSpinner(page, _timeout = 10000) {
   await page.waitForFunction(() => {
     const spinner = document.querySelector(".slds-spinner");
     return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
@@ -291,7 +291,7 @@ function urlMatches(responseUrl, searchPart) {
     }
 
     return false;
-  } catch (e) {
+  } catch {
     // Fallback to simple includes
     return responseUrl.includes(searchPart);
   }
@@ -332,11 +332,11 @@ export function initializeResponseTracking(page) {
           responseBody = await response.text();
           try {
             errorDetails = JSON.parse(responseBody);
-          } catch (e) {
+          } catch {
             // Response body is not JSON, use as-is
             errorDetails = {rawBody: responseBody};
           }
-        } catch (e) {
+        } catch {
           // Could not read response body
           errorDetails = {error: "Could not read response body"};
         }
@@ -366,7 +366,7 @@ export function initializeResponseTracking(page) {
               resolver(response);
               tracker.resolvers.delete(urlPart);
             }
-          } catch (e) {
+          } catch {
             // Fallback to simple includes if matching fails
             if (url.includes(urlPart)) {
               resolver(response);
@@ -375,7 +375,7 @@ export function initializeResponseTracking(page) {
           }
         }
       }
-    } catch (e) {
+    } catch {
       // Ignore errors (response might be disposed)
     }
   };
@@ -428,7 +428,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
         try {
           const responseUrl = r.url();
           return urlMatches(responseUrl, urlPart);
-        } catch (e) {
+        } catch {
           return false;
         }
       });
@@ -444,7 +444,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
           const responseUrl = r.url();
           const matches = urlMatches(responseUrl, urlPart) && r.status() >= 200 && r.status() < 400;
           return matches;
-        } catch (e) {
+        } catch {
           return false;
         }
       });
@@ -474,7 +474,6 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
 
   // Declare variables outside try block so they're accessible in catch
   let trackerResolver = null;
-  let unauthorizedResolver = null;
   let timeoutId = null;
   let unauthorizedCheckInterval = null;
   let unauthorizedHandler = null;
@@ -503,7 +502,6 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
       tracker.resolvers.set(urlPart, resolve);
 
       // Set up periodic check for 401 responses
-      unauthorizedResolver = reject;
       unauthorizedCheckInterval = setInterval(() => {
         const unauthorized = checkForUnauthorized();
         if (unauthorized) {
@@ -556,10 +554,10 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
               responseBody = await response.text();
               try {
                 errorDetails = JSON.parse(responseBody);
-              } catch (e) {
+              } catch {
                 errorDetails = {rawBody: responseBody};
               }
-            } catch (e) {
+            } catch {
               errorDetails = {error: "Could not read response body"};
             }
 
@@ -571,7 +569,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
             page.off("response", unauthorizedHandler);
             reject(new Error(errorMessage));
           }
-        } catch (e) {
+        } catch {
           // Ignore errors
         }
       };
@@ -610,10 +608,10 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
                 responseBody = await response.text();
                 try {
                   errorDetails = JSON.parse(responseBody);
-                } catch (e) {
+                } catch {
                   errorDetails = {rawBody: responseBody};
                 }
-              } catch (e) {
+              } catch {
                 errorDetails = {error: "Could not read response body"};
               }
 

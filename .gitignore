@@ -24,3 +24,6 @@ tests/coverage/
 
 # Local test constants (contains org credentials)
 tests/e2e/test-constants.local.js
+
+megalinter-reports/
+*.megalinter-setup.bak

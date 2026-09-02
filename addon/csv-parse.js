@@ -2,7 +2,7 @@ export function csvParse(csv, separator) {
   let table = []; // completely parsed rows, not including the row currently being parsed
   let row = []; // cells parsed so far from the current row
   let offset = 0; // the next character to read from the input
-  for (;;) { // for each value. Each iteration parses a cell value including following cell ceparator or line ceparator
+  for (;;) { // for each value. Each iteration parses a cell value including following cell separator or line separator
     // parse cell value
     if (offset != csv.length && csv[offset] == "\"") { // quoted value
       let quoteStart = offset;

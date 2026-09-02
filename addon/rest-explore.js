@@ -166,7 +166,7 @@ class Model {
   selectSavedEntry() {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
-      let queryStr = "";
+      let queryStr;
       if (this.selectedSavedEntry.query.includes(delimiter)) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
@@ -610,7 +610,7 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  toggleQueryMoreMenu(event) {
+  toggleQueryMoreMenu(_event) {
     this.refs.buttonQueryMenu?.classList.toggle("slds-is-open");
   }
   render() {

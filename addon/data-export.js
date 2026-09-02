@@ -230,7 +230,7 @@ class Model {
   selectSavedEntry() {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
-      let queryStr = "";
+      let queryStr;
       if (this.selectedSavedEntry.query.includes(delimiter) && (this.selectedSavedEntry.query.toLowerCase().indexOf(":select") >= 0 || this.selectedSavedEntry.query.toLowerCase().indexOf(":find") >= 0)) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
@@ -2087,7 +2087,7 @@ class App extends React.Component {
                     value: model.resultsFilter,
                     onInput: this.onResultsFilterInput
                   }),
-                  h("button", {className: "toggle expand slds-button slds-button_neutral" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+                  h("button", {className: "toggle expand slds-button slds-button_neutral" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState(prevState => ({isDropdownOpen: !prevState.isDropdownOpen}))}, h("div", {className: "button-toggle-icon"})),
                   this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
                     model.exportedData?.table[0]
                       ?.filter(column => column !== "_")

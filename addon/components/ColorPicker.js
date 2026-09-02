@@ -113,9 +113,7 @@ class ColorPicker extends React.Component {
     const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
     const m = v - c;
 
-    let r = 0,
-      g = 0,
-      b = 0;
+    let r, g, b;
 
     if (h < 1 / 6) {
       r = c; g = x; b = 0;

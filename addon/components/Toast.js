@@ -1,3 +1,4 @@
+/* global React */
 let h = React.createElement;
 
 class Toast extends React.Component {

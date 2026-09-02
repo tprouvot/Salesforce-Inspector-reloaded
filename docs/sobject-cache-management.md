@@ -17,12 +17,12 @@ The extension caches the **SObjects list** (metadata about all Salesforce object
 
 ## Settings & Their Role
 
-| Setting | Storage Key | Default | Effect |
-|---------|-------------|---------|--------|
-| **Enable SObjects List Cache** | `enableSobjectsListCache` | `true` | When enabled, the SObjects list is cached. When disabled, every request fetches from the API. |
-| **Preload SObjects before popup opens** | `preloadSobjectsBeforePopup` | `true` | When enabled, loads SObjects (from cache or API) as soon as the popup page loads, even before the user expands it. When disabled, loads only when the Objects tab is active. |
-| **SObjects List Cache Duration (hours)** | `cacheDuration_sobjectsList` | `8` (UI default) / `168` (code fallback) | How long a cache entry is considered valid. After expiry, the next request fetches fresh data. |
-| **Clear Cache** (button) | — | — | Manually clears the SObjects list cache for the current org. |
+| Setting                                  | Storage Key                  | Default                                  | Effect                                                                                                                                                                       |
+|------------------------------------------|------------------------------|------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Enable SObjects List Cache**           | `enableSobjectsListCache`    | `true`                                   | When enabled, the SObjects list is cached. When disabled, every request fetches from the API.                                                                                |
+| **Preload SObjects before popup opens**  | `preloadSobjectsBeforePopup` | `true`                                   | When enabled, loads SObjects (from cache or API) as soon as the popup page loads, even before the user expands it. When disabled, loads only when the Objects tab is active. |
+| **SObjects List Cache Duration (hours)** | `cacheDuration_sobjectsList` | `8` (UI default) / `168` (code fallback) | How long a cache entry is considered valid. After expiry, the next request fetches fresh data.                                                                               |
+| **Clear Cache** (button)                 | —                            | —                                        | Manually clears the SObjects list cache for the current org.                                                                                                                 |
 
 **Settings interconnection:**
 - **Preload ON + Cache ON:** Uses cache immediately when popup loads; no background refresh (list is already fast).
@@ -207,8 +207,8 @@ flowchart TB
 
 ## Recommended Settings
 
-| Scenario | Preload | Cache | Duration |
-|----------|---------|-------|----------|
-| Fast popup, context detection on hover | ON | ON | 8h |
-| Less API usage, refresh when opening Objects | OFF | ON | 168h (7 days) |
-| Always fresh data, no cache | — | OFF | — |
+| Scenario                                     | Preload | Cache | Duration      |
+|----------------------------------------------|---------|-------|---------------|
+| Fast popup, context detection on hover       | ON      | ON    | 8h            |
+| Less API usage, refresh when opening Objects | OFF     | ON    | 168h (7 days) |
+| Always fresh data, no cache                  | —       | OFF   | —             |

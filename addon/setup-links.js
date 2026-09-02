@@ -26,6 +26,7 @@ function getFieldDefinitionSetupLinks(sfHost, fieldName, fieldDefinition, isCust
         : `https://${sfHost}/p/setup/field/StandardFieldAttributes/d?id=${fieldDurableId}&type=${entityDurableId}`
     };
   }
+  return null;
 }
 
 export async function getFieldSetupLinks(sfHost, sobjectName, fieldName, isCustomSetting) {

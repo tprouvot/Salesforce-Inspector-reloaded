@@ -1585,27 +1585,27 @@ class CustomShortcuts extends React.Component {
       }
     }
 
-    this.setState({
+    this.setState(prevState => ({
       newShortcut: {
-        ...this.state.newShortcut,
+        ...prevState.newShortcut,
         [field]: value,
-        isExternal: field === "link" ? (value.startsWith("http") || value.startsWith("www")) : this.state.newShortcut.isExternal
+        isExternal: field === "link" ? (value.startsWith("http") || value.startsWith("www")) : prevState.newShortcut.isExternal
       }
-    });
+    }));
   }
 
   onAddShortcut() {
-    this.setState({
-      editingIndex: this.state.shortcuts.length,
+    this.setState(prevState => ({
+      editingIndex: prevState.shortcuts.length,
       newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
-    });
+    }));
   }
 
   onEditShortcut(index) {
-    this.setState({
+    this.setState(prevState => ({
       editingIndex: index,
-      newShortcut: {...this.state.shortcuts[index]}
-    });
+      newShortcut: {...prevState.shortcuts[index]}
+    }));
   }
 
   onDeleteShortcut(index) {
@@ -1652,9 +1652,9 @@ class CustomShortcuts extends React.Component {
   }
 
   onToggleNewShortcutGlobal(checked) {
-    this.setState({
-      newShortcut: {...this.state.newShortcut, isGlobal: checked}
-    });
+    this.setState(prevState => ({
+      newShortcut: {...prevState.newShortcut, isGlobal: checked}
+    }));
   }
 
   render() {
@@ -2172,12 +2172,11 @@ class App extends React.Component {
 
   hideToast() {
     let {model} = this.props;
-    this.state = {showToast: false, toastMessage: ""};
+    this.setState({showToast: false, toastMessage: ""});
     model.didUpdate();
   }
 
   render() {
-    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
 
     // Define utility items for this page (injected as "slots")

@@ -150,7 +150,7 @@ export let sfConn = {
     }
 
     // Set default Content-Type header if body is present and Content-Type not provided by custom headers
-    if (body !== undefined && !headers.hasOwnProperty("Content-Type")) {
+    if (body !== undefined && !Object.prototype.hasOwnProperty.call(headers, "Content-Type")) {
       xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
     }
 
@@ -165,7 +165,7 @@ export let sfConn = {
     }
 
     // Set default Accept header if not provided by custom headers
-    if (!headers.hasOwnProperty("Accept")) {
+    if (!Object.prototype.hasOwnProperty.call(headers, "Accept")) {
       xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
     }
 
@@ -193,7 +193,7 @@ export let sfConn = {
 
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    let errorMessage = null;
+    let errorMessage;
 
     if (rawResponse){
       apiStatistics.trackApiCall("rest", url, method, duration, false);
@@ -240,7 +240,7 @@ export let sfConn = {
       try {
         errorMessage = err.detail.map(err => `${err.errorCode}: ${err.message}${err.fields && err.fields.length > 0 ? ` [${err.fields.join(", ")}]` : ""}`).join("\n");
         err.message = errorMessage;
-      } catch (ex) {
+      } catch {
         errorMessage = JSON.stringify(xhr.response);
         err.message = errorMessage;
       }
@@ -334,7 +334,7 @@ export let sfConn = {
 
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    let errorMessage = null;
+    let errorMessage;
 
     if (xhr.status == 200) {
       apiStatistics.trackApiCall("soap", null, method, duration, false);
@@ -349,7 +349,7 @@ export let sfConn = {
       try {
         errorMessage = xhr.response.querySelector("faultstring").textContent;
         err.message = errorMessage;
-      } catch (ex) {
+      } catch {
         errorMessage = `HTTP error ${xhr.status} ${xhr.statusText}`;
         err.message = errorMessage;
       }

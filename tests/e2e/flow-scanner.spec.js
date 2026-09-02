@@ -4,7 +4,7 @@ import {
   injectSessionData,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Flow Scanner", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -53,7 +53,7 @@ test.describe("Flow Scanner", () => {
             allTypes: () => ["Flow", "AutoLaunchedFlow", "Workflow", "ScreenFlow"],
             unsupportedTypes: []
           },
-          scan: (flows, config) =>
+          scan: (flows, _config) =>
             // Return mock scan results (empty for now - no violations)
             [{
               flow: flows[0],
@@ -85,14 +85,10 @@ test.describe("Flow Scanner", () => {
     // Mock Salesforce API calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
-
-      const request = route.request();
-      const url = request.url();
-      const method = request.method();
 
       //we check if we have a mock for this request
       if (await routeMock(route, mockHost)) {

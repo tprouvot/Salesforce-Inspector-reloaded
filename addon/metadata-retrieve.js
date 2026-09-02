@@ -1,3 +1,4 @@
+/* global React ReactDOM initButton */
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -807,7 +808,7 @@ class App extends React.Component {
   onUpdateDeployOptions(e) {
     let {model} = this.props;
     const key = e.target.name || e.target.id;
-    if (key && model.deployOptions.hasOwnProperty(key)) {
+    if (key && Object.prototype.hasOwnProperty.call(model.deployOptions, key)) {
       model.deployOptions[key] = e.target.checked;
       model.didUpdate();
       localStorage.setItem("deployOptions", JSON.stringify(model.deployOptions));
@@ -1528,7 +1529,6 @@ class ObjectSelector extends React.Component {
       );
     };
 
-    const isHovered = this.state.hoveredItem === metadataObject.xmlName;
     return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden, key: metadataObject.xmlName},
       h("section", {className: metadataObject.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
         h("div", {

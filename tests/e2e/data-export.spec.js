@@ -34,7 +34,7 @@ test.describe("Data Export", () => {
     });
   });
 
-  test("Execute Simple Export", async ({page, context, extensionId}) => {
+  test("Execute Simple Export", async ({page, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
 
     // Wait for the query box to appear
@@ -71,7 +71,7 @@ test.describe("Data Export", () => {
     await expect(firstDataRow.locator("td").nth(2)).toContainText("Test Account 1");
   });
 
-  test("Autocomplete Suggestions", async ({page, context, extensionId}) => {
+  test("Autocomplete Suggestions", async ({page, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 

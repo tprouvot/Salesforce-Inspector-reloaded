@@ -5,7 +5,7 @@ import {initializeResponseTracking} from "./test-helpers.js";
 export const test = base.extend({
   // eslint-disable-next-line no-empty-pattern
   context: async ({}, use) => {
-    // eslint-disable-next-line no-undef
+
     const pathToExtension = path.join(process.cwd(), "addon");
     const context = await chromium.launchPersistentContext("", {
       headless: true,

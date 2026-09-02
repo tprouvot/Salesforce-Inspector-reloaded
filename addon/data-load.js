@@ -387,10 +387,10 @@ Limitations:
 
 Implementation:
 Since we don't know the height of each row before we render it, we assume to begin with that it is fairly small, and we then grow it to fit the rendered content, as the user scrolls.
-We never schrink the height of a row, to ensure that it stabilzes as the user scrolls. The heights are stored in the `rowHeights` array.
+We never shrink the height of a row, to ensure that it stabilizes as the user scrolls. The heights are stored in the `rowHeights` array.
 To avoid re-rendering the visible part on every scroll, we render an area that is slightly larger than the viewport, and we then only re-render, when the viewport moves outside the rendered area.
 Since we don't know the height of each row before we render it, we don't know exactly how many rows to render.
-However since we never schrink the height of a row, we never render too few rows, and since we update the height estimates after each render, we won't repeatedly render too many rows.
+However since we never shrink the height of a row, we never render too few rows, and since we update the height estimates after each render, we won't repeatedly render too many rows.
 The initial estimate of the height of each row should be large enough to ensure we don't render too many rows in our initial render.
 We only measure the current size at the end of each render, to minimize the number of synchronous layouts the browser needs to make.
 We support adding new rows to the end of the table, and new cells to the end of a row, but not deleting existing rows, and we do not reduce the height of a row if the existing content changes.
@@ -439,7 +439,6 @@ export function initScrollTable(scroller) {
   let rowHeights = [];
   let rowVisible = [];
   let rowCount = 0;
-  let totalHeight = 0;
   let firstRowIdx = 0;
   let firstRowTop = 0;
   let lastRowIdx = 0;
@@ -447,7 +446,6 @@ export function initScrollTable(scroller) {
   let colWidths = [];
   let colVisible = [];
   let colCount = 0;
-  let totalWidth = 0;
   let firstColIdx = 0;
   let firstColLeft = 0;
   let lastColIdx = 0;
@@ -467,7 +465,6 @@ export function initScrollTable(scroller) {
       rowHeights = [];
       rowVisible = [];
       rowCount = 0;
-      totalHeight = 0;
       firstRowIdx = 0;
       firstRowTop = 0;
       lastRowIdx = 0;
@@ -476,7 +473,6 @@ export function initScrollTable(scroller) {
       colWidths = [];
       colVisible = [];
       colCount = 0;
-      totalWidth = 0;
       firstColIdx = 0;
       firstColLeft = 0;
       lastColIdx = 0;
@@ -492,7 +488,6 @@ export function initScrollTable(scroller) {
       for (let r = 0; r < rowCount; r++) {
         let newVisible = Number(data.rowVisibilities[r]);
         let visibilityChange = newVisible - rowVisible[r];
-        totalHeight += visibilityChange * rowHeights[r];
         if (r < firstRowIdx) {
           firstRowTop += visibilityChange * rowHeights[r];
         }
@@ -507,7 +502,6 @@ export function initScrollTable(scroller) {
       for (let c = 0; c < colCount; c++) {
         let newVisible = Number(data.colVisibilities[c]);
         let visibilityChange = newVisible - colVisible[c];
-        totalWidth += visibilityChange * colWidths[c];
         if (c < firstColIdx) {
           firstColLeft += visibilityChange * colWidths[c];
         }
@@ -679,7 +673,6 @@ export function initScrollTable(scroller) {
           let oldHeight = rowHeights[r];
           let newHeight = Math.max(oldHeight, rowRect.height);
           rowHeights[r] = newHeight;
-          totalHeight += newHeight - oldHeight;
           lastRowTop += newHeight - oldHeight;
           tr = tr.nextElementSibling;
         }
@@ -692,7 +685,6 @@ export function initScrollTable(scroller) {
           let oldWidth = colWidths[c];
           let newWidth = Math.max(oldWidth, colRect.width);
           colWidths[c] = newWidth;
-          totalWidth += newWidth - oldWidth;
           lastColLeft += newWidth - oldWidth;
           td = td.nextElementSibling;
         }

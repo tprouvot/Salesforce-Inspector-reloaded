@@ -13,14 +13,14 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI
     ? [
-        ["line"], // Shows synthetic progress
-        ["github"], // GitHub Actions annotations for better error visibility
-        ["html"], // Generates HTML report
-      ]
+      ["line"], // Shows synthetic progress
+      ["github"], // GitHub Actions annotations for better error visibility
+      ["html"], // Generates HTML report
+    ]
     : [
-        ["list"], // Shows progress with error details
-        ["html"], // Generates HTML report
-      ],
+      ["list"], // Shows progress with error details
+      ["html"], // Generates HTML report
+    ],
   use: {
     trace: "on-first-retry",
   },

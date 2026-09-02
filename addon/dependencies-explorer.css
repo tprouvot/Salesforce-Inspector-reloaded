@@ -1,7 +1,7 @@
 
 .area {
     padding: 8px 12px;
-    margin: 12px 25px 0 25px;
+    margin: 12px 25px 0;
 }
 
 .area.configure-import {
@@ -18,7 +18,7 @@ div[data-reactroot]>.area:last-child {
 
 h1 {
     font-size: 1.125rem;
-    margin: 0px;
+    margin: 0;
     display: inline;
     color: #080707;
     font-weight: 700;
@@ -68,7 +68,7 @@ h1 {
 .dep-card {
     border: 1px solid #e0e0e0;
     border-radius: 6px;
-    margin: 0 0 12px 0;
+    margin: 0 0 12px;
     padding: 10px 12px;
     background-color: #f8f9fa;
     font-size: 13px;
@@ -152,7 +152,6 @@ h1 {
     color: #999;
     font-size: 11px;
     font-weight: bold;
-    cursor: default;
     opacity: 0.7;
     cursor: pointer;
 }
@@ -163,7 +162,7 @@ h1 {
     border-radius: 6px;
     margin: 12px 0;
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
 }
 
 .dep-group-header {
@@ -224,9 +223,9 @@ h1 {
 .dep-flat-group {
     border: 1px solid #ddd;
     border-radius: 10px;
-    margin: 0 0 12px 0;
+    margin: 0 0 12px;
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
 }
 
 .dep-flat-group-header {
@@ -251,7 +250,7 @@ h1 {
 /* ===== NAMESPACE BADGES ===== */
 .dep-namespace-badge {
     background-color: #196cfb;
-    color: #ffffff;
+    color: #fff;
     padding: 1px 4px;
     border-radius: 2px;
     font-size: 10px;
@@ -314,7 +313,7 @@ h1 {
 .dep-icon-inline-no-margin {
     display: inline-block;
     vertical-align: middle;
-    margin-right: 0px;
+    margin-right: 0;
 }
 
 .dep-icon-blue {
@@ -432,7 +431,7 @@ h1 {
     top: 0;
     background-color: #fff;
     z-index: 2;
-    padding: 8px 8px 0 8px;
+    padding: 8px 8px 0;
     border-bottom: 1px solid #eee;
 }
 
@@ -528,14 +527,11 @@ h1 {
 /* ===== LOADING STATES ===== */
 .dep-loading {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgb(255 255 255 / 70%);
     z-index: 10;
 }
 
@@ -673,7 +669,6 @@ h1 {
 
 /* ===== ANIMATIONS ===== */
 @keyframes dep-bounce {
-
     0%,
     80%,
     100% {
@@ -738,7 +733,7 @@ h1 {
 }
 
 .dep-section-subtitle {
-    margin: 14px 0 6px 0;
+    margin: 14px 0 6px;
     color: #666;
     font-size: 14px;
 }
@@ -834,12 +829,11 @@ h1 {
     background: #fff;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
     min-width: 220px;
     max-width: 255px;
     max-height: 600px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden auto;
     padding: 0;
     box-sizing: border-box;
 }
@@ -856,7 +850,7 @@ h1 {
     top: 0;
     background-color: #fff;
     z-index: 2;
-    padding: 8px 8px 0 8px;
+    padding: 8px 8px 0;
     border-bottom: 1px solid #eee;
 }
 
@@ -923,7 +917,7 @@ h1 {
     border-radius: 6px;
     margin: 12px 0;
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 5%);
 }
 
 .dep-nested-group-header {
@@ -1005,7 +999,7 @@ h1 {
 }
 
 .dep-empty-title {
-    margin: 0 0 8px 0;
+    margin: 0 0 8px;
     font-size: 18px;
     font-weight: 600;
 }
@@ -1032,7 +1026,7 @@ h1 {
 }
 
 .dep-error-message {
-    margin: 0 0 12px 0;
+    margin: 0 0 12px;
     font-size: 14px;
 }
 
@@ -1065,7 +1059,7 @@ h1 {
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 1260px) {
+@media (width <= 1260px) {
     .dep-result-bar {
         flex-direction: column;
         gap: 1em;
@@ -1175,13 +1169,13 @@ h1 {
 
 .dep-tree-namespace {
     background-color: #196cfb;
-    color: #ffffff;
+    color: #fff;
     padding: 1px 4px;
     border-radius: 2px;
     font-size: 10px;
     font-weight: bold;
     cursor: pointer;
-    margin-left: 0 2px 0 0;
+    margin: 0 2px 0 0;
 }
 
 .dep-tree-pills {
@@ -1275,12 +1269,12 @@ h1 {
     cursor: pointer;
     transition: background-color 0.2s ease;
     flex-wrap: nowrap;
+    margin: 2px 0;
     margin-left: 0 !important;
     border-radius: 10px;
     padding: 5px 10px;
     border: 1px solid #dee2e6;
-    margin: 2px 0 2px 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
 }
 
 .dep-tree-content:hover {

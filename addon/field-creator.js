@@ -1,4 +1,4 @@
-/* global React ReactDOM field-creator.js */
+/* global React ReactDOM initButton */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants, applyProductionStyling} from "./utils.js";

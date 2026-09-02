@@ -1,0 +1,18 @@
+---
+version: 2
+updates:
+  # Actions are pinned to commit SHAs for supply-chain safety, so they can only
+  # be kept current automatically. Dependabot rewrites the SHA and the trailing
+  # version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build"

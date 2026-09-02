@@ -443,7 +443,10 @@ Please structure your response in a clear, organized manner using these sections
         this.countLoading = true;
       }
       const whereClause = this.buildWhereClause();
-      const soql = `SELECT Id, Operation, Request, Status, StartTime, LogUserId, Application, Location, LogLength FROM ApexLog${whereClause} ORDER BY StartTime DESC LIMIT ${this.pageSize} OFFSET ${this.pageIndex * this.pageSize}`;
+      const safePageSize = Math.max(0, Math.trunc(Number(this.pageSize)) || 0);
+      const safeOffset = Math.max(0, Math.trunc(Number(this.pageIndex)) || 0) * safePageSize;
+      const soql = "SELECT Id, Operation, Request, Status, StartTime, LogUserId, Application, Location, LogLength FROM ApexLog"
+        + whereClause + " ORDER BY StartTime DESC LIMIT " + safePageSize + " OFFSET " + safeOffset;
       const query = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(soql);
       const res = await sfConn.rest(query);
       const batch = res.records || [];
@@ -464,7 +467,7 @@ Please structure your response in a clear, organized manner using these sections
       // If we reset (filters changed), also fetch the total count with identical filters
       if (reset) {
         try {
-          const countSoql = `SELECT COUNT() FROM ApexLog${whereClause}`;
+          const countSoql = "SELECT COUNT() FROM ApexLog" + whereClause;
           const countQuery = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(countSoql);
           const countRes = await sfConn.rest(countQuery);
           // For COUNT() queries, totalSize holds the count

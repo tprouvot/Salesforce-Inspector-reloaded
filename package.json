@@ -22,5 +22,13 @@
     "globals": "^15.12.0",
     "replace-in-file": "8.2.0",
     "zip-dir": "2.0.0"
+  },
+  "overrides": {
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.17"
+    },
+    "minimatch@9.0.9": {
+      "brace-expansion": "2.1.3"
+    }
   }
 }

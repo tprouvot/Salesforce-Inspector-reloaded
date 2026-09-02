@@ -1272,7 +1272,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-batch-size"}, "Batch size"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, disabled: model.isWorking()}),
+                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange}),
                               h("div", {id: "error-batch-size", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchSizeError()}, model.batchSizeError())
                             )
                           )
@@ -1281,7 +1281,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-threads"}, "Threads"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, disabled: model.isWorking()}),
+                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange}),
                               h("div", {id: "error-threads", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
                             )
                           )

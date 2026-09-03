@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache, applyProductionStyling} from "./utils.js";
 import {getFlowScannerRules, FLOW_SCANNER_RULES_STORAGE_KEY} from "./flow-scanner-rules.js";
 /* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
@@ -17,11 +17,7 @@ class Model {
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.spinnerCount = 0;
 
-    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("sfir-prod");
-    }
+    applyProductionStyling(sfHost);
 
     // Initialize spinFor method
     this.spinFor = createSpinForMethod(this);
@@ -86,7 +82,6 @@ class OptionsTabSelector extends React.Component {
                 {label: "Flows", name: "flows", checked: true},
                 {label: "Profiles", name: "profiles", checked: true},
                 {label: "PermissionSets", name: "permissionSets", checked: true},
-                {label: "Communities", name: "networks", checked: true},
                 {label: "Apex Classes", name: "classes", checked: false}
               ]}
           },
@@ -112,11 +107,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Exclude users from search (org specific)",
-              key: this.sfHost + "_userSearchExclusions",
-              checkboxes: [
-                {label: " Exclude Portal users", name: "portal", checked: false},
-                {label: " Exclude Inactive users", name: "inactive", checked: false}
-              ]}
+              key: this.sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY,
+              checkboxes: Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(({label, name}) => ({label, name, checked: false}))}
           },
           {option: MultiCheckboxButtonGroup,
             props: {title: "User Default Search Fields",
@@ -167,6 +159,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}},
           {option: Option, props: {type: "toggle", title: "Enable API Stats Debug Mode", key: Constants.API_DEBUG_STATISTICS_MODE, default: false, tooltip: "When enabled, tracks API call statistics (REST and SOAP) to help monitor API usage. Statistics can be viewed on the API Debug Statistics page."}},
           {option: Option, props: {type: "toggle", title: "Preload SObjects before popup opens", key: Constants.PRELOAD_SOBJECTS_BEFORE_POPUP, default: true, tooltip: "When enabled, loads the SObjects list from cache before the popup is opened for faster context detection. Disable to reduce initial load time and only load when the Objects tab is accessed."}},
+          {option: Option, props: {type: "toggle", title: "QA Internal", key: Constants.QA_INTERNAL_MODE, default: false, tooltip: "When enabled, prefixes the API client id sent with internal QA."}},
         ]
       },
       {
@@ -1494,16 +1487,33 @@ class CustomShortcuts extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onSort = this.onSort.bind(this);
     this.onSearch = this.onSearch.bind(this);
+    this.onToggleGlobal = this.onToggleGlobal.bind(this);
     this.state = {
-      shortcuts: JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]"),
+      shortcuts: this.loadShortcuts(),
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: "", isExternal: false},
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false},
       sortConfig: {
         key: null,
         direction: "asc"
       },
       searchTerm: ""
     };
+  }
+
+  loadShortcuts() {
+    const orgShortcuts = JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]")
+      .map((shortcut) => ({...shortcut, isGlobal: false}));
+    const globalShortcuts = JSON.parse(localStorage.getItem(Constants.GLOBAL_LINKS_KEY) || "[]")
+      .map((shortcut) => ({...shortcut, isGlobal: true}));
+    return [...orgShortcuts, ...globalShortcuts];
+  }
+
+  persistShortcuts(shortcuts) {
+    const toStoredShortcut = ({label, link, section, isExternal}) => ({label, link, section, isExternal});
+    const orgShortcuts = shortcuts.filter((shortcut) => !shortcut.isGlobal).map(toStoredShortcut);
+    const globalShortcuts = shortcuts.filter((shortcut) => shortcut.isGlobal).map(toStoredShortcut);
+    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(orgShortcuts));
+    localStorage.setItem(Constants.GLOBAL_LINKS_KEY, JSON.stringify(globalShortcuts));
   }
 
   onSearch(e) {
@@ -1586,7 +1596,7 @@ class CustomShortcuts extends React.Component {
   onAddShortcut() {
     this.setState({
       editingIndex: this.state.shortcuts.length,
-      newShortcut: {label: "", link: "", section: "", isExternal: false}
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
     });
   }
 
@@ -1601,7 +1611,7 @@ class CustomShortcuts extends React.Component {
     const newShortcuts = [...this.state.shortcuts];
     newShortcuts.splice(index, 1);
     this.setState({shortcuts: newShortcuts});
-    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+    this.persistShortcuts(newShortcuts);
   }
 
   onSaveShortcut() {
@@ -1620,16 +1630,29 @@ class CustomShortcuts extends React.Component {
     this.setState({
       shortcuts: newShortcuts,
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: "", isExternal: false}
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
     });
 
-    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+    this.persistShortcuts(newShortcuts);
   }
 
   onCancelEdit() {
     this.setState({
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: ""}
+      newShortcut: {label: "", link: "", section: "", isGlobal: false}
+    });
+  }
+
+  onToggleGlobal(index) {
+    const newShortcuts = [...this.state.shortcuts];
+    newShortcuts[index] = {...newShortcuts[index], isGlobal: !newShortcuts[index].isGlobal};
+    this.setState({shortcuts: newShortcuts});
+    this.persistShortcuts(newShortcuts);
+  }
+
+  onToggleNewShortcutGlobal(checked) {
+    this.setState({
+      newShortcut: {...this.state.newShortcut, isGlobal: checked}
     });
   }
 
@@ -1705,6 +1728,9 @@ class CustomShortcuts extends React.Component {
               h("div", {className: "slds-truncate", title: "External"}, "External")
             ),
             h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Global"}, "Global")
+            ),
+            h("th", {scope: "col"},
               h("div", {className: "slds-truncate", title: "Actions"}, "Actions")
             )
           )
@@ -1753,6 +1779,22 @@ class CustomShortcuts extends React.Component {
                   )
                 )
               ),
+              h("td", {key: "global", "data-label": "Global"},
+                h("div", {className: "slds-truncate"},
+                  h("label", {className: "slds-checkbox_toggle slds-grid", title: newShortcut.isGlobal ? "Visible in every org" : "Visible only in this org"},
+                    h("input", {
+                      type: "checkbox",
+                      checked: !!newShortcut.isGlobal,
+                      onChange: (e) => this.onToggleNewShortcutGlobal(e.target.checked)
+                    }),
+                    h("span", {className: "slds-checkbox_faux_container center-label"},
+                      h("span", {className: "slds-checkbox_faux"}),
+                      h("span", {className: "slds-checkbox_on"}, "Global"),
+                      h("span", {className: "slds-checkbox_off"}, "Org")
+                    )
+                  )
+                )
+              ),
               h("td", {key: "actions", "data-label": "Actions"},
                 h("div", {className: "slds-truncate"},
                   h("button", {
@@ -1785,6 +1827,22 @@ class CustomShortcuts extends React.Component {
                 h("div", {className: "slds-truncate"},
                   shortcut.isExternal && h("svg", {className: "slds-button__icon"},
                     h("use", {xlinkHref: "symbols.svg#check"})
+                  )
+                )
+              ),
+              h("td", {key: "global", "data-label": "Global"},
+                h("div", {className: "slds-truncate"},
+                  h("label", {className: "slds-checkbox_toggle slds-grid", title: shortcut.isGlobal ? "Visible in every org - toggle to make it specific to this org" : "Visible only in this org - toggle to make it global"},
+                    h("input", {
+                      type: "checkbox",
+                      checked: !!shortcut.isGlobal,
+                      onChange: () => this.onToggleGlobal(index)
+                    }),
+                    h("span", {className: "slds-checkbox_faux_container center-label"},
+                      h("span", {className: "slds-checkbox_faux"}),
+                      h("span", {className: "slds-checkbox_on"}, "Global"),
+                      h("span", {className: "slds-checkbox_off"}, "Org")
+                    )
                   )
                 )
               ),

@@ -41,6 +41,7 @@ body:
       label: Version
       description: Which version are you using?
       options:
+        - "2.0"
         - "1.27"
         - "1.26"
         - "beta"

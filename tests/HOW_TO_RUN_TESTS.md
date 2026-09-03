@@ -100,7 +100,7 @@ Then edit `tests/e2e/test-constants.local.js`:
 export const TEST_CONSTANTS = {
   mockHost: "your-org-instance.sandbox.my.salesforce.com",  // Your Salesforce instance URL
   mockToken: "YOUR_ACCESS_TOKEN_HERE",                      // Valid Salesforce access token
-  apiVersion: "66.0",                                       // API version (must match your org)
+  apiVersion: "67.0",                                       // API version (must match your org)
   accountRecordId: "001000000000001AAA",                    // Valid Account record ID
   accountRecordName: "Test Account 1",                      // Account Name (must match record)
   testUserSearchTerm: "Integration User",                   // User search term (exists in all orgs)
@@ -163,7 +163,11 @@ sf data create record --sobject Account --values "Name='Test Account 2' Type='Cu
 
 **Required for Users Tab tests:** The default test user search term is "Integration User" (exists in all orgs). Update `testUserSearchTerm` in `test-constants.local.js` if your org uses a different user name for these tests.
 
-### 3. Flow (for Flow Scanner Tests)
+### 3. Platform Event (for Event Monitor Generate and Publish test)
+
+**Required for Event Monitor e2e test:** The `TestEvent__e` platform event is included in `test/main/default/objects/`. Deploy the `test/` metadata to your org to run the "Generate and Publish Platform Event" test against a real org.
+
+### 4. Flow (for Flow Scanner Tests)
 
 **Required:**
 
@@ -281,7 +285,7 @@ The real-org workflow will:
 ## Test Files Overview
 
 | Test File | Description | Key Dependencies |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | `inspect.spec.js` | Tests the Inspect page functionality | Account object, Account record |
 | `options.spec.js` | Tests the Options page | User object, API access |
 | `data-export.spec.js` | Tests data export features | Account object, SOQL queries |

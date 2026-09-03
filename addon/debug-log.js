@@ -1292,8 +1292,8 @@ function Filters({model}) {
     model.filters.userId = val;
     model.fetchLogs(true);
   };
-  const onStartChange = (e) => { model.filters.start = e.target.value; };
-  const onEndChange = (e) => { model.filters.end = e.target.value; };
+  const onStartChange = (e) => { model.filters.start = e.target.value; model.didUpdate(); };
+  const onEndChange = (e) => { model.filters.end = e.target.value; model.didUpdate(); };
   const apply = (e) => { e.preventDefault(); model.fetchLogs(true); };
   const reset = (e) => { e.preventDefault(); model.filters = {userId: "", start: "", end: ""}; model.fetchLogs(true); };
 

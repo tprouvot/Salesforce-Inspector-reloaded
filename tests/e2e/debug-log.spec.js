@@ -121,6 +121,16 @@ test.describe("Debug Log Viewer", () => {
     await expect(page.locator("th.slds-is-sortable").filter({hasText: "Start Time"})).toHaveClass(/slds-is-sorted_asc/);
   });
 
+  test("Date Filter Inputs Retain Selected Values", async ({page, extensionId}) => {
+    await gotoPage(page, extensionId);
+    const fromInput = page.locator("input[type='datetime-local']").first();
+    const toInput = page.locator("input[type='datetime-local']").last();
+    await fromInput.fill("2026-08-21T10:00");
+    await toInput.fill("2026-08-21T23:59");
+    await expect(fromInput).toHaveValue("2026-08-21T10:00");
+    await expect(toInput).toHaveValue("2026-08-21T23:59");
+  });
+
   test("Disable Fetch Bodies Hides Log Search Input", async ({page, extensionId}) => {
     await gotoPage(page, extensionId);
     await expect(page.getByPlaceholder("Search in logs...")).toBeVisible();

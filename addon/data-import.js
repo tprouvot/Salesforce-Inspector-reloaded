@@ -376,6 +376,17 @@ class Model {
     }());
   }
 
+  resolveColumnLabel(column) {
+    let sobjectName = this.importType;
+    let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", sobjectName).sobjectDescribe;
+    if (!sobjectDescribe) {
+      return column;
+    }
+    let trimmedColumn = column.trim();
+    let field = sobjectDescribe.fields.find(f => f.label && f.label.toLowerCase() == trimmedColumn.toLowerCase());
+    return field ? field.name : trimmedColumn;
+  }
+
   importIdColumnValid() {
     return this.importAction == "create" || this.inputIdColumnIndex() > -1;
   }
@@ -667,7 +678,7 @@ class Model {
         return externalIdColumn;
       }
     }
-    return col.trim();
+    return this.resolveColumnLabel(col);
   }
 
   refreshColumn() {

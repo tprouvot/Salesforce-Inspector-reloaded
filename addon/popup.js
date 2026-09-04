@@ -3048,9 +3048,11 @@ class AllDataBoxOrg extends React.PureComponent {
                 h(
                   "td",
                   {},
-                  this.getNextMajorRelease(
-                    this.state.instanceStatus?.Maintenances
-                  ) || "None scheduled" 
+                  this.state.instanceStatus
+                    ? this.getNextMajorRelease(
+                        this.state.instanceStatus.Maintenances
+                      ) || "None scheduled"
+                    : ""
                 )
               )
             )

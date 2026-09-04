@@ -2797,14 +2797,17 @@ class AllDataBoxOrg extends React.PureComponent {
 
   getNextMajorRelease(maintenances) {
     if (maintenances) {
-      let event = maintenances.find((event) =>
-        event.name.endsWith("Major Release")
+      let event = maintenances.find((e) =>
+        e && e.name && e.name.endsWith("Major Release")
       );
-      return (
-        event.name.replace(" Major Release", "")
-        + " on "
-        + new Date(event.plannedStartTime).toDateString()
-      );
+      
+      if (event) {
+        return (
+          event.name.replace(" Major Release", "")
+          + " on "
+          + new Date(event.plannedStartTime).toDateString()
+        );
+      }
     }
     return null;
   }
@@ -3047,7 +3050,7 @@ class AllDataBoxOrg extends React.PureComponent {
                   {},
                   this.getNextMajorRelease(
                     this.state.instanceStatus?.Maintenances
-                  )
+                  ) || "None scheduled" 
                 )
               )
             )

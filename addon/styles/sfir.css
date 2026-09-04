@@ -217,6 +217,13 @@ a.download-salesforce {
   max-height: 400px;
 }
 
+/* SLDS resets textarea and .slds-textarea to `font: inherit`; restore the browser-default monospace
+   used before 2.0 (SOQL editor, CSV paste, REST request headers/body, ...). Page-level classes still override this. */
+textarea,
+.slds-textarea {
+  font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", monospace;
+}
+
 /* Center datalist dropdown arrow in Object/External ID inputs (data-import) */
 #form-search-object::-webkit-calendar-picker-indicator,
 #form-external-id::-webkit-calendar-picker-indicator {

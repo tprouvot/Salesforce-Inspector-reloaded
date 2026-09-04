@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` `Data Import` `REST Explore` Restore monospace font in text areas (SOQL editor, CSV paste box, request headers and body) lost with the SLDS 2 migration [feature 1318](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1318) (idea by [Marius Hov Lauritzen](https://github.com/tmariushl))
 - `Data Import` Allow editing Batch Size and Threads during an active import [issue #1036](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1036)
 - `Popup` Fix "Show Field API Names" button not rendering correctly in certain environments [issue #1246](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1246) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Restore LoginAs buttons for frozen users [discussion #1270](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1270)

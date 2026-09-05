@@ -60,14 +60,14 @@ class Model {
     // Column widths - load from localStorage or use defaults (in pixels for precise resizing)
     const savedWidths = localStorage.getItem(this.sfHost + "_debugLogColumnWidths");
     this.columnWidths = savedWidths ? JSON.parse(savedWidths) : {
-      checkbox: 50,
-      user: 180,
-      operation: 180,
-      request: 100,
-      start: 160,
-      status: 100,
-      action: 180,
-      size: 100,
+      checkbox: 30,
+      user: 160,
+      operation: 150,
+      request: 70,
+      start: 130,
+      status: 80,
+      action: 150,
+      size: 65,
       actions: 180
     };
 
@@ -359,12 +359,12 @@ Please structure your response in a clear, organized manner using these sections
     // Map display column names to field names
     const columnMap = {
       "User": "LogUserId",
-      "Action": "Operation",
+      "Action": "Action",
       "Operation": "Operation",
       "Request": "Request",
       "Start Time": "StartTime",
       "Status": "Status",
-      "Size (MB)": "LogLength"
+      "Size": "LogLength"
     };
 
     const sortField = columnMap[column];
@@ -400,9 +400,9 @@ Please structure your response in a clear, organized manner using these sections
         const bUser = this.userMap.get(bVal);
         aVal = aUser ? aUser.name : aVal || "";
         bVal = bUser ? bUser.name : bVal || "";
-      } else if (sortField === "Operation") {
-        aVal = (this.actionSummary.get(a.Id)?.label) || aVal || "";
-        bVal = (this.actionSummary.get(b.Id)?.label) || bVal || "";
+      } else if (sortField === "Action") {
+        aVal = (this.actionSummary.get(a.Id)?.label) || a.Operation || "";
+        bVal = (this.actionSummary.get(b.Id)?.label) || b.Operation || "";
       }
 
       // Handle null/undefined
@@ -410,20 +410,16 @@ Please structure your response in a clear, organized manner using these sections
       if (aVal == null) return 1;
       if (bVal == null) return -1;
 
-      // Auto-detect type and convert
-      const aDate = new Date(aVal).getTime();
-      const bDate = new Date(bVal).getTime();
-      if (!isNaN(aDate) && !isNaN(bDate) && aDate !== bDate) {
-        return (aDate < bDate ? -1 : 1) * direction;
+      // Explicit type conversions targeted strictly by column name
+      if (sortField === "StartTime") {
+        return (new Date(aVal).getTime() - new Date(bVal).getTime()) * direction;
       }
 
-      const aNum = Number(aVal);
-      const bNum = Number(bVal);
-      if (!isNaN(aNum) && !isNaN(bNum) && aNum !== bNum) {
-        return (aNum < bNum ? -1 : 1) * direction;
+      if (sortField === "LogLength") {
+        return (Number(aVal) - Number(bVal)) * direction;
       }
 
-      // String comparison
+      // Safe string comparison for Operation, Action, Request, Status, and User
       aVal = String(aVal).toLowerCase();
       bVal = String(bVal).toLowerCase();
       return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * direction;
@@ -445,20 +441,34 @@ Please structure your response in a clear, organized manner using these sections
         this.countLoading = true;
       }
       const whereClause = this.buildWhereClause();
-      const soql = `SELECT Id, Operation, Request, Status, StartTime, LogUserId, Application, Location, LogLength FROM ApexLog${whereClause} ORDER BY StartTime DESC LIMIT ${this.pageSize} OFFSET ${this.pageIndex * this.pageSize}`;
+
+      // Determine SOQL sort field
+      let soqlSortField = "StartTime";
+      const validSoqlFields = ["LogUserId", "Operation", "Request", "StartTime", "Status", "LogLength"];
+      
+      if (validSoqlFields.includes(this.sortColumn)) {
+        soqlSortField = this.sortColumn;
+      } else if (this.sortColumn === "Action") {
+        // Fallback for database query since Action is a locally derived string
+        soqlSortField = "Operation"; 
+      }
+      
+      // Inject dynamic order field and direction
+      const soql = `SELECT Id, Operation, Request, Status, StartTime, LogUserId, Application, Location, LogLength FROM ApexLog${whereClause} ORDER BY ${soqlSortField} ${this.sortDirection} NULLS LAST LIMIT ${this.pageSize} OFFSET ${this.pageIndex * this.pageSize}`;
       const query = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(soql);
+      
       const res = await sfConn.rest(query);
       const batch = res.records || [];
       this.logs = batch;
 
-      // Apply current sort to the loaded logs
-      this.sortLogs();
-
-      // Seed/refresh action summary for new items
+      // Seed action summary FIRST so sorting knows what the labels actually are
       for (const l of batch) {
         const base = parseAction(l.Operation);
         this.actionSummary.set(l.Id, base);
       }
+
+      // Apply current sort to the loaded logs
+      this.sortLogs();
 
       // Note: User information is already loaded by populatePicklistFromAllLogs() at init
       // Individual missing users are resolved on-demand by ensureUserName()
@@ -503,7 +513,6 @@ Please structure your response in a clear, organized manner using these sections
     }
   }
 
-
   async resolveActionsFromBodiesLimited(limit = 50) {
     const slice = this.logs.slice(0, limit);
     for (const log of slice) {
@@ -514,6 +523,10 @@ Please structure your response in a clear, organized manner using these sections
         this.logBodies.set(log.Id, text);
         const detail = deriveActionFromBody(text) || parseAction(log.Operation);
         this.actionSummary.set(log.Id, detail);
+        
+        // Re-sort live if the Action label updates
+        if (this.sortColumn === "Action") this.sortLogs();
+        
         this.didUpdate();
       } catch (e) {
         // leave the seeded value
@@ -522,7 +535,6 @@ Please structure your response in a clear, organized manner using these sections
   }
 
   ensureActionDerived(log) {
-
     const current = this.actionSummary.get(log.Id);
     if (current && current.label && current.label !== "CODE_UNIT_STARTED" && current.label !== "-") {
       return;
@@ -536,6 +548,10 @@ Please structure your response in a clear, organized manner using these sections
         this.logBodies.set(log.Id, text);
         const detail = deriveActionFromBody(text) || parseAction(log.Operation);
         this.actionSummary.set(log.Id, detail);
+        
+        // Re-sort live if the Action label updates
+        if (this.sortColumn === "Action") this.sortLogs();
+        
         this.didUpdate(); // Trigger re-render to update filtered results
       })
       .catch(() => { /* ignore */ })
@@ -1303,11 +1319,11 @@ function Filters({model}) {
     h("div", {className: "slds-col slds-size_1-of-3"},
       h(SldsPicklist, {label: "Filter by User", value: model.filters.userId, options: userOptions, onChange: onUserPick})
     ),
-    h("div", {className: "slds-col slds-size_1-of-3"},
+    h("div", {className: "slds-col slds-size_1-of-4"},
       h("label", {className: "slds-form-element__label"}, "From"),
       h("input", {type: "datetime-local", className: "slds-input", value: model.filters.start, onChange: onStartChange})
     ),
-    h("div", {className: "slds-col slds-size_1-of-3"},
+    h("div", {className: "slds-col slds-size_1-of-4"},
       h("label", {className: "slds-form-element__label"}, "To"),
       h("input", {type: "datetime-local", className: "slds-input", value: model.filters.end, onChange: onEndChange})
     ),
@@ -1327,7 +1343,7 @@ function LogsTable({model, hideButtonsOption}) {
   const renderSortableHeader = (label, soqlColumn, columnKey) => {
     const isSorted = model.sortColumn === soqlColumn;
     const isAsc = isSorted && model.sortDirection === "ASC";
-    const sortClass = isSorted ? (isAsc ? "slds-is-sorted slds-is-sorted_asc" : "slds-is-sorted") : "";
+    const sortClass = isSorted ? (isAsc ? "slds-is-sorted slds-is-sorted_asc" : "slds-is-sorted slds-is-sorted_desc") : "";
 
     return h("th", {
       className: `slds-is-sortable slds-is-resizable ${sortClass}`,
@@ -1342,7 +1358,7 @@ function LogsTable({model, hideButtonsOption}) {
     h("span", {className: "slds-assistive-text"}, "Sort by "),
     h("div", {className: "slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"},
       h("span", {className: "slds-truncate", title: label}, label),
-      h("span", {className: `slds-icon_container slds-icon-utility-arrowdown ${isSorted ? "" : "slds-is-sortable__icon"}`, title: isSorted ? (isAsc ? "Sorted ascending" : "Sorted descending") : "Sort"},
+      h("span", {className: "slds-icon_container slds-icon-utility-arrowdown slds-is-sortable__icon", title: isSorted ? (isAsc ? "Sorted ascending" : "Sorted descending") : "Sort"},
         h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
           h("use", {xlinkHref: "symbols.svg#arrowdown"})
         )
@@ -1405,8 +1421,8 @@ function LogsTable({model, hideButtonsOption}) {
               )
             ),
             h("div", {className: "slds-col slds-grow-none"},
-              h("div", {className: "slds-form-element"},
-                h("label", {className: "slds-form-element__label", htmlFor: "sfir-page-size"}, "Page size"),
+              h("div", {className: "slds-form-element sfir-page-size-container"},
+                h("label", {className: "slds-form-element__label sfir-page-size-label", htmlFor: "sfir-page-size"}, "Page size"),
                 h("div", {className: "slds-form-element__control"},
                   h("div", {className: "slds-select_container"},
                     h("select", {
@@ -1522,8 +1538,8 @@ function LogsTable({model, hideButtonsOption}) {
               renderSortableHeader("Request", "Request", "request"),
               renderSortableHeader("Start Time", "StartTime", "start"),
               renderSortableHeader("Status", "Status", "status"),
-              renderSortableHeader("Action", "Operation", "action"),
-              renderSortableHeader("Size (MB)", "LogLength", "size"),
+              renderSortableHeader("Action", "Action", "action"),
+              renderSortableHeader("Size", "LogLength", "size"),
               h("th", {className: "slds-is-resizable", scope: "col", "aria-label": "Row actions"},
                 h("div", {className: "slds-th__action"},
                   h("span", {className: "slds-assistive-text"}, "Actions")

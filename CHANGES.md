@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Logs Viewer` Fix UI and sorting related issues [issue #1321](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1321) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Allow editing Batch Size and Threads during an active import [issue #1036](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1036)
 - `Popup` Fix "Show Field API Names" button not rendering correctly in certain environments [issue #1246](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1246) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Restore LoginAs buttons for frozen users [discussion #1270](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1270)

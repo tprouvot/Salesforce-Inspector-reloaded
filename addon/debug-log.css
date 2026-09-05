@@ -1,35 +1,24 @@
-/* Ensure action buttons have consistent height */
+/* =========================================
+   Action Buttons
+========================================= */
 .sfir-actions .slds-button {
-  height: 32px; /* match SLDS default small button height */
+  height: 32px;
   line-height: 32px;
   padding-top: 0;
   padding-bottom: 0;
+  padding-left: 12px;
   display: inline-flex;
   align-items: center;
 }
+
 .sfir-actions .slds-button .slds-button__icon {
   height: 16px;
   width: 16px;
 }
-.sfir-actions .slds-button[title="Share"] {
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-}
+
 /* Icon-only action buttons: enforce same size */
 .sfir-actions .slds-button[title="Share"],
-.sfir-actions .slds-button[title="Delete"] {
-  height: 32px;
-  width: 32px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.sfir-actions .slds-button[title="Share"] .slds-button__icon,
-.sfir-actions .slds-button[title="Delete"] .slds-button__icon {
-  width: 16px;
-  height: 16px;
-}
+.sfir-actions .slds-button[title="Delete"],
 .sfir-actions .slds-button[title="Download"] {
   height: 32px;
   width: 32px;
@@ -38,27 +27,181 @@
   align-items: center;
   justify-content: center;
 }
+
+.sfir-actions .slds-button[title="Share"] .slds-button__icon,
+.sfir-actions .slds-button[title="Delete"] .slds-button__icon,
 .sfir-actions .slds-button[title="Download"] .slds-button__icon {
   width: 16px;
   height: 16px;
 }
 
-/* Column resizer (kept for styling even though resizing is removed) */
-.sfir-col-resizer {
-  display: inline-block;
-  width: 6px;
-  cursor: col-resize;
-  margin-left: 4px;
+/* =========================================
+   Table Layout & Core Styles
+========================================= */
+.sfir-logs-table-container {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
-/* Table scroll container */
 .sfir-table-scroll {
   position: relative;
   height: calc(100vh - 260px);
   overflow: auto;
 }
 
-/* Preview search highlights */
+slds-table {
+  scroll-behavior: auto;
+  overflow: visible;
+}
+
+.sfir-logs-table {
+  table-layout: fixed !important;
+  width: max-content !important;
+  min-width: 100%;
+}
+
+.sfir-logs-table th,
+.sfir-logs-table td {
+  padding-left: 8px !important;
+}
+
+.sfir-logs-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sfir-logs-table td .slds-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* =========================================
+   Resizing UI
+========================================= */
+.sfir-logs-table .slds-resizable__divider {
+  z-index: 10 !important;
+}
+
+.sfir-col-resizer,
+.slds-resizable__handle {
+  display: inline-block;
+  width: 6px;
+  cursor: col-resize;
+  margin-left: 4px;
+}
+
+/* =========================================
+   Sorting UI
+========================================= */
+.slds-is-sortable {
+  cursor: pointer;
+}
+
+.slds-is-sortable__icon-always {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 0.5;
+}
+
+.sfir-logs-table th:not(.slds-is-sortable) .slds-th__action {
+  cursor: default;
+}
+
+.sfir-logs-table th:not(.slds-is-sortable) .slds-th__action:hover,
+.sfir-logs-table th:not(.slds-is-sortable) .slds-th__action:focus {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.sfir-logs-table .slds-is-sortable .slds-is-sortable__icon {
+  display: inline-block !important;
+  opacity: 0;
+  width: 16px;
+  margin-left: 0.25rem;
+  transition: opacity 0.1s ease;
+}
+
+.sfir-logs-table .slds-is-sortable:hover .slds-is-sortable__icon,
+.sfir-logs-table .slds-is-sortable:focus .slds-is-sortable__icon,
+.sfir-logs-table .slds-is-sortable.slds-is-sorted .slds-is-sortable__icon {
+  opacity: 1;
+}
+
+/* =========================================
+   Column-Specific Alignments & Spacing
+========================================= */
+
+/* General Header Alignments */
+.sfir-logs-table thead th .slds-th__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 2rem;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* First Column (Checkbox) */
+.sfir-logs-table th:first-child,
+.sfir-logs-table td:first-child,
+.sfir-logs-table tbody td[role="gridcell"]:first-child {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.sfir-logs-table th:first-child .slds-th__action {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  justify-content: center;
+}
+
+.sfir-logs-table td:first-child .slds-checkbox {
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+/* Last Column (Actions) */
+.sfir-logs-table th:last-child .slds-truncate,
+.sfir-logs-table td:last-child {
+  text-align: center;
+}
+
+.sfir-logs-table td:last-child .slds-button-group,
+.sfir-logs-table td:last-child > div {
+  justify-content: center;
+  display: flex;
+  margin: 0 auto;
+}
+
+/* =========================================
+   Pagination, Search, & Modal UI
+========================================= */
+.sfir-page-size-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.sfir-page-size-label {
+  margin: 0;
+  padding-right: 0.5rem;
+}
+
+#sfir-page-size {
+  min-width: 55px;
+}
+
+.sfir-log-actions-group {
+  white-space: nowrap;
+}
+
 mark.sfir-highlight {
   background: #ffe58a !important;
   color: #000 !important;
@@ -74,39 +217,6 @@ mark.sfir-highlight.current {
   font-weight: 600;
 }
 
-/* Make sort icon always visible for sortable columns */
-.slds-is-sortable__icon-always {
-  display: inline-block !important;
-  visibility: visible !important;
-  opacity: 0.5;
-}
-
-/* Add cursor pointer for sortable column headers */
-.slds-is-sortable {
-  cursor: pointer;
-}
-
-/* Make resize handles easier to interact with */
-.slds-resizable__handle {
-  cursor: col-resize;
-}
-
-/* Align header checkbox with body checkboxes */
-.sfir-logs-table thead th .slds-th__action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 2rem;
-}
-
-/* Center all checkboxes in the checkbox column */
-.sfir-logs-table tbody td[role="gridcell"]:first-child {
-  text-align: center;
-  vertical-align: middle;
-}
-
-/* Preview Modal Styles */
 .sfir-preview-loading-container {
   min-height: 60vh;
   position: relative;
@@ -124,25 +234,4 @@ mark.sfir-highlight.current {
 .sfir-preview-code-block {
   max-height: 60vh;
   overflow: unset;
-}
-
-/* Logs Table Styles */
-.sfir-logs-table-container {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.sfir-logs-table {
-  table-layout: fixed;
-  width: 100%;
-  min-width: 900px;
-}
-
-/* Ensure table cells support truncation */
-.sfir-logs-table td {
-  overflow: hidden;
-}
-
-.sfir-log-actions-group {
-  white-space: nowrap;
 }

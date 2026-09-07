@@ -174,17 +174,22 @@ class App extends React.PureComponent {
     });
   }
   onContextUrlMessage(e) {
-    if (e.source == parent && e.data.insextUpdateRecordId) {
-      let {locationHref} = e.data;
-      this.setState({
-        isInSetup: locationHref.includes("/lightning/setup/"),
-        contextUrl: locationHref,
-        isPopupExpanded: true, // Popup is expanded when we receive this message
-      });
+    if (e.source == parent && e.data) {
+      if (e.data.insextUpdateRecordId) {
+        let {locationHref} = e.data;
+        this.setState({
+          isInSetup: locationHref.includes("/lightning/setup/"),
+          contextUrl: locationHref,
+          isPopupExpanded: true, // Popup is expanded when we receive this message
+        });
+      }
+
+      if ("isFieldsPresent" in e.data) {
+        this.setState({
+          isFieldsPresent: e.data.isFieldsPresent,
+        });
+      }
     }
-    this.setState({
-      isFieldsPresent: e.data.isFieldsPresent,
-    });
   }
   async getListViewQuery(sobjectName, filterName) {
     if (localStorage.getItem("enableListViewExport") !== "true" || !sobjectName || !filterName) {
@@ -1704,14 +1709,11 @@ class AllDataBoxSObject extends React.PureComponent {
   getBestMatch(query) {
     let {sobjectsList} = this.props;
     // Find the best match based on the record id or object name from the page URL.
-    if (!query) {
-      return null;
-    }
-    if (!sobjectsList) {
+    if (!query || !sobjectsList) {
       return null;
     }
     let sobject = sobjectsList.find(
-      (sobject) => sobject.name.toLowerCase() == query.toLowerCase()
+      (sobject) => (sobject.name || "").toLowerCase() == query.toLowerCase()
     );
     let queryKeyPrefix = query.substring(0, 3);
     if (!sobject) {
@@ -1747,33 +1749,39 @@ class AllDataBoxSObject extends React.PureComponent {
     let res = sobjectsList
       .filter(
         (sobject) =>
-          sobject.name.toLowerCase().includes(query.toLowerCase())
-          || sobject.label.toLowerCase().includes(query.toLowerCase())
+          (sobject.name || "").toLowerCase().includes(query.toLowerCase())
+          || (sobject.label || "").toLowerCase().includes(query.toLowerCase())
           || sobject.keyPrefix == queryKeyPrefix
       )
-      .map((sobject) => ({
-        recordId: null,
-        sobject,
-        // TO-DO: merge with the sortRank function in data-export
-        relevance:
-          (sobject.keyPrefix == queryKeyPrefix
-            ? 2
-            : sobject.name.toLowerCase() == query.toLowerCase()
-              ? 3
-              : sobject.label.toLowerCase() == query.toLowerCase()
-                ? 4
-                : sobject.name.toLowerCase().startsWith(query.toLowerCase())
-                  ? 5
-                  : sobject.label.toLowerCase().startsWith(query.toLowerCase())
-                    ? 6
-                    : sobject.name.toLowerCase().includes("__" + query.toLowerCase())
-                      ? 7
-                      : sobject.name.toLowerCase().includes("_" + query.toLowerCase())
-                        ? 8
-                        : sobject.label.toLowerCase().includes(" " + query.toLowerCase())
-                          ? 9
-                          : 10) + (sobject.availableApis.length == 0 ? 20 : 0),
-      }));
+      .map((sobject) => {
+        let sName = (sobject.name || "").toLowerCase();
+        let sLabel = (sobject.label || "").toLowerCase();
+        let q = query.toLowerCase();
+
+        return {
+          recordId: null,
+          sobject,
+          // TO-DO: merge with the sortRank function in data-export
+          relevance:
+            (sobject.keyPrefix == queryKeyPrefix
+              ? 2
+              : sName == q
+                ? 3
+                : sLabel == q
+                  ? 4
+                  : sName.startsWith(q)
+                    ? 5
+                    : sLabel.startsWith(q)
+                      ? 6
+                      : sName.includes("__" + q)
+                        ? 7
+                        : sName.includes("_" + q)
+                          ? 8
+                          : sLabel.includes(" " + q)
+                            ? 9
+                            : 10) + (sobject.availableApis.length == 0 ? 20 : 0),
+        };
+      });
     query = query || contextRecordId || "";
     queryKeyPrefix = query.substring(0, 3);
     if (query.match(/^([a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/)) {
@@ -1787,7 +1795,7 @@ class AllDataBoxSObject extends React.PureComponent {
     res.sort(
       (a, b) =>
         a.relevance - b.relevance
-        || a.sobject.name.localeCompare(b.sobject.name)
+        || (a.sobject.name || "").localeCompare(b.sobject.name || "")
     );
     return res;
   }
@@ -1823,43 +1831,43 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   resultRender(matches, userQuery) {
-    return matches.map((value) => ({
-      key: value.recordId + "#" + value.sobject.name,
-      value,
-      element: [
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "main"},
-          value.recordId
-            || h(MarkSubstring, {
-              text: value.sobject.name,
-              start: value.sobject.name
-                .toLowerCase()
-                .indexOf(userQuery.toLowerCase()),
-              length: userQuery.length,
+    let qLower = (userQuery || "").toLowerCase();
+    return matches.map((value, index) => {
+      const itemKey = value.recordId + "#" + value.sobject.name + "#" + index;
+      return {
+        key: itemKey,
+        value,
+        element: [
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "main-" + itemKey},
+            value.recordId
+              || h(MarkSubstring, {
+                text: value.sobject.name || "",
+                start: (value.sobject.name || "").toLowerCase().indexOf(qLower),
+                length: userQuery.length,
+              }),
+            value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
+          ),
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "sub-" + itemKey},
+            h(MarkSubstring, {
+              text: value.sobject.keyPrefix || "---",
+              start:
+                value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
+              length: 3,
             }),
-          value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
-        ),
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "sub"},
-          h(MarkSubstring, {
-            text: value.sobject.keyPrefix || "---",
-            start:
-              value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
-            length: 3,
-          }),
-          " • ",
-          h(MarkSubstring, {
-            text: value.sobject.label,
-            start: value.sobject.label
-              .toLowerCase()
-              .indexOf(userQuery.toLowerCase()),
-            length: userQuery.length,
-          })
-        ),
-      ],
-    }));
+            " • ",
+            h(MarkSubstring, {
+              text: value.sobject.label || "",
+              start: (value.sobject.label || "").toLowerCase().indexOf(qLower),
+              length: userQuery.length,
+            })
+          ),
+        ],
+      };
+    });
   }
 
   render() {
@@ -2543,14 +2551,17 @@ class AllDataBoxOrg extends React.PureComponent {
 
   getNextMajorRelease(maintenances) {
     if (maintenances) {
-      let event = maintenances.find((event) =>
-        event.name.endsWith("Major Release")
+      let event = maintenances.find((e) =>
+        e && e.name && e.name.endsWith("Major Release")
       );
-      return (
-        event.name.replace(" Major Release", "")
-        + " on "
-        + new Date(event.plannedStartTime).toDateString()
-      );
+
+      if (event) {
+        return (
+          event.name.replace(" Major Release", "")
+          + " on "
+          + new Date(event.plannedStartTime).toDateString()
+        );
+      }
     }
     return null;
   }
@@ -2791,9 +2802,11 @@ class AllDataBoxOrg extends React.PureComponent {
                 h(
                   "td",
                   {},
-                  this.getNextMajorRelease(
-                    this.state.instanceStatus?.Maintenances
-                  )
+                  this.state.instanceStatus
+                    ? this.getNextMajorRelease(
+                      this.state.instanceStatus.Maintenances
+                    ) || "None scheduled"
+                    : ""
                 )
               )
             )

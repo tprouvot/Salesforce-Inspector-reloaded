@@ -190,8 +190,8 @@ class App extends React.PureComponent {
           isPopupExpanded: true, // Popup is expanded when we receive this message
         });
       }
-      
-      if ('isFieldsPresent' in e.data) {
+
+      if ("isFieldsPresent" in e.data) {
         this.setState({
           isFieldsPresent: e.data.isFieldsPresent,
         });
@@ -1884,7 +1884,7 @@ class AllDataBoxSObject extends React.PureComponent {
         let sName = (sobject.name || "").toLowerCase();
         let sLabel = (sobject.label || "").toLowerCase();
         let q = query.toLowerCase();
-        
+
         return {
           recordId: null,
           sobject,
@@ -2800,7 +2800,7 @@ class AllDataBoxOrg extends React.PureComponent {
       let event = maintenances.find((e) =>
         e && e.name && e.name.endsWith("Major Release")
       );
-      
+
       if (event) {
         return (
           event.name.replace(" Major Release", "")
@@ -3050,8 +3050,8 @@ class AllDataBoxOrg extends React.PureComponent {
                   {},
                   this.state.instanceStatus
                     ? this.getNextMajorRelease(
-                        this.state.instanceStatus.Maintenances
-                      ) || "None scheduled"
+                      this.state.instanceStatus.Maintenances
+                    ) || "None scheduled"
                     : ""
                 )
               )

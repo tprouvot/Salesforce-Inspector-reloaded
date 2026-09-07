@@ -515,6 +515,12 @@ Structure your response clearly with appropriate headings.`;
         }
         this.hasEntityParticles = true;
         this.fieldRows.resortRows();
+
+        // Trigger field descriptions fetch if 'desc' column is active and hasn't been fetched yet
+        if (this.fieldRows.selectedColumnMap.has("desc") && this.fieldRows.fetchFieldDescriptions) {
+          this.fieldRows.fetchFieldDescriptions = false;
+          this.fieldRows.rows.forEach(fieldRow => fieldRow.showFieldDescription());
+        }
       })
     );
 
@@ -1056,7 +1062,7 @@ class FieldRowList extends RowList {
     };
   }
   showHideColumn(show, col) {
-    if (col == "desc" && this.fetchFieldDescriptions) {
+    if (col == "desc" && show && this.fetchFieldDescriptions && this.model.hasEntityParticles) {
       this.fetchFieldDescriptions = false;
       this.rows.forEach(fieldRow => fieldRow.showFieldDescription());
     }
@@ -2018,9 +2024,10 @@ class ColumnsVisibiltyBox extends React.Component {
   }
   render() {
     let {rowList, label, content} = this.props;
-    return h("span", {className: "slds-icon_container slds-icon-utility-chevrondown slds-current-color slds-m-left_small", onClick: this.onAvailableColumnsClick},
+    let isOpen = !!rowList.availableColumns; 
+    return h("span", {className: `slds-icon_container slds-icon-utility-chevron${isOpen ? 'up' : 'down'} slds-current-color slds-m-left_small`, onClick: this.onAvailableColumnsClick},
       h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-        h("use", {xlinkHref: "symbols.svg#chevrondown"})
+        h("use", {xlinkHref: `symbols.svg#chevron${isOpen ? 'up' : 'down'}`})
       ),
       rowList.availableColumns ? h("section", {
         className: "slds-popover slds-dynamic-menu",

@@ -515,6 +515,12 @@ Structure your response clearly with appropriate headings.`;
         }
         this.hasEntityParticles = true;
         this.fieldRows.resortRows();
+
+        // Trigger field descriptions fetch if 'desc' column is active and hasn't been fetched yet
+        if (this.fieldRows.selectedColumnMap.has("desc") && this.fieldRows.fetchFieldDescriptions) {
+          this.fieldRows.fetchFieldDescriptions = false;
+          this.fieldRows.rows.forEach(fieldRow => fieldRow.showFieldDescription());
+        }
       })
     );
 
@@ -1056,7 +1062,7 @@ class FieldRowList extends RowList {
     };
   }
   showHideColumn(show, col) {
-    if (col == "desc" && this.fetchFieldDescriptions) {
+    if (col == "desc" && show && this.fetchFieldDescriptions && this.model.hasEntityParticles) {
       this.fetchFieldDescriptions = false;
       this.rows.forEach(fieldRow => fieldRow.showFieldDescription());
     }

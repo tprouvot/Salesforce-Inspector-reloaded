@@ -16,6 +16,7 @@ const allActions = [
   {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"]},
   {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"]},
   {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"]},
+  {value: "upsertUpdateOnly", label: "Upsert (Update Only)", supportedApis: ["Enterprise"]},
   {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"]},
   {value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"]},
   {value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"]},
@@ -28,7 +29,7 @@ const headersTemplates = [
   '{"DuplicateRuleHeader": {"allowSave": true}}'
 ];
 
-class Model {
+export class Model {
 
   constructor(sfHost, args) {
     this.sfHost = sfHost;
@@ -47,6 +48,7 @@ class Model {
     this.importType = "Account";
     this.externalId = "Id";
     this.batchSize = localStorage.getItem("defaultBatchSize") ? localStorage.getItem("defaultBatchSize") : "200";
+    this.batchSizeBeforeUpdateOnly = null;
     this.batchConcurrency = localStorage.getItem("defaultThreadSize") ? localStorage.getItem("defaultThreadSize") : "6";
     this.confirmPopup = null;
     this.activeBatches = 0;
@@ -173,9 +175,10 @@ class Model {
       if (importOptions.get("action") == "create") this.importAction = "create";
       if (importOptions.get("action") == "update") this.importAction = "update";
       if (importOptions.get("action") == "upsert") this.importAction = "upsert";
+      if (importOptions.get("action") == "upsertUpdateOnly") this.importAction = "upsertUpdateOnly";
       if (importOptions.get("action") == "delete") this.importAction = "delete";
       if (importOptions.get("object")) this.importType = importOptions.get("object");
-      if (importOptions.get("externalId") && this.importAction == "upsert") this.externalId = importOptions.get("externalId");
+      if (importOptions.get("externalId") && (this.importAction == "upsert" || this.importAction == "upsertUpdateOnly")) this.externalId = importOptions.get("externalId");
       if (importOptions.get("batchSize")) this.batchSize = importOptions.get("batchSize");
       if (importOptions.get("threads")) this.batchConcurrency = importOptions.get("threads");
     }
@@ -248,7 +251,7 @@ class Model {
     importOptions.set("apiType", this.apiType);
     importOptions.set("action", this.importAction);
     importOptions.set("object", this.importType);
-    if (this.importAction == "upsert") importOptions.set("externalId", this.externalId);
+    if (this.importAction == "upsert" || this.importAction == "upsertUpdateOnly") importOptions.set("externalId", this.externalId);
     importOptions.set("batchSize", this.batchSize);
     importOptions.set("threads", this.batchConcurrency);
     copyToClipboard(importOptions.toString());
@@ -281,7 +284,18 @@ class Model {
     // We should try to allow imports to succeed even if our validation logic does not exactly match the one in Salesforce.
     // We only hard-fail on errors that prevent us from building the API request.
     // When possible, we submit the request with errors and let Salesforce give a descriptive message in the response.
-    return !this.importData.importTable || !this.importData.importTable.header.every(col => col.columnIgnore() || col.columnValid()) || this.getRequiredMissingFields().length > 0;
+    return !this.importData.importTable || !this.importData.importTable.header.every(col => col.columnIgnore() || col.columnValid()) || this.getRequiredMissingFields().length > 0 || !!this.upsertUpdateOnlyApiVersionError();
+  }
+
+  // updateOnly=true needs API v61.0+; apiVersion is user-configurable, so check it at runtime.
+  upsertUpdateOnlyApiVersionError() {
+    if (this.importAction != "upsertUpdateOnly") {
+      return "";
+    }
+    if (!(parseFloat(apiVersion) >= UPDATE_ONLY_MIN_API_VERSION)) {
+      return `Requires API version ${UPDATE_ONLY_MIN_API_VERSION}.0 or later (currently v${apiVersion}). Update the API version in Options.`;
+    }
+    return "";
   }
 
   isWorking() {
@@ -399,7 +413,7 @@ class Model {
   idFieldName() {
     if (this.importAction == "create") {
       return "";
-    } else if (this.importAction == "upsert") {
+    } else if (this.importAction == "upsert" || this.importAction == "upsertUpdateOnly") {
       return this.externalId;
     } else if (this.apiType == "Metadata") {
       return "DeveloperName";
@@ -420,6 +434,9 @@ class Model {
   batchSizeError() {
     if (!(+this.batchSize > 0)) { // This also handles NaN
       return "Must be a positive number";
+    }
+    if (this.importAction == "upsertUpdateOnly" && +this.batchSize > COMPOSITE_BATCH_LIMIT) {
+      return `Note: capped at ${COMPOSITE_BATCH_LIMIT} per API call for Upsert (Update Only), regardless of this setting`;
     }
     return "";
   }
@@ -574,6 +591,8 @@ class Model {
         return "updated";
       case "upsert":
         return "upserted";
+      case "upsertUpdateOnly":
+        return "updated";
       case "delete":
         return "deleted";
       case "undelete":
@@ -738,6 +757,8 @@ class Model {
     if (!(batchSize > 0)) { // This also handles NaN
       return;
     }
+    // Composite calls (used by Upsert (Update Only)) cap at 25 subrequests, regardless of batchSize.
+    batchSize = effectiveBatchSize(this.importAction, batchSize);
 
     let batchConcurrency = +this.batchConcurrency;
     if (!(batchConcurrency > 0)) { // This also handles NaN
@@ -753,6 +774,7 @@ class Model {
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let batchRows = [];
     let importArgs = {};
+    let compositeSubrequests = []; // used only by importAction == "upsertUpdateOnly"
     if (importAction == "upsert") {
       importArgs.externalIDFieldName = idFieldName;
     }
@@ -763,7 +785,7 @@ class Model {
       importArgs["met:fullNames"] = [];
     } else if (importAction == "upsertMetadata") {
       importArgs["met:metadata"] = [];
-    } else {
+    } else if (importAction != "upsertUpdateOnly") {
       importArgs.sObjects = [];
     }
 
@@ -830,6 +852,15 @@ class Model {
         }
 
         importArgs["met:metadata"].push(sobject);
+      } else if (importAction == "upsertUpdateOnly") {
+        // updateOnly=true only exists on REST, so this goes through Composite, not SOAP.
+        let referenceId = "row" + (batchRows.length - 1);
+        let fields = buildUpdateOnlyFields(header, row, inputIdColumnIndex);
+        compositeSubrequests.push({
+          referenceId,
+          row,
+          subrequest: buildUpdateOnlySubrequest(apiVersion, sobjectType, idFieldName, row[inputIdColumnIndex], fields, referenceId)
+        });
       } else {
         let sobject = {};
         sobject["$xsi:type"] = sobjectType;
@@ -883,6 +914,51 @@ class Model {
     // unless batches are slower than timeoutDelay.
     setTimeout(this.executeBatch.bind(this), 2500);
 
+    let onBatchSettled = () => {
+      this.activeBatches--;
+      this.updateResult(this.importData.importTable);
+      this.executeBatch();
+    };
+
+    if (importAction == "upsertUpdateOnly") {
+      let body = {allOrNone: false, compositeRequest: compositeSubrequests.map(r => r.subrequest)};
+      this.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body}).then(res => {
+        let subresponseByReferenceId = new Map((res.compositeResponse || []).map(r => [r.referenceId, r]));
+        for (let {referenceId, row} of compositeSubrequests) {
+          let subresponse = subresponseByReferenceId.get(referenceId);
+          let parsed = subresponse
+            ? parseUpdateOnlySubresponse(subresponse)
+            : {success: false, id: "", errorText: "No response received for this record"};
+          row[statusColumnIndex] = parsed.success ? "Succeeded" : "Failed";
+          row[actionColumnIndex] = parsed.success ? "Updated" : ""; // never "Inserted"
+          row[resultIdColumnIndex] = parsed.id;
+          row[errorColumnIndex] = parsed.errorText;
+        }
+        this.consecutiveFailures = 0;
+      }, err => {
+        // Same split the SOAP path makes below: a real HTTP error response fails just this batch;
+        // anything else (not connected at all) stops the import.
+        if (!["SalesforceRestError", "Unauthorized", "Forbidden"].includes(err.name)) {
+          throw err;
+        }
+        let errorText = err.message;
+        for (let row of batchRows) {
+          row[statusColumnIndex] = "Failed";
+          row[resultIdColumnIndex] = "";
+          row[actionColumnIndex] = "";
+          row[errorColumnIndex] = errorText;
+        }
+        this.consecutiveFailures++;
+        if (this.consecutiveFailures >= 3) {
+          this.isProcessingQueue = false;
+        }
+      }).then(onBatchSettled).catch(error => {
+        console.error("Unexpected exception", error);
+        this.isProcessingQueue = false;
+      }));
+      return;
+    }
+
     let wsdl = sfConn.wsdl(apiVersion, this.apiType);
     let headers = this.customHeaders?.length > 0 ? {headers: JSON.parse(this.customHeaders)} : {};
 
@@ -934,11 +1010,7 @@ class Model {
       if (this.consecutiveFailures >= 3) {
         this.isProcessingQueue = false;
       }
-    }).then(() => {
-      this.activeBatches--;
-      this.updateResult(this.importData.importTable);
-      this.executeBatch();
-    }).catch(error => {
+    }).then(onBatchSettled).catch(error => {
       console.error("Unexpected exception", error);
       this.isProcessingQueue = false;
     }));
@@ -952,7 +1024,7 @@ function csvSerialize(table, separator) {
 
 let h = React.createElement;
 
-class App extends React.Component {
+export class App extends React.Component {
   constructor(props) {
     super(props);
     this.onApiTypeChange = this.onApiTypeChange.bind(this);
@@ -994,6 +1066,15 @@ class App extends React.Component {
     if (model.importAction === "undelete"){
       this.onImportUndelete(model);
     }
+    if (model.importAction === "upsertUpdateOnly") {
+      if (+model.batchSize > COMPOSITE_BATCH_LIMIT) {
+        model.batchSizeBeforeUpdateOnly = model.batchSize;
+        model.batchSize = "" + COMPOSITE_BATCH_LIMIT;
+      }
+    } else if (model.batchSizeBeforeUpdateOnly != null) {
+      model.batchSize = model.batchSizeBeforeUpdateOnly;
+      model.batchSizeBeforeUpdateOnly = null;
+    }
     model.didUpdate();
   }
   onImportTypeChange(e) {
@@ -1016,6 +1097,7 @@ class App extends React.Component {
   onBatchSizeChange(e) {
     let {model} = this.props;
     model.batchSize = e.target.value;
+    model.batchSizeBeforeUpdateOnly = null;
     model.executeBatch();
     model.didUpdate();
   }
@@ -1222,7 +1304,8 @@ class App extends React.Component {
                                 h("select", {className: "slds-select", id: "form-import-action", value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking()},
                                   ...model.availableActions.map((action, index) => h("option", {key: index, value: action.value}, action.label))
                                 )
-                              )
+                              ),
+                              h("div", {id: "error-import-action", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.upsertUpdateOnlyApiVersionError()}, model.upsertUpdateOnlyApiVersionError())
                             )
                           )
                         ),
@@ -1248,9 +1331,9 @@ class App extends React.Component {
                             ),
                           )
                         ),
-                        h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small", hidden: model.importAction != "upsert"},
+                        h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small", hidden: model.importAction != "upsert" && model.importAction != "upsertUpdateOnly"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"}, "External ID"),
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used to determine which existing record should be updated (and, for plain Upsert, whether to insert a new one if there is no match)"}, "External ID"),
                             h("div", {className: "slds-form-element__control"},
                               h("input", {id: "form-external-id", className: model.externalIdError() ? "slds-input slds-has-error" : "slds-input", type: "text", value: model.externalId, onChange: this.onExternalIdChange, disabled: model.isWorking(), list: "idlookuplist"}),
                               h("div", {id: "error-external-id", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.externalIdError()}, model.externalIdError())
@@ -1360,11 +1443,12 @@ class App extends React.Component {
                 )
               ),
               h("li", {}, "Select your input format"),
-              h("li", {}, "Select an action (insert, update, upsert or delete)"),
+              h("li", {}, "Select an action (insert, update, upsert, upsert (update only), delete or undelete)"),
               h("li", {}, "Enter the API name of the object to import"),
               h("li", {}, "Press the Run button")
             ),
-            h("p", {className: "slds-m-bottom_x-small"}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+            h("p", {className: "slds-m-bottom_x-small"}, "Bulk API is not supported. Large data volumes may freeze or crash your browser."),
+            h("p", {className: "slds-m-bottom_x-small"}, "\"Upsert (Update Only)\" updates the matching record and never inserts; no match means an error for that record. Uses REST Composite (API v61.0+), max 25 records per API call.")
           )
         ),
         h(
@@ -1545,4 +1629,80 @@ function setNestedValue(obj, path, value) {
     cur = cur[k];
   }
   cur[parts[parts.length - 1]] = value;
+}
+
+// Neither SOAP upsert() nor the REST sObject Collections upsert endpoint can refuse to insert.
+// Only the single-record External ID PATCH resource honors updateOnly=true (API v61.0+), and it
+// only batches via Composite, which caps at 25 subrequests/call - hence everything below.
+const COMPOSITE_BATCH_LIMIT = 25;
+const UPDATE_ONLY_MIN_API_VERSION = 61;
+
+function effectiveBatchSize(importAction, requestedBatchSize) {
+  if (importAction != "upsertUpdateOnly") {
+    return requestedBatchSize;
+  }
+  return Math.min(requestedBatchSize, COMPOSITE_BATCH_LIMIT);
+}
+
+// Empty cells null the field directly (REST has no fieldsToNull list); an empty relationship
+// column nulls the underlying lookup field, never the relationship name.
+function buildUpdateOnlyFields(header, row, inputIdColumnIndex) {
+  let fields = {};
+  for (let c = 0; c < row.length; c++) {
+    if (header[c][0] == "_") {
+      continue;
+    }
+    let columnName = header[c].split(":");
+    let [fieldName] = columnName;
+    let isId = c === inputIdColumnIndex || fieldName.toLowerCase() === "id";
+    if (isId) {
+      continue; // the External ID value goes in the URL, never in the body
+    }
+    if (row[c].trim() == "") {
+      let nullTarget = columnName.length == 1
+        ? (fieldName.includes(".") ? fieldName.split(".")[0] : fieldName)
+        : (/__r$/.test(fieldName) ? fieldName.replace(/__r$/, "__c") : fieldName + "Id");
+      fields[nullTarget] = null;
+    } else if (columnName.length == 1) {
+      fields[fieldName] = row[c];
+    } else {
+      let [relFieldName, /* referencedSobject */, subFieldName] = columnName;
+      fields[relFieldName] = {[subFieldName]: row[c]};
+    }
+  }
+  return fields;
+}
+
+function buildUpdateOnlySubrequest(apiVersion, sobjectType, externalIdFieldName, externalIdValue, fields, referenceId) {
+  let url = "/services/data/v" + apiVersion + "/sobjects/"
+    + encodeURIComponent(sobjectType) + "/"
+    + encodeURIComponent(externalIdFieldName) + "/"
+    + encodeURIComponent(externalIdValue)
+    + "?updateOnly=true";
+  return {method: "PATCH", url, referenceId, body: fields};
+}
+
+// Body can be an array of {errorCode, message, fields}, a single one of those, or something else
+// entirely (e.g. the matched-records list on a 300) - fall back to a readable dump either way.
+function formatUpdateOnlyErrors(body, httpStatusCode) {
+  let errors = Array.isArray(body) ? body : (body ? [body] : []);
+  if (errors.length == 0) {
+    return "HTTP " + httpStatusCode;
+  }
+  return errors.map(err => {
+    if (err && typeof err == "object" && (err.errorCode || err.message)) {
+      let fields = Array.isArray(err.fields) && err.fields.length ? " [" + err.fields.join(", ") + "]" : "";
+      return (err.errorCode || ("HTTP " + httpStatusCode)) + ": " + (err.message || "Unknown error") + fields;
+    }
+    return "HTTP " + httpStatusCode + ": " + JSON.stringify(err);
+  }).join(", ");
+}
+
+function parseUpdateOnlySubresponse(subresponse) {
+  let httpStatusCode = subresponse.httpStatusCode;
+  if (httpStatusCode >= 200 && httpStatusCode < 300) {
+    let body = subresponse.body || {};
+    return {success: true, id: body.id || "", errorText: ""};
+  }
+  return {success: false, id: "", errorText: formatUpdateOnlyErrors(subresponse.body, httpStatusCode)};
 }

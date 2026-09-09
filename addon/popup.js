@@ -128,6 +128,7 @@ class App extends React.PureComponent {
       apiVersionInput: apiVersion,
       isFieldsPresent: false,
       isPopupExpanded: false, // Track if popup is expanded/active
+      contextUpdateId: 0,
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
@@ -184,11 +185,12 @@ class App extends React.PureComponent {
     if (e.source == parent && e.data) {
       if (e.data.insextUpdateRecordId) {
         let {locationHref} = e.data;
-        this.setState({
+        this.setState((state) => ({
           isInSetup: locationHref.includes("/lightning/setup/"),
           contextUrl: locationHref,
           isPopupExpanded: true, // Popup is expanded when we receive this message
-        });
+          contextUpdateId: state.contextUpdateId + 1,
+        }));
       }
 
       if ("isFieldsPresent" in e.data) {
@@ -397,6 +399,7 @@ class App extends React.PureComponent {
       limitsHref,
       apiStatisticsHref,
       isFieldsPresent,
+      contextUpdateId,
       latestNotesViewed,
       useLegacyDownloadMetadata,
     } = this.state;
@@ -498,6 +501,7 @@ class App extends React.PureComponent {
             inInspector,
             linkTarget,
             contextUrl,
+            contextUpdateId,
             onContextRecordChange: this.onContextRecordChange,
             isFieldsPresent,
             eventMonitorHref,
@@ -986,7 +990,9 @@ class AllDataBox extends React.PureComponent {
 
     this.onSobjectsListRefreshed = (e) => {
       if (e.detail?.sfHost === this.props.sfHost) {
-        this.setState({sobjectsList: e.detail.sobjectsList});
+        this.setState({sobjectsList: e.detail.sobjectsList}, () => {
+          this.refreshSobjectSearch();
+        });
       }
     };
     window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
@@ -998,7 +1004,8 @@ class AllDataBox extends React.PureComponent {
 
   componentDidUpdate(prevProps, prevState) {
     let {activeSearchAspect} = this.state;
-    if (prevProps.contextUrl !== this.props.contextUrl) {
+    const contextUpdated = prevProps.contextUpdateId !== this.props.contextUpdateId;
+    if (prevProps.contextUrl !== this.props.contextUrl || contextUpdated) {
       this.ensureKnownBrowserContext();
     }
 
@@ -1029,7 +1036,7 @@ class AllDataBox extends React.PureComponent {
     }
 
     // If popup just became expanded and Objects tab is active, load sobjects
-    if (popupJustExpanded && this.shouldLoadSobjects()) {
+    if ((popupJustExpanded || contextUpdated) && this.shouldLoadSobjects()) {
       this.loadSobjects();
     }
   }
@@ -1046,7 +1053,7 @@ class AllDataBox extends React.PureComponent {
     }
     // Preload before popup opens: only if option is enabled (not in inspector)
     if (!this.props.isPopupExpanded && !this.props.inInspector) {
-      return isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP);
+      return isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP, true);
     }
     return false;
   }
@@ -1120,16 +1127,20 @@ class AllDataBox extends React.PureComponent {
         this.setState({
           sobjectsLoading: false,
           sobjectsList,
+        }, () => {
+          this.refreshSobjectSearch();
         });
-        // Only call getMatchesDelayed if the showAllDataBoxSObject component is rendered (i.e., user is on Objects tab)
-        this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed(
-          ""
-        );
       })
       .catch((e) => {
         console.error(e);
         this.setState({sobjectsLoading: false});
       });
+  }
+
+  refreshSobjectSearch() {
+    const search = this.refs.showAllDataBoxSObject?.refs?.allDataSearch;
+    const query = search?.state?.queryString ?? "";
+    search?.getMatchesDelayed(query);
   }
 
   async onClearSobjectsCache() {
@@ -1724,10 +1735,10 @@ class AllDataBoxSObject extends React.PureComponent {
 
   componentDidUpdate(prevProps) {
     let {contextRecordId, sobjectsLoading, contextSobject} = this.props;
-    if (prevProps.contextRecordId !== contextRecordId || prevProps.contextSobject !== contextSobject) {
-      this.updateSelection(contextRecordId, contextSobject);
-    }
-    if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {
+    if (prevProps.contextRecordId !== contextRecordId
+      || prevProps.contextSobject !== contextSobject
+      || prevProps.sobjectsList !== this.props.sobjectsList
+      || (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading)) {
       this.updateSelection(contextRecordId, contextSobject);
     }
   }

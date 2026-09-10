@@ -83,7 +83,8 @@
     "field-creator.html",
     "options.html",
     "event-monitor.html",
-    "flow-scanner.html"
+    "flow-scanner.html",
+    "object-scanner.html"
   ],
   "incognito": "spanning",
   "manifest_version": 2

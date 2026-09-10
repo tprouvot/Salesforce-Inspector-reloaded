@@ -2,6 +2,7 @@
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache, applyProductionStyling} from "./utils.js";
 import {getFlowScannerRules, FLOW_SCANNER_RULES_STORAGE_KEY} from "./flow-scanner-rules.js";
+import {getObjectScannerRules, OBJECT_SCANNER_RULES_STORAGE_KEY} from "./object-scanner-rules.js";
 /* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -89,11 +90,12 @@ class OptionsTabSelector extends React.Component {
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideButtonsOption",
-              length: 8,
+              length: 9,
               checkboxes: [
                 {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
+                {label: "Object Scanner", name: "object-scanner", checked: true},
                 {label: "Options", name: "options", checked: true},
                 {label: "Generate Access Token", name: "generate-token", checked: true},
                 {label: "Copy User Id", name: "copy-userId", checked: true},
@@ -359,6 +361,48 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
+        id: "object-scanner",
+        tabTitle: "Object Scanner",
+        title: "Enabled Rules",
+        description: "Configure which Object Scanner rules are enabled and their settings. Only enabled rules will be used when scanning objects.",
+        descriptionTooltip: "Object Scanner rules check naming, standard-object replication, over-customization, picklist hygiene, and Salesforce data classification on customizable objects.",
+        actionButtons: [
+          {
+            type: "brand",
+            label: "Check All",
+            title: "Enable all Object Scanner rules",
+            method: this.handleCheckAll.bind(this)
+          },
+          {
+            type: "neutral",
+            label: "Uncheck All",
+            title: "Disable all Object Scanner rules",
+            method: this.handleUncheckAll.bind(this)
+          },
+          {
+            type: "neutral",
+            label: "Reset to Defaults",
+            title: "Reset all rules to their default settings",
+            method: this.handleResetToDefaults.bind(this)
+          },
+          {
+            type: "icon",
+            icon: "download",
+            title: "Export Object Scanner rules configuration to file",
+            method: this.handleExportRules.bind(this)
+          },
+          {
+            type: "icon",
+            icon: "upload",
+            title: "Import Object Scanner rules configuration from file",
+            method: this.handleImportRules.bind(this)
+          }
+        ],
+        content: [
+          {option: ObjectScannerRules, props: {model: this.model}}
+        ]
+      },
+      {
         id: "logs-viewer",
         tabTitle: "Log Viewer",
         content: [
@@ -408,39 +452,50 @@ class OptionsTabSelector extends React.Component {
     this.onTabSelect = this.onTabSelect.bind(this);
   }
 
+  activeRulesRef() {
+    if (this.state.selectedTabId === "object-scanner") {
+      return this.model.objectScannerRulesRef;
+    }
+    return this.model.flowScannerRulesRef;
+  }
+
+  activeRulesStorageKey() {
+    if (this.state.selectedTabId === "object-scanner") {
+      return OBJECT_SCANNER_RULES_STORAGE_KEY;
+    }
+    return FLOW_SCANNER_RULES_STORAGE_KEY;
+  }
+
   handleCheckAll() {
-    // Implementation to check all Flow Scanner rules
-    if (this.model.flowScannerRulesRef) {
-      this.model.flowScannerRulesRef.checkAllRules();
+    const ref = this.activeRulesRef();
+    if (ref) {
+      ref.checkAllRules();
     }
   }
 
   handleUncheckAll() {
-    // Implementation to uncheck all Flow Scanner rules
-    if (this.model.flowScannerRulesRef) {
-      this.model.flowScannerRulesRef.uncheckAllRules();
+    const ref = this.activeRulesRef();
+    if (ref) {
+      ref.uncheckAllRules();
     }
   }
 
   handleResetToDefaults() {
-    // Implementation to reset Flow Scanner rules to defaults
-    if (this.model.flowScannerRulesRef) {
-      this.model.flowScannerRulesRef.resetToDefaults();
+    const ref = this.activeRulesRef();
+    if (ref) {
+      ref.resetToDefaults();
     }
   }
 
   handleExportRules() {
-    // Export only Flow Scanner related localStorage keys
-    const flowScannerFilters = [FLOW_SCANNER_RULES_STORAGE_KEY];
-    // Get reference to App component to call its exportOptions method
     if (this.appRef) {
-      this.appRef.exportOptions(flowScannerFilters);
+      this.appRef.exportOptions([this.activeRulesStorageKey()]);
     }
   }
 
   handleImportRules() {
     if (this.appRef) {
-      this.appRef.pendingImportFilters = [FLOW_SCANNER_RULES_STORAGE_KEY];
+      this.appRef.pendingImportFilters = [this.activeRulesStorageKey()];
       this.appRef.refs.fileInput.click();
     }
   }
@@ -2060,6 +2115,125 @@ class FlowScannerRules extends React.Component {
   }
 }
 
+class ObjectScannerRules extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      rules: [],
+      loading: true,
+      resetCounter: 0
+    };
+    this.loadRules = this.loadRules.bind(this);
+    this.onRuleChange = this.onRuleChange.bind(this);
+  }
+
+  componentDidMount() {
+    this.loadRules();
+    if (this.props.model) {
+      this.props.model.objectScannerRulesRef = this;
+    }
+  }
+
+  setAllRulesChecked(checked) {
+    const updatedRules = this.state.rules.map(rule => ({...rule, checked}));
+    this.setState(prevState => ({
+      rules: updatedRules,
+      resetCounter: prevState.resetCounter + 1
+    }));
+    localStorage.setItem(OBJECT_SCANNER_RULES_STORAGE_KEY, JSON.stringify(updatedRules));
+  }
+
+  checkAllRules() {
+    this.setAllRulesChecked(true);
+  }
+
+  uncheckAllRules() {
+    this.setAllRulesChecked(false);
+  }
+
+  resetToDefaults() {
+    localStorage.removeItem(OBJECT_SCANNER_RULES_STORAGE_KEY);
+    this.setState(prevState => ({
+      resetCounter: prevState.resetCounter + 1
+    }));
+    this.loadRules();
+  }
+
+  loadRules() {
+    const rules = getObjectScannerRules();
+    this.setState({rules, loading: false});
+  }
+
+  onRuleChange(ruleName, field, value) {
+    this.setState(prevState => {
+      const updatedRules = prevState.rules.map(rule => {
+        if (rule.name === ruleName) {
+          if (field === "checked") {
+            return {...rule, checked: value};
+          } else if (field === "severity") {
+            return {...rule, severity: value};
+          } else if (field === "config") {
+            const newConfig = rule.configType ? {[rule.configType]: value} : {};
+            return {...rule, config: newConfig, configValue: value};
+          }
+        }
+        return rule;
+      });
+      localStorage.setItem(OBJECT_SCANNER_RULES_STORAGE_KEY, JSON.stringify(updatedRules));
+      return {rules: updatedRules};
+    });
+  }
+
+  render() {
+    const {rules, loading} = this.state;
+
+    if (loading) {
+      return h("div", {className: "slds-text-align_center slds-p-vertical_large"},
+        h("p", {className: "slds-m-top_small"}, "Loading Object Scanner rules...")
+      );
+    }
+
+    const sortedRules = [...rules].sort((a, b) => a.label.localeCompare(b.label));
+
+    return h("div", {className: "flow-scanner-rules-container"},
+      sortedRules.map(rule => {
+        let resolvedConfigValue = null;
+        if (rule.isConfigurable) {
+          if (rule.configValue !== undefined && rule.configValue !== null) {
+            resolvedConfigValue = rule.configValue;
+          } else if (rule.config && rule.configType && rule.config[rule.configType] !== undefined) {
+            resolvedConfigValue = rule.config[rule.configType];
+          } else {
+            resolvedConfigValue = rule.defaultValue;
+          }
+        }
+
+        return h(Option, {
+          type: "toggle",
+          enhancedTitle: rule.label,
+          severity: rule.severity || "warning",
+          description: rule.description,
+          key: `objectScannerRule_${rule.name}_${this.state.resetCounter}`,
+          checked: rule.checked !== undefined ? rule.checked : true,
+          isConfigurable: rule.isConfigurable,
+          configType: rule.configType,
+          configValue: resolvedConfigValue,
+          onToggleChange: (checked) => {
+            this.onRuleChange(rule.name, "checked", checked);
+          },
+          onSeverityChange: (key, newSeverity) => {
+            this.onRuleChange(rule.name, "severity", newSeverity);
+          },
+          onConfigChange: (key, newConfig) => {
+            this.onRuleChange(rule.name, "config", newConfig);
+          }
+        });
+      })
+    );
+  }
+}
+
 let h = React.createElement;
 
 class App extends React.Component {
@@ -2087,7 +2261,7 @@ class App extends React.Component {
           localStorageData[key] = localStorage.getItem(key);
         }
       }
-      filename = `${FLOW_SCANNER_RULES_STORAGE_KEY}.json`;
+      filename = `${filterKeys[0]}.json`;
     } else {
       // Export all localStorage
       localStorageData = {...localStorage};
@@ -2139,20 +2313,22 @@ class App extends React.Component {
 
         // Force refresh of Flow Scanner rules if they exist
         const {model} = this.props;
-        if (filterKeys && model && model.flowScannerRulesRef) {
-          // Force component re-creation by incrementing reset counter
-          model.flowScannerRulesRef.setState(prevState => ({
-            resetCounter: prevState.resetCounter + 1
-          }));
-          // Reload rules from localStorage (which now has the imported data)
-          model.flowScannerRulesRef.loadRules();
-          // Force a re-render of the parent model
-          model.didUpdate();
+        if (filterKeys && model) {
+          const rulesRef = filterKeys.includes(OBJECT_SCANNER_RULES_STORAGE_KEY)
+            ? model.objectScannerRulesRef
+            : model.flowScannerRulesRef;
+          if (rulesRef) {
+            rulesRef.setState(prevState => ({
+              resetCounter: prevState.resetCounter + 1
+            }));
+            rulesRef.loadRules();
+            model.didUpdate();
+          }
         }
 
         this.setState({
           showToast: true,
-          toastMessage: Array.isArray(filterKeys) ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
+          toastMessage: Array.isArray(filterKeys) ? "Rules imported successfully!" : "Options Imported Successfully!",
           toastVariant: "success",
           toastTitle: "Success"
         });

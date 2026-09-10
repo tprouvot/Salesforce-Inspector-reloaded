@@ -133,6 +133,7 @@ class App extends React.PureComponent {
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
+      objectScannerHref: "object-scanner.html?" + hostArg,
       apiStatisticsHref: "api-statistics.html?" + hostArg,
       latestNotesViewed:
         localStorage.getItem("latestReleaseNotesVersionViewed")
@@ -395,6 +396,7 @@ class App extends React.PureComponent {
       eventMonitorHref,
       fieldCreatorHref,
       limitsHref,
+      objectScannerHref,
       apiStatisticsHref,
       isFieldsPresent,
       latestNotesViewed,
@@ -616,6 +618,25 @@ class App extends React.PureComponent {
                       "slds-col page-button slds-button slds-button_neutral",
                   },
                   h("span", {}, "Org ", h("u", {}, "L"), "imits")
+                )
+              )
+              : null,
+            isOptionEnabled("object-scanner", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "objectScannerBtn",
+                    href: objectScannerHref,
+                    target: linkTarget,
+                    className: "page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "Object Sc", h("u", {}, "a"), "nner")
                 )
               )
               : null,

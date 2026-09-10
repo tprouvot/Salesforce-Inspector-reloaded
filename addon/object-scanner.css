@@ -1,0 +1,170 @@
+.sfir-object-scanner-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 4rem);
+}
+
+.sfir-object-scanner-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sfir-object-scanner-toolbar .slds-checkbox_toggle {
+  white-space: nowrap;
+}
+
+.sfir-object-scanner-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.sfir-object-scanner-picker {
+  flex: 0 0 22rem;
+  min-width: 16rem;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sfir-object-scanner-picker > .slds-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sfir-object-scanner-picker-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sfir-object-scanner-picker-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.sfir-object-scanner-results {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sfir-object-scanner-results-tabs {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sfir-object-scanner-results-tabs > .slds-tabs_default__nav {
+  flex: 0 0 auto;
+}
+
+.sfir-object-scanner-results-tabs > .slds-tabs_default__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.sfir-object-scanner-results-tabs > .slds-hide {
+  display: none;
+}
+
+.sfir-object-scanner-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: none;
+  width: auto;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker > .slds-card {
+  flex: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker .slds-card__header {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker-title {
+  display: none;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker-body {
+  display: none;
+}
+
+.sfir-object-scanner-summary-card {
+  min-width: 7rem;
+}
+
+.sfir-object-scanner-summary-card .slds-button {
+  height: 100%;
+}
+
+.sfir-object-scanner-summary-selected {
+  box-shadow: inset 0 0 0 2px #0176d3;
+}
+
+.sfir-object-scanner-severity-error {
+  color: #c23934;
+}
+
+.sfir-object-scanner-severity-warning {
+  color: #dd7a01;
+}
+
+.sfir-object-scanner-severity-info {
+  color: #0176d3;
+}
+
+.sfir-object-scanner-progress {
+  min-width: 12rem;
+}
+
+.sfir-object-scanner-api-stats {
+  white-space: nowrap;
+}
+
+.sfir-object-scanner-toasts {
+  position: fixed;
+  top: 4.75rem;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.sfir-object-scanner-toasts .slds-notify_container {
+  position: static;
+  width: auto;
+  pointer-events: auto;
+}

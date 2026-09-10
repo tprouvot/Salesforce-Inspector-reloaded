@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Popup` Stabilize current-record detection and Object search when popup context and SObject metadata load asynchronously.
 - `Event Monitor` Fix "no customChannel found" when the org has more than one custom channel [issue #1323](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1323)
 - `Popup` Fix missing record details in the Winter '27 release and resolve missing Org details when no maintenance is scheduled [issue #1316](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1316) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Allow editing Batch Size and Threads during an active import [issue #1036](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1036)

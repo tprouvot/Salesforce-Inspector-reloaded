@@ -1,4 +1,4 @@
-import {getRedirectUri, getClientId, isSettingEnabled, Constants} from "./utils.js";
+import {getRedirectUri, getClientId, isSettingEnabled, Constants, encryptToken, decryptToken} from "./utils.js";
 import {apiStatistics} from "./api-statistics.js";
 
 export let defaultApiVersion = "67.0";
@@ -32,7 +32,8 @@ export let sfConn = {
     }
 
     sfHost = getMyDomain(sfHost);
-    const oldToken = localStorage.getItem(sfHost + Constants.ACCESS_TOKEN);
+    const storedToken = localStorage.getItem(sfHost + Constants.ACCESS_TOKEN);
+    const oldToken = storedToken ? await decryptToken(storedToken) : null;
     this.instanceHostname = sfHost;
 
     // Check if this is an OAuth callback with authorization code (PKCE flow)
@@ -46,7 +47,7 @@ export let sfConn = {
         // Exchange authorization code for access token
         const accessToken = await this.exchangeCodeForToken(sfHost, authorizationCode, codeVerifier);
         this.sessionId = accessToken;
-        localStorage.setItem(sfHost + Constants.ACCESS_TOKEN, accessToken);
+        localStorage.setItem(sfHost + Constants.ACCESS_TOKEN, await encryptToken(accessToken));
 
         //send message to popup so that it can update the token
         chrome.runtime.sendMessage({message: "tokenUpdated", sfHost});

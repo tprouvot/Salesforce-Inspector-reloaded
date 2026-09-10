@@ -40,11 +40,13 @@ if (typeof browser === "undefined") {
         parent.postMessage({command: request.command}, "*");
       }
     } else if (request.message === "tokenUpdated" && request.sfHost) {
-      // Re-read the session from localStorage
-      const newToken = localStorage.getItem(request.sfHost + Constants.ACCESS_TOKEN);
-      if (newToken) {
-        sfConn.sessionId = newToken;
-        init({sfHost: request.sfHost});
+      // Re-read the session from localStorage (token is encrypted at rest, see utils.js)
+      const storedToken = localStorage.getItem(request.sfHost + Constants.ACCESS_TOKEN);
+      if (storedToken) {
+        import("./utils.js").then(({decryptToken}) => decryptToken(storedToken)).then(newToken => {
+          sfConn.sessionId = newToken;
+          init({sfHost: request.sfHost});
+        });
       }
     }
   });

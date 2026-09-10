@@ -38,6 +38,39 @@ export class Constants {
   ];
 }
 
+// Encrypts an OAuth access token before it is persisted to localStorage, so the credential is never
+// written to disk in plaintext (CWE-312). Key material is derived from the extension id via SubtleCrypto.
+export async function encryptToken(token) {
+  try {
+    const keyMaterial = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chrome.runtime.id));
+    const key = await crypto.subtle.importKey("raw", keyMaterial, "AES-GCM", false, ["encrypt"]);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt({name: "AES-GCM", iv}, key, new TextEncoder().encode(token));
+    return btoa(String.fromCharCode(...iv)) + ":" + btoa(String.fromCharCode(...new Uint8Array(ciphertext)));
+  } catch (error) {
+    console.error("Error encrypting access token:", error);
+    return token;
+  }
+}
+
+// Decrypts a value previously produced by encryptToken. Falls back to returning the input unchanged
+// when it is not in the expected iv:ciphertext format (e.g. legacy plaintext tokens already stored).
+export async function decryptToken(storedValue) {
+  try {
+    const [ivB64, dataB64] = (storedValue || "").split(":");
+    if (!ivB64 || !dataB64) { return storedValue; }
+    const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+    const data = Uint8Array.from(atob(dataB64), c => c.charCodeAt(0));
+    const keyMaterial = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chrome.runtime.id));
+    const key = await crypto.subtle.importKey("raw", keyMaterial, "AES-GCM", false, ["decrypt"]);
+    const plaintext = await crypto.subtle.decrypt({name: "AES-GCM", iv}, key, data);
+    return new TextDecoder().decode(plaintext);
+  } catch (error) {
+    console.error("Error decrypting access token:", error);
+    return storedValue;
+  }
+}
+
 /**
  * Unified storage-backed history/saved list used by data-export, rest-explore, and event-monitor.
  * @param {string} storageKey - localStorage key

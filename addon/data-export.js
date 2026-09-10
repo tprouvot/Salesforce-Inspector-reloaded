@@ -19,7 +19,7 @@ function createQueryHistory(storageKey, max) {
 // Maximum safe length for the encoded REST query URI. This includes the
 // entire request path (e.g. /services/data/.../?q=...), not just the SOQL
 // IN clause. A small buffer is reserved for sfConn.rest() cache-busting.
-const SOQL_QUERY_URL_SAFE_LENGTH = 12000;
+const SOQL_QUERY_URL_SAFE_LENGTH = 10000;
 const REST_CACHE_BUSTER_LENGTH = 32;
 const SOQL_QUERY_METHODS = new Set(["query", "queryAll", "tooling/query"]);
 const MAX_HISTORY_QUERY_LENGTH = 8000;
@@ -192,7 +192,7 @@ function splitLargeSoqlInClause(query, queryMethod, sfHost) {
   });
 
   let makeQuery = batchValues => query.slice(0, clause.openingIndex + 1)
-    + batchValues.join(", ") + query.slice(clause.closingIndex);
+    + batchValues.join(",") + query.slice(clause.closingIndex);
   let batches = [];
   let currentBatch = [];
   for (let value of values) {

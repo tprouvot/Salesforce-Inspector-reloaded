@@ -930,7 +930,7 @@ export class Model {
             ? parseUpdateOnlySubresponse(subresponse)
             : {success: false, id: "", errorText: "No response received for this record"};
           row[statusColumnIndex] = parsed.success ? "Succeeded" : "Failed";
-          row[actionColumnIndex] = parsed.success ? "Updated" : ""; // never "Inserted"
+          row[actionColumnIndex] = parsed.success ? "Updated" : "";
           row[resultIdColumnIndex] = parsed.id;
           row[errorColumnIndex] = parsed.errorText;
         }
@@ -1333,7 +1333,7 @@ export class App extends React.Component {
                         ),
                         h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small", hidden: model.importAction != "upsert" && model.importAction != "upsertUpdateOnly"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used to determine which existing record should be updated (and, for plain Upsert, whether to insert a new one if there is no match)"}, "External ID"),
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"}, "External ID"),
                             h("div", {className: "slds-form-element__control"},
                               h("input", {id: "form-external-id", className: model.externalIdError() ? "slds-input slds-has-error" : "slds-input", type: "text", value: model.externalId, onChange: this.onExternalIdChange, disabled: model.isWorking(), list: "idlookuplist"}),
                               h("div", {id: "error-external-id", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.externalIdError()}, model.externalIdError())
@@ -1448,7 +1448,7 @@ export class App extends React.Component {
               h("li", {}, "Press the Run button")
             ),
             h("p", {className: "slds-m-bottom_x-small"}, "Bulk API is not supported. Large data volumes may freeze or crash your browser."),
-            h("p", {className: "slds-m-bottom_x-small"}, "\"Upsert (Update Only)\" updates the matching record and never inserts; no match means an error for that record. Uses REST Composite (API v61.0+), max 25 records per API call.")
+            h("p", {className: "slds-m-bottom_x-small"}, "\"Upsert (Update Only)\" updates the matching record and never inserts; no match means an error for that record. Max 25 records per API call.")
           )
         ),
         h(

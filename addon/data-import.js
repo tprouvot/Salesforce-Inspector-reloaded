@@ -1454,12 +1454,24 @@ class ColumnMapper extends React.Component {
   constructor(props) {
     super(props);
     this.onColumnValueChange = this.onColumnValueChange.bind(this);
+    this.onColumnValueBlur = this.onColumnValueBlur.bind(this);
+    this.onColumnValueKeyDown = this.onColumnValueKeyDown.bind(this);
     this.onColumnSkipClick = this.onColumnSkipClick.bind(this);
   }
   onColumnValueChange(e) {
     let {model, column} = this.props;
     column.columnValue = e.target.value;
     model.didUpdate();
+  }
+  onColumnValueBlur(e) {
+    let {model} = this.props;
+    model.updateImportTableResult();
+    model.didUpdate();
+  }
+  onColumnValueKeyDown(e) {
+    if (e.key === "Enter") {
+      e.target.blur();
+    }
   }
   onColumnSkipClick(e) {
     let {model, column} = this.props;
@@ -1474,7 +1486,7 @@ class ColumnMapper extends React.Component {
       h("div", {className: "slds-form-element"},
         h("span", {className: "slds-form-element__label", htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
         h("div", {className: "slds-form-element__control slds-grid"},
-          h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: inputClassName, disabled: model.isWorking(), id: "col-" + column.columnIndex}),
+          h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, onBlur: this.onColumnValueBlur, onKeyDown: this.onColumnValueKeyDown, className: inputClassName, disabled: model.isWorking(), id: "col-" + column.columnIndex}),
           h("div", {className: "slds-size_4-of-12 slds-text-align_right", hidden: !column.columnError()},
             h("span", {className: "slds-text-color_error"}, column.columnError()), " ",
             h("button", {className: "slds-button slds-button_neutral", onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip")

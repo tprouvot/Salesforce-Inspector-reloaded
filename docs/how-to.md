@@ -66,6 +66,76 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
+## Use Query History and Saved Queries in Data Export
+
+Everything that puts a query into the editor lives in one **Queries** section. Pick where
+the query comes from with the **History / Saved / Templates** buttons, then search that
+list in the box beside them:
+
+* **History** – queries you have run, newest first
+* **Saved** – queries you saved, with their labels
+* **Templates** – the starter queries from your Templates configuration
+
+Only the selected list is shown, and the search box names it, so there is never any doubt
+about which list you are searching. **Clear list** clears the selected History or Saved
+list and is disabled for Templates.
+
+**Save as**, its label input, and **Save Query** are separated from the browsing controls
+because they save the query currently in the editor, regardless of which source is selected.
+
+### Delete individual queries
+
+1. Select **History** or **Saved** and open the dropdown
+2. Highlight a query with the arrow keys, or hover over it
+3. Press **Delete**, or click the **delete icon** (trash) on the right
+
+> **Note**
+> Deleting a history entry is immediate; deleting a saved query asks for confirmation.
+> Templates come from your configuration, so they cannot be deleted here.
+> Deletion is unavailable while the object search filter (`?`) is active.
+
+### Visual badges
+
+* **Label badge** – Appears at the start for saved queries with a label (`label:query` format)
+* **Tooling badge** – Appears at the end when "Use Tooling API" was checked
+
+To create labeled queries: enter your query in the editor, enter a label in **Save as**,
+then click **Save Query**. The button is disabled while the editor is empty.
+
+### Automatic history saving
+
+Queries are saved to history **immediately** when you:
+* Click **Run Export** or **Query Plan**
+* Press **Ctrl+Enter** or **F5**
+
+Failed queries are also saved, so you can reload and fix them from the history.
+
+### Searching
+
+Typing ranks exact phrases first, followed by queries containing every word. If none match
+all words, partial matches are shown as a fallback. Matching text is highlighted in the
+coloured query.
+
+### Object search filter
+
+Type `?` in the search box to filter by the objects the queries in the selected list
+select from, that is the SOQL `FROM` object or the SOSL `RETURNING` objects:
+* `?` – Show every object used in the list
+* `?Acc` – Objects starting with "Acc"
+* `?Account ` – Queries against Account (a trailing space confirms the object)
+* `?Account status` – Account queries that also contain "status"
+
+Select an object to see its queries. The dropdown stays open so you can browse and select.
+
+### Keyboard shortcuts
+
+* **Escape** – Close dropdown
+* **Arrow Up/Down** – Navigate items
+* **Enter/Tab** – Select highlighted item
+* **Delete** – Remove highlighted item
+
+---
+
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
 
 1. Open data export page on legacy extension

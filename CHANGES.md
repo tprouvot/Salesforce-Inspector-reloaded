@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Replace the Query History and Saved Queries dropdowns with searchable comboboxes: filter by text or by object with `?`, delete individual entries with the Delete key or the trash icon, and see saved query labels and Tooling API badges [#1114](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1114) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Org Limits` Fix gauge falsely displaying as full/blue when a limit is "0 of 0 consumed" [issue #1347](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1347)
 - `Data Import` Fix Run button doesn't update when selecting Undelete before data is loaded [issue #1331](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1331) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Fix Object field briefly shows a false "Unknown object" error after page load [issue #1333](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1333) (contribution by [Prem Kumar](https://github.com/prem-k-r))

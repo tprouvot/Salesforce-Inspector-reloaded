@@ -9,6 +9,9 @@ import {routeMock} from "./test-mock";
 test.describe("Data Export", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
+  // The Queries section shows one source at a time, picked with a radio button group.
+  const selectQuerySource = (page, source) => page.locator(`label[for="sfir-query-source-${source}"]`).click();
+
   test.beforeEach(async ({context}) => {
     // 1. Inject Fake Session Data
     await injectSessionData(context, {
@@ -159,6 +162,431 @@ test.describe("Data Export", () => {
 
     expect(clipboardContent).toContain('"Id","Name"');
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
+  });
+
+  test("Query History Search", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id, Status FROM Case WHERE IsClosed = false", useToolingApi: false},
+        {query: "SELECT Id, ClosedDate FROM Opportunity", useToolingApi: false},
+        {query: "SELECT Id, Name FROM Account", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const listbox = page.locator("#query-search-listbox");
+    const options = listbox.locator("[role='option']");
+
+    await history.click();
+    await expect(options).toHaveCount(3);
+    // Query colouring comes from the Prism SQL grammar bundled with the extension.
+    await expect(options.first().locator(".token.keyword").first()).toHaveText("SELECT");
+    // SOQL object names override conflicting SQL keywords such as CASE.
+    await expect(options.first().locator(".token.sobject")).toHaveText("Case");
+
+    // Strong matches rank before forgiving partial matches.
+    await history.fill("closed");
+    await expect(options).toHaveCount(2);
+    await history.fill("status closed");
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toContainText("FROM Case");
+    await expect(options.first().locator(".sfir-search-match")).toHaveText(["Status", "Closed"]);
+
+    // Partial matching is a fallback only when no query contains every term.
+    await history.fill("status opportunity");
+    await expect(options).toHaveCount(2);
+    await expect(options.first()).toContainText("FROM Case");
+    await expect(options.nth(1)).toContainText("Opportunity");
+
+    // Field names that clash with SQL keywords keep the plain identifier colour.
+    await expect(options.first().locator(".token.keyword")).toHaveText(["SELECT", "FROM", "WHERE"]);
+
+    // "?" is the only way to reach object filtering.
+    await history.fill("?");
+    await expect(options).toHaveText(["account", "case", "opportunity"]);
+    await history.fill("?opp");
+    await expect(options).toHaveText(["opportunity"]);
+    await expect(options.locator(".sfir-search-match")).toHaveText("opp");
+    // A trailing space commits the object and switches back to listing its queries.
+    await history.fill("?opportunity ");
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toContainText("ClosedDate");
+
+    // Escape closes the dropdown even when nothing matched.
+    await history.fill("zzz");
+    await expect(options).toHaveCount(0);
+    await expect(listbox).toContainText("No results found");
+    await history.press("Escape");
+    await expect(listbox).toHaveCount(0);
+  });
+
+  test("Object Filter Lists Only Queried Objects", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        // A subquery FROM target is a child relationship, not an object.
+        {query: "SELECT Id, (SELECT Id FROM Contacts) FROM Account", useToolingApi: false},
+        // "from office" sits inside a string literal and must not count.
+        {query: "SELECT Id FROM Case WHERE Subject = 'mail from office'", useToolingApi: false},
+        // SOSL names its objects after RETURNING instead of FROM.
+        {query: "FIND {Acme} IN ALL FIELDS RETURNING Lead(Id), Opportunity(Id)", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const options = page.locator("#query-search-listbox [role='option']");
+
+    await history.fill("?");
+    await expect(options).toHaveText(["account", "case", "lead", "opportunity"]);
+
+    // Selecting a SOSL object still finds the query that returns it.
+    await history.fill("?opportunity ");
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toContainText("RETURNING");
+  });
+
+  test("Search Highlights Across Prism Tokens", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id, Account.Name FROM Contact WHERE CreatedDate > 2026-01-01T00:00:00Z", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const matches = page.locator("#query-search-listbox .sfir-search-match");
+
+    // Prism splits dotted fields and dates into several tokens; highlighting ranges
+    // are computed against the full query so the visible fragments still join up.
+    await history.fill("account.name");
+    expect((await matches.allTextContents()).join("")).toBe("Account.Name");
+
+    await history.fill("2026-01-01");
+    expect((await matches.allTextContents()).join("")).toBe("2026-01-01");
+  });
+
+  test("Query History Dropdown Scrolls", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify(
+        Array.from({length: 40}, (_, i) => ({
+          query: `SELECT Id, Name, CreatedDate FROM Account WHERE Name LIKE 'Account ${i}%' ORDER BY CreatedDate DESC`,
+          useToolingApi: false
+        }))
+      ));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const listbox = page.locator("#query-search-listbox");
+    await history.click();
+    const metrics = await listbox.evaluate(element => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight
+    }));
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    expect(metrics.clientHeight, "native dropdown has a bounded scroll area").toBeLessThanOrEqual(320);
+
+    const bounds = await listbox.boundingBox();
+    await page.mouse.move(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
+    await page.mouse.wheel(0, 500);
+    await expect.poll(() => listbox.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+
+    // Keyboard navigation also keeps the active option inside the native scroll area.
+    await listbox.evaluate(element => { element.scrollTop = 0; });
+    await history.focus();
+    for (let i = 0; i < 12; i++) {
+      await history.press("ArrowDown");
+    }
+    await expect.poll(() => listbox.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+
+    // Empty-state interaction retains focus, while the native scrollbar remains on
+    // the outer div and is not covered by this mousedown handler.
+    await history.fill("no query matches this");
+    await page.getByText("No results found").click();
+    await expect(history).toBeFocused();
+
+    const emptyBounds = await listbox.boundingBox();
+    await page.mouse.click(emptyBounds.x + (emptyBounds.width / 2), emptyBounds.y + 2);
+    await expect(history).toBeFocused();
+  });
+
+  test("Saved Query Labels", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Open Cases:SELECT Id, Subject FROM Case", useToolingApi: false},
+        {query: "SELECT Id FROM Case WHERE CreatedDate > 2026-01-01T00:00:00Z", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await selectQuerySource(page, "saved");
+    const saved = page.getByRole("combobox", {name: "Search saved"});
+    const options = page.locator("#query-search-listbox [role='option']");
+
+    await saved.click();
+    await expect(options).toHaveCount(2);
+
+    // "label:query" is split, and the label shown as a badge.
+    await saved.fill("open");
+    const labelled = options.filter({hasText: "Open Cases"});
+    await expect(options).toHaveCount(1);
+    await expect(labelled.locator(".slds-badge")).toHaveText("Open Cases");
+    await expect(labelled.locator(".slds-badge .sfir-search-match")).toHaveText("Open");
+
+    // A colon inside a query (here a datetime literal) is not a label.
+    await saved.fill("");
+    const datetimeQuery = options.filter({hasText: "2026-01-01"});
+    await expect(datetimeQuery).toHaveCount(1);
+    await expect(datetimeQuery.locator(".slds-badge")).toHaveCount(0);
+
+    // Selecting restores the query without its label, and the label input with it.
+    await labelled.click();
+    await expect(page.locator("textarea#query")).toHaveValue("SELECT Id, Subject FROM Case");
+    await expect(page.getByLabel("Save as")).toHaveValue("Open Cases");
+  });
+
+  test("Delete Query History Entries", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        // A long query, so the dropdown reaches its maximum width. A narrow one
+        // would not catch the dropdown being positioned off the window edge.
+        {query: "SELECT AllManagedPackageMemberId, AnalyticsWorkspaceId, CreatedById, CreatedDate, Description, DeveloperName, Id, IsDeleted, Language, LastDraftModifiedDate, LastModifiedById, ManageableState, MasterLabel, ModuleNamespace, NamespacePrefix, OwnerId, Style, SystemModstamp, Version FROM AnalyticsDashboard", useToolingApi: false},
+        {query: "SELECT Id, Name FROM Account", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const options = page.locator("#query-search-listbox [role='option']");
+    const query = page.locator("textarea#query");
+
+    // The dropdown must stay inside the window, otherwise the query text is clipped
+    // and the trash icon lands off screen where it cannot be clicked at all.
+    await history.click();
+    await expect(options.first().locator(".sfir-combobox-delete")).toHaveClass(/slds-button_icon/);
+    const listbox = await page.locator("#query-search-listbox").boundingBox();
+    const viewport = page.viewportSize();
+    expect(listbox.x, "left edge on screen").toBeGreaterThanOrEqual(0);
+    expect(listbox.x + listbox.width, "right edge on screen").toBeLessThanOrEqual(viewport.width);
+
+    // Clicking the trash icon deletes without also selecting the entry.
+    // The page pre-fills the query box from history, so compare against a sentinel.
+    await query.fill("SENTINEL");
+    await history.click();
+    await options.first().locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(1);
+    await expect(query).toHaveValue("SENTINEL");
+
+    // Delete removes the highlighted entry, no confirmation for history.
+    await history.press("ArrowDown");
+    await history.press("Delete");
+    await expect(options).toHaveCount(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextQueryHistory")))).toHaveLength(0);
+  });
+
+  test("Delete Saved Query Asks For Confirmation", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Mine:SELECT Id FROM Account", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await selectQuerySource(page, "saved");
+    const saved = page.getByRole("combobox", {name: "Search saved"});
+    const options = page.locator("#query-search-listbox [role='option']");
+    await saved.click();
+
+    // Dismissing keeps the entry, accepting removes it.
+    page.once("dialog", dialog => dialog.dismiss());
+    await options.first().locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(1);
+
+    page.once("dialog", dialog => dialog.accept());
+    await options.first().locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(0);
+  });
+
+  test("Query Source Switch Keeps Layout Stable", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const geometry = () => page.evaluate(() => {
+      const box = (selector) => {
+        const rect = document.querySelector(selector).getBoundingClientRect();
+        return Math.round(rect.x) + "x" + Math.round(rect.width);
+      };
+      return {
+        picker: box(".slds-radio_button-group"),
+        search: box(".slds-combobox__input"),
+        browse: box(".sfir-query-section__browse"),
+        save: box(".sfir-query-section__save"),
+        section: box(".sfir-query-section")
+      };
+    });
+
+    await selectQuerySource(page, "history");
+    const stable = await geometry();
+
+    // Switching source must not shift the controls out from under the pointer,
+    // so the actions beside the picker are deliberately source independent.
+    for (const source of ["saved", "templates"]) {
+      await selectQuerySource(page, source);
+      expect(await geometry(), `layout moved on ${source}`).toEqual(stable);
+    }
+
+    // The picker is a real radio group, so arrow keys select as well as clicks.
+    await page.locator("#sfir-query-source-history").focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("combobox", {name: "Search saved"})).toBeVisible();
+
+    // DOM and visual order agree: the top-row toggles precede the second-row Queries controls.
+    expect(await page.evaluate(() => {
+      const toggle = document.querySelector("[name='checkbox-toggle-tooling']");
+      const querySource = document.getElementById("sfir-query-source-history");
+      return Boolean(toggle.compareDocumentPosition(querySource) & Node.DOCUMENT_POSITION_FOLLOWING);
+    })).toBe(true);
+  });
+
+  test("Clear Selected Query Source", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id FROM Account", useToolingApi: false}
+      ]));
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Saved:SELECT Id FROM Contact", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const clearList = page.locator(".sfir-query-clear");
+    await expect(clearList).toBeEnabled();
+    await expect(clearList).toHaveText("Clear list");
+    await expect(clearList).toHaveAccessibleName("Clear list of query history");
+    await expect(clearList).toHaveAttribute("title", "Clear Query History");
+    page.once("dialog", dialog => dialog.accept());
+    await clearList.click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextQueryHistory")) || [])).toHaveLength(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")))).toHaveLength(1);
+    await expect(clearList).toBeDisabled();
+    await expect(page.locator("#sfir-query-source-history")).toBeFocused();
+
+    await selectQuerySource(page, "saved");
+    await expect(clearList).toBeEnabled();
+    await expect(clearList).toHaveAccessibleName("Clear list of saved queries");
+    await expect(clearList).toHaveAttribute("title", "Clear Saved Queries");
+    page.once("dialog", dialog => dialog.accept());
+    await clearList.click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
+    await expect(clearList).toBeDisabled();
+    await expect(page.locator("#sfir-query-source-saved")).toBeFocused();
+
+    await selectQuerySource(page, "templates");
+    await expect(clearList).toBeDisabled();
+    await expect(clearList).toHaveAccessibleName("Clear list");
+    await expect(clearList).toHaveAttribute("title", "Clear list");
+  });
+
+  test("Empty Editor Cannot Be Saved", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.removeItem("insextSavedQueryHistory");
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await page.locator("textarea#query").fill("");
+    await page.getByLabel("Save as").fill("Only a label");
+    const save = page.getByRole("button", {name: "Save Query"});
+    await expect(save).toBeDisabled();
+
+    // Bypass the DOM-disabled state to prove the model guard also rejects it.
+    await save.evaluate(button => {
+      button.disabled = false;
+      button.click();
+    });
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
+  });
+
+  for (const width of [800, 1024, 1280]) {
+    test(`Queries Section Fits At ${width}px`, async ({page, extensionId}) => {
+      await page.setViewportSize({width, height: 760});
+      await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+      await page.waitForSelector("textarea#query", {timeout: 2000});
+
+      const section = page.locator(".sfir-query-section");
+      const bounds = await section.boundingBox();
+      expect(bounds.x, "left edge on screen").toBeGreaterThanOrEqual(0);
+      expect(bounds.x + bounds.width, "right edge on screen").toBeLessThanOrEqual(width);
+      expect(await section.evaluate(element => element.scrollWidth <= element.clientWidth), "section content does not overflow").toBe(true);
+
+      const heading = await page.getByRole("heading", {name: "Export Query"}).boundingBox();
+      expect(bounds.y, "Queries section occupies the second row").toBeGreaterThan(heading.y);
+
+      const browse = await page.locator(".sfir-query-section__browse").boundingBox();
+      const save = await page.locator(".sfir-query-section__save").boundingBox();
+      if (width <= 1024) {
+        expect(save.y, "save group wraps as a unit").toBeGreaterThan(browse.y);
+      } else {
+        expect(Math.abs(save.y - browse.y), "groups remain on one row").toBeLessThan(2);
+      }
+    });
+  }
+
+  test("Templates Source Loads A Template", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await selectQuerySource(page, "templates");
+    const search = page.getByRole("combobox", {name: "Search templates"});
+    const options = page.locator("#query-search-listbox [role='option']");
+
+    await search.click();
+    await expect(options.first()).toContainText("SELECT Id FROM");
+    await expect(options.nth(1).locator(".token.sobject")).toHaveText("Contact");
+
+    // Templates are configuration, so they offer no per-entry delete.
+    await expect(options.first().locator(".sfir-combobox-delete")).toHaveCount(0);
+
+    await options.first().click();
+    await expect(page.locator("textarea#query")).toHaveValue("SELECT Id FROM ");
+  });
+
+  test("Result Column Filter Stays Open", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await page.locator("textarea#query").fill("SELECT Id, Name, Type FROM Account");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported", {timeout: 2000});
+
+    await page.click("button[title='Show More Filters']");
+    const menu = page.locator(".dropdown-menu");
+    await expect(menu).toBeVisible();
+
+    // Two consecutive column selections must both register with the panel still open.
+    await menu.locator(".dropdown-item").nth(0).click();
+    await expect(menu).toBeVisible();
+    await menu.locator(".dropdown-item").nth(1).click();
+    await expect(menu).toBeVisible();
+    await expect(menu.locator(".dropdown-item.selected")).toHaveCount(2);
   });
 
 });

@@ -48,6 +48,157 @@ textarea[hidden] {
   margin-bottom: 5px;
 }
 
+/* Query History / Saved Queries comboboxes. Hover, focus and badge colours come
+   from SLDS; only the multi-line query layout is specific to this page. */
+
+/* One bordered group for everything that puts a query in the editor: the source
+   picker, the search box for that source, and the actions that source owns. */
+.sfir-query-section {
+  width: 100%;
+  border: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
+  border-radius: var(--slds-g-radius-border-2);
+  padding: 0.5rem 0.75rem 0.6rem;
+}
+
+.sfir-query-section__legend {
+  padding: 0 0 0.25rem;
+  font-size: var(--slds-g-font-scale-neg-1);
+  color: var(--slds-g-color-on-surface-2);
+}
+
+.sfir-query-section__control,
+.sfir-query-section__browse,
+.sfir-query-section__save {
+  display: flex;
+  align-items: center;
+  gap: var(--slds-g-spacing-2, 0.5rem);
+}
+
+.sfir-query-section__control {
+  flex-wrap: wrap;
+}
+
+/* Browsing loads a query; saving writes the editor query to the Saved list. */
+.sfir-query-section__save {
+  border-left: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
+  padding-left: var(--slds-g-spacing-2);
+}
+
+.sfir-query-save-label {
+  font-size: var(--slds-g-font-scale-neg-1);
+  color: var(--slds-g-color-on-surface-2);
+}
+
+/* Below 64rem the save group is explicitly moved to a second row, so its divider
+   cannot depend on where flex wrapping happens to occur. */
+@media (max-width: 64rem) {
+  .sfir-query-section__save {
+    flex: 0 0 100%;
+    border-left: 0;
+    border-top: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
+    padding-top: var(--slds-g-spacing-2);
+    padding-left: 0;
+  }
+}
+
+/* Nothing in either group may shrink, or button labels wrap out of their button. */
+.sfir-query-section__browse > *,
+.sfir-query-section__save > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* Wide enough to read a query fragment, and never squeezed by the row until the
+   search icon sits on top of the text. */
+.sfir-query-search {
+  flex: none;
+  width: 14rem;
+}
+
+/* The search icon is decorative, so it must not swallow clicks on the input. */
+.sfir-combobox-search-icon {
+  pointer-events: none;
+}
+
+.sfir-query-label {
+  width: 8.5rem;
+}
+
+.sfir-query-clear {
+  min-width: 4.75rem;
+  justify-content: center;
+}
+
+/* Grows to fit the longest query rather than the width of the input. Capped at half
+   the window so that whichever side alignDropdown opens towards has room for it. */
+.sfir-query-combobox-dropdown {
+  width: max-content;
+  max-width: min(40rem, 50vw);
+}
+
+.sfir-combobox-body {
+  min-width: 0;
+}
+
+.sfir-query-badge {
+  flex-shrink: 0;
+}
+
+.sfir-query-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--slds-g-spacing-1, 0.25rem);
+  width: 100%;
+}
+
+/* Queries wrap over several lines instead of being truncated, and Prism's
+   standalone inline-code styling is not wanted inside a dropdown row. */
+.sfir-query-text {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+code.sfir-query-text {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: var(--slds-g-font-scale-neg-1);
+}
+
+.sfir-query-combobox-dropdown .token.sobject {
+  color: light-dark(
+    var(--slds-g-color-palette-purple-40),
+    var(--slds-g-color-palette-purple-60)
+  );
+}
+
+.sfir-query-combobox-dropdown .sfir-search-match {
+  background-color: light-dark(
+    var(--slds-g-color-palette-yellow-90),
+    var(--slds-g-color-palette-yellow-30)
+  );
+  /* Override Prism token colours with the matching high-contrast foreground. */
+  color: var(--slds-g-color-neutral-base-10);
+  border-radius: var(--slds-g-radius-border-1);
+}
+
+.sfir-combobox-delete {
+  flex-shrink: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.sfir-combobox-option:hover .sfir-combobox-delete,
+.sfir-combobox-option.slds-has-focus .sfir-combobox-delete {
+  opacity: 1;
+}
+
 #query {
   height: 5em;
   min-height: 7em;
@@ -97,6 +248,7 @@ textarea[hidden] {
 
 .query-controls {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
 }
@@ -129,13 +281,13 @@ textarea[hidden] {
 
 .query-history-controls {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex: 0 0 100%;
+  justify-content: flex-start;
+  margin-top: var(--slds-g-spacing-2, 0.5rem);
 }
 
 select,
 input[type="search"],
-input[type="save"],
 input[type="default"] {
   width: 8.5rem;
   font-family: inherit;
@@ -154,14 +306,6 @@ input[type="search"] {
   padding-left: 35px;
   margin-right: 10px;
   border-radius: 0px 4px 4px 0px;
-}
-
-input[type="save"] {
-  background-image: url(images/save.svg);
-  background-repeat: no-repeat;
-  background-size: 1rem;
-  background-position: 10px 7px;
-  padding-left: 35px;
 }
 
 input[type="checkbox"] {

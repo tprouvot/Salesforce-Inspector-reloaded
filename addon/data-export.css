@@ -171,6 +171,13 @@ code.sfir-query-text {
   font-size: var(--slds-g-font-scale-neg-1);
 }
 
+.sfir-query-combobox-dropdown .token.sobject {
+  color: light-dark(
+    var(--slds-g-color-palette-purple-40),
+    var(--slds-g-color-palette-purple-60)
+  );
+}
+
 .sfir-query-combobox-dropdown .sfir-search-match {
   background-color: light-dark(
     var(--slds-g-color-palette-yellow-90),

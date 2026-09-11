@@ -165,9 +165,9 @@ class App extends React.PureComponent {
       if (listViewQuery) {
         exportArg.set("query", listViewQuery);
       }
-    } else if (e.contextSobject && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false") {
+    } else if (e.contextSobject && /^[a-zA-Z0-9_]+$/.test(e.contextSobject) && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false") {
       let query = "SELECT Id FROM " + e.contextSobject;
-      if (e.contextRecordId && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)) {
+      if (e.contextRecordId && /^[a-zA-Z0-9]{15,18}$/.test(e.contextRecordId)) {
         query += " WHERE Id = '" + e.contextRecordId + "'";
       }
       exportArg.set("query", query);
@@ -200,6 +200,9 @@ class App extends React.PureComponent {
   }
   async getListViewQuery(sobjectName, filterName) {
     if (localStorage.getItem("enableListViewExport") !== "true" || !sobjectName || !filterName) {
+      return null;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(sobjectName) || !/^[a-zA-Z0-9_]+$/.test(filterName)) {
       return null;
     }
 

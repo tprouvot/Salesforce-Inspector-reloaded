@@ -322,6 +322,16 @@ class Model {
     }
   }
 
+  // True while neither the cached sobjects list nor the DescribeInfo fallback has data yet,
+  // e.g. right after a page reload before the async fetches resolve.
+  sobjectListLoading() {
+    if (this.sobjectsList && this.sobjectsList.length > 0) {
+      return false;
+    }
+    let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
+    return !globalDescribe;
+  }
+
   idLookupList() {
     let sobjectName = this.importType;
     let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", sobjectName).sobjectDescribe;
@@ -382,6 +392,9 @@ class Model {
 
   importTypeError() {
     let importType = this.importType;
+    if (this.sobjectListLoading()) {
+      return "";
+    }
     if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
       return "Unknown object";
     }

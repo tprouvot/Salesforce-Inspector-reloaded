@@ -22,6 +22,28 @@ const h = React.createElement;
 const DESCRIBE_BATCH_SIZE = 5;
 const FIELD_DEF_BATCH_SIZE = 5;
 const FIELD_DEF_TOGGLE_KEY = "objectScannerIncludeFieldDefinitions";
+const DATA_MODEL_COLUMNS_KEY = "objectScannerFieldsToDisplay";
+const DATA_MODEL_COLUMNS = [
+  {id: "object", label: "Object", required: true},
+  {id: "field", label: "Field", required: true},
+  {id: "label", label: "Label"},
+  {id: "type", label: "Type"},
+  {id: "required", label: "Required"},
+  {id: "length", label: "Length"},
+  {id: "formula", label: "Formula"},
+  {id: "autoNumber", label: "Auto Number"},
+  {id: "unique", label: "Unique"},
+  {id: "externalId", label: "External ID"},
+  {id: "encrypted", label: "Encrypted"},
+  {id: "helpText", label: "Help Text"},
+  {id: "lookupTo", label: "Lookup To"},
+  {id: "description", label: "Description", fieldDefinition: true},
+  {id: "classification", label: "Classification", fieldDefinition: true},
+  {id: "compliance", label: "Compliance", fieldDefinition: true},
+  {id: "businessStatus", label: "Business Status", fieldDefinition: true}
+];
+const DEFAULT_DATA_MODEL_COLUMNS = DATA_MODEL_COLUMNS.filter(col => !col.fieldDefinition).map(col => col.id);
+const LOOKUP_PREVIEW_COUNT = 3;
 const SESSION_MAX_BYTES = 4 * 1024 * 1024;
 const FILTERS = [
   {id: "all", label: "All"},
@@ -113,6 +135,37 @@ function objectPathMatches(objectModel, term) {
   });
 }
 
+function fieldLookupTargets(field) {
+  return field && Array.isArray(field.referenceTo) ? field.referenceTo : [];
+}
+
+function renderLookupToCell(model, row) {
+  const refs = fieldLookupTargets(row.field);
+  if (!refs.length) {
+    return "";
+  }
+  const full = refs.join(", ");
+  if (refs.length <= LOOKUP_PREVIEW_COUNT) {
+    return full;
+  }
+  const expanded = model.expandedLookupRows.has(row.id);
+  const text = (expanded ? refs : refs.slice(0, LOOKUP_PREVIEW_COUNT)).join(", ");
+  return h("span", {title: full},
+    text,
+    " ",
+    h("button", {
+      type: "button",
+      className: "slds-button slds-button_reset slds-text-link",
+      title: expanded ? "Show fewer lookup targets" : "Show all " + refs.length + " lookup targets",
+      "aria-expanded": expanded,
+      onClick: e => {
+        e.preventDefault();
+        model.toggleLookupExpand(row.id);
+      }
+    }, "...")
+  );
+}
+
 function isQuietObjectError(message) {
   return /NOT_FOUND|INVALID_TYPE|\b404\b/.test(String(message || ""));
 }
@@ -144,7 +197,10 @@ function fieldMatches(field, term, def) {
   if (!field) {
     return false;
   }
-  if (textMatches(field.name, term) || textMatches(field.label, term)) {
+  if (textMatches(field.name, term) || textMatches(field.label, term) || textMatches(field.inlineHelpText, term)) {
+    return true;
+  }
+  if ((field.referenceTo || []).some(name => textMatches(name, term))) {
     return true;
   }
   if (!def) {
@@ -154,6 +210,42 @@ function fieldMatches(field, term, def) {
     || textMatches(def.SecurityClassification, term)
     || textMatches(def.ComplianceGroup, term)
     || textMatches(def.BusinessStatus, term);
+}
+
+function fieldLengthDisplay(field) {
+  if (!field) {
+    return "";
+  }
+  if (field.precision || field.scale) {
+    return `${(field.precision || 0) - (field.scale || 0)}, ${field.scale || 0}`;
+  }
+  if (field.length) {
+    return String(field.length);
+  }
+  return "";
+}
+
+function yesFlag(value) {
+  return value ? "Yes" : "";
+}
+
+function loadVisibleColumnIds() {
+  try {
+    const saved = localStorage.getItem(DATA_MODEL_COLUMNS_KEY);
+    if (!saved) {
+      return {ids: DEFAULT_DATA_MODEL_COLUMNS.slice(), saved: false};
+    }
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return {ids: DEFAULT_DATA_MODEL_COLUMNS.slice(), saved: false};
+    }
+    const known = new Set(DATA_MODEL_COLUMNS.map(col => col.id));
+    const requiredIds = DATA_MODEL_COLUMNS.filter(col => col.required).map(col => col.id);
+    const rest = parsed.filter(id => known.has(id) && !requiredIds.includes(id));
+    return {ids: requiredIds.concat(rest), saved: true};
+  } catch {
+    return {ids: DEFAULT_DATA_MODEL_COLUMNS.slice(), saved: false};
+  }
 }
 
 class Model {
@@ -186,11 +278,16 @@ class Model {
     this.fieldDefinitions = {};
     this.fieldDefinitionQueried = false;
     this.includeFieldDefinitions = localStorage.getItem(FIELD_DEF_TOGGLE_KEY) === "true";
+    const columnPrefs = loadVisibleColumnIds();
+    this.visibleColumns = columnPrefs.ids;
+    this.columnPrefsSaved = columnPrefs.saved;
+    this.columnPickerOpen = false;
     this.findings = tryGetSession(`${sfHost}_objectScanner_findings`, []) || [];
     this.analyzed = !!(this.findings && this.findings.length);
     this.severityFilter = "all";
     this.modelSearch = "";
     this.resultsTab = this.analyzed ? "findings" : "data-model";
+    this.expandedLookupRows = new Set();
     this.apiCallCount = 0;
     this.apiCallByCategory = {};
     this.scanApiCallStart = 0;
@@ -324,9 +421,120 @@ class Model {
     this.didUpdate();
   }
 
+  toggleLookupExpand(rowId) {
+    if (this.expandedLookupRows.has(rowId)) {
+      this.expandedLookupRows.delete(rowId);
+    } else {
+      this.expandedLookupRows.add(rowId);
+    }
+    this.didUpdate();
+  }
+
   setResultsTab(tab) {
     this.resultsTab = tab;
+    if (tab !== "data-model") {
+      this.columnPickerOpen = false;
+    }
     this.didUpdate();
+  }
+
+  toggleColumnPicker() {
+    this.columnPickerOpen = !this.columnPickerOpen;
+    this.didUpdate();
+  }
+
+  saveVisibleColumns() {
+    localStorage.setItem(DATA_MODEL_COLUMNS_KEY, JSON.stringify(this.visibleColumns));
+    this.columnPrefsSaved = true;
+  }
+
+  visibleDataModelColumns() {
+    const selected = new Set(this.visibleColumns);
+    return DATA_MODEL_COLUMNS.filter(col => {
+      if (col.required) {
+        return true;
+      }
+      if (col.fieldDefinition && !this.columnPrefsSaved) {
+        return this.fieldDefinitionQueried;
+      }
+      return selected.has(col.id);
+    });
+  }
+
+  isColumnChecked(columnId) {
+    const column = DATA_MODEL_COLUMNS.find(col => col.id === columnId);
+    if (!column) {
+      return false;
+    }
+    if (column.required) {
+      return true;
+    }
+    if (column.fieldDefinition && !this.columnPrefsSaved) {
+      return this.fieldDefinitionQueried;
+    }
+    return this.visibleColumns.includes(columnId);
+  }
+
+  setColumnVisible(columnId, show) {
+    const column = DATA_MODEL_COLUMNS.find(col => col.id === columnId);
+    if (!column || column.required) {
+      return;
+    }
+    const selected = new Set(this.visibleColumns);
+    if (!this.columnPrefsSaved) {
+      this.visibleDataModelColumns().forEach(col => selected.add(col.id));
+    }
+    if (show) {
+      selected.add(columnId);
+    } else {
+      selected.delete(columnId);
+    }
+    this.visibleColumns = DATA_MODEL_COLUMNS.map(col => col.id).filter(id => selected.has(id));
+    this.saveVisibleColumns();
+    this.didUpdate();
+  }
+
+  dataModelColumnValue(columnId, row) {
+    const field = row.field;
+    const def = this.fieldDefinitionFor(row.objectModel.name, field && field.name);
+    switch (columnId) {
+      case "object":
+        return row.objectModel.name;
+      case "field":
+        return field ? field.name : "";
+      case "label":
+        return field ? field.label : row.objectModel.label;
+      case "type":
+        return field ? field.type : "";
+      case "required":
+        return yesFlag(field && field.nillable === false);
+      case "length":
+        return fieldLengthDisplay(field);
+      case "formula":
+        return yesFlag(field && field.calculated);
+      case "autoNumber":
+        return yesFlag(field && field.autoNumber);
+      case "unique":
+        return yesFlag(field && field.unique);
+      case "externalId":
+        return yesFlag(field && field.externalId);
+      case "encrypted":
+        return yesFlag(field && field.encrypted);
+      case "helpText":
+        return (field && field.inlineHelpText) || "";
+      case "lookupTo":
+        return fieldLookupTargets(field).join(", ");
+      case "description":
+        return (def && def.Description) || "";
+      case "classification":
+        return (def && def.SecurityClassification) || "";
+      case "compliance":
+        return (def && def.ComplianceGroup) || "";
+      case "businessStatus":
+        return (def && def.BusinessStatus) || "";
+      default:
+        return "";
+    }
   }
 
   filteredObjectModels() {
@@ -546,6 +754,7 @@ class Model {
     this.objectModels = [];
     this.fieldDefinitions = {};
     this.fieldDefinitionQueried = false;
+    this.expandedLookupRows = new Set();
     this.resultsTab = "data-model";
     const generation = this.beginWork("Describing objects", selected.length);
     this.didUpdate();
@@ -772,7 +981,7 @@ class Model {
 
   dataModelRows(separator) {
     const includeClassification = this.fieldDefinitionQueried;
-    const headers = ["object", "objectLabel", "custom", "field", "fieldLabel", "type", "customField", "nillable", "encrypted", "restrictedPicklist", "calculated", "autoNumber"];
+    const headers = ["object", "objectLabel", "custom", "field", "fieldLabel", "type", "customField", "nillable", "required", "length", "precision", "scale", "encrypted", "externalId", "unique", "restrictedPicklist", "calculated", "autoNumber", "helpText", "lookupTo"];
     if (includeClassification) {
       headers.push("description", "securityClassification", "complianceGroup", "businessStatus");
     }
@@ -788,10 +997,18 @@ class Model {
           field.type,
           field.custom,
           field.nillable,
+          field.nillable === false,
+          field.length || "",
+          field.precision || "",
+          field.scale || "",
           field.encrypted,
+          field.externalId,
+          field.unique,
           field.restrictedPicklist,
           field.calculated,
-          field.autoNumber
+          field.autoNumber,
+          field.inlineHelpText || "",
+          fieldLookupTargets(field).join("; ")
         ];
         if (includeClassification) {
           const def = this.fieldDefinitions[objectModel.name] && this.fieldDefinitions[objectModel.name][field.name];
@@ -849,6 +1066,93 @@ class Model {
     });
     this.downloadCsv(`object-scanner-findings-${this.exportFileStamp()}.csv`, rows);
     this.showToast("success", "Export complete", "Findings CSV downloaded.");
+  }
+}
+
+class DataModelColumnsBox extends React.Component {
+  constructor(props) {
+    super(props);
+    this.onToggle = this.onToggle.bind(this);
+    this.onPopoverClick = this.onPopoverClick.bind(this);
+  }
+  onToggle(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.model.toggleColumnPicker();
+  }
+  onPopoverClick(e) {
+    e.stopPropagation();
+  }
+  render() {
+    const {model} = this.props;
+    return h("span", {className: "sfir-object-scanner-columns"},
+      h("button", {
+        className: "slds-button slds-button_neutral",
+        type: "button",
+        title: "Choose which field attributes to show",
+        "aria-haspopup": "true",
+        "aria-expanded": model.columnPickerOpen,
+        onClick: this.onToggle
+      },
+      "Columns",
+      h("svg", {className: "slds-button__icon slds-button__icon_right", "aria-hidden": "true"},
+        h("use", {xlinkHref: "symbols.svg#chevrondown"})
+      )
+      ),
+      model.columnPickerOpen
+        ? h("section", {
+          className: "slds-popover slds-nubbin_top-right sfir-object-scanner-columns-popover",
+          role: "dialog",
+          onClick: this.onPopoverClick
+        },
+        h("div", {className: "slds-popover__body"},
+          h("fieldset", {className: "slds-form-element"},
+            h("legend", {className: "slds-form-element__legend slds-form-element__label"}, "Field columns"),
+            h("div", {className: "slds-form-element__control"},
+              DATA_MODEL_COLUMNS.filter(column => !column.fieldDefinition).map(column =>
+                h(DataModelColumnToggle, {key: column.id, model, column})
+              ),
+              h("hr", {className: "slds-m-vertical_x-small"}),
+              DATA_MODEL_COLUMNS.filter(column => column.fieldDefinition).map(column =>
+                h(DataModelColumnToggle, {key: column.id, model, column})
+              )
+            )
+          )
+        )
+        )
+        : null
+    );
+  }
+}
+
+class DataModelColumnToggle extends React.Component {
+  constructor(props) {
+    super(props);
+    this.onChange = this.onChange.bind(this);
+  }
+  onChange(e) {
+    const {model, column} = this.props;
+    model.setColumnVisible(column.id, e.target.checked);
+  }
+  render() {
+    const {model, column} = this.props;
+    const checkboxId = "object-scanner-col-" + column.id;
+    const title = column.fieldDefinition && !model.fieldDefinitionQueried
+      ? "Enable Description & classification, then scan, to load this data."
+      : undefined;
+    return h("div", {className: "slds-checkbox", title},
+      h("input", {
+        type: "checkbox",
+        id: checkboxId,
+        checked: model.isColumnChecked(column.id),
+        onChange: this.onChange,
+        disabled: !!column.required
+      }),
+      h("label", {className: "slds-checkbox__label", htmlFor: checkboxId},
+        h("span", {className: "slds-checkbox_faux"}),
+        h("span", {className: "slds-form-element__label"}, column.label)
+      )
+    );
   }
 }
 
@@ -935,6 +1239,7 @@ class App extends React.Component {
     model.analyzed = false;
     model.modelSearch = "";
     model.resultsTab = "data-model";
+    model.expandedLookupRows = new Set();
     model.confirmClear = false;
     model.persistFindings();
     model.didUpdate();
@@ -961,8 +1266,10 @@ class App extends React.Component {
     const filtered = model.filteredCandidates();
     const modelRows = model.filteredModelRows();
     const findings = model.visibleFindings();
-    const showClassification = model.fieldDefinitionQueried;
-    const pageClass = "slds-m-top_xx-large sfir-object-scanner-page" + (model.pickerCollapsed ? " sfir-object-scanner-picker-collapsed" : "");
+    const visibleCols = model.visibleDataModelColumns();
+    const pageClass = "slds-m-top_xx-large sfir-object-scanner-page"
+      + (model.pickerCollapsed ? " sfir-object-scanner-picker-collapsed" : "")
+      + (model.columnPickerOpen ? " sfir-object-scanner-columns-open" : "");
 
     return h("div", {},
       h(PageHeader, {
@@ -1005,7 +1312,7 @@ class App extends React.Component {
           h(AlertBanner, {
             type: "info",
             iconName: "info",
-            bannerText: "Scan Data Model loads object and field describes so you can search and export the schema. Turn on Description & classification to also query FieldDefinition (extra API calls). Analyze is optional and runs hygiene rules on the loaded model. Search accepts Object.Field, for example Account.Name."
+            bannerText: "Scan Data Model loads object and field describes so you can search and export the schema. Use Columns to choose which field attributes appear in the Data Model tab; your selection is saved in this browser. Turn on Description & classification to also query FieldDefinition (extra API calls). Analyze is optional and runs hygiene rules on the loaded model. Search accepts Object.Field, for example Account.Name."
           })
         ) : null,
         h("div", {className: "slds-p-around_small sfir-object-scanner-toolbar"},
@@ -1018,21 +1325,21 @@ class App extends React.Component {
                 className: "slds-checkbox_toggle slds-grid",
                 title: "Query FieldDefinition for description and PII classification. Extra Tooling API calls (5 objects per composite)."
               },
-                h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Description & classification"),
-                h("input", {
-                  type: "checkbox",
-                  id: "object-scanner-include-field-defs",
-                  name: "object-scanner-include-field-defs",
-                  role: "switch",
-                  checked: model.includeFieldDefinitions,
-                  onChange: this.onToggleFieldDefinitions,
-                  disabled: model.scanning
-                }),
-                h("span", {id: "object-scanner-include-field-defs-faux", className: "slds-checkbox_faux_container"},
-                  h("span", {className: "slds-checkbox_faux"}),
-                  h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                  h("span", {className: "slds-checkbox_off"}, "Off")
-                )
+              h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Description & classification"),
+              h("input", {
+                type: "checkbox",
+                id: "object-scanner-include-field-defs",
+                name: "object-scanner-include-field-defs",
+                role: "switch",
+                checked: model.includeFieldDefinitions,
+                onChange: this.onToggleFieldDefinitions,
+                disabled: model.scanning
+              }),
+              h("span", {id: "object-scanner-include-field-defs-faux", className: "slds-checkbox_faux_container"},
+                h("span", {className: "slds-checkbox_faux"}),
+                h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                h("span", {className: "slds-checkbox_off"}, "Off")
+              )
               )
             ),
             h("div", {className: "slds-col slds-grow-none"},
@@ -1104,9 +1411,9 @@ class App extends React.Component {
                     "aria-expanded": !model.pickerCollapsed,
                     onClick: this.onTogglePicker
                   },
-                    h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-                      h("use", {xlinkHref: model.pickerCollapsed ? "symbols.svg#chevronright" : "symbols.svg#chevronleft"})
-                    )
+                  h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                    h("use", {xlinkHref: model.pickerCollapsed ? "symbols.svg#chevronright" : "symbols.svg#chevronleft"})
+                  )
                   )
                 )
               ),
@@ -1171,16 +1478,23 @@ class App extends React.Component {
               ))
             ),
             h("div", {className: "slds-form-element slds-m-bottom_small"},
-              h("div", {className: "slds-form-element__control"},
-                h("input", {
-                  id: "object-scanner-model-search",
-                  className: "slds-input",
-                  type: "search",
-                  placeholder: "Search objects and fields (Account.Name)",
-                  value: model.modelSearch,
-                  onChange: this.onModelSearch,
-                  disabled: !model.objectModels.length
-                })
+              h("div", {className: "slds-grid slds-grid_vertical-align-center"},
+                h("div", {className: "slds-col slds-grow"},
+                  h("div", {className: "slds-form-element__control"},
+                    h("input", {
+                      id: "object-scanner-model-search",
+                      className: "slds-input",
+                      type: "search",
+                      placeholder: "Search objects and fields (Account.Name)",
+                      value: model.modelSearch,
+                      onChange: this.onModelSearch,
+                      disabled: !model.objectModels.length
+                    })
+                  )
+                ),
+                h("div", {className: "slds-col slds-grow-none slds-m-left_x-small"},
+                  h(DataModelColumnsBox, {model})
+                )
               )
             ),
             h("div", {className: "slds-tabs_default sfir-object-scanner-results-tabs"},
@@ -1209,94 +1523,86 @@ class App extends React.Component {
                 className: "slds-tabs_default__content " + (model.resultsTab === "data-model" ? "slds-show" : "slds-hide"),
                 role: "tabpanel"
               },
-                h("div", {className: "sfir-object-scanner-table-wrap"},
-                  h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped", id: "object-scanner-model"},
-                    h("thead", {},
-                      h("tr", {className: "slds-line-height_reset"},
-                        h("th", {scope: "col"}, "Object"),
-                        h("th", {scope: "col"}, "Field"),
-                        h("th", {scope: "col"}, "Label"),
-                        h("th", {scope: "col"}, "Type"),
-                        h("th", {scope: "col"}, "Encrypted"),
-                        showClassification ? h("th", {scope: "col"}, "Description") : null,
-                        showClassification ? h("th", {scope: "col"}, "Classification") : null,
-                        showClassification ? h("th", {scope: "col"}, "Compliance") : null,
-                        showClassification ? h("th", {scope: "col"}, "Business Status") : null
-                      )
-                    ),
-                    h("tbody", {},
-                      modelRows.length
-                        ? modelRows.map(row => {
-                          const def = showClassification && row.field ? model.fieldDefinitionFor(row.objectModel.name, row.field.name) : null;
-                          return h("tr", {key: row.id},
-                            h("td", {},
-                              h("a", {href: model.inspectHref(row.objectModel.name), title: "Open Show All Data for field usage"}, row.objectModel.name)
-                            ),
-                            h("td", {}, row.field ? row.field.name : ""),
-                            h("td", {}, row.field ? row.field.label : row.objectModel.label),
-                            h("td", {}, row.field ? row.field.type : ""),
-                            h("td", {}, row.field && row.field.encrypted ? "Yes" : ""),
-                            showClassification ? h("td", {}, (def && def.Description) || "") : null,
-                            showClassification ? h("td", {}, (def && def.SecurityClassification) || "") : null,
-                            showClassification ? h("td", {}, (def && def.ComplianceGroup) || "") : null,
-                            showClassification ? h("td", {}, (def && def.BusinessStatus) || "") : null
-                          );
-                        })
-                        : h("tr", {},
-                          h("td", {colSpan: showClassification ? 9 : 5, className: "slds-text-align_center slds-p-around_medium"},
-                            model.scanning && !model.objectModels.length
-                              ? "Loading data model…"
-                              : model.objectModels.length
-                                ? "No objects or fields match this search."
-                                : "Select objects and click Scan Data Model."
-                          )
-                        )
+              h("div", {className: "sfir-object-scanner-table-wrap"},
+                h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped", id: "object-scanner-model"},
+                  h("thead", {},
+                    h("tr", {className: "slds-line-height_reset"},
+                      visibleCols.map(col => h("th", {key: col.id, scope: "col"}, col.label))
                     )
+                  ),
+                  h("tbody", {},
+                    modelRows.length
+                      ? modelRows.map(row => h("tr", {key: row.id},
+                        visibleCols.map(col => {
+                          if (col.id === "object") {
+                            return h("td", {key: col.id},
+                              h("a", {href: model.inspectHref(row.objectModel.name), title: "Open Show All Data for field usage"}, row.objectModel.name)
+                            );
+                          }
+                          if (col.id === "lookupTo") {
+                            return h("td", {key: col.id, className: "slds-cell-wrap"}, renderLookupToCell(model, row));
+                          }
+                          return h("td", {
+                            key: col.id,
+                            className: col.id === "helpText" ? "sfir-object-scanner-help-text" : undefined
+                          }, model.dataModelColumnValue(col.id, row));
+                        })
+                      ))
+                      : h("tr", {},
+                        h("td", {colSpan: Math.max(visibleCols.length, 1), className: "slds-text-align_center slds-p-around_medium"},
+                          model.scanning && !model.objectModels.length
+                            ? "Loading data model…"
+                            : model.objectModels.length
+                              ? "No objects or fields match this search."
+                              : "Select objects and click Scan Data Model."
+                        )
+                      )
                   )
                 )
+              )
               ),
               h("div", {
                 id: "object-scanner-tab-findings",
                 className: "slds-tabs_default__content " + (model.resultsTab === "findings" ? "slds-show" : "slds-hide"),
                 role: "tabpanel"
               },
-                h("div", {className: "sfir-object-scanner-table-wrap"},
-                  h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped", id: "object-scanner-findings"},
-                    h("thead", {},
-                      h("tr", {className: "slds-line-height_reset"},
-                        h("th", {scope: "col"}, "Severity"),
-                        h("th", {scope: "col"}, "Rule"),
-                        h("th", {scope: "col"}, "Object"),
-                        h("th", {scope: "col"}, "Field"),
-                        h("th", {scope: "col"}, "Message")
-                      )
-                    ),
-                    h("tbody", {},
-                      findings.length
-                        ? findings.map(item => h("tr", {key: item.id},
-                          h("td", {className: "sfir-object-scanner-severity-" + item.severity, "data-severity": item.severity}, item.severity),
-                          h("td", {},
-                            h("span", {}, item.ruleLabel || item.rule),
-                            h(Tooltip, {idKey: item.id, tooltip: item.rule})
-                          ),
-                          h("td", {},
-                            h("a", {href: model.inspectHref(item.objectName), title: "Open Show All Data for field usage"}, item.objectName)
-                          ),
-                          h("td", {}, item.fieldName),
-                          h("td", {}, item.message)
-                        ))
-                        : h("tr", {},
-                          h("td", {colSpan: 5, className: "slds-text-align_center slds-p-around_medium"},
-                            model.scanning
-                              ? "Analyzing…"
-                              : model.analyzed
-                                ? (model.modelSearch ? "No findings match this search." : "No findings for the current data model.")
-                                : "Scan the data model, then click Analyze to run hygiene rules."
-                          )
-                        )
+              h("div", {className: "sfir-object-scanner-table-wrap"},
+                h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped", id: "object-scanner-findings"},
+                  h("thead", {},
+                    h("tr", {className: "slds-line-height_reset"},
+                      h("th", {scope: "col"}, "Severity"),
+                      h("th", {scope: "col"}, "Rule"),
+                      h("th", {scope: "col"}, "Object"),
+                      h("th", {scope: "col"}, "Field"),
+                      h("th", {scope: "col"}, "Message")
                     )
+                  ),
+                  h("tbody", {},
+                    findings.length
+                      ? findings.map(item => h("tr", {key: item.id},
+                        h("td", {className: "sfir-object-scanner-severity-" + item.severity, "data-severity": item.severity}, item.severity),
+                        h("td", {},
+                          h("span", {}, item.ruleLabel || item.rule),
+                          h(Tooltip, {idKey: item.id, tooltip: item.rule})
+                        ),
+                        h("td", {},
+                          h("a", {href: model.inspectHref(item.objectName), title: "Open Show All Data for field usage"}, item.objectName)
+                        ),
+                        h("td", {}, item.fieldName),
+                        h("td", {}, item.message)
+                      ))
+                      : h("tr", {},
+                        h("td", {colSpan: 5, className: "slds-text-align_center slds-p-around_medium"},
+                          model.scanning
+                            ? "Analyzing…"
+                            : model.analyzed
+                              ? (model.modelSearch ? "No findings match this search." : "No findings for the current data model.")
+                              : "Scan the data model, then click Analyze to run hygiene rules."
+                        )
+                      )
                   )
                 )
+              )
               )
             )
           )

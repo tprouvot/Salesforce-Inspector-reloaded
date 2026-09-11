@@ -15,6 +15,9 @@ test.describe("Object Scanner", () => {
       token: mockToken,
       version: apiVersion
     });
+    await context.addInitScript(() => {
+      localStorage.removeItem("objectScannerFieldsToDisplay");
+    });
 
     await context.route("**/*", async route => {
       if (!TEST_CONSTANTS.mockEnabled) {
@@ -45,6 +48,16 @@ test.describe("Object Scanner", () => {
     await expect(page.locator("#object-scanner-model tbody tr td").first()).toBeVisible({timeout: 15000});
     await expect(page.locator("#object-scanner-model")).toContainText("Account");
     await expect(page.locator("#object-scanner-model")).toContainText("Email__c");
+    await expect(page.locator("#object-scanner-model thead")).toContainText("External ID");
+    await expect(page.locator("#object-scanner-model thead")).toContainText("Unique");
+    await expect(page.locator("#object-scanner-model thead")).toContainText("Required");
+    await expect(page.locator("#object-scanner-model thead")).toContainText("Help Text");
+    await expect(page.locator("#object-scanner-model thead")).toContainText("Lookup To");
+    await expect(page.locator("#object-scanner-model")).toContainText("Customer email");
+
+    await page.getByRole("button", {name: "Columns"}).click();
+    await page.locator("#object-scanner-col-unique").uncheck();
+    await expect(page.locator("#object-scanner-model thead")).not.toContainText("Unique");
     await expect(page.locator(".sfir-object-scanner-api-stats")).toContainText(/API calls:\s*\d+/);
 
     await page.locator("#object-scanner-model-search").fill("Account.Name");

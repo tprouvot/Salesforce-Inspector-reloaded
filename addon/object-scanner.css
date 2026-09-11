@@ -168,3 +168,50 @@
   width: auto;
   pointer-events: auto;
 }
+
+.sfir-object-scanner-columns {
+  position: relative;
+}
+
+.sfir-object-scanner-columns-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  z-index: 20;
+  min-width: 14rem;
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.sfir-object-scanner-columns-popover .slds-form-element__legend {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.sfir-object-scanner-columns-popover .slds-checkbox {
+  display: block;
+}
+
+.sfir-object-scanner-columns-popover .slds-checkbox + .slds-checkbox {
+  margin-top: 0.25rem;
+}
+
+.sfir-object-scanner-columns-popover .slds-checkbox__label {
+  display: flex;
+  align-items: center;
+}
+
+.sfir-object-scanner-columns-popover .slds-form-element__label {
+  margin-bottom: 0;
+  padding-left: 0.5rem;
+}
+
+.sfir-object-scanner-columns-open .sfir-object-scanner-results,
+.sfir-object-scanner-columns-open .sfir-object-scanner-main {
+  overflow: visible;
+}
+
+.sfir-object-scanner-help-text {
+  max-width: 20rem;
+  white-space: pre-wrap;
+}

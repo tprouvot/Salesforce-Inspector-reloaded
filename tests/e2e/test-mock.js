@@ -53,7 +53,7 @@ function mockDescribeForName(name) {
         {name: "Id", label: "Record ID", type: "id", custom: false, referenceTo: []},
         {name: "Name", label: "Name", type: "string", custom: false, referenceTo: []},
         {name: "Checkbox__c", label: "Checkbox", type: "boolean", custom: true, referenceTo: []},
-        {name: "Email__c", label: "Email Address", type: "string", custom: true, referenceTo: []},
+        {name: "Email__c", label: "Email Address", type: "string", custom: true, unique: true, externalId: true, length: 80, inlineHelpText: "Customer email", referenceTo: []},
         {name: "Status__c", label: "Status", type: "picklist", custom: true, restrictedPicklist: false, picklistValues: [
           {value: "New", active: true},
           {value: "Old1", active: false},
@@ -63,7 +63,8 @@ function mockDescribeForName(name) {
         ], referenceTo: []},
         {name: "DupA__c", label: "Duplicate Label", type: "string", custom: true, referenceTo: []},
         {name: "DupB__c", label: "Duplicate Label", type: "string", custom: true, referenceTo: []},
-        {name: "Encrypted_SSN__c", label: "Encrypted SSN", type: "string", custom: true, encrypted: true, referenceTo: []}
+        {name: "Encrypted_SSN__c", label: "Encrypted SSN", type: "string", custom: true, encrypted: true, referenceTo: []},
+        {name: "Account__c", label: "Account", type: "reference", custom: true, referenceTo: ["Account"], relationshipName: "Account__r"}
       ],
       recordTypeInfos: []
     };

@@ -33,16 +33,28 @@ export const FIELD_DEFINITION_RULE_NAMES = [
 
 export const DEFAULT_NEAR_DUPLICATE_REGEX = "(_2|_old|_backup|_copy|_v2)$";
 
-const DEFAULT_THRESHOLDS = {
+export const DEFAULT_THRESHOLDS = {
   customFieldsWarning: 100,
   customFieldsError: 300,
   relationshipsWarning: 25,
   relationshipsError: 40,
-  recordTypesWarning: 50,
+  recordTypesWarning: 20,
+  recordTypesError: 50,
   customObjectsWarning: 100,
   customObjectsError: 200,
   inactivePicklistPercent: 50
 };
+
+export const OVER_CUSTOMIZATION_THRESHOLD_FIELDS = [
+  {key: "customFieldsWarning", label: "Custom fields warning"},
+  {key: "customFieldsError", label: "Custom fields error"},
+  {key: "relationshipsWarning", label: "Relationships warning"},
+  {key: "relationshipsError", label: "Relationships error"},
+  {key: "recordTypesWarning", label: "Record types warning"},
+  {key: "recordTypesError", label: "Record types error"},
+  {key: "customObjectsWarning", label: "Custom objects warning"},
+  {key: "customObjectsError", label: "Custom objects error"}
+].map(field => ({...field, defaultValue: DEFAULT_THRESHOLDS[field.key]}));
 
 export const OBJECT_SCANNER_RULE_DEFINITIONS = [
   {
@@ -68,12 +80,16 @@ export const OBJECT_SCANNER_RULE_DEFINITIONS = [
   {
     name: "OverCustomization",
     label: "Over-customization",
-    description: "Flags objects with too many custom fields, relationships, or record types, and orgs with too many custom objects in the scan set.",
+    description: "Flags objects with too many subscriber custom fields, custom relationships, or record types, and orgs with too many subscriber custom objects in the scan set. Packaged metadata is excluded.",
     checked: true,
     severity: "warning",
     isConfigurable: true,
-    configType: "threshold",
-    defaultValue: DEFAULT_THRESHOLDS.customFieldsWarning
+    configType: "thresholds",
+    configFields: OVER_CUSTOMIZATION_THRESHOLD_FIELDS,
+    defaultValue: OVER_CUSTOMIZATION_THRESHOLD_FIELDS.reduce((config, field) => {
+      config[field.key] = field.defaultValue;
+      return config;
+    }, {})
   },
   {
     name: "PiiClassified",
@@ -169,12 +185,27 @@ function getStoredRules() {
   }
 }
 
+function defaultConfigFor(def) {
+  if (def.configFields && def.configFields.length) {
+    const config = {};
+    def.configFields.forEach(field => {
+      config[field.key] = field.defaultValue;
+    });
+    return config;
+  }
+  if (def.defaultValue != null && def.configType) {
+    return {[def.configType]: def.defaultValue};
+  }
+  return {};
+}
+
 function mergeRuleWithOverrides(def, stored) {
-  let config = {};
+  let config = defaultConfigFor(def);
   if (stored && hasValidConfig(stored.config)) {
-    config = stored.config;
-  } else if (def.defaultValue != null && def.configType) {
-    config = {[def.configType]: def.defaultValue};
+    config = {...config, ...stored.config};
+    if (def.name === "OverCustomization" && stored.config.threshold != null && stored.config.customFieldsWarning == null) {
+      config.customFieldsWarning = stored.config.threshold;
+    }
   }
 
   return {
@@ -258,6 +289,24 @@ export function isSubscriberCustomField(field, orgNamespace) {
     return true;
   }
   return false;
+}
+
+export function isSubscriberCustomObject(objectModel, orgNamespace) {
+  if (!objectModel || !objectModel.custom) {
+    return false;
+  }
+  const ns = objectModel.namespacePrefix || "";
+  if (!ns) {
+    return true;
+  }
+  if (orgNamespace && ns.toLowerCase() === orgNamespace.toLowerCase()) {
+    return true;
+  }
+  return false;
+}
+
+function customRecordTypeCount(objectModel) {
+  return (objectModel.recordTypeInfos || []).filter(rt => !rt.master && rt.name !== "Master").length;
 }
 
 export function classifyNamingStyle(apiName) {
@@ -480,42 +529,57 @@ function evaluateReplication(rule, objects) {
   return findings;
 }
 
-function evaluateOverCustomization(rule, objects) {
+function thresholdNumber(rule, key, fallback) {
+  let raw = fallback;
+  if (rule && rule.config && rule.config[key] != null && rule.config[key] !== "") {
+    raw = rule.config[key];
+  } else if (key === "customFieldsWarning") {
+    raw = configValue(rule, "threshold", fallback);
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function evaluateOverCustomization(rule, objects, orgNamespace) {
   const findings = [];
-  const fieldsWarning = Number(configValue(rule, "threshold", DEFAULT_THRESHOLDS.customFieldsWarning)) || DEFAULT_THRESHOLDS.customFieldsWarning;
-  const fieldsError = DEFAULT_THRESHOLDS.customFieldsError;
-  const relWarning = DEFAULT_THRESHOLDS.relationshipsWarning;
-  const relError = DEFAULT_THRESHOLDS.relationshipsError;
-  const rtWarning = DEFAULT_THRESHOLDS.recordTypesWarning;
-  const objWarning = DEFAULT_THRESHOLDS.customObjectsWarning;
-  const objError = DEFAULT_THRESHOLDS.customObjectsError;
+  const fieldsWarning = thresholdNumber(rule, "customFieldsWarning", DEFAULT_THRESHOLDS.customFieldsWarning);
+  const fieldsError = thresholdNumber(rule, "customFieldsError", DEFAULT_THRESHOLDS.customFieldsError);
+  const relWarning = thresholdNumber(rule, "relationshipsWarning", DEFAULT_THRESHOLDS.relationshipsWarning);
+  const relError = thresholdNumber(rule, "relationshipsError", DEFAULT_THRESHOLDS.relationshipsError);
+  const rtWarning = thresholdNumber(rule, "recordTypesWarning", DEFAULT_THRESHOLDS.recordTypesWarning);
+  const rtError = thresholdNumber(rule, "recordTypesError", DEFAULT_THRESHOLDS.recordTypesError);
+  const objWarning = thresholdNumber(rule, "customObjectsWarning", DEFAULT_THRESHOLDS.customObjectsWarning);
+  const objError = thresholdNumber(rule, "customObjectsError", DEFAULT_THRESHOLDS.customObjectsError);
 
   objects.forEach(objectModel => {
-    const customFieldCount = (objectModel.fields || []).filter(f => f.custom).length;
-    const relationshipCount = (objectModel.fields || []).filter(f => f.type === "reference").length;
-    const recordTypeCount = (objectModel.recordTypeInfos || []).length;
+    const customFields = subscriberFields(objectModel, orgNamespace);
+    const customFieldCount = customFields.length;
+    const relationshipCount = customFields.filter(f => f.type === "reference").length;
+    const recordTypeCount = customRecordTypeCount(objectModel);
 
     if (customFieldCount >= fieldsError) {
-      findings.push(finding(rule, "error", objectModel, null, `Object has ${customFieldCount} custom fields (error threshold ${fieldsError}).`));
+      findings.push(finding(rule, "error", objectModel, null, `Object has ${customFieldCount} subscriber custom fields (error threshold ${fieldsError}).`));
     } else if (customFieldCount >= fieldsWarning) {
-      findings.push(finding(rule, "warning", objectModel, null, `Object has ${customFieldCount} custom fields (warning threshold ${fieldsWarning}).`));
+      findings.push(finding(rule, "warning", objectModel, null, `Object has ${customFieldCount} subscriber custom fields (warning threshold ${fieldsWarning}).`));
     }
     if (relationshipCount >= relError) {
-      findings.push(finding(rule, "error", objectModel, null, `Object has ${relationshipCount} relationship fields (error threshold ${relError}).`));
+      findings.push(finding(rule, "error", objectModel, null, `Object has ${relationshipCount} custom relationship fields (error threshold ${relError}).`));
     } else if (relationshipCount >= relWarning) {
-      findings.push(finding(rule, "warning", objectModel, null, `Object has ${relationshipCount} relationship fields (warning threshold ${relWarning}).`));
+      findings.push(finding(rule, "warning", objectModel, null, `Object has ${relationshipCount} custom relationship fields (warning threshold ${relWarning}).`));
     }
-    if (recordTypeCount >= rtWarning) {
+    if (recordTypeCount >= rtError) {
+      findings.push(finding(rule, "error", objectModel, null, `Object has ${recordTypeCount} record types (error threshold ${rtError}).`));
+    } else if (recordTypeCount >= rtWarning) {
       findings.push(finding(rule, "warning", objectModel, null, `Object has ${recordTypeCount} record types (warning threshold ${rtWarning}).`));
     }
   });
 
-  const customObjectCount = objects.filter(o => o.custom).length;
+  const customObjectCount = objects.filter(o => isSubscriberCustomObject(o, orgNamespace)).length;
   if (customObjectCount >= objError || customObjectCount >= objWarning) {
     const severity = customObjectCount >= objError ? "error" : "warning";
     const threshold = customObjectCount >= objError ? objError : objWarning;
     if (objects[0]) {
-      findings.push(finding(rule, severity, {name: "(org)", label: "Scanned org"}, null, `Scan set contains ${customObjectCount} custom objects (threshold ${threshold}).`));
+      findings.push(finding(rule, severity, {name: "(org)", label: "Scanned org"}, null, `Scan set contains ${customObjectCount} subscriber custom objects (threshold ${threshold}).`));
     }
   }
   return findings;
@@ -754,7 +818,7 @@ export function evaluateDescribeRules(objects, rules, orgNamespace) {
     findings.push(...evaluateReplication(replication, objects));
   }
   if (over) {
-    findings.push(...evaluateOverCustomization(over, objects));
+    findings.push(...evaluateOverCustomization(over, objects, orgNamespace));
   }
   if (dup) {
     findings.push(...evaluateDuplicateLabels(dup, objects, orgNamespace));
@@ -805,7 +869,7 @@ export function slimDescribe(describe, orgNamespace) {
     label: describe.label,
     custom: !!describe.custom,
     namespacePrefix: describe.namespacePrefix || "",
-    recordTypeInfos: (describe.recordTypeInfos || []).map(rt => ({name: rt.name, available: rt.available})),
+    recordTypeInfos: (describe.recordTypeInfos || []).map(rt => ({name: rt.name, available: rt.available, master: !!rt.master})),
     fields: (describe.fields || []).map(field => ({
       name: field.name,
       label: field.label,
@@ -813,6 +877,13 @@ export function slimDescribe(describe, orgNamespace) {
       custom: !!field.custom,
       nillable: field.nillable,
       encrypted: !!field.encrypted,
+      externalId: !!field.externalId,
+      unique: !!field.unique,
+      length: field.length || 0,
+      precision: field.precision || 0,
+      scale: field.scale || 0,
+      inlineHelpText: field.inlineHelpText || "",
+      referenceTo: Array.isArray(field.referenceTo) ? field.referenceTo.slice() : [],
       restrictedPicklist: field.restrictedPicklist !== false,
       picklistValues: (field.picklistValues || []).map(v => ({value: v.value, active: v.active !== false})),
       calculated: !!field.calculated,

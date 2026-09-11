@@ -514,7 +514,7 @@ class OptionsTabSelector extends React.Component {
 
   render() {
     return h("div", {className: "slds-tabs_default"},
-      h("ul", {className: "sfir-options-tab-container slds-tabs_default__nav", role: "tablist"},
+      h("ul", {className: "sfir-options-tab-container slds-tabs_default__nav slds-scrollable_x", role: "tablist"},
         this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.tabTitle || tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
       ),
       this.tabs.map((tab) => h(OptionsContainer, {
@@ -536,7 +536,7 @@ class OptionsTabSelector extends React.Component {
 class OptionsTab extends React.Component {
 
   getClass() {
-    return "options-tab slds-text-align_center slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
+    return "options-tab slds-text-align_center slds-tabs_default__item slds-shrink-none" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
   }
 
   render() {
@@ -742,6 +742,7 @@ class Option extends React.Component {
     this.onChange = this.onChange.bind(this);
     this.onChangeToggle = this.onChangeToggle.bind(this);
     this.onChangeConfig = this.onChangeConfig.bind(this);
+    this.onChangeConfigField = this.onChangeConfigField.bind(this);
     this.toggleDescriptionExpanded = this.toggleDescriptionExpanded.bind(this);
     this.checkForTruncation = this.checkForTruncation.bind(this);
     this.descriptionRef = {current: null};
@@ -765,6 +766,7 @@ class Option extends React.Component {
     // Configurable rule properties
     this.isConfigurable = props.isConfigurable;
     this.configType = props.configType;
+    this.configFields = props.configFields || null;
     this.configStorageKey = props.configStorageKey;
     this.onConfigChange = props.onConfigChange;
     this.onToggleChange = props.onToggleChange;
@@ -787,6 +789,7 @@ class Option extends React.Component {
 
     // Initialize config value if configurable (value comes from props)
     let configValue = props.configValue || null;
+    const config = props.config && typeof props.config === "object" ? {...props.config} : {};
 
     this.state = {
       [this.key || "checked"]: isFlowScannerRule ? value
@@ -794,6 +797,7 @@ class Option extends React.Component {
       : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
       : value,
       configValue,
+      config,
       descriptionExpanded: false,
       showExpandButton: false
     };
@@ -820,6 +824,14 @@ class Option extends React.Component {
     this.setState({configValue});
     if (this.onConfigChange) {
       this.onConfigChange(this.key, configValue);
+    }
+  }
+
+  onChangeConfigField(fieldKey, e) {
+    const config = {...this.state.config, [fieldKey]: e.target.value};
+    this.setState({config});
+    if (this.onConfigChange) {
+      this.onConfigChange(this.key, config);
     }
   }
 
@@ -910,6 +922,33 @@ class Option extends React.Component {
   }
 
   renderConfigInput() {
+    if (this.configFields && this.configFields.length) {
+      return h("div", {className: "slds-grid slds-gutters_xx-small slds-wrap"},
+        this.configFields.map(field => {
+          const fieldId = `${this.key || "option"}_${field.key}`;
+          const value = this.state.config[field.key] != null && this.state.config[field.key] !== ""
+            ? this.state.config[field.key]
+            : (field.defaultValue != null ? field.defaultValue : "");
+          return h("div", {key: field.key, className: "slds-col slds-grow-none sfir-option-threshold-field"},
+            h("div", {className: "slds-form-element"},
+              h("label", {className: "slds-form-element__label", htmlFor: fieldId}, field.label),
+              h("div", {className: "slds-form-element__control"},
+                h("input", {
+                  type: "number",
+                  id: fieldId,
+                  min: "1",
+                  className: "slds-input",
+                  value,
+                  onChange: (e) => this.onChangeConfigField(field.key, e),
+                  title: field.label
+                })
+              )
+            )
+          );
+        })
+      );
+    }
+
     if (!this.isConfigurable || !this.configType) {
       return null;
     }
@@ -938,19 +977,14 @@ class Option extends React.Component {
     const isEnhanced = this.enhancedTitle || this.badge || this.severity || this.description;
 
     if (isEnhanced) {
-      // Enhanced layout
-      return h("div", {className: "enhanced-option-row"},
-        // Main content area
+      return h("div", {className: "enhanced-option-row" + (this.configFields && this.configFields.length ? " sfir-option-row-with-thresholds" : "")},
         h("div", {className: "enhanced-option-content"},
-          // Enhanced title with badge
           h("div", {className: "enhanced-option-title"},
             h("h4", {className: "enhanced-option-title-text"}, this.enhancedTitle || this.title),
             this.badge && h("span", {
               className: `${this.badge.type || "beta"}-badge`
             }, this.badge.label)
           ),
-
-          // Description on the same line with expand functionality
           this.description && h("div", {className: "enhanced-option-description-container"},
             h("span", {
               className: `enhanced-option-description ${this.state.descriptionExpanded ? "expanded" : ""}`,
@@ -961,7 +995,6 @@ class Option extends React.Component {
                 }
               }
             }, this.description),
-            // Expand icon (only show when text is truncated)
             this.state.showExpandButton && h("button", {
               className: "enhanced-option-expand-btn",
               onClick: this.toggleDescriptionExpanded,
@@ -973,20 +1006,15 @@ class Option extends React.Component {
             )
           )
         ),
-
-        // Controls on the right
         h("div", {className: "enhanced-option-controls"},
-          // Configuration input (for configurable rules)
-          this.renderConfigInput(),
-
-          // Severity selector
+          !(this.configFields && this.configFields.length) && this.renderConfigInput(),
           this.severity && h("select", {
             className: `severity-select severity-${this.severity}`,
             value: this.severity,
             onChange: (e) => {
               const newSeverity = e.target.value;
               this.severity = newSeverity;
-              this.setState({}); // Force re-render
+              this.setState({});
               if (this.props.onSeverityChange) {
                 this.props.onSeverityChange(this.key, newSeverity);
               }
@@ -996,8 +1024,6 @@ class Option extends React.Component {
           h("option", {value: "warning"}, "Warning"),
           h("option", {value: "error"}, "Error")
           ),
-
-          // Toggle control for all enhanced options (positioned at the end)
           isToggle && h("div", {className: "slds-form-element__control"},
             h("label", {className: "slds-checkbox_toggle slds-grid"},
               h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key || "checked"], onChange: this.onChangeToggle}),
@@ -1008,10 +1034,11 @@ class Option extends React.Component {
               )
             )
           ),
-
-          // Input controls for non-toggle and non-button types
           !isToggle && !isButton && this.renderInputControl(id, true)
-        )
+        ),
+        this.configFields && this.configFields.length
+          ? h("div", {className: "slds-col slds-size_1-of-1 slds-p-top_x-small"}, this.renderConfigInput())
+          : null
       );
     } else {
       // Standard layout with responsive grid
@@ -2174,6 +2201,9 @@ class ObjectScannerRules extends React.Component {
           } else if (field === "severity") {
             return {...rule, severity: value};
           } else if (field === "config") {
+            if (value && typeof value === "object") {
+              return {...rule, config: {...rule.config, ...value}};
+            }
             const newConfig = rule.configType ? {[rule.configType]: value} : {};
             return {...rule, config: newConfig, configValue: value};
           }
@@ -2199,7 +2229,7 @@ class ObjectScannerRules extends React.Component {
     return h("div", {className: "flow-scanner-rules-container"},
       sortedRules.map(rule => {
         let resolvedConfigValue = null;
-        if (rule.isConfigurable) {
+        if (rule.isConfigurable && !(rule.configFields && rule.configFields.length)) {
           if (rule.configValue !== undefined && rule.configValue !== null) {
             resolvedConfigValue = rule.configValue;
           } else if (rule.config && rule.configType && rule.config[rule.configType] !== undefined) {
@@ -2218,6 +2248,8 @@ class ObjectScannerRules extends React.Component {
           checked: rule.checked !== undefined ? rule.checked : true,
           isConfigurable: rule.isConfigurable,
           configType: rule.configType,
+          configFields: rule.configFields,
+          config: rule.config,
           configValue: resolvedConfigValue,
           onToggleChange: (checked) => {
             this.onRuleChange(rule.name, "checked", checked);

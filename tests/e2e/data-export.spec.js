@@ -235,4 +235,86 @@ test.describe("Data Export", () => {
     await expect(page.getByLabel("Query Label")).toHaveValue("Open Cases");
   });
 
+  test("Delete Query History Entries", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id, Status FROM Case", useToolingApi: false},
+        {query: "SELECT Id, Name FROM Account", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Query History"});
+    const options = page.locator("#history-listbox [role='option']");
+    const query = page.locator("textarea#query");
+
+    // The dropdown has to stay inside the window, otherwise the trash icon
+    // ends up off screen and cannot be clicked at all.
+    await history.click();
+    const listbox = await page.locator("#history-listbox").boundingBox();
+    const viewport = page.viewportSize();
+    expect(listbox.x).toBeGreaterThanOrEqual(0);
+    expect(listbox.x + listbox.width).toBeLessThanOrEqual(viewport.width);
+
+    // Clicking the trash icon deletes without also selecting the entry.
+    // The page pre-fills the query box from history, so compare against a sentinel.
+    await query.fill("SENTINEL");
+    await history.click();
+    await options.first().locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(1);
+    await expect(query).toHaveValue("SENTINEL");
+
+    // Delete removes the highlighted entry, no confirmation for history.
+    await history.press("ArrowDown");
+    await history.press("Delete");
+    await expect(options).toHaveCount(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextQueryHistory")))).toHaveLength(0);
+  });
+
+  test("Delete Saved Query Asks For Confirmation", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Mine:SELECT Id FROM Account", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const saved = page.getByRole("combobox", {name: "Saved Queries"});
+    const options = page.locator("#saved-listbox [role='option']");
+    await saved.click();
+
+    // Dismissing keeps the entry, accepting removes it.
+    page.once("dialog", dialog => dialog.dismiss());
+    await options.first().locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(1);
+
+    page.once("dialog", dialog => dialog.accept());
+    await options.first().locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(0);
+  });
+
+  test("Result Column Filter Stays Open", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await page.locator("textarea#query").fill("SELECT Id, Name, Type FROM Account");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported", {timeout: 2000});
+
+    await page.click("button[title='Show More Filters']");
+    const menu = page.locator(".dropdown-menu");
+    await expect(menu).toBeVisible();
+
+    // Two consecutive column selections must both register with the panel still open.
+    await menu.locator(".dropdown-item").nth(0).click();
+    await expect(menu).toBeVisible();
+    await menu.locator(".dropdown-item").nth(1).click();
+    await expect(menu).toBeVisible();
+    await expect(menu.locator(".dropdown-item.selected")).toHaveCount(2);
+  });
+
 });

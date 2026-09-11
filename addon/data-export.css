@@ -68,10 +68,11 @@ textarea[hidden] {
   padding-left: 35px;
 }
 
-/* Wide enough to read a query, but never wider than the window. */
+/* Grows to fit the longest query rather than the width of the input, but never
+   past 40rem or the edge of the window. */
 .sfir-query-combobox-dropdown {
-  min-width: min(40rem, 90vw);
-  max-width: 90vw;
+  width: max-content;
+  max-width: min(40rem, 90vw);
 }
 
 .sfir-query-combobox-dropdown .slds-listbox__option {

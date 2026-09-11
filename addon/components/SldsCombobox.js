@@ -107,7 +107,9 @@ export class SldsCombobox extends React.Component {
         ),
         isOpen && h("div", {
           id: listboxId,
-          className: "slds-dropdown slds-dropdown_left slds-dropdown_length-with-icon-10 sfir-query-combobox-dropdown",
+          // Right-aligned: these comboboxes sit on the right of the toolbar, so a
+          // left-aligned dropdown this wide would hang off the edge of the window.
+          className: "slds-dropdown slds-dropdown_right slds-dropdown_length-with-icon-10 sfir-query-combobox-dropdown",
           role: "listbox",
           onMouseDown: (e) => {
             // Prevents input blur when interacting with the dropdown container.
@@ -129,6 +131,10 @@ export class SldsCombobox extends React.Component {
                 role: "option",
                 "aria-selected": index === activeIndex ? "true" : "false",
                 onMouseDown: (e) => {
+                  // The delete affordance is nested in the option, so ignore its clicks here.
+                  if (e.target.closest(".sfir-combobox-delete")) {
+                    return;
+                  }
                   e.preventDefault();
                   onSelect(entry);
                 }
@@ -142,7 +148,6 @@ export class SldsCombobox extends React.Component {
                 "aria-hidden": "true",
                 onMouseDown: (e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                   onDelete(entry, index);
                 }
               },

@@ -275,7 +275,8 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
+    const visibleRecords = this.exportedData.records.filter((_, index) => this.exportedData.rowVisibilities[index + 1]);
+    copyToClipboard(JSON.stringify(visibleRecords, null, "  "));
   }
   downloadAsCsv(){
     const csvContent = this.exportedData.csvSerialize(this.separator);

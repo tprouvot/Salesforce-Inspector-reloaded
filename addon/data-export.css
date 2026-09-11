@@ -136,19 +136,6 @@ textarea[hidden] {
   max-width: min(40rem, 50vw);
 }
 
-.sfir-combobox-option {
-  min-height: 2rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  line-height: 1.25rem;
-}
-
-.sfir-combobox-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--slds-g-spacing-1, 0.25rem);
-}
-
 .sfir-combobox-body {
   min-width: 0;
 }
@@ -181,13 +168,21 @@ code.sfir-query-text {
   border-radius: 0;
   background: none;
   color: inherit;
-  font-size: 0.75rem;
+  font-size: var(--slds-g-font-scale-neg-1);
+}
+
+.sfir-query-combobox-dropdown .sfir-search-match {
+  background-color: light-dark(
+    var(--slds-g-color-palette-yellow-90),
+    var(--slds-g-color-palette-yellow-30)
+  );
+  /* Override Prism token colours with the matching high-contrast foreground. */
+  color: var(--slds-g-color-neutral-base-10);
+  border-radius: var(--slds-g-radius-border-1);
 }
 
 .sfir-combobox-delete {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
   cursor: pointer;
   opacity: 0;
 }

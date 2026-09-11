@@ -112,8 +112,9 @@ Failed queries are also saved, so you can reload and fix them from the history.
 
 ### Searching
 
-Typing filters the list to queries containing **every** word you type, in any order,
-so `case status` matches a query mentioning both.
+Typing ranks exact phrases first, followed by queries containing every word. If none match
+all words, partial matches are shown as a fallback. Matching text is highlighted in the
+coloured query.
 
 ### Object search filter
 

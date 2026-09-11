@@ -5,7 +5,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {SldsCombobox} from "./components/SldsCombobox.js";
-import {dropdownEntries, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
+import {dropdownEntries, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
 
 // Where the query in the editor can come from. Mutually exclusive, so the picker is
 // a radio button group and only the selected source's list and actions are shown.
@@ -1734,7 +1734,7 @@ class App extends React.Component {
       return {
         id: "saved",
         entries: model.savedHistory.list,
-        renderItem: (entry) => renderQueryItem({...splitSavedQuery(entry.query), useToolingApi: entry.useToolingApi}),
+        renderItem: (entry, searchValue) => renderQueryItem({...splitSavedQuery(entry.query), useToolingApi: entry.useToolingApi}, searchValue),
         select: (entry) => { model.selectedSavedEntry = entry; model.selectSavedEntry(); },
         remove: (entry) => this.onDeleteSavedEntry(entry),
         clear: this.onClearSavedHistory,
@@ -1746,7 +1746,7 @@ class App extends React.Component {
       return {
         id: "templates",
         entries: model.queryTemplates.map(query => ({query})),
-        renderItem: (entry) => renderQueryItem({query: entry.query}),
+        renderItem: (entry, searchValue) => renderQueryItem({query: entry.query}, searchValue),
         select: (entry) => { model.selectedQueryTemplate = entry.query; model.selectQueryTemplate(); },
         remove: null,
         clear: null,
@@ -1757,7 +1757,7 @@ class App extends React.Component {
     return {
       id: "history",
       entries: model.queryHistory.list,
-      renderItem: (entry) => renderQueryItem({query: entry.query, useToolingApi: entry.useToolingApi}),
+      renderItem: (entry, searchValue) => renderQueryItem({query: entry.query, useToolingApi: entry.useToolingApi}, searchValue),
       select: (entry) => { model.selectedHistoryEntry = entry; model.selectHistoryEntry(); },
       remove: (entry) => this.onDeleteHistoryEntry(entry),
       clear: this.onClearHistory,
@@ -1952,8 +1952,8 @@ class App extends React.Component {
             onClose: () => this._closeQueryDropdown(),
             onDelete: !isObjectSuggest && source.remove ? source.remove : null,
             renderItem: (entry) => (isObjectSuggest
-              ? h("span", {className: "slds-truncate", title: entry}, entry)
-              : source.renderItem(entry))
+              ? h("span", {className: "slds-truncate", title: entry}, renderHighlightedText(entry, searchValue.slice(1)))
+              : source.renderItem(entry, searchValue))
           }),
           h("button", {
             type: "button",

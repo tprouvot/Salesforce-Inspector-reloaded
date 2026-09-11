@@ -131,14 +131,12 @@ export class SldsCombobox extends React.Component {
         isOpen && h("div", {
           id: listboxId,
           // Horizontal alignment is set by alignDropdown, not an SLDS modifier.
-          className: "slds-dropdown slds-dropdown_length-with-icon-10 sfir-query-combobox-dropdown",
-          role: "listbox",
-          onMouseDown: (e) => {
-            // Prevents input blur when interacting with the dropdown container.
-            e.preventDefault();
-          }
+          className: "slds-dropdown slds-dropdown_length-7 sfir-query-combobox-dropdown",
+          role: "listbox"
         },
-        h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},
+        // Keep keyboard focus in the combobox when clicking rows or the empty state,
+        // without blocking the scrolling div's native scrollbar.
+        h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation", onMouseDown: (e) => e.preventDefault()},
           entries.length === 0 ? h("li", {role: "presentation", className: "slds-listbox__item"},
             h("div", {className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option"},
               h("span", {className: "slds-media__body"},
@@ -149,7 +147,7 @@ export class SldsCombobox extends React.Component {
             h("li", {role: "presentation", className: "slds-listbox__item", key: index},
               h("div", {
                 id: listboxId + "-option-" + index,
-                className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option sfir-combobox-item" + (index === activeIndex ? " slds-has-focus" : ""),
+                className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option" + (index === activeIndex ? " slds-has-focus" : ""),
                 role: "option",
                 "aria-selected": index === activeIndex ? "true" : "false",
                 onMouseDown: (e) => {
@@ -165,7 +163,7 @@ export class SldsCombobox extends React.Component {
               // Pointer shortcut only: options stay atomic for assistive technology,
               // which deletes with the Delete key announced by the hint below.
               onDelete && h("span", {
-                className: "slds-button slds-button_icon slds-button_icon-x-small sfir-combobox-delete",
+                className: "slds-button slds-button_icon slds-button_icon-x-small slds-m-left_x-small sfir-combobox-delete",
                 title: "Delete this item",
                 "aria-hidden": "true",
                 onMouseDown: (e) => {

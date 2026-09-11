@@ -185,18 +185,26 @@ test.describe("Data Export", () => {
     // Query colouring comes from the Prism SQL grammar bundled with the extension.
     await expect(options.first().locator(".token.keyword").first()).toHaveText("SELECT");
 
-    // Every term must match: "closed" hits two entries, "status closed" only one.
+    // Strong matches rank before forgiving partial matches.
     await history.fill("closed");
     await expect(options).toHaveCount(2);
     await history.fill("status closed");
     await expect(options).toHaveCount(1);
     await expect(options.first()).toContainText("FROM Case");
+    await expect(options.first().locator(".sfir-search-match")).toHaveText(["Status", "Closed"]);
+
+    // Partial matching is a fallback only when no query contains every term.
+    await history.fill("status opportunity");
+    await expect(options).toHaveCount(2);
+    await expect(options.first()).toContainText("FROM Case");
+    await expect(options.nth(1)).toContainText("Opportunity");
 
     // "?" is the only way to reach object filtering.
     await history.fill("?");
     await expect(options).toHaveText(["account", "case", "opportunity"]);
     await history.fill("?opp");
     await expect(options).toHaveText(["opportunity"]);
+    await expect(options.locator(".sfir-search-match")).toHaveText("opp");
     // A trailing space commits the object and switches back to listing its queries.
     await history.fill("?opportunity ");
     await expect(options).toHaveCount(1);
@@ -208,6 +216,49 @@ test.describe("Data Export", () => {
     await expect(listbox).toContainText("No results found");
     await history.press("Escape");
     await expect(listbox).toHaveCount(0);
+  });
+
+  test("Query History Dropdown Scrolls", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify(
+        Array.from({length: 40}, (_, i) => ({
+          query: `SELECT Id, Name, CreatedDate FROM Account WHERE Name LIKE 'Account ${i}%' ORDER BY CreatedDate DESC`,
+          useToolingApi: false
+        }))
+      ));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const listbox = page.locator("#query-search-listbox");
+    await history.click();
+    const metrics = await listbox.evaluate(element => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight
+    }));
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    expect(metrics.clientHeight, "native dropdown has a bounded scroll area").toBeLessThanOrEqual(320);
+
+    const bounds = await listbox.boundingBox();
+    await page.mouse.move(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
+    await page.mouse.wheel(0, 500);
+    await expect.poll(() => listbox.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+
+    // Keyboard navigation also keeps the active option inside the native scroll area.
+    await listbox.evaluate(element => { element.scrollTop = 0; });
+    await history.focus();
+    for (let i = 0; i < 12; i++) {
+      await history.press("ArrowDown");
+    }
+    await expect.poll(() => listbox.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+
+    // Empty-state interaction retains focus, while the native scrollbar remains on
+    // the outer div and is not covered by this mousedown handler.
+    await history.fill("no query matches this");
+    await page.getByText("No results found").click();
+    await expect(history).toBeFocused();
   });
 
   test("Saved Query Labels", async ({page, context, extensionId}) => {
@@ -229,11 +280,17 @@ test.describe("Data Export", () => {
     await expect(options).toHaveCount(2);
 
     // "label:query" is split, and the label shown as a badge.
+    await saved.fill("open");
     const labelled = options.filter({hasText: "Open Cases"});
+    await expect(options).toHaveCount(1);
     await expect(labelled.locator(".slds-badge")).toHaveText("Open Cases");
+    await expect(labelled.locator(".slds-badge .sfir-search-match")).toHaveText("Open");
 
     // A colon inside a query (here a datetime literal) is not a label.
-    await expect(options.filter({hasText: "2026-01-01"}).locator(".slds-badge")).toHaveCount(0);
+    await saved.fill("");
+    const datetimeQuery = options.filter({hasText: "2026-01-01"});
+    await expect(datetimeQuery).toHaveCount(1);
+    await expect(datetimeQuery.locator(".slds-badge")).toHaveCount(0);
 
     // Selecting restores the query without its label, and the label input with it.
     await labelled.click();

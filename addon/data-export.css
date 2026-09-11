@@ -48,123 +48,101 @@ textarea[hidden] {
   margin-bottom: 5px;
 }
 
+/* Query History / Saved Queries comboboxes. Hover, focus and badge colours come
+   from SLDS; only the multi-line query layout is specific to this page. */
+
+/* A plain flex row rather than slds-button-group, which squares off the corners of
+   its buttons and left the rounded combobox input butting against them. */
+.sfir-query-control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--slds-g-spacing-1, 0.25rem);
+}
+
+.sfir-query-label {
+  width: 8.5rem;
+  background-image: url(images/save.svg);
+  background-repeat: no-repeat;
+  background-size: 1rem;
+  background-position: 10px 7px;
+  padding-left: 35px;
+}
+
+/* Wide enough to read a query, but never wider than the window. */
+.sfir-query-combobox-dropdown {
+  min-width: min(40rem, 90vw);
+  max-width: 90vw;
+}
+
 .sfir-query-combobox-dropdown .slds-listbox__option {
-  white-space: normal;
-  word-break: break-word;
-  cursor: pointer;
-}
-
-.sfir-query-combobox-dropdown .slds-listbox__item.sfir-hovered .slds-listbox__option {
-  background-color: var(--slds-s-menu-item-color-background-active, var(--slds-g-color-surface-container-2, #f3f3f3));
-  text-decoration: none;
-}
-
-.sfir-query-combobox-dropdown .slds-truncate {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+  min-height: 2rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  line-height: 1.25rem;
 }
 
 .sfir-combobox-item {
   display: flex;
-  align-items: center;
-  position: relative;
+  align-items: flex-start;
+  gap: var(--slds-g-spacing-1, 0.25rem);
 }
 
 .sfir-combobox-item .slds-media__body {
-  flex: 1;
   min-width: 0;
 }
 
-.sfir-combobox-delete-btn {
+.sfir-combobox-item .slds-badge {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 4px;
-  margin-left: 8px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.1s ease, background-color 0.1s ease;
 }
 
-.sfir-combobox-item:hover .sfir-combobox-delete-btn,
-.sfir-combobox-delete-btn:focus {
-  opacity: 1;
-}
-
-.sfir-combobox-delete-btn:hover {
-  background-color: #f3f2f2;
-}
-
-.sfir-combobox-delete-btn:active {
-  background-color: #e5e5e5;
-}
-
-.sfir-combobox-delete-icon {
-  width: 16px;
-  height: 16px;
-  fill: #706e6b;
-}
-
-.sfir-combobox-delete-btn:hover .sfir-combobox-delete-icon {
-  fill: #c23934;
-}
-
-.sfir-query-item-wrapper {
+.sfir-query-item {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--slds-g-spacing-1, 0.25rem);
   width: 100%;
 }
 
-.sfir-query-badges-start,
-.sfir-query-badges-end {
-  display: flex;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.sfir-query-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 5px;
-  border-radius: 2px;
-  font-size: 0.625rem;
-  font-weight: 600;
-  line-height: 1.3;
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.sfir-query-badge-label {
-  background-color: #e0f3ff;
-  color: #0070d2;
-  border: 1px solid #b3d9ff;
-}
-
-.sfir-query-badge-tooling {
-  background-color: #fff4e5;
-  color: #a66e00;
-  border: 1px solid #ffd580;
-}
-
+/* Queries wrap over several lines instead of being truncated, and Prism's
+   standalone inline-code styling is not wanted inside a dropdown row. */
 .sfir-query-text {
-  display: block;
   flex: 1;
   min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-.sfir-query-text .slds-truncate {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+code.sfir-query-text {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: 0.75rem;
+}
+
+.sfir-combobox-delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.slds-listbox__option:hover .sfir-combobox-delete,
+.slds-listbox__option.slds-has-focus .sfir-combobox-delete {
+  opacity: 1;
+}
+
+.sfir-combobox-delete-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: var(--slds-g-color-neutral-base-50, #747474);
+}
+
+.sfir-combobox-delete:hover .sfir-combobox-delete-icon {
+  fill: var(--slds-g-color-error-base-40, #ba0517);
 }
 
 #query {
@@ -254,7 +232,6 @@ textarea[hidden] {
 
 select,
 input[type="search"],
-input[type="save"],
 input[type="default"] {
   width: 8.5rem;
   font-family: inherit;
@@ -273,14 +250,6 @@ input[type="search"] {
   padding-left: 35px;
   margin-right: 10px;
   border-radius: 0px 4px 4px 0px;
-}
-
-input[type="save"] {
-  background-image: url(images/save.svg);
-  background-repeat: no-repeat;
-  background-size: 1rem;
-  background-position: 10px 7px;
-  padding-left: 35px;
 }
 
 input[type="checkbox"] {

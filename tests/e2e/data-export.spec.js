@@ -161,4 +161,78 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
+  test("Query History Search", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id, Status FROM Case WHERE IsClosed = false", useToolingApi: false},
+        {query: "SELECT Id, ClosedDate FROM Opportunity", useToolingApi: false},
+        {query: "SELECT Id, Name FROM Account", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Query History"});
+    const listbox = page.locator("#history-listbox");
+    const options = listbox.locator("[role='option']");
+
+    await history.click();
+    await expect(options).toHaveCount(3);
+
+    // Every term must match: "closed" hits two entries, "status closed" only one.
+    await history.fill("closed");
+    await expect(options).toHaveCount(2);
+    await history.fill("status closed");
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toContainText("FROM Case");
+
+    // "?" is the only way to reach object filtering.
+    await history.fill("?");
+    await expect(options).toHaveText(["account", "case", "opportunity"]);
+    await history.fill("?opp");
+    await expect(options).toHaveText(["opportunity"]);
+    // A trailing space commits the object and switches back to listing its queries.
+    await history.fill("?opportunity ");
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toContainText("ClosedDate");
+
+    // Escape closes the dropdown even when nothing matched.
+    await history.fill("zzz");
+    await expect(options).toHaveCount(0);
+    await expect(listbox).toContainText("No results found");
+    await history.press("Escape");
+    await expect(listbox).toHaveCount(0);
+  });
+
+  test("Saved Query Labels", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Open Cases:SELECT Id, Subject FROM Case", useToolingApi: false},
+        {query: "SELECT Id FROM Case WHERE CreatedDate > 2026-01-01T00:00:00Z", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const saved = page.getByRole("combobox", {name: "Saved Queries"});
+    const options = page.locator("#saved-listbox [role='option']");
+
+    await saved.click();
+    await expect(options).toHaveCount(2);
+
+    // "label:query" is split, and the label shown as a badge.
+    const labelled = options.filter({hasText: "Open Cases"});
+    await expect(labelled.locator(".slds-badge")).toHaveText("Open Cases");
+
+    // A colon inside a query (here a datetime literal) is not a label.
+    await expect(options.filter({hasText: "2026-01-01"}).locator(".slds-badge")).toHaveCount(0);
+
+    // Selecting restores the query without its label, and the label input with it.
+    await labelled.click();
+    await expect(page.locator("textarea#query")).toHaveValue("SELECT Id, Subject FROM Case");
+    await expect(page.getByLabel("Query Label")).toHaveValue("Open Cases");
+  });
+
 });

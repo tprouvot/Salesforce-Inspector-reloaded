@@ -59,6 +59,9 @@ figcaption > div {
   border-radius: 0 0 6rem 6rem;
   background: deepskyblue;
 }
+.meter-not-applicable {
+  background: lightgrey;
+}
 .meter-value-container {
   position: absolute;
   bottom: -0.75rem;

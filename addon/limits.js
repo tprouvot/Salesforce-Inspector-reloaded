@@ -73,7 +73,7 @@ class Model {
         "description": "...",
         "max": res[key].Max,
         "remaining": res[key].Remaining,
-        "consumption": (res[key].Max - res[key].Remaining) / res[key].Max
+        "consumption": res[key].Max === 0 ? 0 : (res[key].Max - res[key].Remaining) / res[key].Max
       });
     });
     self.allLimitData = self.sortLimits(self.allLimitData, self.sortBy.value);
@@ -109,6 +109,9 @@ let h = React.createElement;
 
 class LimitData extends React.Component {
   render() {
+    // "0 of 0 consumed" means the limit does not apply to this org, not that it is fully consumed
+    let isNotApplicable = this.props.max === 0 && this.props.remaining === 0;
+    let percentage = isNotApplicable ? 0 : Math.round((1 - this.divide(this.props.remaining, this.props.max)) * 100);
     return (
       h("div", {className: "slds-col slds-size_1-of-5 slds-p-top_xx-large"},
         h("figure", {},
@@ -116,7 +119,7 @@ class LimitData extends React.Component {
             className: "gauge"
           },
           h("div", {
-            className: "meter",
+            className: "meter" + (isNotApplicable ? " meter-not-applicable" : ""),
             ref: "meter"
           },
           ""
@@ -126,7 +129,7 @@ class LimitData extends React.Component {
           },
           h("div", {
             className: "meter-value"
-          }, Math.round((1 - this.divide(this.props.remaining, this.props.max)) * 100) + "%")
+          }, percentage + "%")
           )
           ),
           h("figcaption", {}, this.props.label,
@@ -143,7 +146,8 @@ class LimitData extends React.Component {
   }
   componentDidMount() {
     // Animate gauge to relevant value
-    let targetDegree = (this.props.max == 0 || this.props.remaining < 0) ? "180deg" : ((1 - this.divide(this.props.remaining, this.props.max)) * 180) + "deg"; //180deg = 100%, 0deg = 0%
+    let isNotApplicable = this.props.max === 0 && this.props.remaining === 0;
+    let targetDegree = isNotApplicable ? "0deg" : this.props.remaining < 0 ? "180deg" : ((1 - this.divide(this.props.remaining, this.props.max)) * 180) + "deg"; //180deg = 100%, 0deg = 0%
     this.refs.meter.animate([{
       transform: "rotate(0deg)"
     }, {

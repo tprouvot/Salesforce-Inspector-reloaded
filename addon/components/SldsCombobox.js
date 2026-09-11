@@ -11,6 +11,7 @@ export class SldsCombobox extends React.Component {
   componentDidMount() {
     if (this.props.isOpen) {
       this.listenForOutsideClick();
+      this.alignDropdown();
     }
   }
 
@@ -24,6 +25,10 @@ export class SldsCombobox extends React.Component {
     } else if (!this.props.isOpen && prevProps.isOpen) {
       document.removeEventListener("click", this.handleDocumentClick);
     }
+    if (this.props.isOpen) {
+      // Entries change the width, so re-check the side on every open render.
+      this.alignDropdown();
+    }
     if (this.props.isOpen && this.props.activeIndex !== prevProps.activeIndex) {
       this.scrollToActiveItem();
     }
@@ -32,6 +37,20 @@ export class SldsCombobox extends React.Component {
   // Deferred so the click that opened the dropdown does not immediately close it.
   listenForOutsideClick() {
     setTimeout(() => document.addEventListener("click", this.handleDocumentClick), 0);
+  }
+
+  // Where the input sits in the toolbar depends on the org name, so a fixed side
+  // would hang off one edge or the other. Open towards whichever side has more
+  // room; the max-width in CSS keeps the dropdown inside the window either way.
+  alignDropdown() {
+    const box = document.getElementById(this.props.id + "-listbox");
+    if (!box || !this.containerRef) {
+      return;
+    }
+    const anchor = this.containerRef.getBoundingClientRect();
+    const openLeft = document.documentElement.clientWidth - anchor.left >= anchor.right;
+    box.classList.toggle("slds-dropdown_left", openLeft);
+    box.classList.toggle("slds-dropdown_right", !openLeft);
   }
 
   handleDocumentClick(e) {
@@ -107,9 +126,8 @@ export class SldsCombobox extends React.Component {
         ),
         isOpen && h("div", {
           id: listboxId,
-          // Right-aligned: these comboboxes sit on the right of the toolbar, so a
-          // left-aligned dropdown this wide would hang off the edge of the window.
-          className: "slds-dropdown slds-dropdown_right slds-dropdown_length-with-icon-10 sfir-query-combobox-dropdown",
+          // Horizontal alignment is set by alignDropdown, not an SLDS modifier.
+          className: "slds-dropdown slds-dropdown_length-with-icon-10 sfir-query-combobox-dropdown",
           role: "listbox",
           onMouseDown: (e) => {
             // Prevents input blur when interacting with the dropdown container.

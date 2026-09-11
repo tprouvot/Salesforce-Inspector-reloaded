@@ -238,7 +238,9 @@ test.describe("Data Export", () => {
   test("Delete Query History Entries", async ({page, context, extensionId}) => {
     await context.addInitScript(() => {
       window.localStorage.setItem("insextQueryHistory", JSON.stringify([
-        {query: "SELECT Id, Status FROM Case", useToolingApi: false},
+        // A long query, so the dropdown reaches its maximum width. A narrow one
+        // would not catch the dropdown being positioned off the window edge.
+        {query: "SELECT AllManagedPackageMemberId, AnalyticsWorkspaceId, CreatedById, CreatedDate, Description, DeveloperName, Id, IsDeleted, Language, LastDraftModifiedDate, LastModifiedById, ManageableState, MasterLabel, ModuleNamespace, NamespacePrefix, OwnerId, Style, SystemModstamp, Version FROM AnalyticsDashboard", useToolingApi: false},
         {query: "SELECT Id, Name FROM Account", useToolingApi: false}
       ]));
     });
@@ -250,13 +252,13 @@ test.describe("Data Export", () => {
     const options = page.locator("#history-listbox [role='option']");
     const query = page.locator("textarea#query");
 
-    // The dropdown has to stay inside the window, otherwise the trash icon
-    // ends up off screen and cannot be clicked at all.
+    // The dropdown must stay inside the window, otherwise the query text is clipped
+    // and the trash icon lands off screen where it cannot be clicked at all.
     await history.click();
     const listbox = await page.locator("#history-listbox").boundingBox();
     const viewport = page.viewportSize();
-    expect(listbox.x).toBeGreaterThanOrEqual(0);
-    expect(listbox.x + listbox.width).toBeLessThanOrEqual(viewport.width);
+    expect(listbox.x, "left edge on screen").toBeGreaterThanOrEqual(0);
+    expect(listbox.x + listbox.width, "right edge on screen").toBeLessThanOrEqual(viewport.width);
 
     // Clicking the trash icon deletes without also selecting the entry.
     // The page pre-fills the query box from history, so compare against a sentinel.

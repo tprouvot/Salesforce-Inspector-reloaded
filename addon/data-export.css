@@ -59,6 +59,18 @@ textarea[hidden] {
   gap: var(--slds-g-spacing-1, 0.25rem);
 }
 
+/* Match the neighbouring Templates select, and stop the row from squeezing the
+   input until its search icon sits on top of the text. */
+.sfir-query-control-group > .slds-form-element {
+  flex: none;
+  width: 8.5rem;
+}
+
+/* The search icon is decorative, so it must not swallow clicks on the input. */
+.sfir-query-control-group .slds-input__icon {
+  pointer-events: none;
+}
+
 .sfir-query-label {
   width: 8.5rem;
   background-image: url(images/save.svg);
@@ -68,11 +80,11 @@ textarea[hidden] {
   padding-left: 35px;
 }
 
-/* Grows to fit the longest query rather than the width of the input, but never
-   past 40rem or the edge of the window. */
+/* Grows to fit the longest query rather than the width of the input. Capped at half
+   the window so that whichever side alignDropdown opens towards has room for it. */
 .sfir-query-combobox-dropdown {
   width: max-content;
-  max-width: min(40rem, 90vw);
+  max-width: min(40rem, 50vw);
 }
 
 .sfir-query-combobox-dropdown .slds-listbox__option {

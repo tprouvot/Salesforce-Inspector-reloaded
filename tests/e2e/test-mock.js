@@ -655,6 +655,10 @@ export async function routeMock(route, host) {
         "DailyStandardVolumePlatformEvents": {
           "Max": 10000,
           "Remaining": 1000
+        },
+        "PrivateConnectOutboundCalloutHourlyLimitMB": {
+          "Max": 0,
+          "Remaining": 0
         }
       });
       return true;

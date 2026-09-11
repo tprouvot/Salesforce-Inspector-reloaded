@@ -236,7 +236,7 @@ test.describe("Data Export", () => {
     // Selecting restores the query without its label, and the label input with it.
     await labelled.click();
     await expect(page.locator("textarea#query")).toHaveValue("SELECT Id, Subject FROM Case");
-    await expect(page.getByLabel("Query Label")).toHaveValue("Open Cases");
+    await expect(page.getByLabel("Save as")).toHaveValue("Open Cases");
   });
 
   test("Delete Query History Entries", async ({page, context, extensionId}) => {
@@ -316,6 +316,8 @@ test.describe("Data Export", () => {
       return {
         picker: box(".slds-radio_button-group"),
         search: box(".slds-combobox__input"),
+        browse: box(".sfir-query-section__browse"),
+        save: box(".sfir-query-section__save"),
         section: box(".sfir-query-section")
       };
     });
@@ -334,7 +336,101 @@ test.describe("Data Export", () => {
     await page.locator("#sfir-query-source-history").focus();
     await page.keyboard.press("ArrowRight");
     await expect(page.getByRole("combobox", {name: "Search saved"})).toBeVisible();
+
+    // DOM and visual order agree: the top-row toggles precede the second-row Queries controls.
+    expect(await page.evaluate(() => {
+      const toggle = document.querySelector("[name='checkbox-toggle-tooling']");
+      const querySource = document.getElementById("sfir-query-source-history");
+      return Boolean(toggle.compareDocumentPosition(querySource) & Node.DOCUMENT_POSITION_FOLLOWING);
+    })).toBe(true);
   });
+
+  test("Clear Selected Query Source", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id FROM Account", useToolingApi: false}
+      ]));
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Saved:SELECT Id FROM Contact", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const clearList = page.locator(".sfir-query-clear");
+    await expect(clearList).toBeEnabled();
+    await expect(clearList).toHaveText("Clear list");
+    await expect(clearList).toHaveAccessibleName("Clear list of query history");
+    await expect(clearList).toHaveAttribute("title", "Clear Query History");
+    page.once("dialog", dialog => dialog.accept());
+    await clearList.click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextQueryHistory")) || [])).toHaveLength(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")))).toHaveLength(1);
+    await expect(clearList).toBeDisabled();
+    await expect(page.locator("#sfir-query-source-history")).toBeFocused();
+
+    await selectQuerySource(page, "saved");
+    await expect(clearList).toBeEnabled();
+    await expect(clearList).toHaveAccessibleName("Clear list of saved queries");
+    await expect(clearList).toHaveAttribute("title", "Clear Saved Queries");
+    page.once("dialog", dialog => dialog.accept());
+    await clearList.click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
+    await expect(clearList).toBeDisabled();
+    await expect(page.locator("#sfir-query-source-saved")).toBeFocused();
+
+    await selectQuerySource(page, "templates");
+    await expect(clearList).toBeDisabled();
+    await expect(clearList).toHaveAccessibleName("Clear list");
+    await expect(clearList).toHaveAttribute("title", "Clear list");
+  });
+
+  test("Empty Editor Cannot Be Saved", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.removeItem("insextSavedQueryHistory");
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await page.locator("textarea#query").fill("");
+    await page.getByLabel("Save as").fill("Only a label");
+    const save = page.getByRole("button", {name: "Save Query"});
+    await expect(save).toBeDisabled();
+
+    // Bypass the DOM-disabled state to prove the model guard also rejects it.
+    await save.evaluate(button => {
+      button.disabled = false;
+      button.click();
+    });
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
+  });
+
+  for (const width of [800, 1024, 1280]) {
+    test(`Queries Section Fits At ${width}px`, async ({page, extensionId}) => {
+      await page.setViewportSize({width, height: 760});
+      await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+      await page.waitForSelector("textarea#query", {timeout: 2000});
+
+      const section = page.locator(".sfir-query-section");
+      const bounds = await section.boundingBox();
+      expect(bounds.x, "left edge on screen").toBeGreaterThanOrEqual(0);
+      expect(bounds.x + bounds.width, "right edge on screen").toBeLessThanOrEqual(width);
+      expect(await section.evaluate(element => element.scrollWidth <= element.clientWidth), "section content does not overflow").toBe(true);
+
+      const heading = await page.getByRole("heading", {name: "Export Query"}).boundingBox();
+      expect(bounds.y, "Queries section occupies the second row").toBeGreaterThan(heading.y);
+
+      const browse = await page.locator(".sfir-query-section__browse").boundingBox();
+      const save = await page.locator(".sfir-query-section__save").boundingBox();
+      if (width <= 1024) {
+        expect(save.y, "save group wraps as a unit").toBeGreaterThan(browse.y);
+      } else {
+        expect(Math.abs(save.y - browse.y), "groups remain on one row").toBeLessThan(2);
+      }
+    });
+  }
 
   test("Templates Source Loads A Template", async ({page, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);

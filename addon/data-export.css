@@ -54,6 +54,7 @@ textarea[hidden] {
 /* One bordered group for everything that puts a query in the editor: the source
    picker, the search box for that source, and the actions that source owns. */
 .sfir-query-section {
+  width: 100%;
   border: 1px solid var(--slds-g-color-border-1, #c9c9c9);
   border-radius: 0.25rem;
   padding: 0.5rem 0.75rem 0.6rem;
@@ -66,38 +67,66 @@ textarea[hidden] {
 }
 
 .sfir-query-section__control,
-.sfir-query-section__actions {
+.sfir-query-section__browse,
+.sfir-query-section__save {
   display: flex;
   align-items: center;
   gap: var(--slds-g-spacing-2, 0.5rem);
 }
 
-/* Nothing in the row may shrink, or button labels wrap out of their button. */
-.sfir-query-section__control > *,
-.sfir-query-section__actions > * {
+.sfir-query-section__control {
+  flex-wrap: wrap;
+}
+
+/* Browsing loads a query; saving writes the editor query to the Saved list. */
+.sfir-query-section__save {
+  border-left: 1px solid var(--slds-g-color-border-1, #c9c9c9);
+  padding-left: var(--slds-g-spacing-2, 0.5rem);
+}
+
+.sfir-query-save-label {
+  font-size: 0.75rem;
+  color: var(--slds-g-color-on-surface-2, #444);
+}
+
+/* Below 64rem the save group is explicitly moved to a second row, so its divider
+   cannot depend on where flex wrapping happens to occur. */
+@media (max-width: 64rem) {
+  .sfir-query-section__save {
+    flex: 0 0 100%;
+    border-left: 0;
+    border-top: 1px solid var(--slds-g-color-border-1, #c9c9c9);
+    padding-top: var(--slds-g-spacing-2, 0.5rem);
+    padding-left: 0;
+  }
+}
+
+/* Nothing in either group may shrink, or button labels wrap out of their button. */
+.sfir-query-section__browse > *,
+.sfir-query-section__save > * {
   flex: none;
   white-space: nowrap;
 }
 
 /* Wide enough to read a query fragment, and never squeezed by the row until the
    search icon sits on top of the text. */
-.sfir-query-section__control > .slds-form-element {
+.sfir-query-search {
   flex: none;
   width: 14rem;
 }
 
 /* The search icon is decorative, so it must not swallow clicks on the input. */
-.sfir-query-section .slds-input__icon {
+.sfir-combobox-search-icon {
   pointer-events: none;
 }
 
 .sfir-query-label {
   width: 8.5rem;
-  background-image: url(images/save.svg);
-  background-repeat: no-repeat;
-  background-size: 1rem;
-  background-position: 10px 7px;
-  padding-left: 35px;
+}
+
+.sfir-query-clear {
+  min-width: 4.75rem;
+  justify-content: center;
 }
 
 /* Grows to fit the longest query rather than the width of the input. Capped at half
@@ -107,7 +136,7 @@ textarea[hidden] {
   max-width: min(40rem, 50vw);
 }
 
-.sfir-query-combobox-dropdown .slds-listbox__option {
+.sfir-combobox-option {
   min-height: 2rem;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
@@ -120,11 +149,11 @@ textarea[hidden] {
   gap: var(--slds-g-spacing-1, 0.25rem);
 }
 
-.sfir-combobox-item .slds-media__body {
+.sfir-combobox-body {
   min-width: 0;
 }
 
-.sfir-combobox-item .slds-badge {
+.sfir-query-badge {
   flex-shrink: 0;
 }
 
@@ -163,7 +192,7 @@ code.sfir-query-text {
   opacity: 0;
 }
 
-.slds-listbox__option:hover .sfir-combobox-delete,
+.sfir-combobox-option:hover .sfir-combobox-delete,
 .slds-listbox__option.slds-has-focus .sfir-combobox-delete {
   opacity: 1;
 }
@@ -227,6 +256,7 @@ code.sfir-query-text {
 
 .query-controls {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
 }
@@ -259,8 +289,9 @@ code.sfir-query-text {
 
 .query-history-controls {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex: 0 0 100%;
+  justify-content: flex-start;
+  margin-top: var(--slds-g-spacing-2, 0.5rem);
 }
 
 select,

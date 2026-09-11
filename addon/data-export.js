@@ -66,7 +66,6 @@ class Model {
     this.selectedSavedEntry = null;
     this.querySearchValue = "";
     this.expandAutocomplete = false;
-    this.expandSavedOptions = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
     this.performancePoints = [];
@@ -170,9 +169,6 @@ class Model {
   toggleExpand() {
     this.expandAutocomplete = !this.expandAutocomplete;
   }
-  toggleSavedOptions() {
-    this.expandSavedOptions = !this.expandSavedOptions;
-  }
   showDescribeUrl() {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
@@ -256,10 +252,10 @@ class Model {
     this.querySearchValue = "";
   }
   addToHistory() {
+    if (!this.queryInput?.value.trim()) {
+      return;
+    }
     this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
-  }
-  removeFromHistory() {
-    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   deleteHistoryEntry(entry) {
     this.queryHistory.remove(entry);
@@ -1377,12 +1373,10 @@ class App extends React.Component {
     this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
-    this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
     this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
-    this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
     this.onGenerateSoql = this.onGenerateSoql.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
@@ -1454,6 +1448,7 @@ class App extends React.Component {
       let {model} = this.props;
       model.clearHistory();
       model.didUpdate();
+      this.focusQuerySource();
     }
   }
   onAddToHistory(e) {
@@ -1462,25 +1457,20 @@ class App extends React.Component {
     model.addToHistory();
     model.didUpdate();
   }
-  onRemoveFromHistory(e) {
-    e.preventDefault();
-    let r = confirm("Are you sure you want to remove this saved query?");
-    let {model} = this.props;
-    if (r == true) {
-      model.removeFromHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
-  }
   onClearSavedHistory(e) {
     e.preventDefault();
     let r = confirm("Are you sure you want to remove all saved queries?");
-    let {model} = this.props;
     if (r == true) {
+      let {model} = this.props;
       model.clearSavedHistory();
+      model.didUpdate();
+      this.focusQuerySource();
     }
-    model.toggleSavedOptions();
-    model.didUpdate();
+  }
+  focusQuerySource() {
+    // Clearing disables the button that held focus. Move focus to the selected source
+    // after React has rendered the empty state instead of dropping it on <body>.
+    setTimeout(() => document.getElementById("sfir-query-source-" + this.state.querySource)?.focus(), 0);
   }
   onToggleHelp(e) {
     e.preventDefault();
@@ -1498,12 +1488,6 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.toggleExpand();
-    model.didUpdate();
-  }
-  onToggleSavedOptions(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.toggleSavedOptions();
     model.didUpdate();
   }
   onExport() {
@@ -1752,7 +1736,10 @@ class App extends React.Component {
         entries: model.savedHistory.list,
         renderItem: (entry) => renderQueryItem({...splitSavedQuery(entry.query), useToolingApi: entry.useToolingApi}),
         select: (entry) => { model.selectedSavedEntry = entry; model.selectSavedEntry(); },
-        remove: (entry) => this.onDeleteSavedEntry(entry)
+        remove: (entry) => this.onDeleteSavedEntry(entry),
+        clear: this.onClearSavedHistory,
+        clearLabel: "Clear Saved Queries",
+        clearAriaLabel: "Clear list of saved queries"
       };
     }
     if (this.state.querySource === "templates") {
@@ -1761,7 +1748,10 @@ class App extends React.Component {
         entries: model.queryTemplates.map(query => ({query})),
         renderItem: (entry) => renderQueryItem({query: entry.query}),
         select: (entry) => { model.selectedQueryTemplate = entry.query; model.selectQueryTemplate(); },
-        remove: null
+        remove: null,
+        clear: null,
+        clearLabel: "Clear list",
+        clearAriaLabel: "Clear list"
       };
     }
     return {
@@ -1769,7 +1759,10 @@ class App extends React.Component {
       entries: model.queryHistory.list,
       renderItem: (entry) => renderQueryItem({query: entry.query, useToolingApi: entry.useToolingApi}),
       select: (entry) => { model.selectedHistoryEntry = entry; model.selectHistoryEntry(); },
-      remove: (entry) => this.onDeleteHistoryEntry(entry)
+      remove: (entry) => this.onDeleteHistoryEntry(entry),
+      clear: this.onClearHistory,
+      clearLabel: "Clear Query History",
+      clearAriaLabel: "Clear list of query history"
     };
   }
 
@@ -1924,67 +1917,69 @@ class App extends React.Component {
     return h("fieldset", {className: "slds-form-element sfir-query-section"},
       h("legend", {className: "slds-form-element__legend slds-form-element__label sfir-query-section__legend"}, "Queries"),
       h("div", {className: "slds-form-element__control sfir-query-section__control"},
-        h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query source"},
-          QUERY_SOURCES.map(({id, label: sourceLabel}) =>
-            h("span", {key: id, className: "slds-button slds-radio_button"},
-              h("input", {
-                type: "radio",
-                name: "sfir-query-source",
-                id: "sfir-query-source-" + id,
-                checked: source.id === id,
-                onChange: () => this.onQuerySourceChange(id)
-              }),
-              h("label", {className: "slds-radio_button__label", htmlFor: "sfir-query-source-" + id},
-                h("span", {className: "slds-radio_faux"}, sourceLabel)
+        h("div", {className: "sfir-query-section__browse"},
+          h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query source"},
+            QUERY_SOURCES.map(({id, label: sourceLabel}) =>
+              h("span", {key: id, className: "slds-button slds-radio_button"},
+                h("input", {
+                  type: "radio",
+                  name: "sfir-query-source",
+                  id: "sfir-query-source-" + id,
+                  checked: source.id === id,
+                  onChange: () => this.onQuerySourceChange(id)
+                }),
+                h("label", {className: "slds-radio_button__label", htmlFor: "sfir-query-source-" + id},
+                  h("span", {className: "slds-radio_faux"}, sourceLabel)
+                )
               )
             )
-          )
+          ),
+          h(SldsCombobox, {
+            id: "query-search",
+            className: "sfir-query-search",
+            // Naming the source keeps it visible once the placeholder is replaced by typing.
+            placeholder: "Search " + label.toLowerCase(),
+            "aria-label": "Search " + label.toLowerCase(),
+            value: searchValue,
+            entries,
+            isOpen: isQueryDropdownOpen,
+            activeIndex: queryActiveIndex,
+            onInput: this.onQuerySearchInput.bind(this),
+            onFocus: () => this._openQueryDropdown(),
+            onClick: () => this._openQueryDropdown(),
+            onKeyDown: (e) => this.onQueryKeyDown(e, entries, isObjectSuggest, source),
+            onSelect: (entry) => this.applyQueryEntry(entry, isObjectSuggest, source),
+            onClose: () => this._closeQueryDropdown(),
+            onDelete: !isObjectSuggest && source.remove ? source.remove : null,
+            renderItem: (entry) => (isObjectSuggest
+              ? h("span", {className: "slds-truncate", title: entry}, entry)
+              : source.renderItem(entry))
+          }),
+          h("button", {
+            type: "button",
+            className: "slds-button slds-button_neutral sfir-query-clear",
+            title: source.clearLabel,
+            "aria-label": source.clearAriaLabel,
+            disabled: !source.clear || source.entries.length === 0,
+            onClick: source.clear
+          }, "Clear list")
         ),
-        h(SldsCombobox, {
-          id: "query-search",
-          // Naming the source keeps it visible once the placeholder is replaced by typing.
-          placeholder: "Search " + label.toLowerCase(),
-          "aria-label": "Search " + label.toLowerCase(),
-          value: searchValue,
-          entries,
-          isOpen: isQueryDropdownOpen,
-          activeIndex: queryActiveIndex,
-          onInput: this.onQuerySearchInput.bind(this),
-          onFocus: () => this._openQueryDropdown(),
-          onClick: () => this._openQueryDropdown(),
-          onKeyDown: (e) => this.onQueryKeyDown(e, entries, isObjectSuggest, source),
-          onSelect: (entry) => this.applyQueryEntry(entry, isObjectSuggest, source),
-          onClose: () => this._closeQueryDropdown(),
-          onDelete: !isObjectSuggest && source.remove ? source.remove : null,
-          renderItem: (entry) => (isObjectSuggest
-            ? h("span", {className: "slds-truncate", title: entry}, entry)
-            : source.renderItem(entry))
-        }),
-        this.renderQueryActions()
+        this.renderQuerySave()
       )
     );
   }
 
-  // Deliberately independent of the selected source: saving acts on the query in the
-  // editor, and the list actions stay meaningful whichever list is being browsed.
-  // Keeping them fixed also stops the picker moving out from under the pointer.
-  renderQueryActions() {
+  // Saving acts on the editor, not the selected source, so these controls stay put
+  // while the source changes.
+  renderQuerySave() {
     let {model} = this.props;
-    const menuItem = (onClick, label) => h("div", {className: "slds-dropdown__item", key: label},
-      h("a", {href: "#", onClick, title: label}, label)
-    );
+    // Every query textarea mutation calls didUpdate(), keeping this DOM read current.
+    const isQueryEmpty = !model.queryInput?.value.trim();
 
-    return h("div", {className: "sfir-query-section__actions"},
-      h("input", {className: "slds-input sfir-query-label", placeholder: "Query Label", type: "text", "aria-label": "Query Label", value: model.queryName, onInput: this.onSetQueryName}),
-      h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-      h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click " + (model.expandSavedOptions ? "slds-is-open" : "slds-is-closed")},
-        h("button", {className: model.expandSavedOptions ? "slds-button slds-button_neutral toggle contract" : "slds-button slds-button_neutral toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"})),
-        h("div", {className: "slds-dropdown slds-dropdown_right"},
-          menuItem(this.onClearHistory, "Clear Query History"),
-          menuItem(this.onRemoveFromHistory, "Remove Saved Query"),
-          menuItem(this.onClearSavedHistory, "Clear Saved Queries")
-        )
-      )
+    return h("div", {className: "sfir-query-section__save"},
+      h("label", {className: "sfir-query-save-label", htmlFor: "sfir-query-label"}, "Save as"),
+      h("input", {id: "sfir-query-label", className: "slds-input sfir-query-label", placeholder: "Optional label", type: "text", value: model.queryName, onInput: this.onSetQueryName}),
+      h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history", disabled: isQueryEmpty}, "Save Query")
     );
   }
 
@@ -2044,9 +2039,6 @@ class App extends React.Component {
             ),
             h("div", {className: "query-controls"},
               h("h3", {className: "slds-text-heading_small slds-m-bottom_xx-small slds-m-left_xxx-small"}, "Export Query"),
-              h("div", {className: "query-history-controls"},
-                this.renderQuerySection()
-              ),
               h("div", {className: "slds-grid slds-grid_align-spread"},
                 h("div", {className: "slds-col slds-size_7-of-12"},
                   h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_x-large"},
@@ -2085,6 +2077,9 @@ class App extends React.Component {
                       h("span", {className: "slds-checkbox_off"}, "Disabled")
                     )
                   )),
+              ),
+              h("div", {className: "query-history-controls"},
+                this.renderQuerySection()
               ),
             ),
             h("div", {

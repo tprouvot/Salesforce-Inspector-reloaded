@@ -97,8 +97,8 @@ function renderQuery(query) {
 // carry them, history entries are always a bare query.
 export function renderQueryItem({label, query, useToolingApi}) {
   return h("span", {className: "sfir-query-item"},
-    label && h("span", {className: "slds-badge slds-badge_inverse", title: "Saved query label"}, label),
+    label && h("span", {className: "slds-badge slds-badge_inverse sfir-query-badge", title: "Saved query label"}, label),
     renderQuery(query || ""),
-    useToolingApi && h("span", {className: "slds-badge", title: "Uses Tooling API"}, "Tooling")
+    useToolingApi && h("span", {className: "slds-badge sfir-query-badge", title: "Uses Tooling API"}, "Tooling")
   );
 }

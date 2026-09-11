@@ -77,8 +77,11 @@ list in the box beside them:
 * **Templates** – the starter queries from your Templates configuration
 
 Only the selected list is shown, and the search box names it, so there is never any doubt
-about which list you are searching. **Query Label**, **Save Query** and the overflow menu
-stay in the same place whichever list you pick.
+about which list you are searching. **Clear list** clears the selected History or Saved
+list and is disabled for Templates.
+
+**Save as**, its label input, and **Save Query** are separated from the browsing controls
+because they save the query currently in the editor, regardless of which source is selected.
 
 ### Delete individual queries
 
@@ -91,15 +94,13 @@ stay in the same place whichever list you pick.
 > Templates come from your configuration, so they cannot be deleted here.
 > Deletion is unavailable while the object search filter (`?`) is active.
 
-**Clear Query History**, **Remove Saved Query** and **Clear Saved Queries** are in the
-overflow menu at the end of the section.
-
 ### Visual badges
 
 * **Label badge** – Appears at the start for saved queries with a label (`label:query` format)
 * **Tooling badge** – Appears at the end when "Use Tooling API" was checked
 
-To create labeled queries: enter a label in "Query Label", enter your SOQL, then click "Save Query".
+To create labeled queries: enter your query in the editor, enter a label in **Save as**,
+then click **Save Query**. The button is disabled while the editor is empty.
 
 ### Automatic history saving
 

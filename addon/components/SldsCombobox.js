@@ -132,11 +132,17 @@ export class SldsCombobox extends React.Component {
           id: listboxId,
           // Horizontal alignment is set by alignDropdown, not an SLDS modifier.
           className: "slds-dropdown slds-dropdown_length-7 sfir-query-combobox-dropdown",
-          role: "listbox"
+          role: "listbox",
+          onMouseDown: (e) => {
+            // Keep input focus for rows and padding, but leave the native scrollbar
+            // interactive when Firefox dispatches its mousedown to this element.
+            const isScrollbar = e.target === e.currentTarget && e.nativeEvent.offsetX >= e.currentTarget.clientWidth;
+            if (!isScrollbar) {
+              e.preventDefault();
+            }
+          }
         },
-        // Keep keyboard focus in the combobox when clicking rows or the empty state,
-        // without blocking the scrolling div's native scrollbar.
-        h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation", onMouseDown: (e) => e.preventDefault()},
+        h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},
           entries.length === 0 ? h("li", {role: "presentation", className: "slds-listbox__item"},
             h("div", {className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option"},
               h("span", {className: "slds-media__body"},

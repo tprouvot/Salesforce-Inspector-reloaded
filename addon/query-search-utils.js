@@ -90,60 +90,84 @@ export function dropdownEntries(entries, searchValue) {
     .map((entry, index) => ({entry, index, score: scoreEntry(entry, search)}))
     .filter(result => result.score >= 0)
     .sort((a, b) => b.score - a.score || a.index - b.index);
-  if (!search.terms.length) {
-    return {entries: scored.map(result => result.entry), isObjectSuggest: false};
-  }
   const completeMatches = scored.filter(result => result.score >= 1);
   const results = completeMatches.length ? completeMatches : scored;
   return {entries: results.map(result => result.entry), isObjectSuggest: false};
 }
 
-function highlightText(text, terms, keyPrefix) {
+function matchRanges(text, terms) {
   if (!terms.length) {
-    return text;
+    return [];
   }
   const escape = term => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const orderedTerms = [...new Set(terms)].sort((a, b) => b.length - a.length);
-  const matches = new Set(orderedTerms.map(term => term.toLowerCase()));
-  const parts = text.split(new RegExp(`(${orderedTerms.map(escape).join("|")})`, "gi"));
-  return parts.map((part, index) => matches.has(part.toLowerCase())
-    ? h("mark", {key: `${keyPrefix}-${index}`, className: "sfir-search-match"}, part)
-    : part
-  );
+  return Array.from(text.matchAll(new RegExp(orderedTerms.map(escape).join("|"), "gi")))
+    .map(match => ({start: match.index, end: match.index + match[0].length}));
+}
+
+function renderTextRanges(text, ranges, position, keyPrefix) {
+  const start = position.offset;
+  const end = start + text.length;
+  position.offset = end;
+  const intersections = ranges.filter(range => range.end > start && range.start < end);
+  if (!intersections.length) {
+    return text;
+  }
+  const output = [];
+  let cursor = 0;
+  intersections.forEach((range, index) => {
+    const from = Math.max(range.start, start) - start;
+    const to = Math.min(range.end, end) - start;
+    if (from > cursor) {
+      output.push(text.slice(cursor, from));
+    }
+    output.push(h("mark", {key: `${keyPrefix}-${index}`, className: "sfir-search-match"}, text.slice(from, to)));
+    cursor = to;
+  });
+  if (cursor < text.length) {
+    output.push(text.slice(cursor));
+  }
+  return output;
+}
+
+function highlightText(text, terms, keyPrefix) {
+  return renderTextRanges(text, matchRanges(text, terms), {offset: 0}, keyPrefix);
 }
 
 export function renderHighlightedText(text, searchText) {
   return highlightText(text, splitTerms(searchText), "match");
 }
 
-function renderPrismToken(token, terms, key) {
+function renderPrismToken(token, ranges, position, key) {
   if (typeof token === "string") {
-    return highlightText(token, terms, key);
+    return renderTextRanges(token, ranges, position, key);
   }
   const aliases = token.alias ? (Array.isArray(token.alias) ? token.alias : [token.alias]) : [];
   const className = ["token", token.type, ...aliases].join(" ");
   const content = Array.isArray(token.content)
-    ? token.content.map((part, index) => renderPrismToken(part, terms, `${key}-${index}`))
-    : renderPrismToken(token.content, terms, `${key}-0`);
+    ? token.content.map((part, index) => renderPrismToken(part, ranges, position, `${key}-${index}`))
+    : renderPrismToken(token.content, ranges, position, `${key}-0`);
   return h("span", {key, className}, content);
 }
 
 // Prism owns syntax colouring; search matches are marked inside its text tokens.
-function renderQuery(query, searchValue) {
-  const terms = parseSearch(searchValue).terms;
+function renderQuery(query, terms) {
   const prism = window.Prism;
+  const ranges = matchRanges(query, terms);
+  const position = {offset: 0};
   const content = prism?.languages.sql
-    ? prism.tokenize(query, prism.languages.sql).map((token, index) => renderPrismToken(token, terms, `token-${index}`))
-    : highlightText(query, terms, "query");
+    ? prism.tokenize(query, prism.languages.sql).map((token, index) => renderPrismToken(token, ranges, position, `token-${index}`))
+    : renderTextRanges(query, ranges, position, "query");
   return h("code", {className: "language-sql sfir-query-text", title: query}, content);
 }
 
 // Renders one dropdown row. Callers decide whether labels apply: only saved queries
 // carry them, history entries are always a bare query.
-export function renderQueryItem({label, query, useToolingApi}, searchValue = "") {
+export function renderQueryItem({label, query, useToolingApi}, searchValue) {
+  const terms = parseSearch(searchValue).terms;
   return h("span", {className: "sfir-query-item"},
-    label && h("span", {className: "slds-badge slds-badge_inverse sfir-query-badge", title: "Saved query label"}, renderHighlightedText(label, searchValue)),
-    renderQuery(query || "", searchValue),
+    label && h("span", {className: "slds-badge slds-badge_inverse sfir-query-badge", title: "Saved query label"}, highlightText(label, terms, "label")),
+    renderQuery(query || "", terms),
     useToolingApi && h("span", {className: "slds-badge sfir-query-badge", title: "Uses Tooling API"}, "Tooling")
   );
 }

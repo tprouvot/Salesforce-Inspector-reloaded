@@ -218,6 +218,28 @@ test.describe("Data Export", () => {
     await expect(listbox).toHaveCount(0);
   });
 
+  test("Search Highlights Across Prism Tokens", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id, Account.Name FROM Contact WHERE CreatedDate > 2026-01-01T00:00:00Z", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const matches = page.locator("#query-search-listbox .sfir-search-match");
+
+    // Prism splits dotted fields and dates into several tokens; highlighting ranges
+    // are computed against the full query so the visible fragments still join up.
+    await history.fill("account.name");
+    expect((await matches.allTextContents()).join("")).toBe("Account.Name");
+
+    await history.fill("2026-01-01");
+    expect((await matches.allTextContents()).join("")).toBe("2026-01-01");
+  });
+
   test("Query History Dropdown Scrolls", async ({page, context, extensionId}) => {
     await context.addInitScript(() => {
       window.localStorage.setItem("insextQueryHistory", JSON.stringify(
@@ -258,6 +280,10 @@ test.describe("Data Export", () => {
     // the outer div and is not covered by this mousedown handler.
     await history.fill("no query matches this");
     await page.getByText("No results found").click();
+    await expect(history).toBeFocused();
+
+    const emptyBounds = await listbox.boundingBox();
+    await page.mouse.click(emptyBounds.x + (emptyBounds.width / 2), emptyBounds.y + 2);
     await expect(history).toBeFocused();
   });
 

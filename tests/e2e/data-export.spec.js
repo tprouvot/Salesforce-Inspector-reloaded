@@ -201,6 +201,9 @@ test.describe("Data Export", () => {
     await expect(options.first()).toContainText("FROM Case");
     await expect(options.nth(1)).toContainText("Opportunity");
 
+    // Field names that clash with SQL keywords keep the plain identifier colour.
+    await expect(options.first().locator(".token.keyword")).toHaveText(["SELECT", "FROM", "WHERE"]);
+
     // "?" is the only way to reach object filtering.
     await history.fill("?");
     await expect(options).toHaveText(["account", "case", "opportunity"]);
@@ -218,6 +221,33 @@ test.describe("Data Export", () => {
     await expect(listbox).toContainText("No results found");
     await history.press("Escape");
     await expect(listbox).toHaveCount(0);
+  });
+
+  test("Object Filter Lists Only Queried Objects", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        // A subquery FROM target is a child relationship, not an object.
+        {query: "SELECT Id, (SELECT Id FROM Contacts) FROM Account", useToolingApi: false},
+        // "from office" sits inside a string literal and must not count.
+        {query: "SELECT Id FROM Case WHERE Subject = 'mail from office'", useToolingApi: false},
+        // SOSL names its objects after RETURNING instead of FROM.
+        {query: "FIND {Acme} IN ALL FIELDS RETURNING Lead(Id), Opportunity(Id)", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const options = page.locator("#query-search-listbox [role='option']");
+
+    await history.fill("?");
+    await expect(options).toHaveText(["account", "case", "lead", "opportunity"]);
+
+    // Selecting a SOSL object still finds the query that returns it.
+    await history.fill("?opportunity ");
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toContainText("RETURNING");
   });
 
   test("Search Highlights Across Prism Tokens", async ({page, context, extensionId}) => {

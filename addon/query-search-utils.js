@@ -1,7 +1,9 @@
 /* global React */
 let h = React.createElement;
 
-const FROM_CLAUSE = /\bfrom\s+([a-zA-Z0-9_]+)/gi;
+// Parentheses track subquery depth; the other branches name an object.
+const OBJECT_SOURCE = /\(|\)|\bfrom\s+([a-zA-Z0-9_]+)|\breturning\s+([a-zA-Z0-9_]+)|,\s*([a-zA-Z0-9_]+)\s*\(/gi;
+const STRING_LITERAL = /'(?:[^'\\]|\\.)*'/g;
 // The query forms data-export can run: SOQL, SOSL and GraphQL.
 const LEADING_QUERY = /^\s*(select\b|find\b|\{)/i;
 
@@ -22,11 +24,27 @@ export function splitSavedQuery(text) {
   return {label, query};
 }
 
-// Objects named by a FROM clause, subqueries included.
+// The objects a query reads from: the SOQL FROM target and any SOSL RETURNING
+// objects. A subquery FROM target is a child relationship name rather than an object,
+// so only depth zero counts, and literals are blanked so their text cannot match.
 function extractObjectNames(query) {
+  const text = query.replace(STRING_LITERAL, literal => " ".repeat(literal.length));
+  const isSosl = /\breturning\b/i.test(text);
   const names = new Set();
-  for (const match of query.matchAll(FROM_CLAUSE)) {
-    names.add(match[1].toLowerCase());
+  let depth = 0;
+  for (const match of text.matchAll(OBJECT_SOURCE)) {
+    if (match[0] === "(") {
+      depth++;
+    } else if (match[0] === ")") {
+      depth--;
+    } else if (match[1] && depth === 0) {
+      names.add(match[1].toLowerCase());
+    } else if (match[2]) {
+      names.add(match[2].toLowerCase());
+    } else if (match[3] && isSosl) {
+      // A further SOSL object, as in "RETURNING Account(Id), Contact(Id)".
+      names.add(match[3].toLowerCase());
+    }
   }
   return names;
 }
@@ -150,24 +168,20 @@ function renderPrismToken(token, ranges, position, key) {
   return h("span", {key, className}, content);
 }
 
+// Prism ships a SQL keyword list, which colours ordinary Salesforce names such as
+// Status, Type and Language as syntax. These are the SOQL and SOSL reserved words;
+// anything unlisted renders as a plain identifier rather than the wrong colour.
+const SOQL_KEYWORDS = /\b(?:SELECT|FROM|WHERE|WITH|DATA CATEGORY|GROUP BY|ROLLUP|CUBE|HAVING|ORDER BY|ASC|DESC|NULLS (?:FIRST|LAST)|LIMIT|OFFSET|FOR (?:VIEW|REFERENCE|UPDATE)|UPDATE (?:TRACKING|VIEWSTAT)|TYPEOF|WHEN|THEN|ELSE|END|AND|OR|NOT|LIKE|IN|INCLUDES|EXCLUDES|ALL ROWS|USING SCOPE|FIND|RETURNING|(?:ALL|NAME|EMAIL|PHONE|SIDEBAR) FIELDS|FIELDS|SNIPPET|HIGHLIGHT|NETWORK|METADATA|DIVISION|LISTVIEW|COUNT(?:_DISTINCT)?|SUM|AVG|MIN|MAX|GROUPING|FORMAT|TOLABEL|CONVERTCURRENCY|CONVERTTIMEZONE)\b/i;
+
 function queryGrammar(prism, query) {
   if (!prism.languages.soql) {
-    prism.languages.soql = prism.languages.extend("sql", {});
+    prism.languages.soql = prism.languages.extend("sql", {keyword: SOQL_KEYWORDS});
     prism.languages.insertBefore("soql", "keyword", {
       "sobject": [
-        {
-          pattern: /(\bfrom\s+)[a-zA-Z_][a-zA-Z0-9_]*/i,
-          lookbehind: true
-        },
-        {
-          pattern: /(\breturning\s+)[a-zA-Z_][a-zA-Z0-9_]*/i,
-          lookbehind: true
-        },
-        {
-          // Additional SOSL objects after "Object(fields),".
-          pattern: /(\)\s*,\s*)[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/,
-          lookbehind: true
-        }
+        {pattern: /(\bfrom\s+)[a-zA-Z_][a-zA-Z0-9_]*/i, lookbehind: true},
+        {pattern: /(\breturning\s+)[a-zA-Z_][a-zA-Z0-9_]*/i, lookbehind: true},
+        // A further SOSL object, as in "RETURNING Account(Id), Contact(Id)".
+        {pattern: /(\)\s*,\s*)[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/, lookbehind: true}
       ]
     });
   }

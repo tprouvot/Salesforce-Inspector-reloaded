@@ -119,7 +119,7 @@ coloured query.
 ### Object search filter
 
 Type `?` in the search box to filter by the objects the queries in the selected list
-select from:
+select from, that is the SOQL `FROM` object or the SOSL `RETURNING` objects:
 * `?` – Show every object used in the list
 * `?Acc` – Objects starting with "Acc"
 * `?Account ` – Queries against Account (a trailing space confirms the object)

@@ -3366,14 +3366,14 @@ class UserDetails extends React.PureComponent {
     return user.IsActive && user.NetworkId;
   }
 
-  getLoginAsLink(userId) {
-    let {sfHost, contextOrgId, contextPath} = this.props;
+  // Relative servlet.su path — used for the plain LoginAs link and as redirect_uri
+  // for the Single Access call in loginAsInIncognito.
+  getLoginAsPath(userId) {
+    let {contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
     const targetUrl = contextPath || "/";
     return (
-      "https://"
-      + sfHost
-      + "/servlet/servlet.su"
+      "/servlet/servlet.su"
       + "?oid="
       + encodeURIComponent(contextOrgId)
       + "&suorgadminid="
@@ -3385,7 +3385,35 @@ class UserDetails extends React.PureComponent {
     );
   }
 
-  loginAsInIncognito(userId) {
+  getLoginAsLink(userId) {
+    let {sfHost} = this.props;
+    return "https://" + sfHost + this.getLoginAsPath(userId);
+  }
+
+  async loginAsInIncognito(userId) {
+    // Reusing the live session id to bootstrap a second browser context gets flagged
+    // as a hijack and kills the main tab's session. Use Salesforce's Single Access
+    // UI Bridge API instead - it mints a separate one-time frontdoor URL without
+    // touching the live session.
+    // suppressSessionError: a 401/403 here is an expected "this org/session doesn't
+    // support Single Access" signal, not a real expired-session event - don't let it
+    // pop the global "Access Token Expired" toast banner on the main tab.
+    try {
+      const redirectUri = this.getLoginAsPath(userId).replace(/^\//, "");
+      const singleAccess = await sfConn.rest(
+        "/services/oauth2/singleaccess?redirect_uri=" + encodeURIComponent(redirectUri),
+        {method: "GET", suppressSessionError: true}
+      );
+      if (singleAccess && singleAccess.frontdoor_uri) {
+        console.log("[LoginAs Incognito] Single Access UI Bridge succeeded, using frontdoor_uri");
+        this.openUrlInIncognito(singleAccess.frontdoor_uri);
+        return;
+      }
+      console.warn("[LoginAs Incognito] Single Access UI Bridge returned no frontdoor_uri, falling back to frontdoor.jsp with session id", singleAccess);
+    } catch (e) {
+      console.warn(`[LoginAs Incognito] Single Access UI Bridge request failed (${e.name || "Error"}: ${e.message}), falling back to frontdoor.jsp with session id`, e);
+    }
+    // Fallback if Single Access isn't available for this org/token
     const targetUrl
       = "https://"
       + this.sfHost

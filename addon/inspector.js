@@ -117,7 +117,7 @@ export let sfConn = {
     return tokenData.access_token;
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, useCache = true} = {}, rawResponse) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, useCache = true, suppressSessionError = false} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
@@ -213,7 +213,7 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       errorMessage = `401 Unauthorized: ${error}`;
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
-      if (localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
+      if (!suppressSessionError && localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
         showToastBanner();
       }
@@ -225,8 +225,10 @@ export let sfConn = {
     } else if (xhr.status == 403) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "Error";
       errorMessage = `403 Forbidden: ${error}`;
-      sessionError = {text: error, type: "error", icon: "error"};
-      showToastBanner();
+      if (!suppressSessionError) {
+        sessionError = {text: error, type: "error", icon: "error"};
+        showToastBanner();
+      }
       apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "Forbidden";

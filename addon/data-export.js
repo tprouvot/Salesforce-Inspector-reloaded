@@ -1210,14 +1210,196 @@ class Model {
   }
 }
 
+/*
+Loosely parses the flat field list out of a "SELECT ... FROM ..." SOQL query, without building
+a real SOQL parser. Used only to recover the field order the user actually wrote, since the JSON
+response groups every field of a relationship together (e.g. all of Account__r's fields sit next
+to each other) regardless of where those fields appeared in the SELECT list.
+Returns an array of lower-cased field paths in query order, or null if this isn't a plain
+SELECT query (SOSL FIND, GraphQL, query plan explain, etc.), in which case callers should fall
+back to discovery order.
+*/
+function parseSelectFieldOrder(queryText) {
+  if (typeof queryText !== "string") {
+    return null;
+  }
+  let query = queryText.trim();
+  let selectMatch = /^select\s+/i.exec(query);
+  if (!selectMatch) {
+    return null;
+  }
+  // Find the first top-level (paren-depth 0) FROM keyword; that marks the end of the field list.
+  let i = selectMatch[0].length;
+  let depth = 0;
+  let fromStart = -1;
+  while (i < query.length) {
+    let c = query[i];
+    if (c === "(") {
+      depth++;
+      i++;
+      continue;
+    }
+    if (c === ")") {
+      depth--;
+      i++;
+      continue;
+    }
+    if (depth === 0 && /^from\b/i.test(query.slice(i)) && (i === 0 || /\s/.test(query[i - 1]))) {
+      fromStart = i;
+      break;
+    }
+    i++;
+  }
+  if (fromStart === -1) {
+    return null;
+  }
+  // Split the field list on top-level commas only, so commas inside subqueries / function calls
+  // don't fragment a single field.
+  let fieldListText = query.slice(selectMatch[0].length, fromStart);
+  let fields = [];
+  let depth2 = 0;
+  let current = "";
+  for (const ch of fieldListText) {
+    if (ch === "(") {
+      depth2++;
+    } else if (ch === ")") {
+      depth2--;
+    }
+    if (ch === "," && depth2 === 0) {
+      fields.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim() !== "") {
+    fields.push(current.trim());
+  }
+  // Subquery fields (child relationships) start with "(" and look like "(SELECT ... FROM
+  // RelationshipName ...)". The JSON response key for the whole subquery result is that
+  // relationship name, so extract it to give the subquery a rank slot too - otherwise a plain
+  // field written after a subquery would be ranked as if the subquery took up no space at all,
+  // pulling it in front of the subquery's own (unrankable) child columns instead of after them.
+  return fields
+    .filter(f => f)
+    .map(f => (f.startsWith("(") ? extractSubqueryRelationshipName(f) : f.toLowerCase()))
+    .filter(f => f !== null);
+}
+
+function extractSubqueryRelationshipName(subqueryFieldText) {
+  let inner = subqueryFieldText.trim();
+  if (inner.startsWith("(")) {
+    inner = inner.slice(1);
+  }
+  if (inner.endsWith(")")) {
+    inner = inner.slice(0, -1);
+  }
+  inner = inner.trim();
+  let selectMatch = /^select\s+/i.exec(inner);
+  if (!selectMatch) {
+    return null;
+  }
+  let i = selectMatch[0].length;
+  let depth = 0;
+  let fromEnd = -1;
+  while (i < inner.length) {
+    let c = inner[i];
+    if (c === "(") {
+      depth++;
+      i++;
+      continue;
+    }
+    if (c === ")") {
+      depth--;
+      i++;
+      continue;
+    }
+    if (depth === 0 && /^from\b/i.test(inner.slice(i)) && (i === 0 || /\s/.test(inner[i - 1]))) {
+      fromEnd = i + 4;
+      break;
+    }
+    i++;
+  }
+  if (fromEnd === -1) {
+    return null;
+  }
+  let rest = inner.slice(fromEnd).trimStart();
+  let nameMatch = /^([A-Za-z0-9_]+)/.exec(rest);
+  return nameMatch ? nameMatch[1].toLowerCase() : null;
+}
+
 function RecordTable(vm) {
   /*
   We don't want to build our own SOQL parser, so we discover the columns based on the data returned.
   This means that we cannot find the columns of cross-object relationships, when the relationship field is null for all returned records.
   We don't care, because we don't need a stable set of columns for our use case.
+
+  However, the JSON response groups every field of a given relationship together, regardless of
+  where those fields appear in the original SELECT list. Discovering columns in response order
+  alone would then show all of a relationship's fields as a block, instead of interleaved with
+  plain fields the way the query wrote them. To keep the exported column order matching the
+  query, each newly discovered column is inserted at the position its field has in the query's
+  (loosely parsed) field list, rather than always being appended at the end. A column that isn't
+  itself a selected field (a bare relationship-container column, or one of a subquery's own
+  internal columns like "Contacts.records.0.Id") inherits the rank of its nearest matched
+  ancestor path, so a whole relationship/subquery subtree is kept together as one block and
+  ordered relative to other fields by where that block's field/subquery sits in the query.
+  Columns with no matched ancestor at all (aggregate expressions, etc.) keep the old
+  append-at-the-end behavior.
   */
   let columnIdx = new Map();
   let header = ["_"];
+  let fieldRank = null; // lazily built Map<lower-cased field path, rank in query>; null until first use
+  function getFieldRank(column) {
+    if (fieldRank === null) {
+      fieldRank = new Map();
+      let order = parseSelectFieldOrder(vm.queryInput && vm.queryInput.value);
+      if (order) {
+        order.forEach((field, idx) => {
+          if (!fieldRank.has(field)) {
+            fieldRank.set(field, idx);
+          }
+        });
+      }
+    }
+    let path = column.toLowerCase();
+    while (true) {
+      if (fieldRank.has(path)) {
+        return fieldRank.get(path);
+      }
+      let dotIdx = path.lastIndexOf(".");
+      if (dotIdx === -1) {
+        return Infinity;
+      }
+      path = path.slice(0, dotIdx);
+    }
+  }
+  function insertColumn(column, value) {
+    let rank = getFieldRank(column);
+    let insertAt = header.length;
+    for (let i = 1; i < header.length; i++) {
+      if (getFieldRank(header[i]) > rank) {
+        insertAt = i;
+        break;
+      }
+    }
+    for (const [key, idx] of columnIdx) {
+      if (idx >= insertAt) {
+        columnIdx.set(key, idx + 1);
+      }
+    }
+    columnIdx.set(column, insertAt);
+    for (let row of rt.table) {
+      row.splice(insertAt, 0, undefined);
+    }
+    header[insertAt] = column;
+    if (typeof value == "object" && value != null && vm.prefHideRelations) {
+      rt.colVisibilities.splice(insertAt, 0, false);
+    } else {
+      rt.colVisibilities.splice(insertAt, 0, true);
+    }
+    return insertAt;
+  }
   function discoverColumns(record, prefix, row) {
     for (const field of Object.keys(record)) {
       if (field === "attributes") {
@@ -1228,15 +1410,7 @@ function RecordTable(vm) {
       if (columnIdx.has(column)) {
         c = columnIdx.get(column);
       } else {
-        c = header.length;
-        columnIdx.set(column, c);
-        for (let row of rt.table) {
-          row.push(undefined);
-        }
-        header[c] = column;
-        if (typeof record[field] == "object" && record[field] != null && vm.prefHideRelations) {
-          rt.colVisibilities.push(false);
-        } else { rt.colVisibilities.push(true); }
+        c = insertColumn(column, record[field]);
       }
       row[c] = record[field];
       if (typeof record[field] == "object" && record[field] != null) {

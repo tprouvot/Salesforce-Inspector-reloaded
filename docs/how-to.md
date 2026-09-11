@@ -68,17 +68,31 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
 ## Use Query History and Saved Queries in Data Export
 
-Data Export includes searchable comboboxes for Query History and Saved Queries with search, filtering, per-item delete, and visual badges.
+Everything that puts a query into the editor lives in one **Queries** section. Pick where
+the query comes from with the **History / Saved / Templates** buttons, then search that
+list in the box beside them:
+
+* **History** – queries you have run, newest first
+* **Saved** – queries you saved, with their labels
+* **Templates** – the starter queries from your Templates configuration
+
+Only the selected list is shown, and the search box names it, so there is never any doubt
+about which list you are searching. **Query Label**, **Save Query** and the overflow menu
+stay in the same place whichever list you pick.
 
 ### Delete individual queries
 
-1. Open **Query History** or **Saved Queries** dropdown
+1. Select **History** or **Saved** and open the dropdown
 2. Highlight a query with the arrow keys, or hover over it
 3. Press **Delete**, or click the **delete icon** (trash) on the right
 
 > **Note**
 > Deleting a history entry is immediate; deleting a saved query asks for confirmation.
+> Templates come from your configuration, so they cannot be deleted here.
 > Deletion is unavailable while the object search filter (`?`) is active.
+
+**Clear Query History**, **Remove Saved Query** and **Clear Saved Queries** are in the
+overflow menu at the end of the section.
 
 ### Visual badges
 
@@ -102,7 +116,8 @@ so `case status` matches a query mentioning both.
 
 ### Object search filter
 
-Type `?` in the dropdown to filter by the objects your queries select from:
+Type `?` in the search box to filter by the objects the queries in the selected list
+select from:
 * `?` – Show every object used in the list
 * `?Acc` – Objects starting with "Acc"
 * `?Account ` – Queries against Account (a trailing space confirms the object)

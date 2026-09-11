@@ -9,6 +9,9 @@ import {routeMock} from "./test-mock";
 test.describe("Data Export", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
+  // The Queries section shows one source at a time, picked with a radio button group.
+  const selectQuerySource = (page, source) => page.locator(`label[for="sfir-query-source-${source}"]`).click();
+
   test.beforeEach(async ({context}) => {
     // 1. Inject Fake Session Data
     await injectSessionData(context, {
@@ -173,8 +176,8 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
-    const history = page.getByRole("combobox", {name: "Query History"});
-    const listbox = page.locator("#history-listbox");
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const listbox = page.locator("#query-search-listbox");
     const options = listbox.locator("[role='option']");
 
     await history.click();
@@ -216,8 +219,9 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
-    const saved = page.getByRole("combobox", {name: "Saved Queries"});
-    const options = page.locator("#saved-listbox [role='option']");
+    await selectQuerySource(page, "saved");
+    const saved = page.getByRole("combobox", {name: "Search saved"});
+    const options = page.locator("#query-search-listbox [role='option']");
 
     await saved.click();
     await expect(options).toHaveCount(2);
@@ -248,14 +252,14 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
-    const history = page.getByRole("combobox", {name: "Query History"});
-    const options = page.locator("#history-listbox [role='option']");
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const options = page.locator("#query-search-listbox [role='option']");
     const query = page.locator("textarea#query");
 
     // The dropdown must stay inside the window, otherwise the query text is clipped
     // and the trash icon lands off screen where it cannot be clicked at all.
     await history.click();
-    const listbox = await page.locator("#history-listbox").boundingBox();
+    const listbox = await page.locator("#query-search-listbox").boundingBox();
     const viewport = page.viewportSize();
     expect(listbox.x, "left edge on screen").toBeGreaterThanOrEqual(0);
     expect(listbox.x + listbox.width, "right edge on screen").toBeLessThanOrEqual(viewport.width);
@@ -285,8 +289,9 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
-    const saved = page.getByRole("combobox", {name: "Saved Queries"});
-    const options = page.locator("#saved-listbox [role='option']");
+    await selectQuerySource(page, "saved");
+    const saved = page.getByRole("combobox", {name: "Search saved"});
+    const options = page.locator("#query-search-listbox [role='option']");
     await saved.click();
 
     // Dismissing keeps the entry, accepting removes it.
@@ -297,6 +302,56 @@ test.describe("Data Export", () => {
     page.once("dialog", dialog => dialog.accept());
     await options.first().locator(".sfir-combobox-delete").click();
     await expect(options).toHaveCount(0);
+  });
+
+  test("Query Source Switch Keeps Layout Stable", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const geometry = () => page.evaluate(() => {
+      const box = (selector) => {
+        const rect = document.querySelector(selector).getBoundingClientRect();
+        return Math.round(rect.x) + "x" + Math.round(rect.width);
+      };
+      return {
+        picker: box(".slds-radio_button-group"),
+        search: box(".slds-combobox__input"),
+        section: box(".sfir-query-section")
+      };
+    });
+
+    await selectQuerySource(page, "history");
+    const stable = await geometry();
+
+    // Switching source must not shift the controls out from under the pointer,
+    // so the actions beside the picker are deliberately source independent.
+    for (const source of ["saved", "templates"]) {
+      await selectQuerySource(page, source);
+      expect(await geometry(), `layout moved on ${source}`).toEqual(stable);
+    }
+
+    // The picker is a real radio group, so arrow keys select as well as clicks.
+    await page.locator("#sfir-query-source-history").focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("combobox", {name: "Search saved"})).toBeVisible();
+  });
+
+  test("Templates Source Loads A Template", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await selectQuerySource(page, "templates");
+    const search = page.getByRole("combobox", {name: "Search templates"});
+    const options = page.locator("#query-search-listbox [role='option']");
+
+    await search.click();
+    await expect(options.first()).toContainText("SELECT Id FROM");
+
+    // Templates are configuration, so they offer no per-entry delete.
+    await expect(options.first().locator(".sfir-combobox-delete")).toHaveCount(0);
+
+    await options.first().click();
+    await expect(page.locator("textarea#query")).toHaveValue("SELECT Id FROM ");
   });
 
   test("Result Column Filter Stays Open", async ({page, extensionId}) => {

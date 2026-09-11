@@ -51,23 +51,43 @@ textarea[hidden] {
 /* Query History / Saved Queries comboboxes. Hover, focus and badge colours come
    from SLDS; only the multi-line query layout is specific to this page. */
 
-/* A plain flex row rather than slds-button-group, which squares off the corners of
-   its buttons and left the rounded combobox input butting against them. */
-.sfir-query-control-group {
-  display: flex;
-  align-items: center;
-  gap: var(--slds-g-spacing-1, 0.25rem);
+/* One bordered group for everything that puts a query in the editor: the source
+   picker, the search box for that source, and the actions that source owns. */
+.sfir-query-section {
+  border: 1px solid var(--slds-g-color-border-1, #c9c9c9);
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem 0.6rem;
 }
 
-/* Match the neighbouring Templates select, and stop the row from squeezing the
-   input until its search icon sits on top of the text. */
-.sfir-query-control-group > .slds-form-element {
+.sfir-query-section__legend {
+  padding: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--slds-g-color-on-surface-2, #444);
+}
+
+.sfir-query-section__control,
+.sfir-query-section__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--slds-g-spacing-2, 0.5rem);
+}
+
+/* Nothing in the row may shrink, or button labels wrap out of their button. */
+.sfir-query-section__control > *,
+.sfir-query-section__actions > * {
   flex: none;
-  width: 8.5rem;
+  white-space: nowrap;
+}
+
+/* Wide enough to read a query fragment, and never squeezed by the row until the
+   search icon sits on top of the text. */
+.sfir-query-section__control > .slds-form-element {
+  flex: none;
+  width: 14rem;
 }
 
 /* The search icon is decorative, so it must not swallow clicks on the input. */
-.sfir-query-control-group .slds-input__icon {
+.sfir-query-section .slds-input__icon {
   pointer-events: none;
 }
 

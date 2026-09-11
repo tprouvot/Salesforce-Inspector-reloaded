@@ -16,14 +16,14 @@ export class SldsCombobox extends React.Component {
   }
 
   componentWillUnmount() {
-    document.removeEventListener("click", this.handleDocumentClick);
+    document.removeEventListener("mousedown", this.handleDocumentClick);
   }
 
   componentDidUpdate(prevProps) {
     if (this.props.isOpen && !prevProps.isOpen) {
       this.listenForOutsideClick();
     } else if (!this.props.isOpen && prevProps.isOpen) {
-      document.removeEventListener("click", this.handleDocumentClick);
+      document.removeEventListener("mousedown", this.handleDocumentClick);
     }
     if (this.props.isOpen) {
       // Entries change the width, so re-check the side on every open render.
@@ -34,9 +34,11 @@ export class SldsCombobox extends React.Component {
     }
   }
 
-  // Deferred so the click that opened the dropdown does not immediately close it.
+  // Listens on mousedown rather than click: deleting an entry resizes the dropdown,
+  // so by the time the click fires the pointer can sit outside it even though the
+  // interaction started inside. Deferred so the press that opened it is not counted.
   listenForOutsideClick() {
-    setTimeout(() => document.addEventListener("click", this.handleDocumentClick), 0);
+    setTimeout(() => document.addEventListener("mousedown", this.handleDocumentClick), 0);
   }
 
   // Where the input sits in the toolbar depends on the org name, so a fixed side

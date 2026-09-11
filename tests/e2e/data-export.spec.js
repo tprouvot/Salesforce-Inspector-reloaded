@@ -182,6 +182,8 @@ test.describe("Data Export", () => {
 
     await history.click();
     await expect(options).toHaveCount(3);
+    // Query colouring comes from the Prism SQL grammar bundled with the extension.
+    await expect(options.first().locator(".token.keyword").first()).toHaveText("SELECT");
 
     // Every term must match: "closed" hits two entries, "status closed" only one.
     await history.fill("closed");
@@ -259,6 +261,7 @@ test.describe("Data Export", () => {
     // The dropdown must stay inside the window, otherwise the query text is clipped
     // and the trash icon lands off screen where it cannot be clicked at all.
     await history.click();
+    await expect(options.first().locator(".sfir-combobox-delete")).toHaveClass(/slds-button_icon/);
     const listbox = await page.locator("#query-search-listbox").boundingBox();
     const viewport = page.viewportSize();
     expect(listbox.x, "left edge on screen").toBeGreaterThanOrEqual(0);

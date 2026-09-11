@@ -55,15 +55,15 @@ textarea[hidden] {
    picker, the search box for that source, and the actions that source owns. */
 .sfir-query-section {
   width: 100%;
-  border: 1px solid var(--slds-g-color-border-1, #c9c9c9);
-  border-radius: 0.25rem;
+  border: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
+  border-radius: var(--slds-g-radius-border-2);
   padding: 0.5rem 0.75rem 0.6rem;
 }
 
 .sfir-query-section__legend {
   padding: 0 0 0.25rem;
-  font-size: 0.75rem;
-  color: var(--slds-g-color-on-surface-2, #444);
+  font-size: var(--slds-g-font-scale-neg-1);
+  color: var(--slds-g-color-on-surface-2);
 }
 
 .sfir-query-section__control,
@@ -80,13 +80,13 @@ textarea[hidden] {
 
 /* Browsing loads a query; saving writes the editor query to the Saved list. */
 .sfir-query-section__save {
-  border-left: 1px solid var(--slds-g-color-border-1, #c9c9c9);
-  padding-left: var(--slds-g-spacing-2, 0.5rem);
+  border-left: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
+  padding-left: var(--slds-g-spacing-2);
 }
 
 .sfir-query-save-label {
-  font-size: 0.75rem;
-  color: var(--slds-g-color-on-surface-2, #444);
+  font-size: var(--slds-g-font-scale-neg-1);
+  color: var(--slds-g-color-on-surface-2);
 }
 
 /* Below 64rem the save group is explicitly moved to a second row, so its divider
@@ -95,8 +95,8 @@ textarea[hidden] {
   .sfir-query-section__save {
     flex: 0 0 100%;
     border-left: 0;
-    border-top: 1px solid var(--slds-g-color-border-1, #c9c9c9);
-    padding-top: var(--slds-g-spacing-2, 0.5rem);
+    border-top: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
+    padding-top: var(--slds-g-spacing-2);
     padding-left: 0;
   }
 }
@@ -193,18 +193,8 @@ code.sfir-query-text {
 }
 
 .sfir-combobox-option:hover .sfir-combobox-delete,
-.slds-listbox__option.slds-has-focus .sfir-combobox-delete {
+.sfir-combobox-option.slds-has-focus .sfir-combobox-delete {
   opacity: 1;
-}
-
-.sfir-combobox-delete-icon {
-  width: 1rem;
-  height: 1rem;
-  fill: var(--slds-g-color-neutral-base-50, #747474);
-}
-
-.sfir-combobox-delete:hover .sfir-combobox-delete-icon {
-  fill: var(--slds-g-color-error-base-40, #ba0517);
 }
 
 #query {

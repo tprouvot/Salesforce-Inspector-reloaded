@@ -165,7 +165,7 @@ export class SldsCombobox extends React.Component {
               // Pointer shortcut only: options stay atomic for assistive technology,
               // which deletes with the Delete key announced by the hint below.
               onDelete && h("span", {
-                className: "sfir-combobox-delete",
+                className: "slds-button slds-button_icon slds-button_icon-x-small sfir-combobox-delete",
                 title: "Delete this item",
                 "aria-hidden": "true",
                 onMouseDown: (e) => {
@@ -173,7 +173,7 @@ export class SldsCombobox extends React.Component {
                   onDelete(entry, index);
                 }
               },
-              h("svg", {className: "sfir-combobox-delete-icon"},
+              h("svg", {className: "slds-button__icon"},
                 h("use", {xlinkHref: "symbols.svg#delete"})
               )
               )

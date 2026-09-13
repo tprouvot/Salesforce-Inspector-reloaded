@@ -1,11 +1,17 @@
-import {getRedirectUri, getClientId, Constants} from "./utils.js";
+import {getRedirectUri, getClientId, isSettingEnabled, Constants} from "./utils.js";
 import {apiStatistics} from "./api-statistics.js";
 
-export let defaultApiVersion = "66.0";
+export let defaultApiVersion = "67.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
 export let sessionError;
 const clientId = "Salesforce Inspector Reloaded";
+const qaInternalClientIdPrefix = "SfdcInternalQA/";
+
+// Resolved on each call so toggling the option applies without reloading open pages
+function getCallOptionsClientId() {
+  return isSettingEnabled(Constants.QA_INTERNAL_MODE) ? qaInternalClientIdPrefix + clientId : clientId;
+}
 
 export let sfConn = {
 
@@ -111,7 +117,7 @@ export let sfConn = {
     return tokenData.access_token;
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, useCache = true} = {}, rawResponse) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, useCache = true, suppressSessionError = false} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
@@ -164,7 +170,7 @@ export let sfConn = {
     }
 
     // Always set this header last to ensure it cannot be overridden
-    xhr.setRequestHeader("Sforce-Call-Options", `client=${clientId}`);
+    xhr.setRequestHeader("Sforce-Call-Options", `client=${getCallOptionsClientId()}`);
 
     xhr.responseType = responseType;
     await new Promise((resolve, reject) => {
@@ -207,7 +213,7 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       errorMessage = `401 Unauthorized: ${error}`;
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
-      if (localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
+      if (!suppressSessionError && localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
         showToastBanner();
       }
@@ -219,8 +225,10 @@ export let sfConn = {
     } else if (xhr.status == 403) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "Error";
       errorMessage = `403 Forbidden: ${error}`;
-      sessionError = {text: error, type: "error", icon: "error"};
-      showToastBanner();
+      if (!suppressSessionError) {
+        sessionError = {text: error, type: "error", icon: "error"};
+        showToastBanner();
+      }
       apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "Forbidden";
@@ -293,7 +301,7 @@ export let sfConn = {
     xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
     xhr.setRequestHeader("Content-Type", "text/xml");
     xhr.setRequestHeader("SOAPAction", '""');
-    xhr.setRequestHeader("CallOptions", `client:${clientId}`);
+    xhr.setRequestHeader("CallOptions", `client:${getCallOptionsClientId()}`);
 
     let sessionHeaderKey = wsdl.apiName == "Metadata" ? "met:SessionHeader" : "SessionHeader";
     let sessionIdKey = wsdl.apiName == "Metadata" ? "met:sessionId" : "sessionId";

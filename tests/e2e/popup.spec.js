@@ -7,6 +7,60 @@ import {
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
+// Stub records returned by the Shortcut tab metadata composite mock, keyed by a
+// distinctive substring of the SOQL query used for each metadata type in popup.js.
+// Values mirror the real metadata deployed from test/main/ (flow, class, permission set)
+// so search terms and assertions are identical whether tests run mocked or against a real org.
+const SHORTCUT_METADATA_MOCKS = [
+  {
+    match: "FlowDefinitionView",
+    record: {
+      DurableId: "301000000000001AAA",
+      LatestVersionId: "301000000000002AAA",
+      ApiName: "RecordTrigger_InspectorTest",
+      Label: "RecordTrigger InspectorTest",
+      ProcessType: "AutoLaunchedFlow",
+      attributes: {type: "FlowDefinitionView"}
+    }
+  },
+  {
+    // PermissionSet is checked before Profile since "PermissionSet" does not contain "Profile"
+    // but both queries are otherwise disjoint; order here only matters for readability.
+    match: "PermissionSet",
+    record: {
+      Id: "0PS000000000001AAA",
+      Name: "SfInspector",
+      Label: "Sf Inspector",
+      Type: "Regular",
+      License: null,
+      PermissionSetGroupId: null,
+      attributes: {type: "PermissionSet"}
+    }
+  },
+  {
+    // Standard "System Administrator" profile exists in every org (real or scratch)
+    match: "Profile",
+    record: {
+      Id: "00e000000000001AAA",
+      Name: "System Administrator",
+      UserLicense: {Name: "Salesforce"},
+      attributes: {type: "Profile"}
+    }
+  },
+  {
+    match: "ApexClass",
+    record: {
+      Id: "01p000000000001AAA",
+      Name: "SalesforceInspectorTest",
+      NamespacePrefix: null,
+      ApiVersion: 66,
+      Status: "Active",
+      LengthWithoutComments: 100,
+      attributes: {type: "ApexClass"}
+    }
+  }
+];
+
 test.describe("Popup", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
@@ -99,111 +153,102 @@ test.describe("Popup", () => {
         return;
       }
 
+      const request = route.request();
+      const url = request.url();
+      const method = request.method();
+
+      // REST API - Composite Query (user details + Shortcut tab metadata search).
+      // Handled before routeMock() because test-mock.js has a generic composite fallback
+      // that would otherwise swallow these requests and respond with empty records.
+      if (url.includes(mockHost) && url.includes("/composite") && method === "POST") {
+        const requestBody = await request.postData();
+        const body = JSON.parse(requestBody);
+
+        // User search composite
+        if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("FROM User WHERE")) {
+          await fulfillSuccess(route, {
+            compositeResponse: [
+              {
+                httpStatusCode: 200,
+                body: {
+                  totalSize: 1,
+                  records: [{
+                    Id: "005000000000001AAA",
+                    Name: "Test User",
+                    Email: "test@example.com",
+                    Username: "test@example.com",
+                    Alias: "tuser",
+                    IsActive: true,
+                    Profile: {
+                      Name: "System Administrator"
+                    },
+                    UserRole: {
+                      Name: "CEO"
+                    }
+                  }]
+                }
+              }
+            ]
+          });
+          return;
+        }
+
+        // User details composite
+        if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("WHERE Id='")) {
+          await fulfillSuccess(route, {
+            compositeResponse: [
+              {
+                httpStatusCode: 200,
+                body: {
+                  totalSize: 1,
+                  records: [{
+                    Id: "005000000000001AAA",
+                    Name: "Test User",
+                    Email: "test@example.com",
+                    Username: "test@example.com",
+                    Alias: "tuser",
+                    IsActive: true,
+                    FederationIdentifier: "test@example.com",
+                    ProfileId: "00e000000000001AAA",
+                    Profile: {
+                      Name: "System Administrator"
+                    },
+                    ContactId: null,
+                    IsPortalEnabled: false,
+                    UserPreferencesUserDebugModePref: false,
+                    UserRole: {
+                      Name: "CEO"
+                    },
+                    LocaleSidKey: "en_US",
+                    LanguageLocaleKey: "en_US"
+                  }]
+                }
+              }
+            ]
+          });
+          return;
+        }
+
+        // Shortcut search composite (Shortcuts tab: default, "!", "!flow", "!profile", "!class", "!perm" searches)
+        if (body.compositeRequest && body.compositeRequest.some((req) => SHORTCUT_METADATA_MOCKS.some(({match}) => req.url?.includes(match)))) {
+          const compositeResponse = body.compositeRequest.map((req) => {
+            const mock = SHORTCUT_METADATA_MOCKS.find(({match}) => req.url?.includes(match));
+            return {
+              httpStatusCode: 200,
+              body: {totalSize: mock ? 1 : 0, records: mock ? [mock.record] : []}
+            };
+          });
+          await fulfillSuccess(route, {compositeResponse});
+          return;
+        }
+      }
+
       //we check if we have a mock for this request
       if (await routeMock(route, mockHost)) {
         return;
       }
 
-      const request = route.request();
-      const url = request.url();
-      const method = request.method();
-
       if (url.includes(mockHost)) {
-
-        // REST API - Composite Query (for user details)
-        if (url.includes("/composite") && method === "POST") {
-          const requestBody = await request.postData();
-          const body = JSON.parse(requestBody);
-
-          // User search composite
-          if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("FROM User WHERE")) {
-            await fulfillSuccess(route, {
-              compositeResponse: [
-                {
-                  httpStatusCode: 200,
-                  body: {
-                    totalSize: 1,
-                    records: [{
-                      Id: "005000000000001AAA",
-                      Name: "Test User",
-                      Email: "test@example.com",
-                      Username: "test@example.com",
-                      Alias: "tuser",
-                      IsActive: true,
-                      Profile: {
-                        Name: "System Administrator"
-                      },
-                      UserRole: {
-                        Name: "CEO"
-                      }
-                    }]
-                  }
-                }
-              ]
-            });
-            return;
-          }
-
-          // User details composite
-          if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("WHERE Id='")) {
-            await fulfillSuccess(route, {
-              compositeResponse: [
-                {
-                  httpStatusCode: 200,
-                  body: {
-                    totalSize: 1,
-                    records: [{
-                      Id: "005000000000001AAA",
-                      Name: "Test User",
-                      Email: "test@example.com",
-                      Username: "test@example.com",
-                      Alias: "tuser",
-                      IsActive: true,
-                      FederationIdentifier: "test@example.com",
-                      ProfileId: "00e000000000001AAA",
-                      Profile: {
-                        Name: "System Administrator"
-                      },
-                      ContactId: null,
-                      IsPortalEnabled: false,
-                      UserPreferencesUserDebugModePref: false,
-                      UserRole: {
-                        Name: "CEO"
-                      },
-                      LocaleSidKey: "en_US",
-                      LanguageLocaleKey: "en_US"
-                    }]
-                  }
-                }
-              ]
-            });
-            return;
-          }
-
-          // Shortcut search composite
-          if (body.compositeRequest && body.compositeRequest[0]?.url?.includes("FlowDefinitionView")) {
-            await fulfillSuccess(route, {
-              compositeResponse: [
-                {
-                  httpStatusCode: 200,
-                  body: {
-                    totalSize: 1,
-                    records: [{
-                      DurableId: "301000000000001AAA",
-                      LatestVersionId: "301000000000002AAA",
-                      ApiName: "TestFlow",
-                      Label: "Test Flow",
-                      ProcessType: "AutoLaunchedFlow",
-                      attributes: {
-                        type: "FlowDefinitionView"
-                      }
-                    }]
-                  }
-                }
-              ]
-            });
-          }
-        }
 
         // Tooling API - TraceFlag Query
         if (url.includes("/tooling/query") && url.includes("TraceFlag")) {
@@ -304,9 +349,6 @@ test.describe("Popup", () => {
 
     //click on the button to open the popup
     await page.locator(".insext-btn").click();
-
-    // Locate the iframe by its name, id, or index
-    //const frame = await page.frame({ name: 'popup' });
 
     const frame = await page.frameLocator(".insext-popup");
 
@@ -634,6 +676,41 @@ test.describe("Popup", () => {
   });
 
   test.describe("Shortcuts Tab", () => {
+    const shortcutInputSelector = "input[placeholder*='!profile']";
+    // referenceId used in popup.js composite request for each metadata type (name + "Select")
+    const ALL_METADATA_REFERENCE_IDS = ["flowsSelect", "profilesSelect", "permissionSetsSelect", "classesSelect"];
+
+    async function openShortcutsTab(page) {
+      await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Shortcuts')").click();
+      await page.frameLocator(".insext-popup").locator(shortcutInputSelector).waitFor({timeout: 1000});
+      return page.frameLocator(".insext-popup").locator(shortcutInputSelector);
+    }
+
+    /**
+     * Captures the metadata types (referenceIds) requested via the Shortcut tab's
+     * composite search. Asserting on this (rather than on specific record content)
+     * keeps these tests valid whether mocks are enabled or tests run against a real org.
+     */
+    function captureShortcutMetadataRequests(page) {
+      const referenceIds = [];
+      const handler = (request) => {
+        if (request.method() !== "POST" || !request.url().includes("/composite")) {
+          return;
+        }
+        let body;
+        try {
+          body = JSON.parse(request.postData() || "{}");
+        } catch {
+          return;
+        }
+        (body.compositeRequest || [])
+          .filter((r) => ALL_METADATA_REFERENCE_IDS.includes(r.referenceId))
+          .forEach((r) => referenceIds.push(r.referenceId));
+      };
+      page.on("request", handler);
+      return {referenceIds, stop: () => page.off("request", handler)};
+    }
+
     test("Switch to Shortcuts Tab", async ({page, extensionId}) => {
       await initPopupPage(page, extensionId);
 
@@ -645,28 +722,120 @@ test.describe("Popup", () => {
       await expect(shortcutsTab).toHaveClass(/slds-is-active/);
 
       // Verify shortcut search input appears
-      await expect(page.frameLocator(".insext-popup").locator("input[placeholder*='Quick find']")).toBeVisible({timeout: 1000});
+      await expect(page.frameLocator(".insext-popup").locator(shortcutInputSelector)).toBeVisible({timeout: 1000});
     });
 
-    test("Search Shortcut", async ({page, extensionId}) => {
+    test("Search Shortcut (default: links + metadata)", async ({page, extensionId}) => {
       await initPopupPage(page, extensionId);
-
-      // Click Shortcuts tab
-      await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Shortcuts')").click();
-
-      // Wait for shortcut search input
-      await page.frameLocator(".insext-popup").locator("input[placeholder*='Quick find']").waitFor({timeout: 1000});
+      const searchInput = await openShortcutsTab(page);
+      const capture = captureShortcutMetadataRequests(page);
 
       // Type in search
-      const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Quick find']");
       await searchInput.fill("Flow");
+      await page.waitForTimeout(1200);
+      capture.stop();
 
-      // Wait for autocomplete results
-      await page.waitForTimeout(1000);
+      // Default search includes both setup links (e.g. "Flow Trigger Explorer") and metadata
+      await expect(page.frameLocator(".insext-popup").locator("text=Flow Trigger Explorer")).toBeVisible({timeout: 3000});
+      expect(capture.referenceIds).toContain("flowsSelect");
+    });
 
-      // Verify flow appears in results (if metadata search is enabled)
-      // Note: This depends on localStorage settings
-      await page.waitForTimeout(1000);
+    test("Search Shortcut with '/' prefix returns setup links only", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      const searchInput = await openShortcutsTab(page);
+      const capture = captureShortcutMetadataRequests(page);
+
+      // "/" prefix should search setupLinks only, skipping the metadata composite call entirely
+      await searchInput.fill("/Flow Trigger");
+      await page.waitForTimeout(1200);
+      capture.stop();
+
+      // Setup link shortcut is shown
+      await expect(page.frameLocator(".insext-popup").locator("text=Flow Trigger Explorer")).toBeVisible({timeout: 3000});
+
+      // No metadata composite request should have been sent at all
+      expect(capture.referenceIds).toEqual([]);
+    });
+
+    test("Search Shortcut with '!' prefix returns metadata only", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      const searchInput = await openShortcutsTab(page);
+      const capture = captureShortcutMetadataRequests(page);
+
+      // "Inspector" is not a type alias, so the bare "!" prefix must query every metadata
+      // type. It also happens to match the "Sf Inspector" permission set deployed from
+      // test/main/, giving a real content assertion in addition to the referenceId check.
+      // (Note: asserting *absence* of setup links here is unreliable against a real org,
+      // since arbitrary search terms can coincidentally match unrelated real metadata.)
+      await searchInput.fill("!Inspector");
+      await page.waitForTimeout(1200);
+      capture.stop();
+
+      // Bare "!" queries every metadata type, regardless of the "Searchable metadata" options
+      for (const referenceId of ALL_METADATA_REFERENCE_IDS) {
+        expect(capture.referenceIds).toContain(referenceId);
+      }
+      await expect(page.frameLocator(".insext-popup").locator("text=Sf Inspector")).toBeVisible({timeout: 3000});
+    });
+
+    test("Search Shortcut with '!flow' prefix returns flows only", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      const searchInput = await openShortcutsTab(page);
+      const capture = captureShortcutMetadataRequests(page);
+
+      // "RecordTrigger_InspectorTest" is the flow deployed from test/main/ (required test prerequisite)
+      await searchInput.fill("!flow RecordTrigger");
+      await page.waitForTimeout(1200);
+      capture.stop();
+
+      expect(capture.referenceIds).toEqual(["flowsSelect"]);
+      await expect(page.frameLocator(".insext-popup").locator("text=RecordTrigger InspectorTest")).toBeVisible({timeout: 3000});
+    });
+
+    test("Search Shortcut with '!profile' prefix returns profiles only", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      const searchInput = await openShortcutsTab(page);
+      const capture = captureShortcutMetadataRequests(page);
+
+      // "System Administrator" is a standard profile present in every org (real or scratch)
+      await searchInput.fill("!profile System Administrator");
+      await page.waitForTimeout(1200);
+      capture.stop();
+
+      expect(capture.referenceIds).toEqual(["profilesSelect"]);
+      await expect(page.frameLocator(".insext-popup").locator("text=System Administrator")).toBeVisible({timeout: 3000});
+    });
+
+    test("Search Shortcut with '!class' prefix returns Apex classes only", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      const searchInput = await openShortcutsTab(page);
+      const capture = captureShortcutMetadataRequests(page);
+
+      // "SalesforceInspectorTest" is the Apex class deployed from test/main/. Also verifies the
+      // typed prefix forces the query even though "Apex Classes" is unchecked by default in
+      // "Searchable metadata from Shortcut tab" (see options.js).
+      await searchInput.fill("!class SalesforceInspectorTest");
+      await page.waitForTimeout(1200);
+      capture.stop();
+
+      expect(capture.referenceIds).toEqual(["classesSelect"]);
+      // Non-namespaced Apex classes render the same name twice (label + name lines), producing
+      // two <mark> highlights for a single result row, so use .first() rather than a unique match.
+      await expect(page.frameLocator(".insext-popup").locator("text=SalesforceInspectorTest").first()).toBeVisible({timeout: 3000});
+    });
+
+    test("Search Shortcut with '!perm' prefix returns Permission Sets only", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      const searchInput = await openShortcutsTab(page);
+      const capture = captureShortcutMetadataRequests(page);
+
+      // "Sf Inspector" is the permission set deployed from test/main/ (SfInspector.permissionset-meta.xml)
+      await searchInput.fill("!perm Sf Inspector");
+      await page.waitForTimeout(1200);
+      capture.stop();
+
+      expect(capture.referenceIds).toEqual(["permissionSetsSelect"]);
+      await expect(page.frameLocator(".insext-popup").locator("text=Sf Inspector")).toBeVisible({timeout: 3000});
     });
   });
 

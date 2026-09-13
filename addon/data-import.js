@@ -324,6 +324,16 @@ class Model {
     }
   }
 
+  // True while neither the cached sobjects list nor the DescribeInfo fallback has data yet,
+  // e.g. right after a page reload before the async fetches resolve.
+  sobjectListLoading() {
+    if (this.sobjectsList && this.sobjectsList.length > 0) {
+      return false;
+    }
+    let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
+    return !globalDescribe;
+  }
+
   idLookupList() {
     let sobjectName = this.importType;
     let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", sobjectName).sobjectDescribe;
@@ -384,6 +394,9 @@ class Model {
 
   importTypeError() {
     let importType = this.importType;
+    if (this.sobjectListLoading()) {
+      return "";
+    }
     if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
       return "Unknown object";
     }
@@ -1154,7 +1167,7 @@ class App extends React.Component {
   }
   onImportUndelete(model){
     //reinit import table to remove __Status column to be able to undelete rows after deleting it
-    if (model.importData.importTable.header.find(c => c.columnValue == "__Status")) {
+    if (model.importData.importTable && model.importData.importTable.header.find(c => c.columnValue == "__Status")) {
       //get indexes to remove
       const indices = model.importData.importTable.header.map((element, index) => element.columnValue.startsWith("__") ? index : undefined).filter(index => index !== undefined);
       //remove indexes from header and data
@@ -1318,7 +1331,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-batch-size"}, "Batch size"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, disabled: model.isWorking()}),
+                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange}),
                               h("div", {id: "error-batch-size", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchSizeError()}, model.batchSizeError())
                             )
                           )
@@ -1327,7 +1340,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-threads"}, "Threads"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, disabled: model.isWorking()}),
+                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange}),
                               h("div", {id: "error-threads", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
                             )
                           )

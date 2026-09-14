@@ -273,10 +273,13 @@ test.describe("Data Export", () => {
   });
 
   test("Query History Dropdown Scrolls", async ({page, context, extensionId}) => {
+    await page.setViewportSize({width: 800, height: 760});
     await context.addInitScript(() => {
       window.localStorage.setItem("insextQueryHistory", JSON.stringify(
         Array.from({length: 40}, (_, i) => ({
-          query: `SELECT Id, Name, CreatedDate FROM Account WHERE Name LIKE 'Account ${i}%' ORDER BY CreatedDate DESC`,
+          query: i === 0
+            ? `SELECT ${"Name, ".repeat(80)}Id FROM Account`
+            : `SELECT Id, Name, CreatedDate FROM Account WHERE Name LIKE 'Account ${i}%' ORDER BY CreatedDate DESC`,
           useToolingApi: false
         }))
       ));
@@ -288,6 +291,29 @@ test.describe("Data Export", () => {
     const history = page.getByRole("combobox", {name: "Search history"});
     const listbox = page.locator("#query-search-listbox");
     await history.click();
+    const options = listbox.locator("[role='option']");
+    const queryText = options.first().locator(".sfir-query-text");
+    const queryStyle = await queryText.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {marginBottom: style.marginBottom, padding: style.padding};
+    });
+    expect(queryStyle).toEqual({marginBottom: "0px", padding: "0px"});
+
+    const firstOption = await options.first().boundingBox();
+    const secondOption = await options.nth(1).boundingBox();
+    expect(Math.abs(secondOption.y - firstOption.y - firstOption.height), "option hover boxes are flush").toBeLessThan(1);
+    const initialBounds = await listbox.boundingBox();
+    expect(initialBounds.x, "left edge on screen").toBeGreaterThanOrEqual(0);
+    expect(initialBounds.x + initialBounds.width, "right edge on screen").toBeLessThanOrEqual(800);
+
+    const deleteIcon = await options.first().locator(".sfir-combobox-delete").boundingBox();
+    const deleteCenter = deleteIcon.y + (deleteIcon.height / 2);
+    const optionCenter = firstOption.y + (firstOption.height / 2);
+    expect(
+      Math.abs(deleteCenter - optionCenter),
+      "delete icon is vertically centred"
+    ).toBeLessThan(2);
+
     const metrics = await listbox.evaluate(element => ({
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight
@@ -307,6 +333,52 @@ test.describe("Data Export", () => {
       await history.press("ArrowDown");
     }
     await expect.poll(() => listbox.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+
+    // The resize handle must resize instead of selecting the entry, and its height
+    // survives a reload while remaining inside the viewport.
+    const query = page.locator("textarea#query");
+    await query.fill("SENTINEL");
+    const originalBounds = await listbox.boundingBox();
+    await page.mouse.move(originalBounds.x + originalBounds.width - 2, originalBounds.y + originalBounds.height - 2);
+    await page.mouse.down();
+    await page.mouse.move(originalBounds.x + originalBounds.width - 2, originalBounds.y + originalBounds.height + 78, {steps: 5});
+    await page.mouse.up();
+    const resizedBounds = await listbox.boundingBox();
+    expect(resizedBounds.height).toBeGreaterThan(originalBounds.height + 50);
+    await expect(query).toHaveValue("SENTINEL");
+    await expect.poll(() => page.evaluate(
+      () => localStorage.getItem("sfirComboboxHeight_query-search")
+    )).not.toBeNull();
+    const storedHeight = await page.evaluate(() => localStorage.getItem("sfirComboboxHeight_query-search"));
+
+    await page.reload();
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+    await history.click();
+    const restoredBounds = await listbox.boundingBox();
+    expect(Math.abs(restoredBounds.height - resizedBounds.height), "resized height is restored").toBeLessThan(2);
+
+    // Ordinary clicks in the bottom padding keep focus and do not overwrite the preference.
+    await page.mouse.click(restoredBounds.x + (restoredBounds.width / 2), restoredBounds.y + restoredBounds.height - 2);
+    await expect(history).toBeFocused();
+    expect(await page.evaluate(() => localStorage.getItem("sfirComboboxHeight_query-search"))).toBe(storedHeight);
+
+    const shortenedViewportHeight = Math.ceil(restoredBounds.y + restoredBounds.height - 50);
+    await page.setViewportSize({width: 800, height: shortenedViewportHeight});
+    await page.reload();
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+    await history.click();
+    const clampedBounds = await listbox.boundingBox();
+    expect(clampedBounds.y + clampedBounds.height).toBeLessThanOrEqual(shortenedViewportHeight);
+    expect(clampedBounds.height).toBeLessThan(restoredBounds.height);
+    expect(await page.evaluate(() => localStorage.getItem("sfirComboboxHeight_query-search"))).toBe(storedHeight);
+    await page.mouse.click(clampedBounds.x + clampedBounds.width - 2, clampedBounds.y + clampedBounds.height - 2);
+    expect(await page.evaluate(() => localStorage.getItem("sfirComboboxHeight_query-search"))).toBe(storedHeight);
+
+    await page.setViewportSize({width: 800, height: 760});
+    await page.reload();
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+    await history.click();
+    expect(Math.abs((await listbox.boundingBox()).height - resizedBounds.height), "clicking the resize corner preserves the preferred height").toBeLessThan(2);
 
     // Empty-state interaction retains focus, while the native scrollbar remains on
     // the outer div and is not covered by this mousedown handler.
@@ -354,6 +426,10 @@ test.describe("Data Export", () => {
     await labelled.click();
     await expect(page.locator("textarea#query")).toHaveValue("SELECT Id, Subject FROM Case");
     await expect(page.getByLabel("Save as")).toHaveValue("Open Cases");
+
+    await saved.fill("2026");
+    await options.click();
+    await expect(page.getByLabel("Save as")).toHaveValue("");
   });
 
   test("Delete Query History Entries", async ({page, context, extensionId}) => {
@@ -523,6 +599,63 @@ test.describe("Data Export", () => {
       button.click();
     });
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
+  });
+
+  test("Discarded Saved Query Does Not Show Success", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("numberOfQueriesSaved", "1");
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Alpha:SELECT Id FROM Account", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await page.locator("textarea#query").fill("SELECT Id FROM Contact");
+    await page.getByLabel("Save as").fill("Zulu");
+    await page.getByRole("button", {name: "Save Query"}).click();
+
+    await expect(page.locator(".slds-notify_toast")).toHaveCount(0);
+    await expect(page.getByLabel("Save as")).toHaveValue("Zulu");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")))).toEqual([
+      {query: "Alpha:SELECT Id FROM Account", useToolingApi: false}
+    ]);
+  });
+
+  test("Saving A Query Confirms And Clears Its Label", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.removeItem("insextSavedQueryHistory");
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const query = page.locator("textarea#query");
+    const label = page.getByLabel("Save as");
+    await label.fill("Accounts");
+    await query.fill("SELECT Id FROM Account");
+    await expect(label, "query edits keep the pending label").toHaveValue("Accounts");
+    await page.getByRole("button", {name: "Save Query"}).click();
+
+    const toast = page.locator(".slds-notify_toast[role='status']");
+    await expect(toast.getByRole("heading", {name: "Saved"})).toBeVisible();
+    await expect(toast).toContainText("Query saved successfully.");
+    await expect(label).toHaveValue("");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory"))[0].query)).toBe("Accounts:SELECT Id FROM Account");
+    await expect(toast).toHaveCount(0, {timeout: 3000});
+
+    // Loading the saved query restores its label, while changing tabs clears it.
+    await selectQuerySource(page, "saved");
+    const saved = page.getByRole("combobox", {name: "Search saved"});
+    await saved.click();
+    await page.locator("#query-search-listbox [role='option']").click();
+    await expect(label).toHaveValue("Accounts");
+    await page.locator(".add-tab-button").click();
+    await expect(label).toHaveValue("");
+    await label.fill("Keep while closing another tab");
+    await page.locator(".query-tab-close").first().click();
+    await expect(label).toHaveValue("Keep while closing another tab");
   });
 
   for (const width of [800, 1024, 1280]) {

@@ -60,12 +60,6 @@ textarea[hidden] {
   padding: 0.5rem 0.75rem 0.6rem;
 }
 
-.sfir-query-section__legend {
-  padding: 0 0 0.25rem;
-  font-size: var(--slds-g-font-scale-neg-1);
-  color: var(--slds-g-color-on-surface-2);
-}
-
 .sfir-query-section__control,
 .sfir-query-section__browse,
 .sfir-query-section__save {
@@ -129,11 +123,14 @@ textarea[hidden] {
   justify-content: center;
 }
 
-/* Grows to fit the longest query rather than the width of the input. Capped at half
-   the window so that whichever side alignDropdown opens towards has room for it. */
+/* Grows to fit the longest query rather than the width of the input, while leaving
+   room in the window whichever side alignDropdown opens towards. */
 .sfir-query-combobox-dropdown {
   width: max-content;
-  max-width: min(40rem, 50vw);
+  min-height: 3rem;
+  max-width: min(60rem, 75vw, var(--sfir-query-dropdown-available-width, 50vw));
+  padding-bottom: 1rem;
+  resize: vertical;
 }
 
 .sfir-combobox-body {
@@ -153,15 +150,10 @@ textarea[hidden] {
 
 /* Queries wrap over several lines instead of being truncated, and Prism's
    standalone inline-code styling is not wanted inside a dropdown row. */
-.sfir-query-text {
+.sfir-query-item code.sfir-query-text {
+  display: block;
   flex: 1;
   min-width: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-code.sfir-query-text {
-  display: block;
   padding: 0;
   margin: 0;
   border: none;
@@ -169,6 +161,8 @@ code.sfir-query-text {
   background: none;
   color: inherit;
   font-size: var(--slds-g-font-scale-neg-1);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .sfir-query-combobox-dropdown .token.sobject {
@@ -190,6 +184,7 @@ code.sfir-query-text {
 
 .sfir-combobox-delete {
   flex-shrink: 0;
+  align-self: center;
   cursor: pointer;
   opacity: 0;
 }

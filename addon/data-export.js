@@ -5,6 +5,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {SldsCombobox} from "./components/SldsCombobox.js";
+import Toast from "./components/Toast.js";
 import {dropdownEntries, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
 
 // Where the query in the editor can come from. Mutually exclusive, so the picker is
@@ -65,6 +66,8 @@ class Model {
     this.savedHistory = createQueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
     this.querySearchValue = "";
+    this.toast = null;
+    this.toastTimeout = null;
     this.expandAutocomplete = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
@@ -238,9 +241,7 @@ class Model {
   selectSavedEntry() {
     if (this.selectedSavedEntry != null) {
       const {label, query} = splitSavedQuery(this.selectedSavedEntry.query);
-      if (label != null) {
-        this.queryName = label;
-      }
+      this.queryName = label ?? "";
       this.queryInput.value = query;
       this.queryTooling = this.selectedSavedEntry.useToolingApi;
       this.queryAutocompleteHandler();
@@ -251,11 +252,36 @@ class Model {
     this.savedHistory.clear();
     this.querySearchValue = "";
   }
+  showToast(variant, title, message) {
+    clearTimeout(this.toastTimeout);
+    this.toast = {variant, title, message};
+    this.didUpdate();
+    this.toastTimeout = setTimeout(() => {
+      this.toast = null;
+      this.toastTimeout = null;
+      this.didUpdate();
+    }, 2000);
+  }
+  closeToast() {
+    clearTimeout(this.toastTimeout);
+    this.toastTimeout = null;
+    this.toast = null;
+    this.didUpdate();
+  }
   addToHistory() {
     if (!this.queryInput?.value.trim()) {
-      return;
+      return false;
     }
-    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    const entry = {query: this.getQueryToSave(), useToolingApi: this.queryTooling};
+    this.savedHistory.add(entry);
+    const wasSaved = this.savedHistory.list.some(
+      saved => saved.query === entry.query && saved.useToolingApi === entry.useToolingApi
+    );
+    if (!wasSaved) {
+      return false;
+    }
+    this.queryName = "";
+    return true;
   }
   deleteHistoryEntry(entry) {
     this.queryHistory.remove(entry);
@@ -1071,21 +1097,21 @@ class Model {
     localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
   }
 
-  addQueryTab() {
+  addQueryTab(previousTab = this.queryTabs[this.activeTabIndex]) {
     const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
     this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
-    this.activeTabIndex = this.queryTabs.length - 1;
-    this.setActiveTab(this.activeTabIndex);
+    this.setActiveTab(this.queryTabs.length - 1, previousTab);
     this.saveQueryTabs();
   }
 
   removeQueryTab(index) {
     if (this.queryTabs.length > 1) {
+      const previousTab = this.queryTabs[this.activeTabIndex];
       this.queryTabs.splice(index, 1);
       if (this.activeTabIndex >= index) {
         this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
       }
-      this.setActiveTab(this.activeTabIndex);
+      this.setActiveTab(this.activeTabIndex, previousTab);
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1093,10 +1119,11 @@ class Model {
 
   removeOtherQueryTabs(index) {
     if (this.queryTabs.length > 1) {
+      const previousTab = this.queryTabs[this.activeTabIndex];
       const tabToKeep = this.queryTabs[index];
       this.queryTabs = [tabToKeep];
       this.activeTabIndex = 0;
-      this.setActiveTab(this.activeTabIndex);
+      this.setActiveTab(this.activeTabIndex, previousTab);
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1104,23 +1131,28 @@ class Model {
 
   removeRightQueryTabs(index) {
     if (this.queryTabs.length > index + 1) {
+      const previousTab = this.queryTabs[this.activeTabIndex];
       this.queryTabs.splice(index + 1);
       if (this.activeTabIndex > index) {
         this.activeTabIndex = index;
       }
-      this.setActiveTab(this.activeTabIndex);
+      this.setActiveTab(this.activeTabIndex, previousTab);
       this.saveQueryTabs();
       this.didUpdate();
     }
   }
 
   removeAllQueryTabs() {
+    const previousTab = this.queryTabs[this.activeTabIndex];
     this.queryTabs = [];
-    this.addQueryTab();
+    this.addQueryTab(previousTab);
   }
 
-  setActiveTab(index) {
+  setActiveTab(index, previousTab = this.queryTabs[this.activeTabIndex]) {
     this.activeTabIndex = index;
+    if (this.queryTabs[index] !== previousTab) {
+      this.queryName = "";
+    }
     // Update the query input value to match the current tab's query
     if (this.queryInput) {
       this.queryInput.value = this.queryTabs[index].query;
@@ -1454,8 +1486,9 @@ class App extends React.Component {
   onAddToHistory(e) {
     e.preventDefault();
     let {model} = this.props;
-    model.addToHistory();
-    model.didUpdate();
+    if (model.addToHistory()) {
+      model.showToast("success", "Saved", "Query saved successfully.");
+    }
   }
   onClearSavedHistory(e) {
     e.preventDefault();
@@ -1915,7 +1948,7 @@ class App extends React.Component {
     const label = QUERY_SOURCES.find(s => s.id === source.id).label;
 
     return h("fieldset", {className: "slds-form-element sfir-query-section"},
-      h("legend", {className: "slds-form-element__legend slds-form-element__label sfir-query-section__legend"}, "Queries"),
+      h("legend", {className: "slds-assistive-text"}, "Queries"),
       h("div", {className: "slds-form-element__control sfir-query-section__control"},
         h("div", {className: "sfir-query-section__browse"},
           h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query source"},
@@ -2030,6 +2063,12 @@ class App extends React.Component {
         spinnerCount: model.spinnerCount,
         ...model.userInfoModel.getProps(),
         utilityItems
+      }),
+      model.toast && h(Toast, {
+        variant: model.toast.variant,
+        title: model.toast.title,
+        message: model.toast.message,
+        onClose: () => model.closeToast()
       }),
 
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},

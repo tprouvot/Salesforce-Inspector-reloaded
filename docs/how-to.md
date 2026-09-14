@@ -78,10 +78,13 @@ list in the box beside them:
 
 Only the selected list is shown, and the search box names it, so there is never any doubt
 about which list you are searching. **Clear list** clears the selected History or Saved
-list and is disabled for Templates.
+list and is disabled for Templates. Drag the bottom-right corner of an open dropdown to
+make it taller; the extension remembers its height.
 
 **Save as**, its label input, and **Save Query** are separated from the browsing controls
 because they save the query currently in the editor, regardless of which source is selected.
+After saving, a success message appears and the label is cleared. The label is also cleared
+when you switch query tabs, but remains while you edit the current query.
 
 ### Delete individual queries
 

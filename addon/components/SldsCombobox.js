@@ -6,6 +6,8 @@ export class SldsCombobox extends React.Component {
     super(props);
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
     this.containerRef = null;
+    this.isResizing = false;
+    this.resizeStartHeight = 0;
   }
 
   componentDidMount() {
@@ -50,9 +52,22 @@ export class SldsCombobox extends React.Component {
       return;
     }
     const anchor = this.containerRef.getBoundingClientRect();
-    const openLeft = document.documentElement.clientWidth - anchor.left >= anchor.right;
+    const viewportWidth = document.documentElement.clientWidth;
+    const openLeft = viewportWidth - anchor.left >= anchor.right;
     box.classList.toggle("slds-dropdown_left", openLeft);
     box.classList.toggle("slds-dropdown_right", !openLeft);
+    box.style.setProperty("--sfir-query-dropdown-available-width", (openLeft ? viewportWidth - anchor.left : anchor.right) + "px");
+    if (!this.isResizing) {
+      const storedHeight = Number.parseFloat(localStorage.getItem("sfirComboboxHeight_" + this.props.id));
+      if (Number.isFinite(storedHeight) && storedHeight > 0) {
+        box.style.maxHeight = "none";
+        box.style.height = storedHeight + "px";
+        const overflow = box.getBoundingClientRect().bottom - document.documentElement.clientHeight;
+        if (overflow > 0) {
+          box.style.height = Math.max(0, storedHeight - overflow) + "px";
+        }
+      }
+    }
   }
 
   handleDocumentClick(e) {
@@ -134,12 +149,29 @@ export class SldsCombobox extends React.Component {
           className: "slds-dropdown slds-dropdown_length-7 sfir-query-combobox-dropdown",
           role: "listbox",
           onMouseDown: (e) => {
-            // Keep input focus for rows and padding, but leave the native scrollbar
-            // interactive when Firefox dispatches its mousedown to this element.
-            const isScrollbar = e.target === e.currentTarget && e.nativeEvent.offsetX >= e.currentTarget.clientWidth;
-            if (!isScrollbar) {
+            // Keep input focus for rows and padding, but leave native controls interactive.
+            const isContainer = e.target === e.currentTarget;
+            const isScrollbar = isContainer && e.nativeEvent.offsetX >= e.currentTarget.clientWidth;
+            const isResizeHandle = isContainer
+              && e.nativeEvent.offsetX >= e.currentTarget.clientWidth - 16
+              && e.nativeEvent.offsetY >= e.currentTarget.clientHeight - 16;
+            this.isResizing = isResizeHandle;
+            if (isResizeHandle) {
+              this.resizeStartHeight = e.currentTarget.getBoundingClientRect().height;
+              e.currentTarget.style.height = this.resizeStartHeight + "px";
+              e.currentTarget.style.maxHeight = "none";
+            }
+            if (!isScrollbar && !isResizeHandle) {
               e.preventDefault();
             }
+          },
+          onMouseUp: (e) => {
+            const heightChanged = Math.abs(e.currentTarget.getBoundingClientRect().height - this.resizeStartHeight) >= 1;
+            if (this.isResizing && heightChanged) {
+              localStorage.setItem("sfirComboboxHeight_" + id, e.currentTarget.style.height);
+            }
+            this.isResizing = false;
+            this.resizeStartHeight = 0;
           }
         },
         h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},

@@ -5,9 +5,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {csvParse} from "./csv-parse.js";
-
-// The three mutually exclusive ways a query can be run. Modelling this as one
-// value rather than two booleans makes the modes exclusive by construction.
+// Mutually exclusive query execution modes
 const API_MODE = {
   STANDARD: "Standard",
   TOOLING: "Tooling",
@@ -19,12 +17,7 @@ const apiModeOptions = [
   {value: API_MODE.BULK, label: "Bulk API 2.0", title: "Run the query asynchronously and download the result as a CSV file. Best for large result sets"}
 ];
 
-/**
- * The API mode a stored query-history entry was run with.
- *
- * Entries saved before the 3-way switch existed only carry the old
- * `useToolingApi` boolean, so fall back to that.
- */
+// Gets API mode for history entries, falling back to useToolingApi for older saves.
 function historyApiMode(entry) {
   if (entry && apiModeOptions.some(o => o.value === entry.apiMode)) {
     return entry.apiMode;
@@ -46,9 +39,7 @@ function createQueryHistory(storageKey, max) {
 class Model {
   static QUERY_TAB_PREFIX = "Query";
   static BULK_POLL_INTERVAL_MS = 10000;
-  // Give up polling after this many consecutive failures rather than retrying a
-  // request that is never going to succeed, every tick, forever.
-  static BULK_POLL_MAX_FAILURES = 5;
+  static BULK_POLL_MAX_FAILURES = 5; // Stop polling after consecutive failures
 
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
@@ -76,10 +67,8 @@ class Model {
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
-    // Bulk gets its own flag. Reusing isWorking would block normal
-    // Standard/Tooling queries in other tabs while a bulk job runs.
-    this.isBulkWorking = false;
-    this.bulkJobStore = new BulkJobStore(`${this.sfHost}_bulkExportJob`);
+    this.isBulkWorking = false; // Separate flag so bulk jobs don't block Standard/Tooling queries in other tabs
+    this.bulkJobStore = new BulkJobStore(`${this.sfHost}_bulkExportJob`, {historyMax: this.bulkJobHistoryMax()});
     this.bulkJob = this.bulkJobStore.get();
     this.bulkPollTimer = null;
     this.bulkPollFailures = 0;
@@ -153,12 +142,10 @@ class Model {
   isBulk() {
     return this.queryApiMode === API_MODE.BULK;
   }
-  // "Query All" maps to Bulk's queryAll operation, so it stays available there.
-  // Tooling has no queryAll equivalent at all.
+  // Tooling API has no queryAll equivalent
   supportsQueryAll() {
     return !this.isTooling();
   }
-
   updatedExportedData() {
     if (this.exportedData) {
       this.exportedData.updateColumnsVisibility();
@@ -202,8 +189,6 @@ class Model {
       return;
     }
     this.queryApiMode = mode;
-    // Tooling has no queryAll equivalent, so clear it rather than leaving a
-    // checked-but-disabled toggle behind.
     if (!this.supportsQueryAll()) {
       this.queryAll = false;
       this.updateCurrentTabProperty("queryAll", false);
@@ -321,8 +306,7 @@ class Model {
   removeFromHistory() {
     this.savedHistory.remove(this.historyEntryFor(this.getQueryToSave()));
   }
-  // `useToolingApi` is still written so that entries stay readable by older
-  // versions and keep matching pre-existing history entries.
+  // `useToolingApi` is kept for backwards compatibility with older history entries.
   historyEntryFor(query) {
     return {query, apiMode: this.queryApiMode, useToolingApi: this.isTooling()};
   }
@@ -1077,19 +1061,12 @@ class Model {
 
   // ---------------------------------------------------------------------------
   // Bulk API 2.0 export
-  //
-  // Create a query job, poll it, then stream the result down as a CSV file. The
-  // results grid is deliberately never populated: rendering hundreds of
-  // thousands of rows into the DOM is the thing that actually freezes a tab, and
-  // avoiding it is most of the reason to reach for Bulk in the first place.
+  // Creates a query job, polls status, and streams results directly to a CSV 
+  // to prevent DOM freezing on massive datasets.
   // ---------------------------------------------------------------------------
 
-  /**
-   * Results must be fetched with the same API version that created the query,
-   * or Salesforce answers 409. Because jobs survive reloads and the API version
-   * is user-configurable in Options, the version is pinned to the job record and
-   * passed back in here rather than read fresh each call.
-   */
+  // Pins the API version to the job record to prevent 409 errors if the user 
+  // changes the extension's API version while a job is running.
   bulkEndpoint(suffix = "", version = apiVersion) {
     return `/services/data/v${version}/jobs/query${suffix}`;
   }
@@ -1098,16 +1075,8 @@ class Model {
     return this.bulkEndpoint(`/${job.jobId}${suffix}`, job.apiVersion || apiVersion);
   }
 
-  /**
-   * Every Bulk API 2.0 call goes through here.
-   *
-   * sfConn.rest() appends a random `cache` query parameter by default, and the
-   * bulk job resources reject any query parameter they don't define -- the job
-   * info resource takes none at all and answers with
-   * "Cannot specify query parameters on this resource". The results resource
-   * only tolerates `locator` and `maxRecords`. So cache-busting is off for all
-   * of them.
-   */
+  // Wrapper for bulk REST calls. Disables cache-busting because Bulk API 2.0 
+  // strictly rejects undefined query parameters.
   bulkRest(url, options = {}, rawResponse) {
     return sfConn.rest(url, {...options, useCache: false}, rawResponse);
   }
@@ -1117,7 +1086,12 @@ class Model {
     return configured > 0 ? configured : 500000;
   }
 
-  /** Re-attach to a job left behind by a previous page load, tab or session. */
+  bulkJobHistoryMax() {
+    const configured = parseInt(localStorage.getItem("numberOfBulkExportJobsInHistory"), 10);
+    return (configured > 0 ? configured : 10) + 1;
+  }
+
+  // Re-attach to a job left behind by a previous page load, tab, or session
   resumeBulkExport() {
     const job = this.bulkJobStore.get();
     if (!job) {
@@ -1137,14 +1111,14 @@ class Model {
     this.pollBulkJob();
   }
 
-  /** Manually re-check a job whose polling gave up or was never resumed. */
+  // Manually re-check a job whose polling gave up or was never resumed
   refreshBulkStatus() {
-    if (!this.bulkJob) {
+    if (!this.bulkJob || isBulkJobTerminal(this.bulkJob.state)) {
       return;
     }
     this.exportError = null;
     this.bulkMessage = null;
-    this.isBulkWorking = !isBulkJobTerminal(this.bulkJob.state);
+    this.isBulkWorking = true;
     this.startBulkPolling();
   }
 
@@ -1155,7 +1129,7 @@ class Model {
     }
   }
 
-  /** Pick up a change another tab made to the shared job state. */
+  // Pick up a change another tab made to the shared job state
   syncBulkJobFromStorage() {
     const job = this.bulkJobStore.get();
     this.bulkJob = job;
@@ -1169,8 +1143,7 @@ class Model {
   }
 
   doBulkExport() {
-    // Bulk state lives at the page level, not per tab, so one job at a time
-    // covers every query tab.
+    // Enforce one active bulk job across all query tabs
     if (this.bulkJob && !isBulkJobTerminal(this.bulkJob.state)) {
       this.bulkMessage = "A bulk export is already running - wait for it to finish or cancel it first.";
       return;
@@ -1231,8 +1204,7 @@ class Model {
         state: res.state,
         object: res.object || job.object,
         recordCount: res.numberRecordsProcessed != null ? res.numberRecordsProcessed : job.recordCount,
-        // A job can also be aborted from Setup by an admin, so surface whatever
-        // reason Salesforce gives rather than leaving the panel on "in progress".
+        // Surface Salesforce-provided error messages (e.g., if aborted by an admin)
         errorMessage: res.errorMessage || null,
         completedAt: terminal ? new Date().toISOString() : null
       });
@@ -1249,9 +1221,8 @@ class Model {
     }).catch(error => {
       console.error(error);
       this.bulkPollFailures++;
-      // Ride out a transient network blip, but stop if it is clearly not
-      // transient. The job itself keeps running on Salesforce either way.
       this.exportError = "Could not read bulk job status: " + error.message;
+      // Tolerate transient network errors up to the failure limit
       if (this.bulkPollFailures >= Model.BULK_POLL_MAX_FAILURES) {
         this.stopBulkPolling();
         this.isBulkWorking = false;
@@ -1282,14 +1253,7 @@ class Model {
     }));
   }
 
-  /**
-   * Fetch every page of a completed job's results and hand back one CSV string.
-   *
-   * Each response carries a `Sforce-Locator` header; keep re-requesting with
-   * that locator until it comes back as the literal string "null". Reading a
-   * response header means asking sfConn.rest for the raw xhr via its third
-   * argument, which also means HTTP status has to be checked here.
-   */
+  // Fetches paginated job results into a single CSV string using Sforce-Locator
   async fetchBulkResults(job) {
     const maxRecords = this.bulkDownloadBatchSize();
     let locator = null;
@@ -1315,7 +1279,7 @@ class Model {
         throw new Error(`HTTP ${xhr.status} ${xhr.statusText} while downloading results`);
       }
       const body = xhr.response || "";
-      // Every page repeats the header row, so keep it only from the first page.
+      // Drop header rows from subsequent pages
       pages.push(pages.length === 0 ? body : stripCsvHeaderRow(body));
       locator = xhr.getResponseHeader("Sforce-Locator");
     } while (locator && locator !== "null");
@@ -1407,8 +1371,7 @@ class Model {
     const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
-      // One-time migration: tabs saved before the 3-way switch carry a
-      // `queryTooling` boolean instead of `queryApiMode`.
+      // Migrate legacy queryTooling boolean to queryApiMode
       for (const tab of this.queryTabs) {
         if (!apiModeOptions.some(o => o.value === tab.queryApiMode)) {
           tab.queryApiMode = tab.queryTooling ? API_MODE.TOOLING : API_MODE.STANDARD;
@@ -1793,8 +1756,7 @@ class App extends React.Component {
     // Tab editing state
     this.state = {
       ...this.state,
-      // null means "follow the selected API mode"; a boolean is an explicit
-      // choice by the user, which holds until the mode changes again.
+      // null follows selected API mode; boolean is an explicit user override
       bulkPanelOpen: null,
       showBulkHistory: false,
       editingTabIndex: -1,
@@ -2191,9 +2153,7 @@ class App extends React.Component {
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
 
-    // localStorage is shared per-origin, so a completion or abort in another tab
-    // open on the same org shows up here immediately instead of waiting for this
-    // tab's next poll tick.
+    // Sync cross-tab bulk job updates immediately (bypasses poll timer)
     this.removeBulkStorageListener = model.bulkJobStore.onExternalChange(() => {
       model.syncBulkJobFromStorage();
       model.didUpdate();
@@ -2238,13 +2198,8 @@ class App extends React.Component {
   }
 
   /**
-   * Status panel for the page-level bulk job. Rendered outside the per-tab
-   * content because a bulk job belongs to the page, not to a query tab.
-   *
-   * Expanded while Bulk is the selected API, collapsed to a one-line bar
-   * otherwise, so a finished job stops taking up space once you go back to
-   * running normal queries. `bulkPanelOpen` stays null until the user picks a
-   * side, at which point their choice wins until the API mode changes again.
+   * Page-level bulk job status panel. Renders outside per-tab content.
+   * Auto-expands when Bulk API is selected, otherwise collapses to a single line.
    */
   renderBulkPanel(model) {
     const job = model.bulkJob;
@@ -2256,10 +2211,9 @@ class App extends React.Component {
     const theme = complete ? "success" : failed ? "error" : "warning";
     const open = this.state.bulkPanelOpen === null ? model.isBulk() : this.state.bulkPanelOpen;
 
-    // Dismiss is always reachable. A job that never reaches a terminal state --
-    // aborted outside the extension, or simply unreachable by polling -- would
-    // otherwise be impossible to clear from the panel.
+    // Always reachable to allow clearing stuck or externally aborted jobs
     const dismissButton = h("button", {
+      key: "dismiss",
       type: "button",
       className: "slds-button slds-button_neutral",
       onClick: this.onDismissBulkJob,
@@ -2275,28 +2229,30 @@ class App extends React.Component {
     );
 
     if (!open) {
-      return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+      return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_medium slds-theme_default"},
         h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
           titleBar,
           h("div", {className: "slds-button-group"},
-            h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
+            h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
             dismissButton
           )
         )
       );
     }
 
-    const history = model.bulkJobStore.history.list.filter(e => e.jobId !== job.jobId);
+    const historyMax = model.bulkJobHistoryMax() - 1;
+    const history = model.bulkJobStore.history.list.filter(e => e.jobId !== job.jobId).slice(0, historyMax);
     const field = (label, value) => h("div", {key: label, className: "slds-col slds-size_1-of-2 slds-large-size_1-of-4 slds-p-right_small slds-p-bottom_xx-small"},
       h("dt", {className: "slds-text-title slds-truncate"}, label),
       h("dd", {className: "slds-text-body_small slds-truncate", title: String(value)}, value)
     );
 
-    return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+    return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
       h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small"},
         titleBar,
         h("div", {className: "slds-button-group"},
           h("button", {
+            key: "download",
             type: "button",
             className: "slds-button slds-button_brand",
             disabled: !complete,
@@ -2304,6 +2260,7 @@ class App extends React.Component {
             title: complete ? "Download the full result set as a CSV file" : "Available once the job completes"
           }, complete && job.recordCount != null ? `Download CSV (${job.recordCount.toLocaleString()} record${s(job.recordCount)})` : "Download CSV"),
           h("button", {
+            key: "refresh",
             type: "button",
             className: "slds-button slds-button_neutral",
             hidden: complete || failed,
@@ -2311,6 +2268,7 @@ class App extends React.Component {
             title: "Check this job's status now"
           }, "Refresh status"),
           h("button", {
+            key: "abort",
             type: "button",
             className: "slds-button slds-button_destructive",
             hidden: complete || failed,
@@ -2318,6 +2276,7 @@ class App extends React.Component {
             title: "Ask Salesforce to cancel this job"
           }, "Abort"),
           h("button", {
+            key: "toggle",
             type: "button",
             className: "slds-button slds-button_neutral",
             onClick: this.onToggleBulkPanel,
@@ -2655,22 +2614,22 @@ class App extends React.Component {
           h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column"}},
             h("div", {className: "result-bar"},
               h("h3", {className: "slds-text-heading_small"}, "Export Result"),
-              h("div", {className: "slds-button-group slds-m-left_small", hidden: model.isBulk()},
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+              h("div", {className: "slds-button-group slds-m-left_small"},
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
                   h("svg", {className: "slds-button__icon"},
                     h("use", {xlinkHref: "symbols.svg#download"})
                   )
                 ),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
                   h("svg", {className: `slds-button__icon ${model.prefHideRelations ? "" : "disabled"}`},
                     h("use", {xlinkHref: "symbols.svg#hide"})
                   )
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
-                  ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+                  ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete() || model.isBulk(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
               ),
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError && !model.isBulk() ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
@@ -2715,7 +2674,7 @@ class App extends React.Component {
               h("span", {className: "result-status flex-right"},
                 h("span", {className: `slds-badge slds-theme_${model.exportError ? "error" : "success"}`}, model.exportStatus),
                 perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
-                h("button", {className: "slds-button slds-button_destructive slds-m-left_small", hidden: model.isBulk(), disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
+                h("button", {className: "slds-button slds-button_destructive slds-m-left_small", disabled: !model.isWorking || model.isBulk(), onClick: this.onStopExport}, "Stop")
               ),
             ),
             h("textarea", {
@@ -2805,9 +2764,8 @@ class App extends React.Component {
 }
 
 /**
- * Drop the header row from a page of CSV. Bulk 2.0 repeats it on every page of a
- * locator-paginated result set. Field names never contain newlines, so cutting
- * at the first one is safe.
+ * Removes the header row from paginated Bulk 2.0 CSV results.
+ * Safe to cut at the first newline since field names never contain them.
  */
 function stripCsvHeaderRow(csv) {
   const firstBreak = csv.indexOf("\n");
@@ -2815,10 +2773,8 @@ function stripCsvHeaderRow(csv) {
 }
 
 /**
- * A read-only sanity-check preview of the first rows of a downloaded result set.
- * Only the leading lines are parsed, so this stays cheap no matter how large the
- * download was. A row containing a quoted newline can land on the cut, which
- * makes the parse throw -- in that case just skip the preview.
+ * Fast, read-only preview of the first CSV rows. 
+ * Skips parsing gracefully if the arbitrary cut lands inside a quoted newline.
  */
 function buildCsvPreview(csv, rowLimit = 20) {
   let cut = -1;

@@ -15,9 +15,6 @@ const allApis = [
   {value: BULK_API, label: "Bulk API 2.0"}
 ];
 
-// Bulk API 2.0 ingest supports insert, update, upsert, delete and hardDelete.
-// It has no undelete operation, and "Upsert (Update Only)" is a Composite-API
-// construct with no bulk equivalent.
 const allActions = [
   {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling", BULK_API], bulkOperation: "insert"},
   {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling", BULK_API], bulkOperation: "update"},
@@ -38,9 +35,7 @@ const headersTemplates = [
 
 export class Model {
   static BULK_POLL_INTERVAL_MS = 5000;
-  // Give up polling after this many consecutive failures rather than retrying a
-  // request that is never going to succeed, every tick, forever.
-  static BULK_POLL_MAX_FAILURES = 5;
+  static BULK_POLL_MAX_FAILURES = 5; // Stop polling after consecutive failures
 
   constructor(sfHost, args) {
     this.sfHost = sfHost;
@@ -65,15 +60,12 @@ export class Model {
     this.activeBatches = 0;
     this.isProcessingQueue = false;
     this.importState = null;
-    // Bulk gets its own flag rather than reusing isWorking(), so that a running
-    // bulk import does not lock the other API types out of this page.
-    this.isBulkImportWorking = false;
-    this.bulkJobStore = new BulkJobStore(`${this.sfHost}_bulkImportJob`);
+    this.isBulkImportWorking = false; // Separate flag so bulk jobs don't block other API types in the UI
+    this.bulkJobStore = new BulkJobStore(`${this.sfHost}_bulkImportJob`, {historyMax: this.bulkJobHistoryMax()});
     this.bulkJob = this.bulkJobStore.get();
     this.bulkPollTimer = null;
     this.bulkPollFailures = 0;
-    // Chunk payloads are held in memory only; they are far too large for
-    // localStorage, so a multi-chunk upload cannot resume across a reload.
+    // Held in memory; too large for localStorage, so multi-chunk uploads cannot survive reloads
     this.bulkPendingChunks = null;
     this.bulkMessage = null;
     this.bulkError = null;
@@ -222,17 +214,17 @@ export class Model {
     this.updateResult(null); // Two updates, the first clears state from the scrolltable
     this.updateResult({header, data});
 
-    //automatically select the SObject if possible
+    // automatically select the SObject if possible
     let sobj = this.getSObject(data);
     if (sobj) {
-      //We avoid overwriting the Tooling or Bulk option in case it was already set
+      // We avoid overwriting the Tooling or Bulk option in case it was already set
       this.apiType = sobj.endsWith("__mdt") ? "Metadata"
         : this.apiType === "Tooling" || this.apiType === BULK_API ? this.apiType
         : "Enterprise";
       this.updateAvailableActions();
       this.importType = sobj;
     }
-    //automatically select update if header contains id
+    // automatically select update if header contains id
     if (this.hasIdColumn(header) && !this.importActionSelected && this.apiType != "Metadata") {
       this.importAction = "update";
       this.importActionName = "Update";
@@ -543,8 +535,7 @@ export class Model {
     this.confirmPopup = null;
 
     if (this.isBulk()) {
-      // Bulk does not write per-row status back into the pasted table, so none
-      // of the __Status/__Id/__Action/__Errors bookkeeping below applies.
+      // Bulk does not write per-row status back into the pasted table
       this.runBulkImport();
       return;
     }
@@ -626,9 +617,7 @@ export class Model {
     this.confirmPopup = {
       text: importedRecords + " records will be " + actionVerb + "."
         + (skippedRecords > 0 ? " " + skippedRecords + " records will be skipped because they have __Status Succeeded or Failed." : ""),
-      // Bulk mode loses the inline per-row feedback the other API types give, so
-      // say so before the user commits rather than after.
-      note: this.isBulk() ? "Bulk API 2.0 reports results as downloadable CSV files rather than writing status back into the table below." : null
+      note: this.isBulk() ? "Bulk API 2.0 provides results as downloadable CSV files rather than writing status back into the table below." : null
     };
   }
 
@@ -645,7 +634,7 @@ export class Model {
       case "delete":
         return "deleted";
       case "hardDelete":
-        return "hard deleted (bypassing the Recycle Bin)";
+        return "hard deleted";
       case "undelete":
         return "undeleted";
       default:
@@ -672,36 +661,16 @@ export class Model {
 
   // ---------------------------------------------------------------------------
   // Bulk API 2.0 ingest
-  //
-  // Create a job, upload the rows as one CSV, close the upload, then poll. The
-  // job reports exact processed/failed counts, so nothing needs parsing just to
-  // show progress; the result CSVs are only fetched when the user asks for them.
-  //
-  // Results are deliberately not reconciled back into the pasted table. Bulk 2.0
-  // does not guarantee that successfulResults/failedResults preserve input order,
-  // and it only echoes back the columns actually used in the DML. Matching rows
-  // would be reliable for update/upsert/delete/hardDelete (there is a real Id to
-  // match on) but best-effort at most for insert.
+  // Creates a job, uploads CSV, and polls. Results are not reconciled back to
+  // the pasted table since Bulk API does not guarantee output row order.
   // ---------------------------------------------------------------------------
 
-  /**
-   * The API version is pinned to the job record rather than read fresh on each
-   * call: jobs survive reloads, the version is user-configurable in Options, and
-   * Salesforce expects results to be fetched with the version that created the
-   * job.
-   */
+  // Pins API version to the job record to prevent 409 errors on reload.
   bulkIngestEndpoint(suffix = "", version = apiVersion) {
     return `/services/data/v${version}/jobs/ingest${suffix}`;
   }
 
-  /**
-   * Every Bulk API 2.0 call goes through here.
-   *
-   * sfConn.rest() appends a random `cache` query parameter by default, and the
-   * bulk job resources reject query parameters they don't define, answering with
-   * "Cannot specify query parameters on this resource". So cache-busting is off
-   * for all of them.
-   */
+  // Disables cache-busting since Bulk API strictly rejects undefined parameters.
   bulkRest(url, options = {}, rawResponse) {
     return sfConn.rest(url, {...options, useCache: false}, rawResponse);
   }
@@ -711,7 +680,7 @@ export class Model {
     return action && action.bulkOperation;
   }
 
-  /** Re-attach to a job left behind by a previous page load, tab or session. */
+  // Re-attach to a job left behind by a previous page load or session
   resumeBulkImport() {
     const job = this.bulkJobStore.get();
     if (!job) {
@@ -731,15 +700,20 @@ export class Model {
     this.pollBulkJob();
   }
 
-  /** Manually re-check a job whose polling gave up or was never resumed. */
+  // Manually re-check a job whose polling stopped
   refreshBulkStatus() {
-    if (!this.bulkJob) {
+    if (!this.bulkJob || isBulkJobTerminal(this.bulkJob.state)) {
       return;
     }
     this.bulkError = null;
     this.bulkMessage = null;
-    this.isBulkImportWorking = !isBulkJobTerminal(this.bulkJob.state);
+    this.isBulkImportWorking = true;
     this.startBulkPolling();
+  }
+
+  bulkJobHistoryMax() {
+    const configured = parseInt(localStorage.getItem("numberOfBulkImportJobsInHistory"), 10);
+    return (configured > 0 ? configured : 10) + 1;
   }
 
   stopBulkPolling() {
@@ -749,7 +723,7 @@ export class Model {
     }
   }
 
-  /** Pick up a change another tab made to the shared job state. */
+  // Sync cross-tab bulk job updates
   syncBulkJobFromStorage() {
     const job = this.bulkJobStore.get();
     this.bulkJob = job;
@@ -762,22 +736,8 @@ export class Model {
     }
   }
 
-  /**
-   * Serialise the queued rows into one or more CSV payloads.
-   *
-   * Columns whose name starts with "_" are left out, which covers both
-   * user-skipped columns and the internal bookkeeping columns.
-   *
-   * A single upload may not exceed 100 MB of raw CSV (Salesforce's hard cap is
-   * 150 MB of base64-encoded content, and base64 inflates the payload by about
-   * half). That is a ceiling per *job*, not per request -- repeating the PUT
-   * against the same job replaces the upload rather than appending to it -- so
-   * anything larger is split across several jobs. Splits land on row boundaries
-   * and every chunk repeats the header row.
-   *
-   * The delimiter is always a comma regardless of the user's csvSeparator
-   * preference, to match the job's columnDelimiter.
-   */
+  // Serializes queued rows into CSV payloads. Splits payloads to stay under 
+  // Salesforce's ~100 MB raw CSV per-job limit. Ignores columns starting with "_".
   buildBulkCsvChunks() {
     const header = this.importData.importTable.header;
     const columnIndexes = header.map((column, index) => index).filter(index => !header[index].columnIgnore());
@@ -806,7 +766,7 @@ export class Model {
   }
 
   runBulkImport() {
-    // Bulk state lives at the page level, so one bulk import at a time.
+    // Enforce one active bulk import at a time globally
     if (this.bulkJob && !isBulkJobTerminal(this.bulkJob.state)) {
       this.bulkMessage = "A bulk import is already running - wait for it to finish or cancel it first.";
       return;
@@ -822,8 +782,7 @@ export class Model {
       return;
     }
 
-    // Held in memory only. Chunk payloads are far too large for localStorage, so
-    // a reload part-way through a multi-chunk upload cannot resume the remainder.
+    // Held in memory; multi-chunk uploads cannot survive reloads if interrupted
     this.bulkPendingChunks = chunks;
     this.bulkMessage = null;
     this.bulkError = null;
@@ -845,12 +804,14 @@ export class Model {
       totalRecords: recordCount,
       recordsProcessed: 0,
       recordsFailed: 0,
+      // Keyed by chunk ID to prevent double-counting on overlapping cross-tab polls
+      chunkResults: {},
       errorMessage: null
     };
     this.submitBulkChunk(0);
   }
 
-  /** Create a job for one chunk, upload it, and close the upload. */
+  // Create a job for one chunk, upload it, and close the upload
   submitBulkChunk(chunkIndex) {
     const csv = this.bulkPendingChunks && this.bulkPendingChunks[chunkIndex];
     if (csv == null) {
@@ -890,8 +851,7 @@ export class Model {
         this.startBulkPolling();
         this.didUpdate();
       }).catch(error => {
-        // The job exists but the upload or close failed, so abort it rather than
-        // leaving an Open job sitting against the org's job limit.
+        // Abort the job if upload fails to avoid orphaned Open jobs against org limits
         console.error(error);
         this.bulkRest(this.bulkIngestEndpoint(`/${created.id}`), {method: "PATCH", body: {state: BULK_STATE.ABORTED}, logErrors: false}).catch(() => {});
         throw error;
@@ -920,13 +880,14 @@ export class Model {
       }
 
       this.stopBulkPolling();
-      // Counts are per job, so accumulate as each chunk finishes.
-      const recordsProcessed = job.recordsProcessed + processed;
-      const recordsFailed = job.recordsFailed + failed;
+      // Key counts by job ID to overwrite (not add) on overlapping poll ticks
+      const chunkResults = {...(job.chunkResults || {}), [job.currentJobId]: {processed, failed}};
+      const recordsProcessed = Object.values(chunkResults).reduce((sum, r) => sum + r.processed, 0);
+      const recordsFailed = Object.values(chunkResults).reduce((sum, r) => sum + r.failed, 0);
       const moreChunks = job.chunkIndex + 1 < job.chunkCount;
 
       if (res.state === BULK_STATE.JOB_COMPLETE && moreChunks) {
-        this.bulkJob = this.bulkJobStore.set({...job, recordsProcessed, recordsFailed, state: BULK_STATE.IN_PROGRESS});
+        this.bulkJob = this.bulkJobStore.set({...job, chunkResults, recordsProcessed, recordsFailed, state: BULK_STATE.IN_PROGRESS});
         this.submitBulkChunk(job.chunkIndex + 1);
         this.didUpdate();
         return;
@@ -935,10 +896,10 @@ export class Model {
       this.bulkJob = this.bulkJobStore.set({
         ...job,
         state: res.state,
+        chunkResults,
         recordsProcessed,
         recordsFailed,
-        // A job can also be aborted from Setup by an admin, so surface whatever
-        // reason Salesforce gives rather than leaving the panel on "in progress".
+        // Surface Salesforce-provided error messages (e.g., if aborted by an admin)
         errorMessage: res.errorMessage || (moreChunks ? `Stopped after chunk ${job.chunkIndex + 1} of ${job.chunkCount}. The remaining rows were not submitted.` : null),
         completedAt: new Date().toISOString()
       });
@@ -948,9 +909,8 @@ export class Model {
     }).catch(error => {
       console.error(error);
       this.bulkPollFailures++;
-      // Ride out a transient network blip, but stop if it is clearly not
-      // transient. The job itself keeps running on Salesforce either way.
       this.bulkError = "Could not read bulk job status: " + error.message;
+      // Tolerate transient network blips up to the failure limit
       if (this.bulkPollFailures >= Model.BULK_POLL_MAX_FAILURES) {
         this.stopBulkPolling();
         this.isBulkImportWorking = false;
@@ -969,7 +929,6 @@ export class Model {
         ? this.bulkJobStore.set({...this.bulkJob, state, errorMessage, completedAt: new Date().toISOString()})
         : {...this.bulkJob, state, errorMessage, completedAt: new Date().toISOString()};
     }
-    this.bulkError = errorMessage;
   }
 
   abortBulkJob() {
@@ -990,11 +949,7 @@ export class Model {
     }));
   }
 
-  /**
-   * Download one of the job's result CSVs. `kind` is "successfulResults" or
-   * "failedResults". Results from every chunk job are concatenated, with the
-   * repeated header row dropped from all but the first.
-   */
+  // Downloads and concatenates chunk CSVs for "successfulResults" or "failedResults"
   downloadBulkResults(kind, job = this.bulkJob) {
     if (!job || !job.jobIds || job.jobIds.length === 0) {
       return;
@@ -1034,7 +989,7 @@ export class Model {
     }).catch(error => {
       console.error(error);
       if (error.name === "BulkResultsExpired") {
-        // Salesforce has already deleted this job, so stop offering it.
+        // Salesforce deleted the job results (expired)
         this.bulkJobStore.forget(job.jobId);
         this.bulkJob = this.bulkJobStore.get();
         this.bulkMessage = "Results are no longer available for that job - Salesforce keeps them for 7 days.";
@@ -1477,9 +1432,8 @@ function csvSerialize(table, separator) {
 }
 
 /**
- * Drop the header row from a result CSV so several jobs' results can be
- * concatenated. Salesforce's result columns never contain newlines in their
- * names, so cutting at the first one is safe.
+ * Removes the header row from result CSVs for concatenation. 
+ * Safe to cut at the first newline since field names never contain them.
  */
 function stripCsvHeaderRow(csv) {
   const firstBreak = csv.indexOf("\n");
@@ -1732,9 +1686,7 @@ export class App extends React.Component {
     model.resultTableCallback = this.scrollTable.dataChange;
     model.updateImportTableResult();
 
-    // localStorage is shared per-origin, so a completion or abort in another tab
-    // open on the same org shows up here immediately instead of waiting for this
-    // tab's next poll tick.
+    // Sync cross-tab bulk job updates immediately (bypasses poll timer)
     this.removeBulkStorageListener = model.bulkJobStore.onExternalChange(() => {
       model.syncBulkJobFromStorage();
       model.didUpdate();
@@ -1769,12 +1721,8 @@ export class App extends React.Component {
     }
   }
   /**
-   * Status panel for the page-level bulk job. Mirrors the Data Export panel, but
-   * with a download button per result set instead of one.
-   *
-   * Expanded while Bulk is the selected API type, collapsed to a one-line bar
-   * otherwise. `bulkPanelOpen` stays null until the user picks a side, at which
-   * point their choice wins until the API type changes again.
+   * Page-level bulk job status panel. Renders outside per-tab content.
+   * Auto-expands when Bulk API is selected, otherwise collapses to a single line.
    */
   renderBulkPanel(model) {
     const job = model.bulkJob;
@@ -1787,10 +1735,9 @@ export class App extends React.Component {
     const open = this.state.bulkPanelOpen === null ? model.isBulk() : this.state.bulkPanelOpen;
     const succeeded = Math.max(0, (job.recordsProcessed || 0) - (job.recordsFailed || 0));
 
-    // Dismiss is always reachable. A job that never reaches a terminal state --
-    // aborted outside the extension, or simply unreachable by polling -- would
-    // otherwise be impossible to clear from the panel.
+    // Always reachable to allow clearing stuck or externally aborted jobs
     const dismissButton = h("button", {
+      key: "dismiss",
       type: "button",
       className: "slds-button slds-button_neutral",
       onClick: this.onDismissBulkJob,
@@ -1807,28 +1754,30 @@ export class App extends React.Component {
     );
 
     if (!open) {
-      return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+      return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
         h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
           titleBar,
           h("div", {className: "slds-button-group"},
-            h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
+            h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
             dismissButton
           )
         )
       );
     }
 
-    const history = model.bulkJobStore.history.list.filter(e => e.jobId !== job.jobId);
-    const field = (label, value) => h("div", {key: label, className: "slds-col slds-size_1-of-2 slds-large-size_1-of-4 slds-p-right_small slds-p-bottom_xx-small"},
+    const historyMax = model.bulkJobHistoryMax() - 1;
+    const history = model.bulkJobStore.history.list.filter(e => e.jobId !== job.jobId).slice(0, historyMax);
+    const field = (label, value) => h("div", {key: label, className: "slds-col slds-size_1-of-2 slds-large-size_1-of-6 slds-p-right_small slds-p-bottom_xx-small"},
       h("dt", {className: "slds-text-title slds-truncate"}, label),
       h("dd", {className: "slds-text-body_small slds-truncate", title: String(value)}, value)
     );
 
-    return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+    return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
       h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small"},
         titleBar,
         h("div", {className: "slds-button-group"},
           h("button", {
+            key: "download-succeeded",
             type: "button",
             className: "slds-button slds-button_brand",
             disabled: !complete,
@@ -1836,6 +1785,7 @@ export class App extends React.Component {
             title: complete ? "Download the successful records as a CSV file" : "Available once the job completes"
           }, complete ? `Download Succeeded (${succeeded.toLocaleString()})` : "Download Succeeded"),
           h("button", {
+            key: "download-failed",
             type: "button",
             className: "slds-button slds-button_neutral",
             disabled: !complete,
@@ -1843,6 +1793,7 @@ export class App extends React.Component {
             title: complete ? "Download the failed records, with their errors, as a CSV file" : "Available once the job completes"
           }, complete ? `Download Failed (${(job.recordsFailed || 0).toLocaleString()})` : "Download Failed"),
           h("button", {
+            key: "refresh",
             type: "button",
             className: "slds-button slds-button_neutral",
             hidden: complete || failed,
@@ -1850,6 +1801,7 @@ export class App extends React.Component {
             title: "Check this job's status now"
           }, "Refresh status"),
           h("button", {
+            key: "abort",
             type: "button",
             className: "slds-button slds-button_destructive",
             hidden: complete || failed,
@@ -1857,6 +1809,7 @@ export class App extends React.Component {
             title: "Ask Salesforce to cancel this job"
           }, "Abort"),
           h("button", {
+            key: "toggle",
             type: "button",
             className: "slds-button slds-button_neutral",
             onClick: this.onToggleBulkPanel,

@@ -125,7 +125,7 @@ export class StorageHistory {
   }
 }
 
-// Bulk API 2.0 job states, as reported by /jobs/ingest and /jobs/query.
+// Bulk API 2.0 job states
 export const BULK_STATE = {
   OPEN: "Open",
   UPLOAD_COMPLETE: "UploadComplete",
@@ -135,20 +135,19 @@ export const BULK_STATE = {
   ABORTED: "Aborted"
 };
 export const BULK_TERMINAL_STATES = [BULK_STATE.JOB_COMPLETE, BULK_STATE.FAILED, BULK_STATE.ABORTED];
-// Salesforce deletes bulk jobs (and their result files) once they are older than
-// 7 days and in a terminal state. See "Bulk API 2.0 Limits and Allocations".
+
+// Salesforce retains completed bulk job results for 7 days
 export const BULK_RESULTS_RETENTION_DAYS = 7;
-// A single upload request may not exceed 150 MB of base64-encoded content, and
-// base64 inflates the payload by roughly 50%, so Salesforce documents 100 MB as
-// the largest raw CSV to send. This is a per-job ceiling, not a per-request one:
-// data larger than this needs to be split across several jobs.
+
+// Salesforce limits per-job raw CSV uploads to ~100MB (due to a 150MB base64 limit).
+// Larger datasets must be split across multiple jobs.
 export const BULK_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 export function isBulkJobTerminal(state) {
   return BULK_TERMINAL_STATES.includes(state);
 }
 
-/** Byte length of a string once UTF-8 encoded, without allocating a buffer. */
+// Calculate UTF-8 byte length without allocating a buffer
 export function utf8ByteLength(str) {
   let bytes = 0;
   for (let i = 0; i < str.length; i++) {
@@ -168,20 +167,9 @@ export function utf8ByteLength(str) {
 }
 
 /**
- * Persisted state for the one in-flight Bulk API 2.0 job a page may have, plus a
- * short history of recent jobs.
- *
- * Keys follow the domain-prefixed localStorage convention already used elsewhere
- * (e.g. `${sfHost}_queryTabs`), which scopes jobs per org without a separate
- * orgId field. Export and import each get their own key, so a bulk export and a
- * bulk import can run at the same time.
- *
- * localStorage is shared per-origin, so every tab open on the same org reads and
- * writes the same key. Each tab polls on its own timer -- polling is idempotent,
- * so no leader election is needed -- and `onExternalChange` lets a tab react to
- * a completion or abort that happened in a sibling tab without waiting for its
- * own next tick. Note that the `storage` event only fires in the tabs that did
- * not perform the write, which is exactly the behaviour we want here.
+ * Persists state for an active Bulk API 2.0 job and a history of recent jobs.
+ * Scoped per org via domain-prefixed localStorage keys. Synchronizes state 
+ * across multiple tabs using the 'storage' event.
  */
 export class BulkJobStore {
   constructor(storageKey, {historyMax = 5, retentionDays = BULK_RESULTS_RETENTION_DAYS} = {}) {
@@ -216,7 +204,7 @@ export class BulkJobStore {
     return job;
   }
 
-  /** Merge a patch into the stored job. No-op if there is nothing stored. */
+  // Merge a patch into the stored job. No-op if empty.
   update(patch) {
     const job = this.get();
     return job ? this.set({...job, ...patch}) : null;
@@ -226,7 +214,7 @@ export class BulkJobStore {
     localStorage.removeItem(this.storageKey);
   }
 
-  /** True once Salesforce would have deleted the job and its results. */
+  // True if Salesforce has deleted the job results (past retention period)
   isExpired(job) {
     const stamp = Date.parse(job?.completedAt || job?.submittedAt || "");
     if (isNaN(stamp)) {
@@ -235,7 +223,7 @@ export class BulkJobStore {
     return Date.now() - stamp > this.retentionDays * 24 * 60 * 60 * 1000;
   }
 
-  /** Drop history entries whose results Salesforce no longer holds. */
+  // Drop history entries whose results have expired
   pruneHistory() {
     for (const entry of [...this.history.list]) {
       if (this.isExpired(entry)) {
@@ -252,10 +240,7 @@ export class BulkJobStore {
     }
   }
 
-  /**
-   * Invoke `callback` when another tab changes this store. Returns a function
-   * that removes the listener again.
-   */
+  // Invoke callback when another tab changes this store. Returns cleanup function.
   onExternalChange(callback) {
     const listener = (e) => {
       if (e.key !== this.storageKey && e.key !== this.historyKey) {

@@ -655,6 +655,10 @@ export async function routeMock(route, host) {
         "DailyStandardVolumePlatformEvents": {
           "Max": 10000,
           "Remaining": 1000
+        },
+        "PrivateConnectOutboundCalloutHourlyLimitMB": {
+          "Max": 0,
+          "Remaining": 0
         }
       });
       return true;
@@ -678,7 +682,8 @@ export async function routeMock(route, host) {
         {version: "63.0", label: "Spring '25"},
         {version: "64.0", label: "Summer '25"},
         {version: "65.0", label: "Winter '26"},
-        {version: "66.0", label: "Spring '26"}
+        {version: "66.0", label: "Spring '26"},
+        {version: "67.0", label: "Summer '26"}
       ]);
       return true;
     }

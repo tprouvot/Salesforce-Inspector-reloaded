@@ -1,5 +1,3 @@
-
-
 .sf-link {
   background-color: rgb(6, 28, 63);
   border-radius: 3px;
@@ -758,4 +756,43 @@ svg.icon:hover {
 
 .add-tab-button:hover {
   background: #f3f2f2;
+}
+
+/* The last row of a dividers list (e.g. "past bulk jobs") shouldn't keep a
+   trailing border below it -- that space belongs to whatever comes after
+   the list, not to the list itself. */
+.slds-has-dividers_bottom-space > .slds-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* The Standard/Tooling/Bulk API segmented control sits next to plain buttons
+   like Run Export, which get their 32px height/font size from the `button`
+   rule above. SLDS's own radio-button-group styling doesn't match that, and
+   doesn't vertically center the label text inside the pill, so pin both
+   explicitly here. */
+.slds-radio_button-group .slds-radio_button {
+  height: 32px;
+}
+
+.slds-radio_button-group .slds-radio_button__label {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.slds-radio_button-group .slds-radio_faux {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  line-height: normal;
+}
+
+/* The bulk job status box keeps a fixed background regardless of what's
+   focused or clicked inside or near it. */
+.slds-box.slds-theme_default {
+  background-color: #fff;
+  margin-top: 0;
 }

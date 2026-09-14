@@ -2260,6 +2260,7 @@ class App extends React.Component {
     // aborted outside the extension, or simply unreachable by polling -- would
     // otherwise be impossible to clear from the panel.
     const dismissButton = h("button", {
+      key: "dismiss",
       type: "button",
       className: "slds-button slds-button_neutral",
       onClick: this.onDismissBulkJob,
@@ -2275,11 +2276,11 @@ class App extends React.Component {
     );
 
     if (!open) {
-      return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+      return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_medium slds-theme_default"},
         h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
           titleBar,
           h("div", {className: "slds-button-group"},
-            h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
+            h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
             dismissButton
           )
         )
@@ -2292,11 +2293,12 @@ class App extends React.Component {
       h("dd", {className: "slds-text-body_small slds-truncate", title: String(value)}, value)
     );
 
-    return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+    return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
       h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small"},
         titleBar,
         h("div", {className: "slds-button-group"},
           h("button", {
+            key: "download",
             type: "button",
             className: "slds-button slds-button_brand",
             disabled: !complete,
@@ -2304,6 +2306,7 @@ class App extends React.Component {
             title: complete ? "Download the full result set as a CSV file" : "Available once the job completes"
           }, complete && job.recordCount != null ? `Download CSV (${job.recordCount.toLocaleString()} record${s(job.recordCount)})` : "Download CSV"),
           h("button", {
+            key: "refresh",
             type: "button",
             className: "slds-button slds-button_neutral",
             hidden: complete || failed,
@@ -2311,6 +2314,7 @@ class App extends React.Component {
             title: "Check this job's status now"
           }, "Refresh status"),
           h("button", {
+            key: "abort",
             type: "button",
             className: "slds-button slds-button_destructive",
             hidden: complete || failed,
@@ -2318,6 +2322,7 @@ class App extends React.Component {
             title: "Ask Salesforce to cancel this job"
           }, "Abort"),
           h("button", {
+            key: "toggle",
             type: "button",
             className: "slds-button slds-button_neutral",
             onClick: this.onToggleBulkPanel,

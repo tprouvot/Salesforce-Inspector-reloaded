@@ -125,7 +125,7 @@ export class StorageHistory {
   }
 }
 
-// Bulk API 2.0 job states, as reported by /jobs/ingest and /jobs/query.
+// Bulk API 2.0 job states
 export const BULK_STATE = {
   OPEN: "Open",
   UPLOAD_COMPLETE: "UploadComplete",
@@ -135,8 +135,7 @@ export const BULK_STATE = {
   ABORTED: "Aborted"
 };
 export const BULK_TERMINAL_STATES = [BULK_STATE.JOB_COMPLETE, BULK_STATE.FAILED, BULK_STATE.ABORTED];
-// Salesforce deletes bulk jobs (and their result files) once they are older than
-// 7 days and in a terminal state. See "Bulk API 2.0 Limits and Allocations".
+// Salesforce retains completed bulk job results for 7 days.
 export const BULK_RESULTS_RETENTION_DAYS = 7;
 // A single upload request may not exceed 150 MB of base64-encoded content, and
 // base64 inflates the payload by roughly 50%, so Salesforce documents 100 MB as

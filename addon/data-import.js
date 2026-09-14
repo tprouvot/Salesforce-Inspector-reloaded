@@ -733,12 +733,12 @@ export class Model {
 
   /** Manually re-check a job whose polling gave up or was never resumed. */
   refreshBulkStatus() {
-    if (!this.bulkJob) {
+    if (!this.bulkJob || isBulkJobTerminal(this.bulkJob.state)) {
       return;
     }
     this.bulkError = null;
     this.bulkMessage = null;
-    this.isBulkImportWorking = !isBulkJobTerminal(this.bulkJob.state);
+    this.isBulkImportWorking = true;
     this.startBulkPolling();
   }
 
@@ -845,6 +845,10 @@ export class Model {
       totalRecords: recordCount,
       recordsProcessed: 0,
       recordsFailed: 0,
+      // Keyed by chunk job id, so re-polling an already-finished chunk (a
+      // second tab on the same job, an overlapping poll tick, etc.) just
+      // overwrites that chunk's entry instead of adding onto the total again.
+      chunkResults: {},
       errorMessage: null
     };
     this.submitBulkChunk(0);
@@ -920,13 +924,20 @@ export class Model {
       }
 
       this.stopBulkPolling();
-      // Counts are per job, so accumulate as each chunk finishes.
-      const recordsProcessed = job.recordsProcessed + processed;
-      const recordsFailed = job.recordsFailed + failed;
+      // Counts are per job, so sum across chunks -- but key each chunk's
+      // result on its own job id rather than adding onto a running total.
+      // Re-polling an already-finished chunk (another tab open on the same
+      // job, an overlapping poll tick, a manual refresh that lands just
+      // after completion) then overwrites that one entry instead of
+      // counting the same records again, which is what made "Processed"
+      // creep upward on repeated refreshes.
+      const chunkResults = {...(job.chunkResults || {}), [job.currentJobId]: {processed, failed}};
+      const recordsProcessed = Object.values(chunkResults).reduce((sum, r) => sum + r.processed, 0);
+      const recordsFailed = Object.values(chunkResults).reduce((sum, r) => sum + r.failed, 0);
       const moreChunks = job.chunkIndex + 1 < job.chunkCount;
 
       if (res.state === BULK_STATE.JOB_COMPLETE && moreChunks) {
-        this.bulkJob = this.bulkJobStore.set({...job, recordsProcessed, recordsFailed, state: BULK_STATE.IN_PROGRESS});
+        this.bulkJob = this.bulkJobStore.set({...job, chunkResults, recordsProcessed, recordsFailed, state: BULK_STATE.IN_PROGRESS});
         this.submitBulkChunk(job.chunkIndex + 1);
         this.didUpdate();
         return;
@@ -935,6 +946,7 @@ export class Model {
       this.bulkJob = this.bulkJobStore.set({
         ...job,
         state: res.state,
+        chunkResults,
         recordsProcessed,
         recordsFailed,
         // A job can also be aborted from Setup by an admin, so surface whatever
@@ -1791,6 +1803,7 @@ export class App extends React.Component {
     // aborted outside the extension, or simply unreachable by polling -- would
     // otherwise be impossible to clear from the panel.
     const dismissButton = h("button", {
+      key: "dismiss",
       type: "button",
       className: "slds-button slds-button_neutral",
       onClick: this.onDismissBulkJob,
@@ -1807,11 +1820,11 @@ export class App extends React.Component {
     );
 
     if (!open) {
-      return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+      return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
         h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
           titleBar,
           h("div", {className: "slds-button-group"},
-            h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
+            h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
             dismissButton
           )
         )
@@ -1819,16 +1832,17 @@ export class App extends React.Component {
     }
 
     const history = model.bulkJobStore.history.list.filter(e => e.jobId !== job.jobId);
-    const field = (label, value) => h("div", {key: label, className: "slds-col slds-size_1-of-2 slds-large-size_1-of-4 slds-p-right_small slds-p-bottom_xx-small"},
+    const field = (label, value) => h("div", {key: label, className: "slds-col slds-size_1-of-2 slds-large-size_1-of-6 slds-p-right_small slds-p-bottom_xx-small"},
       h("dt", {className: "slds-text-title slds-truncate"}, label),
       h("dd", {className: "slds-text-body_small slds-truncate", title: String(value)}, value)
     );
 
-    return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-bottom_small slds-theme_default"},
+    return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
       h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small"},
         titleBar,
         h("div", {className: "slds-button-group"},
           h("button", {
+            key: "download-succeeded",
             type: "button",
             className: "slds-button slds-button_brand",
             disabled: !complete,
@@ -1836,6 +1850,7 @@ export class App extends React.Component {
             title: complete ? "Download the successful records as a CSV file" : "Available once the job completes"
           }, complete ? `Download Succeeded (${succeeded.toLocaleString()})` : "Download Succeeded"),
           h("button", {
+            key: "download-failed",
             type: "button",
             className: "slds-button slds-button_neutral",
             disabled: !complete,
@@ -1843,6 +1858,7 @@ export class App extends React.Component {
             title: complete ? "Download the failed records, with their errors, as a CSV file" : "Available once the job completes"
           }, complete ? `Download Failed (${(job.recordsFailed || 0).toLocaleString()})` : "Download Failed"),
           h("button", {
+            key: "refresh",
             type: "button",
             className: "slds-button slds-button_neutral",
             hidden: complete || failed,
@@ -1850,6 +1866,7 @@ export class App extends React.Component {
             title: "Check this job's status now"
           }, "Refresh status"),
           h("button", {
+            key: "abort",
             type: "button",
             className: "slds-button slds-button_destructive",
             hidden: complete || failed,
@@ -1857,6 +1874,7 @@ export class App extends React.Component {
             title: "Ask Salesforce to cancel this job"
           }, "Abort"),
           h("button", {
+            key: "toggle",
             type: "button",
             className: "slds-button slds-button_neutral",
             onClick: this.onToggleBulkPanel,

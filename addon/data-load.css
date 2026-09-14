@@ -89,3 +89,8 @@
   margin: 102px 232px 0 0;
   z-index: 2;
 }
+
+.slds-has-dividers_bottom-space > .slds-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}

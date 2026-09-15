@@ -104,6 +104,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ma
 
 ### Other Improvements
 
+- Reliable popup context detection: the extension now consistently recognizes the currently opened Salesforce record and refreshes Object search results even when the popup or SObject metadata finishes loading asynchronously.
 - Favicon and banner customization for each org
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)

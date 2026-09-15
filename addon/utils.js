@@ -126,6 +126,7 @@ export class StorageHistory {
 }
 
 // Bulk API 2.0 job states
+// Bulk API 2.0 job states
 export const BULK_STATE = {
   OPEN: "Open",
   UPLOAD_COMPLETE: "UploadComplete",

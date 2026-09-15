@@ -30,6 +30,38 @@ const accountRecords = [
   }
 ];
 
+// Field Manager - "Retrieve Fields" mock CustomField records, keyed by Tooling API Id
+const mockCustomFieldRecords = {
+  "00N000000000001AAA": {
+    Id: "00N000000000001AAA",
+    DeveloperName: "Existing_Text",
+    TableEnumOrId: "Account",
+    Metadata: {
+      label: "Existing Text",
+      type: "Text",
+      length: 100,
+      required: false,
+      unique: false,
+      externalId: false,
+      description: "An existing text field",
+      inlineHelpText: "Help for existing text",
+      formula: null
+    }
+  },
+  "00N000000000002AAA": {
+    Id: "00N000000000002AAA",
+    DeveloperName: "Existing_Checkbox",
+    TableEnumOrId: "Account",
+    Metadata: {
+      label: "Existing Checkbox",
+      type: "Checkbox",
+      defaultValue: false,
+      description: "",
+      inlineHelpText: null
+    }
+  }
+};
+
 export async function routeMock(route, host) {
   //Extract request data
   const request = route.request();
@@ -93,6 +125,13 @@ export async function routeMock(route, host) {
             layoutable: false
           }]
       });
+      return true;
+    }
+
+    // Tooling API - CustomField GET by Id (Field Manager's "Retrieve Fields")
+    if (path.match(/\/tooling\/sobjects\/CustomField\/[a-zA-Z0-9]+$/) && method === "GET") {
+      const id = path.split("/").pop();
+      await fulfillSuccess(route, mockCustomFieldRecords[id] || {});
       return true;
     }
 
@@ -492,6 +531,19 @@ export async function routeMock(route, host) {
                 Name: "Standard User"
               }
             }
+          ]
+        });
+        return true;
+      }
+
+      // Field Manager - "Retrieve Fields" list query (Id only; Metadata is fetched per-record after)
+      if (query.includes("from customfield")) {
+        await fulfillSuccess(route, {
+          totalSize: 2,
+          done: true,
+          records: [
+            {Id: "00N000000000001AAA"},
+            {Id: "00N000000000002AAA"}
           ]
         });
         return true;

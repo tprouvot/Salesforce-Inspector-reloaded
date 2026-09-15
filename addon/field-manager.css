@@ -1,0 +1,18 @@
+.cursorPointer {
+  cursor: pointer;
+}
+.userSelectNone {
+  user-select: none;
+}
+.fillBlue {
+  fill: #005fb2;
+}
+.fillGreen {
+  fill: #2e844a;
+}
+.fillRed {
+  fill: #ba0517;
+}
+.fillGray {
+  fill: #9c9c9c;
+}

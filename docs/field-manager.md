@@ -1,10 +1,10 @@
-# Field Creator
+# Field Manager
 
 ![image](https://github.com/user-attachments/assets/5dfe73a1-b218-471a-93b5-0f281a90ba44)
 
 ## Eligible Objects
 
-The Field Creator supports creating fields for the following types of objects:
+The Field Manager supports creating fields for the following types of objects:
 
 - **Standard Objects** - Objects that support page layouts (Account, Contact, Opportunity, etc.)
 - **Custom Objects** - User-defined objects ending with `__c`
@@ -15,7 +15,7 @@ The Field Creator supports creating fields for the following types of objects:
 
 ## Supported Field Types
 
-The Field Creator feature supports the following field types:
+The Field Manager feature supports the following field types:
 
 ### For Standard Objects and Custom Objects
 - **Checkbox**
@@ -47,7 +47,7 @@ The Field Creator feature supports the following field types:
 
 ## Getting Started
 
-1. Open the Field Creator through the pop-up.
+1. Open the Field Manager through the pop-up.
 
  <img width="200" src="https://github.com/user-attachments/assets/da2f92fa-97a9-437b-82bd-cd71a9248964">
 

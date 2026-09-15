@@ -262,8 +262,8 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: "field-creator",
-        tabTitle: "Field Creator",
+        id: "field-manager",
+        tabTitle: "Field Manager",
         content: [
           {option: Option,
             props: {

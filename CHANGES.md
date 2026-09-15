@@ -4,6 +4,10 @@
 
 - `Data Import / Data Export` Add Bulk API 2.0 support [feature #1299](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1299) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Add "Upsert (Update Only)" action that updates the matching record and never inserts [issue #1334](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1334) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Org Limits` Fix gauge falsely displaying as full/blue when a limit is "0 of 0 consumed" [issue #1347](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1347)
+- `Data Import` Fix Run button doesn't update when selecting Undelete before data is loaded [issue #1331](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1331) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Import` Fix Object field briefly shows a false "Unknown object" error after page load [issue #1333](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1333) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fix Login-as Incognito disconnecting the session on the main tab [issue #1239](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1239) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Event Monitor` Fix "no customChannel found" when the org has more than one custom channel [issue #1323](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1323)
 - `Popup` Fix missing record details in the Winter '27 release and resolve missing Org details when no maintenance is scheduled [issue #1316](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1316) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Allow editing Batch Size and Threads during an active import [issue #1036](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1036)

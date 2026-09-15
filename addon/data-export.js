@@ -1908,7 +1908,6 @@ class App extends React.Component {
     searchParams.set("query", model.queryInput.value);
     url.search = searchParams.toString();
     navigator.clipboard.writeText(url.toString());
-    navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
   onQueryPlan(){

@@ -703,7 +703,6 @@ export class Model {
   // Manually re-check a job whose polling stopped
   refreshBulkStatus() {
     if (!this.bulkJob || isBulkJobTerminal(this.bulkJob.state)) {
-    if (!this.bulkJob || isBulkJobTerminal(this.bulkJob.state)) {
       return;
     }
     this.bulkError = null;
@@ -890,7 +889,6 @@ export class Model {
 
       if (res.state === BULK_STATE.JOB_COMPLETE && moreChunks) {
         this.bulkJob = this.bulkJobStore.set({...job, chunkResults, recordsProcessed, recordsFailed, state: BULK_STATE.IN_PROGRESS});
-        this.bulkJob = this.bulkJobStore.set({...job, chunkResults, recordsProcessed, recordsFailed, state: BULK_STATE.IN_PROGRESS});
         this.submitBulkChunk(job.chunkIndex + 1);
         this.didUpdate();
         return;
@@ -899,7 +897,6 @@ export class Model {
       this.bulkJob = this.bulkJobStore.set({
         ...job,
         state: res.state,
-        chunkResults,
         chunkResults,
         recordsProcessed,
         recordsFailed,
@@ -1742,7 +1739,6 @@ export class App extends React.Component {
     // Always reachable to allow clearing stuck or externally aborted jobs
     const dismissButton = h("button", {
       key: "dismiss",
-      key: "dismiss",
       type: "button",
       className: "slds-button slds-button_neutral",
       onClick: this.onDismissBulkJob,
@@ -1760,11 +1756,9 @@ export class App extends React.Component {
 
     if (!open) {
       return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
-      return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
         h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
           titleBar,
           h("div", {className: "slds-button-group"},
-            h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
             h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
             dismissButton
           )
@@ -1780,12 +1774,10 @@ export class App extends React.Component {
     );
 
     return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
-    return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
       h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small"},
         titleBar,
         h("div", {className: "slds-button-group"},
           h("button", {
-            key: "download-succeeded",
             key: "download-succeeded",
             type: "button",
             className: "slds-button slds-button_brand",
@@ -1794,7 +1786,6 @@ export class App extends React.Component {
             title: complete ? "Download the successful records as a CSV file" : "Available once the job completes"
           }, complete ? `Download Succeeded (${succeeded.toLocaleString()})` : "Download Succeeded"),
           h("button", {
-            key: "download-failed",
             key: "download-failed",
             type: "button",
             className: "slds-button slds-button_neutral",

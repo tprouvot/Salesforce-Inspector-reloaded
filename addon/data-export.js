@@ -1715,6 +1715,20 @@ class App extends React.Component {
     let queryInput = this.refs.query;
     model.setQueryInput(queryInput);
     model.soqlPrompt = this.refs.prompt;
+
+    // Allow horizontal scrolling with the mouse wheel
+    let autocompleteResultsCont = this.refs.autocompleteResults;
+    if (autocompleteResultsCont) {
+      autocompleteResultsCont.addEventListener("wheel", (event) => {
+        if (autocompleteResultsCont.scrollWidth > autocompleteResultsCont.clientWidth) {
+          if (event.deltaY !== 0) {
+            event.preventDefault();
+            autocompleteResultsCont.scrollLeft += event.deltaY;
+          }
+        }
+      }, { passive: false });
+    }
+
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
@@ -2010,7 +2024,7 @@ class App extends React.Component {
                     ))
                 ),
               ),
-              h("div", {className: "autocomplete-results slds-m-top_small"},
+              h("div", {className: "autocomplete-results slds-m-top_small", ref: "autocompleteResults"},
                 model.autocompleteResults.results.map(r => (
                   h("span", {className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", key: r.value},
                     h("span", {className: "slds-pill__icon_container " + r.autocompleteType + " " + r.dataType},

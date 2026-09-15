@@ -334,7 +334,7 @@ export class Model {
     // Use cached sobjects list from utils (like popup.js) to avoid redundant API call
     if (this.sobjectsList && this.sobjectsList.length > 0) {
       if (this.apiType == "Metadata") {
-        return this.sobjectsList.filter(sobject => sobject.name.endsWith("__mdt"));
+        return this.sobjectsList.filter(sobject => sobject.name?.endsWith("__mdt"));
       }
       const useToolingApi = this.apiType == "Tooling";
       const requiredApi = useToolingApi ? "toolingApi" : "regularApi";
@@ -352,7 +352,7 @@ export class Model {
 
     if (this.apiType == "Metadata") {
       return globalDescribe.sobjects
-        .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
+        .filter(sobjectDescribe => sobjectDescribe.name?.endsWith("__mdt"));
     } else {
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
@@ -432,7 +432,7 @@ export class Model {
     if (this.sobjectListLoading()) {
       return "";
     }
-    if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
+    if (!this.sobjectList().some(s => s.name?.toLowerCase() == importType.toLowerCase())) {
       return "Unknown object";
     }
     return "";

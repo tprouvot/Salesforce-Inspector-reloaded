@@ -4,15 +4,8 @@
 .userSelectNone {
   user-select: none;
 }
-.fillBlue {
-  fill: #005fb2;
-}
-.fillGreen {
-  fill: #2e844a;
-}
-.fillRed {
-  fill: #ba0517;
-}
-.fillGray {
-  fill: #9c9c9c;
+/* React 15 (bundled here) drops CSS custom properties passed via the inline style
+   object, so the accent color has to be set as a real class instead of inline style. */
+.fillAccent {
+  fill: var(--slds-g-color-accent-2);
 }

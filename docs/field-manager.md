@@ -70,19 +70,46 @@ The Field Manager feature supports the following field types:
 
 
 
+## Retrieving and Editing Existing Fields
+
+Besides creating brand new fields, the Field Manager can also pull in an object's existing custom fields so you can update their Label, Description, and Help Text.
+
+1. Select an object, then click "Retrieve Fields" to pull that object's existing custom fields via the Tooling API.
+2. Retrieved fields are added to the table with an "Existing" badge. All attributes other than Label, Description, and Help Text are shown read-only, to prevent accidental changes to the field's type, length, picklist values, etc.
+3. Edit the Label, Description, and/or Help Text directly in the table or through the "Options" modal, then click "Deploy Fields" as usual.
+
+> **Note**: "Retrieve Fields" is not available for Platform Events.
+
+### Allow Updating Existing Fields
+
+Updates to existing fields are gated behind a dedicated toggle so they can't happen by accident:
+
+- The "Allow updating existing fields" toggle must be turned on for any edits to retrieved fields to be saved on deploy. When it's off, those fields are skipped during deploy instead of being overwritten.
+- When it's on and you deploy, a confirmation modal lists every existing field that will be overwritten before anything is sent to your org. This cannot be undone from this tool.
+
 ## Bulk Import
 
 <img width="450" src="https://github.com/user-attachments/assets/e4582af0-c6b9-4d6c-bae2-b97a5dfe85d3">
 
 
-1. Click "Import CSV" to open the import modal.
-2. Enter comma-separated values in the format: Label, API Name, Type. (The separator can be configured from the extension options)
-3. Click "Import" to add the fields to your list.
+1. Click "Import" to open the import modal.
+2. Enter separated values in the format: Label, Name, Type, Description, HelpText (the last two are optional). The separator (comma, semicolon, tab, or pipe) is auto-detected, so you can also paste data copied directly from Excel.
+3. Click "Import" to add the fields to your list. Rows whose Name matches a field already in the table via "Retrieve Fields" update that field's Label, Description, and Help Text instead of creating a duplicate row.
+
+## Exporting and Copying Fields
+
+Use the buttons above the fields table to get your field list out of the tool:
+
+- "Download CSV" saves the current field list as a CSV file.
+- "Copy CSV" copies the current field list to the clipboard as comma-separated values.
+- "Copy Excel" copies the current field list to the clipboard as tab-separated values, so it pastes directly into Excel/Google Sheets with one column per cell.
+
+All three use the same Label, Name, Type, Description, HelpText format as Bulk Import, so a copied/downloaded list can be pasted straight back into the Import modal later (e.g. on another object or another org).
 
 ## Deploying Fields
 
 1. Review your field list for accuracy.
-2. Click "Deploy Fields" to create the fields in your Salesforce org.
+2. Click "Deploy Fields" to create (or, for retrieved fields with "Allow updating existing fields" on, update) the fields in your Salesforce org. The button is disabled until an object is selected and while "Retrieve Fields" is running.
 3. Check the deployment status icon for each field.
 
 <img width="750" src="https://github.com/user-attachments/assets/e2e7122f-f052-420e-8f30-84db6ffac4ba">
@@ -93,6 +120,7 @@ The Field Manager feature supports the following field types:
 - Use "Clone" to duplicate a field row.
 - Use "Delete" to remove a field row.
 - Click "Clear All" to reset the entire field list.
+- Click a column header (Label, Name, or Type) to sort the fields table by that column; click again to reverse the sort direction.
 
 <img width="450" src="https://github.com/user-attachments/assets/e820d160-1183-48d2-82fd-e1fd376a0109">
 

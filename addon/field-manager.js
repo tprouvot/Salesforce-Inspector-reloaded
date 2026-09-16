@@ -324,17 +324,17 @@ class ProfilesModal extends React.Component {
         className: "slds-modal slds-fade-in-open slds-modal_large"
       },
       h("div", {className: "slds-modal__container"},
-        h("button", {
-          className: "slds-button slds-button_icon slds-modal__close",
-          "aria-label": "Close permission modal button",
-          onClick: onClose
-        },
-        h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#close"})
-        ),
-        h("span", {className: "slds-assistive-text"}, "Cancel and close")
-        ),
         h("div", {className: "slds-modal__header"},
+          h("button", {
+            className: "slds-button slds-button_icon slds-modal__close",
+            "aria-label": "Close permission modal button",
+            onClick: onClose
+          },
+          h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#close"})
+          ),
+          h("span", {className: "slds-assistive-text"}, "Cancel and close")
+          ),
           h("h1", {id: "profiles-modal-heading", className: "slds-modal__title slds-hyphenate"}, "Set Field Permissions")
         ),
         h("div", {className: "slds-modal__content slds-p-around_medium"},
@@ -855,18 +855,18 @@ class FieldOptionModal extends React.Component {
         className: "slds-modal slds-fade-in-open slds-modal_medium"
       },
       h("div", {className: "slds-modal__container"},
-        h("button", {
-          type: "button",
-          "aria-label": "Close Set Field Options",
-          className: "slds-button slds-button_icon slds-modal__close",
-          onClick: this.props.onClose
-        },
-        h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#close"})
-        ),
-        h("span", {className: "slds-assistive-text"}, "Cancel and close")
-        ),
         h("div", {className: "slds-modal__header"},
+          h("button", {
+            type: "button",
+            "aria-label": "Close Set Field Options",
+            className: "slds-button slds-button_icon slds-modal__close",
+            onClick: this.props.onClose
+          },
+          h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#close"})
+          ),
+          h("span", {className: "slds-assistive-text"}, "Cancel and close")
+          ),
           h("h1", {id: "field-option-modal-heading", className: "slds-modal__title slds-hyphenate"}, "Set Field Options")
         ),
         h("div", {
@@ -948,26 +948,26 @@ class FieldRow extends React.Component {
     switch (this.props.field.deploymentStatus) {
       case "pending":
         deploymentStatus = h("svg", {
-          className: "slds-icon slds-icon_x-small slds-icon-text-default",
+          className: "slds-icon slds-icon_x-small fillAccent",
           viewBox: "0 0 52 52"
         },
-        h("use", {xlinkHref: "symbols.svg#clock", className: "fillBlue"})
+        h("use", {xlinkHref: "symbols.svg#clock"})
         );
         break;
       case "success":
         deploymentStatus = h("svg", {
-          className: "slds-icon slds-icon_x-small slds-icon-text-default",
+          className: "slds-icon slds-icon_x-small slds-icon-text-success",
           viewBox: "0 0 52 52"
         },
-        h("use", {xlinkHref: "symbols.svg#success", className: "fillGreen"})
+        h("use", {xlinkHref: "symbols.svg#success"})
         );
         break;
       case "error":
         deploymentStatus = h("svg", {
-          className: "slds-icon slds-icon_x-small slds-icon-text-default",
+          className: "slds-icon slds-icon_x-small slds-icon-text-error",
           viewBox: "0 0 52 52"
         },
-        h("use", {xlinkHref: "symbols.svg#error", className: "fillRed"})
+        h("use", {xlinkHref: "symbols.svg#error"})
         );
         break;
       default:
@@ -977,15 +977,20 @@ class FieldRow extends React.Component {
     return (
       h("tr", null,
         h("td", {className: "slds-text-align_center slds-align-middle"},
-          h("button", {
+          // Cloning an existing field would create a new field with the same API name,
+          // which the org would reject as a duplicate — so cloning only applies to new fields.
+          !this.props.field.isExisting && h("button", {
             type: "button",
             "aria-label": "Clone this field",
             title: "Clone",
             className: "slds-button slds-button_icon",
             onClick: () => this.props.onClone(this.props.index)
           },
-          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#clone", className: "fillBlue"})
+          h("svg", {
+            className: "slds-button__icon fillAccent",
+            "aria-hidden": "true"
+          },
+            h("use", {xlinkHref: "symbols.svg#clone"})
           )
           )
         ),
@@ -997,8 +1002,8 @@ class FieldRow extends React.Component {
             className: "slds-button slds-button_icon",
             onClick: () => this.props.onDelete(this.props.index)
           },
-          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#delete", className: "fillGray"})
+          h("svg", {className: "slds-button__icon slds-icon-text-light", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#delete"})
           )
           )
         ),
@@ -1237,7 +1242,7 @@ class App extends React.Component {
     this.onSobjectsListRefreshed = (e) => {
       if (e.detail?.sfHost === this.sfHost) {
         const layoutableObjects = e.detail.sobjectsList.filter(obj =>
-          obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e"))
+          obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e")) || obj.name.endsWith("__mdt")
         );
         this.setState({objects: layoutableObjects});
       }
@@ -1524,9 +1529,9 @@ class App extends React.Component {
       // Get sobjects list (from cache or fetched from API)
       const sobjectsList = await getSobjectsList(this.sfHost);
 
-      // Filter for layoutable objects (objects that can have layouts or platform events)
+      // Filter for layoutable objects (objects that can have layouts), platform events, and custom metadata types
       const layoutableObjects = sobjectsList.filter(obj =>
-        obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e")) //add layoutable objects and PE objects
+        obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e")) || obj.name.endsWith("__mdt")
       );
 
       this.setState({objects: layoutableObjects});

@@ -2274,10 +2274,47 @@ class FieldValueCell extends React.Component {
     row.rowList.model.didUpdate();
   }
   onRecordIdClick(e) {
-    e.preventDefault();
     let {row} = this.props;
-    row.toggleRecordIdPop(this);
-    row.rowList.model.didUpdate();
+    let isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    let isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+    let isMiddleClick = e.button === 1;
+    // Ctrl/Cmd + Shift + Click -> Open in Show All Data
+    if (isCmdOrCtrl && e.shiftKey) {
+      e.preventDefault();
+      let recordId = row.dataTypedValue;
+      let keyPrefix = recordId.substring(0, 3);
+      let objectName = null;
+      
+      if (row.rowList.model.globalDescribe) {
+        let matchingSobjects = row.rowList.model.globalDescribe.sobjects.filter(s => s.keyPrefix == keyPrefix);
+        if (matchingSobjects.length === 1 && matchingSobjects[0].name !== "Unknown") {
+          objectName = matchingSobjects[0].name;
+        }
+      }
+      if (objectName) {
+        let args = new URLSearchParams();
+        args.set("host", row.rowList.model.sfHost);
+        args.set("objectType", objectName);
+        if (row.rowList.model.useToolingApi) {
+          args.set("useToolingApi", "1");
+        }
+        args.set("recordId", recordId);
+        window.open("inspect.html?" + args, '_blank');
+      } else {
+        window.open(row.idLink(), '_blank');
+      }
+    } 
+    // Ctrl/Cmd + Click OR Middle-click -> Open in Salesforce
+    else if (isCmdOrCtrl || isMiddleClick) {
+      e.preventDefault();
+      window.open(row.idLink(), '_blank');
+    } 
+    // Plain Left Click -> Open standard Pop-up Menu
+    else if (e.button === 0) {
+      e.preventDefault();
+      row.toggleRecordIdPop(this);
+      row.rowList.model.didUpdate();
+    }
   }
   onLinkClick(e) {
     if (e.target.className?.includes("copy-id")) {
@@ -2310,6 +2347,9 @@ class FieldValueCell extends React.Component {
   }
   render() {
     let {row, col} = this.props;
+    let isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    let modKey = isMac ? "Cmd" : "Ctrl";
+    let tooltipTitle = `Click: Menu\n${modKey} + Click: View in Salesforce\n${modKey} + Shift + Click: Show All Data`;
     if (row.isEditing()) {
       return h("td", {className: col.className},
         h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
@@ -2322,7 +2362,14 @@ class FieldValueCell extends React.Component {
     } else if (row.isId()) {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
         h("div", {className: "pop-menu-container"},
-          h("div", {className: "sfir-inspect-table-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick}, row.dataStringValue())),
+          h("div", {className: "sfir-inspect-table-text quick-select"}, 
+            h("a", {
+              href: row.idLink(), /*used to show visited color*/
+              onClick: this.onRecordIdClick,
+              onAuxClick: this.onRecordIdClick,
+              title: tooltipTitle
+            }, row.dataStringValue())
+          ),
           row.recordIdPop == null ? null : h("div", {className: "slds-dropdown slds-dropdown_left slds-dropdown_actions pop-menu"},
             h("ul", {className: "slds-dropdown__list"},
               row.recordIdPop.map(link =>

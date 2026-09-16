@@ -134,16 +134,56 @@ function renderCell(rt, cell, td) {
   function popLink(recordInfo, label) {
     let a = document.createElement("a");
     a.href = "about:blank";
-    a.title = "Show all data";
+    let isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    let modKey = isMac ? "Cmd" : "Ctrl";
+    a.title = `Click: Menu\n${modKey} + Click: View in Salesforce\n${modKey} + Shift + Click: Show All Data`;
+    // Handle Middle-Click
+    a.addEventListener("auxclick", e => {
+      if (e.button === 1) {
+        e.preventDefault();
+        let {recordId} = recordInfo();
+        if (recordId && isRecordId(recordId)) {
+          window.open("https://" + rt.sfHost + "/" + recordId, "_blank");
+        }
+      }
+    });
     a.addEventListener("click", e => {
       e.preventDefault();
+      let isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+      let {objectTypes, recordId} = recordInfo();
+      // Ctrl/Cmd + Shift + Click -> Show All Data
+      if (isCmdOrCtrl && e.shiftKey) {
+        if (objectTypes.length === 1 && objectTypes[0] !== "Unknown") {
+          let objectType = objectTypes[0];
+          let args = new URLSearchParams();
+          args.set("host", rt.sfHost);
+          args.set("objectType", objectType);
+          if (rt.isTooling) {
+            args.set("useToolingApi", "1");
+          }
+          if (recordId) {
+            args.set("recordId", recordId);
+          }
+          window.open("inspect.html?" + args, "_blank");
+        } else if (recordId && isRecordId(recordId)) {
+          window.open("https://" + rt.sfHost + "/" + recordId, "_blank");
+        }
+        return;
+      } 
+      // Ctrl/Cmd + Click -> View in Salesforce
+      else if (isCmdOrCtrl) {
+        if (recordId && isRecordId(recordId)) {
+          window.open("https://" + rt.sfHost + "/" + recordId, "_blank");
+        }
+        return;
+      }
+      // Default Plain Click -> Standard Pop-up Menu
       let pop = document.createElement("div");
       pop.className = "slds-dropdown slds-dropdown_left slds-dropdown_actions";
       let ul = document.createElement("ul");
       ul.className = "slds-dropdown__list";
       pop.appendChild(ul);
       td.appendChild(pop);
-      let {objectTypes, recordId} = recordInfo();
       let objectType = undefined;
       function setLinks(linkOptions = {isCopy: true, isQueryRecord: true, isShowAllData: true, isViewInSalesforce: true}) {
         // Show All Data link

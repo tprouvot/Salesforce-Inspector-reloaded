@@ -664,7 +664,7 @@ class APIVersionOption extends React.Component {
           h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
-      h("div", {className: "slds-col slds-size_10-of-12 slds-form-element"},
+      h("div", {className: "slds-col slds-size_9-of-12 slds-form-element"},
         h("div", {className: "slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
           h("div", {className: "slds-col slds-size_1-of-12"},
             h("div", {className: "slds-form-element__control"},
@@ -2230,7 +2230,7 @@ class App extends React.Component {
           onClose: this.hideToast
         }),
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
-        h("div", {className: "slds-card slds-m-around_medium main-container", id: "main-container_header"},
+        h("div", {className: "slds-card slds-m-top_medium slds-m-horizontal_medium main-container", id: "main-container_header"},
           h(OptionsTabSelector, {model, appRef: this})
         )
       )

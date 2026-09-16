@@ -13,9 +13,26 @@ const FIELD_TYPES = [
   "LongTextArea", "Html", "Url"
 ];
 
-function csvEscape(value) {
+// Types that can only be retrieved from an existing object, not created from scratch here —
+// creating them requires info this tool doesn't collect (relationship target, summarized field,
+// formula, etc). Editing only ever touches Label/Description/Help Text (see updateField), so
+// that's safe to support for any type.
+const RETRIEVE_ONLY_FIELD_TYPES = {
+  AutoNumber: "Auto Number",
+  Lookup: "Lookup",
+  MasterDetail: "Master-Detail",
+  Summary: "Roll-Up Summary",
+  EncryptedText: "Text (Encrypted)",
+  MetadataRelationship: "Metadata Relationship",
+  ExternalLookup: "External Lookup",
+  IndirectLookup: "Indirect Lookup",
+  Hierarchy: "Hierarchy"
+};
+
+function csvEscape(value, separator = ",") {
   const str = value === undefined || value === null ? "" : String(value);
-  return /[",\n]/.test(str) ? `"${str.replace(/"/g, "\"\"")}"` : str;
+  const needsQuoting = str.includes(separator) || str.includes("\"") || str.includes("\n");
+  return needsQuoting ? `"${str.replace(/"/g, "\"\"")}"` : str;
 }
 
 // The Tooling API rejects writes where a Metadata sub-field is explicitly null
@@ -729,7 +746,13 @@ class FieldOptionModal extends React.Component {
         );
 
       default:
-        return null;
+        // Retrieve-only types (Lookup, Master-Detail, Roll-Up Summary, Auto Number,
+        // Encrypted Text, ...) have no type-specific inputs here — only Label,
+        // Description, and Help Text are ever saved for existing fields anyway.
+        return h("div", {className: `field_options ${field.type}_options`},
+          this.renderDescriptionAndHelpText(),
+          this.renderRequiredCheckbox()
+        );
     }
   };
 
@@ -880,7 +903,7 @@ class FieldOptionModal extends React.Component {
 class FieldRow extends React.Component {
 
   getAvailableFieldTypes() {
-    const {selectedObject} = this.props;
+    const {selectedObject, field} = this.props;
 
     // All available field types
     const allFieldTypes = [
@@ -906,6 +929,12 @@ class FieldRow extends React.Component {
     if (this.props.isPlatformEvent(selectedObject)) {
       const allowedForPlatformEvents = this.props.getAllowedPlatformEventFieldTypes();
       return allFieldTypes.filter(fieldType => allowedForPlatformEvents.includes(fieldType.value));
+    }
+
+    // A retrieved existing field can have a type that can't be created from scratch here
+    // (Lookup, Master-Detail, ...) — add it so the (disabled) select still shows it correctly.
+    if (field.isExisting && RETRIEVE_ONLY_FIELD_TYPES[field.type]) {
+      return [...allFieldTypes, {value: field.type, label: RETRIEVE_ONLY_FIELD_TYPES[field.type]}];
     }
 
     // Standard objects and custom objects have all field types
@@ -1640,7 +1669,7 @@ class App extends React.Component {
 
       records.forEach(record => {
         const type = record.Metadata && record.Metadata.type;
-        if (!type || !FIELD_TYPES.includes(type)) {
+        if (!type || !(FIELD_TYPES.includes(type) || RETRIEVE_ONLY_FIELD_TYPES[type])) {
           skipped++;
           return;
         }
@@ -1818,16 +1847,25 @@ class App extends React.Component {
     const updatesByIndex = [];
     let hasError = false;
 
+    // Skip a leading header row (e.g. pasted back from "Copy CSV" / "Copy Excel")
+    const isHeaderRow = (line) => {
+      const [label, name, type] = line.split(separator).map(item => (item || "").trim().toLowerCase());
+      return label === "label" && name === "name" && type === "type";
+    };
+
     lines.forEach((line, index) => {
+      if (index === 0 && isHeaderRow(line)) {
+        return;
+      }
       const [label, name, type, description, helptext] = line.split(separator).map(item => (item || "").trim());
       if (label && name && type) {
-        if (FIELD_TYPES.includes(type)) {
-          const existingIndex = fields.findIndex(f => f.isExisting && f.name === name);
-          if (existingIndex !== -1) {
-            updatesByIndex.push({index: existingIndex, label, description, helptext});
-          } else {
-            newFields.push({label, name, type, description: description || "", helptext: helptext || ""});
-          }
+        // Only Label/Description/Help Text are ever written back for an existing field (see
+        // updateField), so its type doesn't need to be a creatable one for the update to apply.
+        const existingIndex = fields.findIndex(f => f.isExisting && f.name === name);
+        if (existingIndex !== -1) {
+          updatesByIndex.push({index: existingIndex, label, description, helptext});
+        } else if (FIELD_TYPES.includes(type)) {
+          newFields.push({label, name, type, description: description || "", helptext: helptext || ""});
         } else {
           this.setState({importError: `Invalid type "${type}" on line ${index + 1}`});
           hasError = true;
@@ -1849,8 +1887,11 @@ class App extends React.Component {
           delete updatedFields[index].deploymentStatus;
           delete updatedFields[index].deploymentError;
         });
+        // Drop the initial blank placeholder row so imported fields don't leave it dangling
+        const isBlankPlaceholder = f => !f.isExisting && !f.label && !f.name;
+        const remainingFields = updatedFields.filter(f => !isBlankPlaceholder(f));
         return {
-          fields: [...updatedFields, ...newFields],
+          fields: [...remainingFields, ...newFields],
           showImportModal: false,
           importCsvContent: "",
           importError: ""
@@ -1859,12 +1900,12 @@ class App extends React.Component {
     }
   };
 
-  exportFieldsCsv = () => {
+  exportFieldsCsv = (separator = ",") => {
     const header = ["Label", "Name", "Type", "Description", "HelpText"];
     const rows = this.state.fields
       .filter(field => field.label || field.name)
       .map(field => [field.label, field.name, field.type, field.description, field.helptext]);
-    return [header, ...rows].map(row => row.map(csvEscape).join(",")).join("\n");
+    return [header, ...rows].map(row => row.map(value => csvEscape(value, separator)).join(separator)).join("\n");
   };
 
   downloadFieldsCsv = () => {
@@ -1882,6 +1923,10 @@ class App extends React.Component {
 
   copyFieldsCsv = () => {
     copyToClipboard(this.exportFieldsCsv());
+  };
+
+  copyFieldsExcel = () => {
+    copyToClipboard(this.exportFieldsCsv("\t"));
   };
 
   onShowDeploymentStatus = (index) => {
@@ -1974,7 +2019,7 @@ class App extends React.Component {
   };
 
   checkAllFieldsHavePermissions = () => {
-    if (this.state.fields.every(field => field.profiles && field.profiles.length > 0)) {
+    if (this.state.fields.filter(field => !field.isExisting).every(field => field.profiles && field.profiles.length > 0)) {
       this.setState({allFieldsHavePermissions: true});
       return true;
     } else {
@@ -2083,6 +2128,7 @@ class App extends React.Component {
   render() {
     const {fields, showModal, showProfilesModal, currentFieldIndex, selectedObject, filteredObjects} = this.state;
     const isComboboxOpen = filteredObjects.length > 0;
+    const hasRetrievedFields = fields.some(field => field.isExisting);
 
     return (
       h("div", {onClick: () => this.setState({
@@ -2232,7 +2278,7 @@ class App extends React.Component {
                 className: "slds-button slds-button_neutral",
                 onClick: this.retrieveFields
               }, this.state.isRetrievingFields ? "Retrieving..." : "Retrieve Fields"),
-              h("button", {type: "button", disabled: !this.state.selectedObject, "aria-label": "Deploy Button", className: "slds-button slds-button_brand", onClick: this.deploy}, "Deploy Fields")
+              h("button", {type: "button", disabled: !this.state.selectedObject || this.state.isRetrievingFields, "aria-label": "Deploy Button", className: "slds-button slds-button_brand", onClick: this.deploy}, "Deploy Fields")
             ),
             !this.state.allFieldsHavePermissions && !this.isPlatformEvent(selectedObject) && h("p", {className: "slds-text-color_error slds-m-top_x-small"}, "Some fields are missing permissions.")
           )
@@ -2257,9 +2303,9 @@ class App extends React.Component {
         h("div", {className: "slds-button-group", role: "group"},
           h("button", {
             type: "button",
-            disabled: fields.length === 0,
+            disabled: !hasRetrievedFields,
             "aria-label": "Download fields as CSV button",
-            title: "Download the fields table as a CSV file",
+            title: hasRetrievedFields ? "Download the fields table as a CSV file" : "Retrieve fields before exporting the table",
             className: "slds-button slds-button_neutral",
             onClick: this.downloadFieldsCsv
           },
@@ -2270,9 +2316,9 @@ class App extends React.Component {
           ),
           h("button", {
             type: "button",
-            disabled: fields.length === 0,
+            disabled: !hasRetrievedFields,
             "aria-label": "Copy fields as CSV button",
-            title: "Copy the fields table as CSV to the clipboard",
+            title: hasRetrievedFields ? "Copy the fields table as CSV to the clipboard" : "Retrieve fields before exporting the table",
             className: "slds-button slds-button_neutral",
             onClick: this.copyFieldsCsv
           },
@@ -2280,6 +2326,19 @@ class App extends React.Component {
             h("use", {xlinkHref: "symbols.svg#copy"})
           ),
           "Copy CSV"
+          ),
+          h("button", {
+            type: "button",
+            disabled: !hasRetrievedFields,
+            "aria-label": "Copy fields as Excel button",
+            title: hasRetrievedFields ? "Copy the fields table as tab-separated values, for pasting directly into Excel" : "Retrieve fields before exporting the table",
+            className: "slds-button slds-button_neutral",
+            onClick: this.copyFieldsExcel
+          },
+          h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#copy"})
+          ),
+          "Copy Excel"
           )
         )
       ),
@@ -2335,7 +2394,7 @@ class App extends React.Component {
         cancelLabel: "Cancel",
         modalSize: "medium"
       },
-      h("p", {className: "slds-m-bottom_small"}, "Enter " + (localStorage.getItem("csvSeparator") || ",") + "  separated values of Label, Name, Type, Description, HelpText (the last two are optional). Rows whose Name matches a field retrieved via \"Retrieve Fields\" update that field's Label, Description, and Help Text instead of creating a new row."),
+      h("p", {className: "slds-m-bottom_small"}, "Enter " + (localStorage.getItem("csvSeparator") || ",") + "  separated values of Label, Name, Type, Description, HelpText (the last two are optional), or paste data copied from Excel. Rows whose Name matches a field retrieved via \"Retrieve Fields\" update that field's Label, Description, and Help Text instead of creating a new row."),
       h("textarea", {
         "aria-label": "CSV import content",
         className: "slds-textarea",

@@ -245,6 +245,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100, inputSize: "1"}},
           {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50, inputSize: "1"}},
+          {option: Option, props: {type: "number", title: "Bulk download batch size", key: "bulkExportBatchSize", default: 500000, inputSize: "2", placeholder: "e.g., 500000", tooltip: "Only used by Bulk API 2.0 exports. Sets how many records Salesforce returns per page when downloading results, purely to avoid timeouts on very large downloads. Lower it if large downloads time out."}},
+          {option: Option, props: {type: "number", title: "Past bulk export jobs to keep", key: "numberOfBulkExportJobsInHistory", default: 10, inputSize: "1", tooltip: "How many finished Bulk API 2.0 export jobs to remember in the past-jobs list. Older ones drop off the list, but nothing changes in Salesforce."}},
           {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", inputSize: "6", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}},
@@ -258,6 +260,7 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200", inputSize: "1"}},
           {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6", inputSize: "1"}},
+          {option: Option, props: {type: "number", title: "Past bulk import jobs to keep", key: "numberOfBulkImportJobsInHistory", default: 10, inputSize: "1", tooltip: "How many finished Bulk API 2.0 import jobs to remember in the past-jobs list. Older ones drop off the list, but nothing changes in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
         ]
       },

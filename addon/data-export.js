@@ -1,16 +1,36 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory, BulkJobStore, BULK_STATE, isBulkJobTerminal} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {csvParse} from "./csv-parse.js";
+// Mutually exclusive query execution modes
+const API_MODE = {
+  STANDARD: "Standard",
+  TOOLING: "Tooling",
+  BULK: "Bulk"
+};
+const apiModeOptions = [
+  {value: API_MODE.STANDARD, label: "Standard", title: "Query regular data through the REST API"},
+  {value: API_MODE.TOOLING, label: "Tooling API", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
+  {value: API_MODE.BULK, label: "Bulk API 2.0", title: "Run the query asynchronously and download the result as a CSV file. Best for large result sets"}
+];
+
+// Gets API mode for history entries, falling back to useToolingApi for older saves.
+function historyApiMode(entry) {
+  if (entry && apiModeOptions.some(o => o.value === entry.apiMode)) {
+    return entry.apiMode;
+  }
+  return entry && entry.useToolingApi ? API_MODE.TOOLING : API_MODE.STANDARD;
+}
 
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
     isValidEntry: (e) => typeof e === "object",
-    matchAdd: (e, ent) => e.query === ent.query && e.useToolingApi === ent.useToolingApi,
-    matchRemove: (e, ent) => e.query === ent.query && e.useToolingApi === ent.useToolingApi,
+    matchAdd: (e, ent) => e.query === ent.query && historyApiMode(e) === historyApiMode(ent),
+    matchRemove: (e, ent) => e.query === ent.query && historyApiMode(e) === historyApiMode(ent),
     sortComparator: isSaved ? (a, b) => (a.query > b.query ? 1 : b.query > a.query ? -1 : 0) : null,
     addToFront: true
   });
@@ -18,6 +38,8 @@ function createQueryHistory(storageKey, max) {
 
 class Model {
   static QUERY_TAB_PREFIX = "Query";
+  static BULK_POLL_INTERVAL_MS = 10000;
+  static BULK_POLL_MAX_FAILURES = 5; // Stop polling after consecutive failures
 
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
@@ -39,12 +61,19 @@ class Model {
     this.showHelp = false;
     this.winInnerHeight = 0;
     this.queryAll = false;
-    this.queryTooling = false;
+    this.queryApiMode = API_MODE.STANDARD;
     this.prefHideRelations = localStorage.getItem("hideObjectNameColumnsDataExport") == "true"; // default to false
     this.prefPreventLineWrap = localStorage.getItem("preventLineWrapDataExport") !== "false"; // default to true (matches v1.27 behavior)
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
+    this.isBulkWorking = false; // Separate flag so bulk jobs don't block Standard/Tooling queries in other tabs
+    this.bulkJobStore = new BulkJobStore(`${this.sfHost}_bulkExportJob`, {historyMax: this.bulkJobHistoryMax()});
+    this.bulkJob = this.bulkJobStore.get();
+    this.bulkPollTimer = null;
+    this.bulkPollFailures = 0;
+    this.bulkPreview = null;
+    this.bulkMessage = null;
     this.exportStatus = "Ready";
     this.exportError = null;
     this.exportedData = null;
@@ -85,14 +114,16 @@ class Model {
     let queryFromUrl = false;
     if (args.has("query")) {
       this.initialQuery = args.get("query");
-      this.queryTooling = args.has("useToolingApi");
+      this.queryApiMode = apiModeOptions.some(o => o.value === args.get("apiMode"))
+        ? args.get("apiMode")
+        : args.has("useToolingApi") ? API_MODE.TOOLING : API_MODE.STANDARD;
       queryFromUrl = true;
     } else if (this.queryHistory.list[0]) {
       this.initialQuery = this.queryHistory.list[0].query;
-      this.queryTooling = this.queryHistory.list[0].useToolingApi;
+      this.queryApiMode = historyApiMode(this.queryHistory.list[0]);
     } else {
       this.initialQuery = "SELECT Id FROM Account LIMIT 200";
-      this.queryTooling = false;
+      this.queryApiMode = API_MODE.STANDARD;
     }
 
     if (args.has("error")) {
@@ -102,8 +133,19 @@ class Model {
     this.queryTabs = [];
     this.activeTabIndex = 0;
     this.loadQueryTabs(queryFromUrl);
+    this.resumeBulkExport();
   }
 
+  isTooling() {
+    return this.queryApiMode === API_MODE.TOOLING;
+  }
+  isBulk() {
+    return this.queryApiMode === API_MODE.BULK;
+  }
+  // Tooling API has no queryAll equivalent
+  supportsQueryAll() {
+    return !this.isTooling();
+  }
   updatedExportedData() {
     if (this.exportedData) {
       this.exportedData.updateColumnsVisibility();
@@ -142,6 +184,17 @@ class Model {
     data.params = params;
     data.queryMethod = method;
   }
+  setQueryApiMode(mode) {
+    if (!apiModeOptions.some(o => o.value === mode)) {
+      return;
+    }
+    this.queryApiMode = mode;
+    if (!this.supportsQueryAll()) {
+      this.queryAll = false;
+      this.updateCurrentTabProperty("queryAll", false);
+    }
+    this.updateCurrentTabProperty("queryApiMode", mode);
+  }
   setQueryName(value) {
     this.queryName = value;
   }
@@ -166,7 +219,7 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("objectType", this.autocompleteResults.sobjectName);
-    if (this.queryTooling) {
+    if (this.isTooling()) {
       args.set("useToolingApi", "1");
     }
     return "inspect.html?" + args;
@@ -174,7 +227,7 @@ class Model {
   selectHistoryEntry() {
     if (this.selectedHistoryEntry != null) {
       this.queryInput.value = this.selectedHistoryEntry.query;
-      this.queryTooling = this.selectedHistoryEntry.useToolingApi;
+      this.setQueryApiMode(historyApiMode(this.selectedHistoryEntry));
       this.queryAutocompleteHandler();
       this.selectedHistoryEntry = null;
     }
@@ -239,7 +292,7 @@ class Model {
         queryStr = this.selectedSavedEntry.query;
       }
       this.queryInput.value = queryStr;
-      this.queryTooling = this.selectedSavedEntry.useToolingApi;
+      this.setQueryApiMode(historyApiMode(this.selectedSavedEntry));
       this.queryAutocompleteHandler();
       this.selectedSavedEntry = null;
     }
@@ -248,10 +301,14 @@ class Model {
     this.savedHistory.clear();
   }
   addToHistory() {
-    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.add(this.historyEntryFor(this.getQueryToSave()));
   }
   removeFromHistory() {
-    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.remove(this.historyEntryFor(this.getQueryToSave()));
+  }
+  // `useToolingApi` is kept for backwards compatibility with older history entries.
+  historyEntryFor(query) {
+    return {query, apiMode: this.queryApiMode, useToolingApi: this.isTooling()};
   }
   getQueryToSave() {
     return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
@@ -289,7 +346,7 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("data", encodedData);
-    if (this.queryTooling) args.set("apitype", "Tooling");
+    if (this.isTooling()) args.set("apitype", "Tooling");
 
     window.open("data-import.html?" + args, getLinkTarget(e, false));
   }
@@ -323,7 +380,7 @@ class Model {
    */
   queryAutocompleteHandler(e = {}) {
     let vm = this; // eslint-disable-line consistent-this
-    let useToolingApi = vm.queryTooling;
+    let useToolingApi = vm.isTooling();
     let query = vm.queryInput.value;
     let selStart = vm.queryInput.selectionStart;
     let selEnd = vm.queryInput.selectionEnd;
@@ -840,9 +897,13 @@ class Model {
     return query.trim();
   }
   doExport() {
+    if (this.isBulk()) {
+      this.doBulkExport();
+      return;
+    }
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
-    exportedData.isTooling = vm.queryTooling;
+    exportedData.isTooling = vm.isTooling();
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
@@ -895,7 +956,7 @@ class Model {
           vm.didUpdate();
           return pr;
         }
-        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
+        vm.queryHistory.add(vm.historyEntryFor(query));
         if (recs == 0) {
           vm.isWorking = false;
           vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
@@ -997,6 +1058,292 @@ class Model {
   stopExport() {
     this.exportProgress.abort();
   }
+
+  // ---------------------------------------------------------------------------
+  // Bulk API 2.0 export
+  // Creates a query job, polls status, and streams results directly to a CSV 
+  // to prevent DOM freezing on massive datasets.
+  // ---------------------------------------------------------------------------
+
+  // Pins the API version to the job record to prevent 409 errors if the user 
+  // changes the extension's API version while a job is running.
+  bulkEndpoint(suffix = "", version = apiVersion) {
+    return `/services/data/v${version}/jobs/query${suffix}`;
+  }
+
+  bulkJobEndpoint(job, suffix = "") {
+    return this.bulkEndpoint(`/${job.jobId}${suffix}`, job.apiVersion || apiVersion);
+  }
+
+  // Wrapper for bulk REST calls. Disables cache-busting because Bulk API 2.0 
+  // strictly rejects undefined query parameters.
+  bulkRest(url, options = {}, rawResponse) {
+    return sfConn.rest(url, {...options, useCache: false}, rawResponse);
+  }
+
+  bulkDownloadBatchSize() {
+    const configured = parseInt(localStorage.getItem("bulkExportBatchSize"), 10);
+    return configured > 0 ? configured : 500000;
+  }
+
+  bulkJobHistoryMax() {
+    const configured = parseInt(localStorage.getItem("numberOfBulkExportJobsInHistory"), 10);
+    return (configured > 0 ? configured : 10) + 1;
+  }
+
+  // Re-attach to a job left behind by a previous page load, tab, or session
+  resumeBulkExport() {
+    const job = this.bulkJobStore.get();
+    if (!job) {
+      return;
+    }
+    this.bulkJob = job;
+    if (!isBulkJobTerminal(job.state)) {
+      this.isBulkWorking = true;
+      this.startBulkPolling();
+    }
+  }
+
+  startBulkPolling() {
+    this.stopBulkPolling();
+    this.bulkPollFailures = 0;
+    this.bulkPollTimer = setInterval(() => this.pollBulkJob(), Model.BULK_POLL_INTERVAL_MS);
+    this.pollBulkJob();
+  }
+
+  // Manually re-check a job whose polling gave up or was never resumed
+  refreshBulkStatus() {
+    if (!this.bulkJob || isBulkJobTerminal(this.bulkJob.state)) {
+      return;
+    }
+    this.exportError = null;
+    this.bulkMessage = null;
+    this.isBulkWorking = true;
+    this.startBulkPolling();
+  }
+
+  stopBulkPolling() {
+    if (this.bulkPollTimer) {
+      clearInterval(this.bulkPollTimer);
+      this.bulkPollTimer = null;
+    }
+  }
+
+  // Pick up a change another tab made to the shared job state
+  syncBulkJobFromStorage() {
+    const job = this.bulkJobStore.get();
+    this.bulkJob = job;
+    if (!job || isBulkJobTerminal(job.state)) {
+      this.isBulkWorking = false;
+      this.stopBulkPolling();
+    } else if (!this.bulkPollTimer) {
+      this.isBulkWorking = true;
+      this.startBulkPolling();
+    }
+  }
+
+  doBulkExport() {
+    // Enforce one active bulk job across all query tabs
+    if (this.bulkJob && !isBulkJobTerminal(this.bulkJob.state)) {
+      this.bulkMessage = "A bulk export is already running - wait for it to finish or cancel it first.";
+      return;
+    }
+    const query = this.enableQueryTypoFix ? this.removeTypo(this.queryInput.value) : this.queryInput.value;
+    this.queryInput.value = query;
+    this.bulkMessage = null;
+    this.bulkPreview = null;
+    this.exportError = null;
+    this.isBulkWorking = true;
+    this.exportStatus = "Submitting bulk job...";
+
+    this.spinFor(this.bulkRest(this.bulkEndpoint(), {
+      method: "POST",
+      body: {
+        operation: this.queryAll ? "queryAll" : "query",
+        query: query.trim(),
+        contentType: "CSV",
+        lineEnding: "LF"
+      }
+    }).then(res => {
+      this.bulkJob = this.bulkJobStore.set({
+        jobId: res.id,
+        query: query.trim(),
+        operation: res.operation,
+        object: res.object || "",
+        state: res.state || BULK_STATE.UPLOAD_COMPLETE,
+        apiVersion,
+        submittedAt: new Date().toISOString(),
+        completedAt: null,
+        recordCount: null,
+        errorMessage: null
+      });
+      this.exportStatus = "Bulk job queued";
+      this.queryHistory.add(this.historyEntryFor(query));
+      this.startBulkPolling();
+      this.didUpdate();
+    }).catch(error => {
+      console.error(error);
+      this.isBulkWorking = false;
+      this.exportStatus = "Error";
+      this.exportError = "Could not create bulk job: " + error.message;
+      this.didUpdate();
+    }));
+  }
+
+  pollBulkJob() {
+    const job = this.bulkJob;
+    if (!job) {
+      this.stopBulkPolling();
+      return;
+    }
+    this.bulkRest(this.bulkJobEndpoint(job)).then(res => {
+      this.bulkPollFailures = 0;
+      const terminal = isBulkJobTerminal(res.state);
+      this.bulkJob = this.bulkJobStore.set({
+        ...job,
+        state: res.state,
+        object: res.object || job.object,
+        recordCount: res.numberRecordsProcessed != null ? res.numberRecordsProcessed : job.recordCount,
+        // Surface Salesforce-provided error messages (e.g., if aborted by an admin)
+        errorMessage: res.errorMessage || null,
+        completedAt: terminal ? new Date().toISOString() : null
+      });
+      if (terminal) {
+        this.isBulkWorking = false;
+        this.stopBulkPolling();
+        this.exportStatus = res.state === BULK_STATE.JOB_COMPLETE
+          ? `Bulk job complete${this.bulkJob.recordCount != null ? ` - ${this.bulkJob.recordCount} record${s(this.bulkJob.recordCount)}` : ""}`
+          : `Bulk job ${res.state.toLowerCase()}`;
+      } else {
+        this.exportStatus = `Bulk job ${res.state}...`;
+      }
+      this.didUpdate();
+    }).catch(error => {
+      console.error(error);
+      this.bulkPollFailures++;
+      this.exportError = "Could not read bulk job status: " + error.message;
+      // Tolerate transient network errors up to the failure limit
+      if (this.bulkPollFailures >= Model.BULK_POLL_MAX_FAILURES) {
+        this.stopBulkPolling();
+        this.isBulkWorking = false;
+        this.bulkMessage = "Stopped checking this job after repeated errors. It is still running in Salesforce - use Refresh status to check again.";
+      }
+      this.didUpdate();
+    });
+  }
+
+  abortBulkJob() {
+    const job = this.bulkJob;
+    if (!job || isBulkJobTerminal(job.state)) {
+      return;
+    }
+    this.spinFor(this.bulkRest(this.bulkJobEndpoint(job), {
+      method: "PATCH",
+      body: {state: BULK_STATE.ABORTED}
+    }).then(() => {
+      this.bulkJob = this.bulkJobStore.set({...job, state: BULK_STATE.ABORTED, completedAt: new Date().toISOString()});
+      this.isBulkWorking = false;
+      this.stopBulkPolling();
+      this.exportStatus = "Bulk job aborted";
+      this.didUpdate();
+    }).catch(error => {
+      console.error(error);
+      this.exportError = "Could not abort bulk job: " + error.message;
+      this.didUpdate();
+    }));
+  }
+
+  // Fetches paginated job results into a single CSV string using Sforce-Locator
+  async fetchBulkResults(job) {
+    const maxRecords = this.bulkDownloadBatchSize();
+    let locator = null;
+    let pages = [];
+    do {
+      let url = this.bulkJobEndpoint(job, `/results?maxRecords=${maxRecords}`);
+      if (locator) {
+        url += `&locator=${encodeURIComponent(locator)}`;
+      }
+      const xhr = await this.bulkRest(url, {
+        headers: {Accept: "text/csv"},
+        responseType: "text"
+      }, true);
+      if (xhr.status === 404) {
+        const err = new Error("Results are no longer available for this job.");
+        err.name = "BulkResultsExpired";
+        throw err;
+      }
+      if (xhr.status === 204) {
+        throw new Error("Salesforce returned no content for this result page.");
+      }
+      if (xhr.status < 200 || xhr.status >= 400) {
+        throw new Error(`HTTP ${xhr.status} ${xhr.statusText} while downloading results`);
+      }
+      const body = xhr.response || "";
+      // Drop header rows from subsequent pages
+      pages.push(pages.length === 0 ? body : stripCsvHeaderRow(body));
+      locator = xhr.getResponseHeader("Sforce-Locator");
+    } while (locator && locator !== "null");
+    return pages.map((page, i) => (i === pages.length - 1 || page.endsWith("\n") ? page : page + "\n")).join("");
+  }
+
+  downloadBulkResults(jobId = this.bulkJob?.jobId) {
+    if (!jobId) {
+      return;
+    }
+    const job = this.bulkJob?.jobId === jobId ? this.bulkJob : this.bulkJobStore.history.list.find(e => e.jobId === jobId);
+    if (!job) {
+      this.bulkMessage = "That job is no longer being tracked.";
+      return;
+    }
+    this.bulkMessage = null;
+    this.exportStatus = "Downloading bulk results...";
+    this.spinFor(this.fetchBulkResults(job).then(csv => {
+      const label = job.object || "bulk-export";
+      downloadCsvFile(csv, `${label}-${new Date().toISOString().slice(0, 10)}.csv`);
+      this.bulkPreview = buildCsvPreview(csv);
+      this.exportStatus = `Downloaded${job.recordCount != null ? ` ${job.recordCount} record${s(job.recordCount)}` : ""}`;
+      this.didUpdate();
+    }).catch(error => {
+      console.error(error);
+      if (error.name === "BulkResultsExpired") {
+        // Salesforce has already deleted this job, so stop offering it.
+        this.bulkJobStore.forget(jobId);
+        this.bulkJob = this.bulkJobStore.get();
+        this.bulkMessage = "Results are no longer available for that job - Salesforce keeps them for 7 days.";
+      } else {
+        this.exportError = "Could not download bulk results: " + error.message;
+      }
+      this.exportStatus = "Error";
+      this.didUpdate();
+    }));
+  }
+
+  dismissBulkJob() {
+    this.stopBulkPolling();
+    this.bulkJobStore.clear();
+    this.bulkJob = null;
+    this.bulkPreview = null;
+    this.bulkMessage = null;
+    this.isBulkWorking = false;
+    this.exportStatus = "Ready";
+  }
+
+  bulkElapsed() {
+    const job = this.bulkJob;
+    if (!job) {
+      return "";
+    }
+    const from = Date.parse(job.submittedAt);
+    if (isNaN(from)) {
+      return "";
+    }
+    const to = job.completedAt ? Date.parse(job.completedAt) : Date.now();
+    const seconds = Math.max(0, Math.round((to - from) / 1000));
+    if (seconds < 60) {
+      return `${seconds}s`;
+    }
+    return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  }
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -1024,16 +1371,23 @@ class Model {
     const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
+      // Migrate legacy queryTooling boolean to queryApiMode
+      for (const tab of this.queryTabs) {
+        if (!apiModeOptions.some(o => o.value === tab.queryApiMode)) {
+          tab.queryApiMode = tab.queryTooling ? API_MODE.TOOLING : API_MODE.STANDARD;
+        }
+        delete tab.queryTooling;
+      }
       if (queryFromUrl) {
         const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.queryTabs.length + 1}`;
-        this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
+        this.queryTabs.push({name: newTabName, query: this.initialQuery, queryApiMode: this.queryApiMode, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
         this.activeTabIndex = this.queryTabs.length - 1;
         this.saveQueryTabs();
       } else {
         this.activeTabIndex = 0;
       }
     } else {
-      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryApiMode: this.queryApiMode, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
       this.activeTabIndex = 0;
     }
   }
@@ -1043,7 +1397,7 @@ class Model {
     const tabsToSave = this.queryTabs.map(tab => ({
       name: tab.name,
       query: tab.query,
-      queryTooling: tab.queryTooling,
+      queryApiMode: tab.queryApiMode,
       queryAll: tab.queryAll,
       isManuallyRenamed: tab.isManuallyRenamed || false
     }));
@@ -1052,7 +1406,7 @@ class Model {
 
   addQueryTab() {
     const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
-    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
+    this.queryTabs.push({name: newTabName, query: "", queryApiMode: API_MODE.STANDARD, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.setActiveTab(this.activeTabIndex);
     this.saveQueryTabs();
@@ -1104,7 +1458,7 @@ class Model {
     if (this.queryInput) {
       this.queryInput.value = this.queryTabs[index].query;
     }
-    this.queryTooling = this.queryTabs[index].queryTooling;
+    this.queryApiMode = this.queryTabs[index].queryApiMode || API_MODE.STANDARD;
     this.queryAll = this.queryTabs[index].queryAll;
     // Update the exported data with the tab's results
     this.exportedData = this.queryTabs[index].results;
@@ -1348,7 +1702,13 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
-    this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
+    this.onQueryApiModeChange = this.onQueryApiModeChange.bind(this);
+    this.onAbortBulkJob = this.onAbortBulkJob.bind(this);
+    this.onDownloadBulkResults = this.onDownloadBulkResults.bind(this);
+    this.onDismissBulkJob = this.onDismissBulkJob.bind(this);
+    this.onRefreshBulkStatus = this.onRefreshBulkStatus.bind(this);
+    this.onToggleBulkHistory = this.onToggleBulkHistory.bind(this);
+    this.onToggleBulkPanel = this.onToggleBulkPanel.bind(this);
     this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
     this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
@@ -1396,6 +1756,9 @@ class App extends React.Component {
     // Tab editing state
     this.state = {
       ...this.state,
+      // null follows selected API mode; boolean is an explicit user override
+      bulkPanelOpen: null,
+      showBulkHistory: false,
       editingTabIndex: -1,
       editingTabName: "",
       draggedTabIndex: -1,
@@ -1409,12 +1772,41 @@ class App extends React.Component {
     model.updateCurrentTabProperty("queryAll", model.queryAll);
     model.didUpdate();
   }
-  onQueryToolingChange(e) {
+  onQueryApiModeChange(e) {
     let {model} = this.props;
-    model.queryTooling = e.target.checked;
-    model.updateCurrentTabProperty("queryTooling", model.queryTooling);
+    model.setQueryApiMode(e.target.value);
     model.queryAutocompleteHandler();
+    this.setState({bulkPanelOpen: null});
     model.didUpdate();
+  }
+  onAbortBulkJob() {
+    let {model} = this.props;
+    model.abortBulkJob();
+    model.didUpdate();
+  }
+  onDownloadBulkResults(e, jobId) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.downloadBulkResults(jobId);
+    model.didUpdate();
+  }
+  onDismissBulkJob() {
+    let {model} = this.props;
+    model.dismissBulkJob();
+    model.didUpdate();
+  }
+  onRefreshBulkStatus() {
+    let {model} = this.props;
+    model.refreshBulkStatus();
+    model.didUpdate();
+  }
+  onToggleBulkHistory() {
+    this.setState({showBulkHistory: !this.state.showBulkHistory});
+  }
+  onToggleBulkPanel() {
+    let {model} = this.props;
+    const open = this.state.bulkPanelOpen === null ? model.isBulk() : this.state.bulkPanelOpen;
+    this.setState({bulkPanelOpen: !open});
   }
   onPrefHideRelationsChange() {
     let {model} = this.props;
@@ -1515,7 +1907,6 @@ class App extends React.Component {
     let searchParams = url.searchParams;
     searchParams.set("query", model.queryInput.value);
     url.search = searchParams.toString();
-    navigator.clipboard.writeText(url.toString());
     navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
@@ -1761,6 +2152,12 @@ class App extends React.Component {
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
 
+    // Sync cross-tab bulk job updates immediately (bypasses poll timer)
+    this.removeBulkStorageListener = model.bulkJobStore.onExternalChange(() => {
+      model.syncBulkJobFromStorage();
+      model.didUpdate();
+    });
+
     let recalculateHeight = this.recalculateSize.bind(this);
     if (!window.webkitURL) {
       // Firefox
@@ -1781,6 +2178,13 @@ class App extends React.Component {
     addEventListener("resize", resize);
     resize();
   }
+  componentWillUnmount() {
+    let {model} = this.props;
+    if (this.removeBulkStorageListener) {
+      this.removeBulkStorageListener();
+    }
+    model.stopBulkPolling();
+  }
   componentDidUpdate() {
     this.recalculateSize();
   }
@@ -1790,6 +2194,153 @@ class App extends React.Component {
   }
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }
+
+  /**
+   * Page-level bulk job status panel. Renders outside per-tab content.
+   * Auto-expands when Bulk API is selected, otherwise collapses to a single line.
+   */
+  renderBulkPanel(model) {
+    const job = model.bulkJob;
+    if (!job) {
+      return null;
+    }
+    const complete = job.state === BULK_STATE.JOB_COMPLETE;
+    const failed = job.state === BULK_STATE.FAILED || job.state === BULK_STATE.ABORTED;
+    const theme = complete ? "success" : failed ? "error" : "warning";
+    const open = this.state.bulkPanelOpen === null ? model.isBulk() : this.state.bulkPanelOpen;
+
+    // Always reachable to allow clearing stuck or externally aborted jobs
+    const dismissButton = h("button", {
+      key: "dismiss",
+      type: "button",
+      className: "slds-button slds-button_neutral",
+      onClick: this.onDismissBulkJob,
+      title: complete || failed
+        ? "Stop tracking this job. Does not delete it in Salesforce"
+        : "Stop tracking this job here. It keeps running in Salesforce"
+    }, "Dismiss");
+
+    const titleBar = h("div", {className: "slds-grid slds-grid_vertical-align-center"},
+      h("span", {className: "slds-text-title slds-m-right_x-small"}, "Bulk API 2.0 export"),
+      h("span", {className: `slds-badge slds-theme_${theme}`}, job.state),
+      job.object ? h("span", {className: "slds-text-body_small slds-text-color_weak slds-m-left_x-small"}, job.object) : null
+    );
+
+    if (!open) {
+      return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_medium slds-theme_default"},
+        h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+          titleBar,
+          h("div", {className: "slds-button-group"},
+            h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
+            dismissButton
+          )
+        )
+      );
+    }
+
+    const historyMax = model.bulkJobHistoryMax() - 1;
+    const history = model.bulkJobStore.history.list.filter(e => e.jobId !== job.jobId).slice(0, historyMax);
+    const field = (label, value) => h("div", {key: label, className: "slds-col slds-size_1-of-2 slds-large-size_1-of-4 slds-p-right_small slds-p-bottom_xx-small"},
+      h("dt", {className: "slds-text-title slds-truncate"}, label),
+      h("dd", {className: "slds-text-body_small slds-truncate", title: String(value)}, value)
+    );
+
+    return h("div", {className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
+      h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small"},
+        titleBar,
+        h("div", {className: "slds-button-group"},
+          h("button", {
+            key: "download",
+            type: "button",
+            className: "slds-button slds-button_brand",
+            disabled: !complete,
+            onClick: e => this.onDownloadBulkResults(e, job.jobId),
+            title: complete ? "Download the full result set as a CSV file" : "Available once the job completes"
+          }, complete && job.recordCount != null ? `Download CSV (${job.recordCount.toLocaleString()} record${s(job.recordCount)})` : "Download CSV"),
+          h("button", {
+            key: "refresh",
+            type: "button",
+            className: "slds-button slds-button_neutral",
+            hidden: complete || failed,
+            onClick: this.onRefreshBulkStatus,
+            title: "Check this job's status now"
+          }, "Refresh status"),
+          h("button", {
+            key: "abort",
+            type: "button",
+            className: "slds-button slds-button_destructive",
+            hidden: complete || failed,
+            onClick: this.onAbortBulkJob,
+            title: "Ask Salesforce to cancel this job"
+          }, "Abort"),
+          h("button", {
+            key: "toggle",
+            type: "button",
+            className: "slds-button slds-button_neutral",
+            onClick: this.onToggleBulkPanel,
+            title: "Collapse this panel to a single line"
+          }, "Hide details"),
+          dismissButton
+        )
+      ),
+      h("dl", {className: "slds-grid slds-wrap"},
+        field("Job ID", job.jobId),
+        field("Submitted", new Date(job.submittedAt).toLocaleString()),
+        field("Elapsed", model.bulkElapsed()),
+        field("Records", job.recordCount != null ? job.recordCount.toLocaleString() : "-")
+      ),
+      job.query ? h("p", {className: "slds-text-body_small slds-text-color_weak slds-truncate slds-m-top_xx-small", title: job.query}, job.query) : null,
+      job.errorMessage ? h("div", {className: "slds-text-color_error slds-text-body_small slds-m-top_x-small"}, job.errorMessage) : null,
+      model.bulkMessage ? h("div", {className: "slds-text-color_weak slds-text-body_small slds-m-top_x-small"}, model.bulkMessage) : null,
+      model.bulkPreview ? h("div", {className: "slds-m-top_small"},
+        h("p", {className: "slds-text-title slds-m-bottom_xx-small"}, `Preview - first ${model.bulkPreview.rows.length} row${s(model.bulkPreview.rows.length)} of the downloaded file`),
+        h("div", {style: {overflowX: "auto"}},
+          h("table", {className: "slds-table slds-table_bordered slds-table_fixed-layout slds-table_col-bordered bulk-preview-table"},
+            h("thead", {},
+              h("tr", {className: "slds-line-height_reset"},
+                model.bulkPreview.header.map((col, i) => h("th", {key: i, scope: "col"},
+                  h("div", {className: "slds-truncate", title: col}, col)
+                ))
+              )
+            ),
+            h("tbody", {},
+              model.bulkPreview.rows.map((row, i) => h("tr", {key: i, className: "slds-hint-parent"},
+                row.map((cell, j) => h("td", {key: j},
+                  h("div", {className: "slds-truncate", title: cell}, cell)
+                ))
+              ))
+            )
+          )
+        )
+      ) : null,
+      h("div", {className: "slds-m-top_x-small"},
+        h("button", {
+          type: "button",
+          className: "slds-button slds-button_neutral slds-button_stretch-none",
+          onClick: this.onToggleBulkHistory
+        }, this.state.showBulkHistory ? "Hide past bulk jobs" : `Show past bulk jobs (${history.length})`)
+      ),
+      !this.state.showBulkHistory ? null : history.length === 0
+        ? h("p", {className: "slds-text-body_small slds-text-color_weak slds-m-top_xx-small"}, "No other bulk jobs from the last 7 days.")
+        : h("ul", {className: "slds-has-dividers_bottom-space slds-m-top_xx-small"},
+          history.map(entry => h("li", {key: entry.jobId, className: "slds-item slds-text-body_small"},
+            h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+              h("div", {className: "slds-truncate", title: entry.query},
+                h("span", {className: "slds-text-title"}, entry.jobId),
+                " \u00b7 ",
+                h("span", {}, new Date(entry.submittedAt).toLocaleString()),
+                " \u00b7 ",
+                h("span", {}, entry.state),
+                entry.query ? h("div", {className: "slds-truncate slds-text-color_weak"}, entry.query) : null
+              ),
+              entry.state === BULK_STATE.JOB_COMPLETE
+                ? h("a", {href: "#", onClick: e => this.onDownloadBulkResults(e, entry.jobId)}, "Download")
+                : null
+            )
+          ))
+        )
+    );
   }
 
   render() {
@@ -1880,9 +2431,9 @@ class App extends React.Component {
                   )
                 ),
               ),
-              h("div", {className: "slds-grid slds-grid_align-spread"},
-                h("div", {className: "slds-col slds-size_7-of-12"},
-                  h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_x-large"},
+              h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+                h("div", {className: "slds-col slds-size_12-of-12"},
+                  h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_x-large", title: model.supportsQueryAll() ? "Include deleted and archived records" : "The Tooling API has no queryAll equivalent"},
                     h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
                     h("input", {
                       type: "checkbox",
@@ -1891,7 +2442,7 @@ class App extends React.Component {
                       role: "switch",
                       checked: model.queryAll,
                       onChange: this.onQueryAllChange,
-                      disabled: model.queryTooling
+                      disabled: !model.supportsQueryAll()
                     }),
                     h("span", {id: "checkbox-toggle-queryAll", className: "slds-checkbox_faux_container"},
                       h("span", {className: "slds-checkbox_faux"}),
@@ -1900,24 +2451,6 @@ class App extends React.Component {
                     )
                   )
                 ),
-                h("div", {className: "slds-col slds-col-size_5-of-12"},
-                  h("label", {className: "slds-checkbox_toggle slds-grid slds-grid_align-end", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
-                    h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Tooling API"),
-                    h("input", {
-                      type: "checkbox",
-                      name: "checkbox-toggle-tooling",
-                      value: "checkbox-toggle-tooling",
-                      role: "switch",
-                      checked: model.queryTooling,
-                      onChange: this.onQueryToolingChange,
-                      disabled: model.queryAll
-                    }),
-                    h("span", {id: "checkbox-toggle-tooling", className: "slds-checkbox_faux_container"},
-                      h("span", {className: "slds-checkbox_faux"}),
-                      h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                      h("span", {className: "slds-checkbox_off"}, "Disabled")
-                    )
-                  )),
               ),
             ),
             h("div", {
@@ -1989,6 +2522,25 @@ class App extends React.Component {
               h("div", {className: "autocomplete-header"},
                 h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),
                 h("ul", {className: "slds-button-group-row flex-right"},
+                  h("li", {className: "slds-button-group-item slds-m-right_x-small"},
+                    h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query API"},
+                      apiModeOptions.map(option =>
+                        h("span", {key: option.value, className: "slds-button slds-radio_button", title: option.title},
+                          h("input", {
+                            type: "radio",
+                            name: "query-api-mode",
+                            id: `query-api-mode-${option.value}`,
+                            value: option.value,
+                            checked: model.queryApiMode === option.value,
+                            onChange: this.onQueryApiModeChange
+                          }),
+                          h("label", {className: "slds-radio_button__label", htmlFor: `query-api-mode-${option.value}`},
+                            h("span", {className: "slds-radio_faux"}, option.label)
+                          )
+                        )
+                      )
+                    )
+                  ),
                   h("li", {className: "slds-button-group-item"},
                     h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
                   ),
@@ -2033,7 +2585,8 @@ class App extends React.Component {
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Enter or F5 to execute the export."),
               h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
-              h("p", {className: "slds-m-bottom_x-small"}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+              h("p", {className: "slds-m-bottom_x-small"}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly."),
+              h("p", {className: "slds-m-bottom_x-small"}, "For large result sets, pick Bulk API 2.0. The query then runs asynchronously on Salesforce and the result is downloaded straight to a CSV file instead of being rendered into the table, which is what usually freezes the tab. The job keeps running if you close or reload this page, and is picked back up when you return. Threads do not apply, since Salesforce parallelises bulk queries server-side.")
             ),
             h("div", {hidden: !model.showAI},
               h("h3", {className: "slds-text-heading_small slds-m-top_medium slds-m-left_xxx-small"}, "Agentforce SOQL query builder"),
@@ -2044,6 +2597,7 @@ class App extends React.Component {
               )
             )
           )),
+        this.renderBulkPanel(model),
         h(
           "div",
           {
@@ -2060,23 +2614,23 @@ class App extends React.Component {
             h("div", {className: "result-bar"},
               h("h3", {className: "slds-text-heading_small"}, "Export Result"),
               h("div", {className: "slds-button-group slds-m-left_small"},
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
                   h("svg", {className: "slds-button__icon"},
                     h("use", {xlinkHref: "symbols.svg#download"})
                   )
                 ),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
                   h("svg", {className: `slds-button__icon ${model.prefHideRelations ? "" : "disabled"}`},
                     h("use", {xlinkHref: "symbols.svg#hide"})
                   )
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
-                  ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+                  ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete() || model.isBulk(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
               ),
-              model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
+              model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError && !model.isBulk() ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
                   h("input", {
                     className: "slds-input slds-button slds-m-around_none",
@@ -2119,7 +2673,7 @@ class App extends React.Component {
               h("span", {className: "result-status flex-right"},
                 h("span", {className: `slds-badge slds-theme_${model.exportError ? "error" : "success"}`}, model.exportStatus),
                 perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
-                h("button", {className: "slds-button slds-button_destructive slds-m-left_small", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
+                h("button", {className: "slds-button slds-button_destructive slds-m-left_small", disabled: !model.isWorking || model.isBulk(), onClick: this.onStopExport}, "Stop")
               ),
             ),
             h("textarea", {
@@ -2130,8 +2684,12 @@ class App extends React.Component {
               style: {flex: "1 1 0", minHeight: 0, resize: "none"}
             }),
             h("div", {
+              className: "slds-text-body_small slds-text-color_weak slds-p-around_medium",
+              hidden: !model.isBulk() || model.exportError != null
+            }, "Bulk API 2.0 downloads the result as a CSV file rather than rendering it here. Use the panel above to track the job."),
+            h("div", {
               ref: "scroller",
-              hidden: model.exportError != null,
+              hidden: model.exportError != null || model.isBulk(),
               style: {flex: "1 1 0", minHeight: 0, maxHeight: "100%", overflowY: "auto"}
             }
             )
@@ -2202,6 +2760,38 @@ class App extends React.Component {
     ReactDOM.render(h(App, {model}), root);
   });
 
+}
+
+/**
+ * Removes the header row from paginated Bulk 2.0 CSV results.
+ * Safe to cut at the first newline since field names never contain them.
+ */
+function stripCsvHeaderRow(csv) {
+  const firstBreak = csv.indexOf("\n");
+  return firstBreak === -1 ? "" : csv.slice(firstBreak + 1);
+}
+
+/**
+ * Fast, read-only preview of the first CSV rows. 
+ * Skips parsing gracefully if the arbitrary cut lands inside a quoted newline.
+ */
+function buildCsvPreview(csv, rowLimit = 20) {
+  let cut = -1;
+  for (let i = 0; i <= rowLimit; i++) {
+    const next = csv.indexOf("\n", cut + 1);
+    if (next === -1) {
+      cut = -1;
+      break;
+    }
+    cut = next;
+  }
+  const head = cut === -1 ? csv : csv.slice(0, cut);
+  try {
+    const rows = csvParse(head, ",");
+    return rows.length > 1 ? {header: rows[0], rows: rows.slice(1)} : null;
+  } catch {
+    return null;
+  }
 }
 
 function getSeparator() {

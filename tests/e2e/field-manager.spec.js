@@ -386,10 +386,11 @@ test.describe("Field Manager", () => {
 
     // Verify modal closes and fields are added
     await expect(page.locator("text=CSV Import (beta)")).not.toBeVisible();
-    await expect(page.locator("#fields_table tbody tr")).toHaveCount(3); // 1 initial + 2 imported
+    // The blank initial placeholder row is dropped once real fields are imported (2 imported rows)
+    await expect(page.locator("#fields_table tbody tr")).toHaveCount(2);
 
     // Verify the Description/HelpText columns were applied to the second imported row
-    await page.locator("#fields_table tbody tr").nth(2).locator("button:has-text('Options')").click();
+    await page.locator("#fields_table tbody tr").nth(1).locator("button:has-text('Options')").click();
     await page.waitForSelector("text=Set Field Options");
     await expect(page.locator("textarea#description")).toHaveValue("A description");
     await expect(page.locator("textarea#helpText")).toHaveValue("Some help text");
@@ -429,12 +430,12 @@ test.describe("Field Manager", () => {
     //if mock is enabled, the test must successfully deploy the fields
     if (TEST_CONSTANTS.mockEnabled) {
       // Wait for success status (checkmark icon) - this indicates deployment succeeded
-      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillGreen", {timeout: 2000});
+      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg.slds-icon-text-success", {timeout: 2000});
     } else {
       // in real test; the deploy will be successful, but here we will test that it has failed (because the field already exists)
       // so we are checking the error message
-      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillRed", {timeout: 2000});
-      await page.locator("#fields_table tbody tr .cursorPointer svg use.fillRed").first().click();
+      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg.slds-icon-text-error", {timeout: 2000});
+      await page.locator("#fields_table tbody tr .cursorPointer svg.slds-icon-text-error").first().click();
 
       await expect(page.locator(".slds-notify__content")).toContainText(/DUPLICATE_DEVELOPER_NAME|INVALID_CROSS_REFERENCE_KEY/);
     }
@@ -529,8 +530,11 @@ test.describe("Field Manager", () => {
       await initPage(page, extensionId, "Account");
       await retrieveFields(page, 2);
 
-      // "Existing Text" is retrieved as a Text field - open its Options modal
-      const textRow = page.locator("#fields_table tbody tr", {hasText: "Existing Text"});
+      // "Existing Text" is retrieved as a Text field, first in retrieval order - open its Options modal.
+      // Its Label lives in an <input value>, which hasText/textContent matching can't see, so we
+      // can't filter rows by label text here - rely on retrieval order instead.
+      const textRow = page.locator("#fields_table tbody tr").first();
+      await expect(textRow.locator("input[placeholder='Field label...']")).toHaveValue("Existing Text");
       await textRow.locator("button:has-text('Options')").click();
       await page.waitForSelector("text=Set Field Options");
 
@@ -574,7 +578,7 @@ test.describe("Field Manager", () => {
       await page.locator(".slds-modal__footer button:has-text('OK')").click();
 
       // Nothing was deployed
-      await expect(page.locator("#fields_table tbody tr .cursorPointer svg use.fillGreen")).toHaveCount(0);
+      await expect(page.locator("#fields_table tbody tr .cursorPointer svg.slds-icon-text-success")).toHaveCount(0);
     });
 
     test("Enabling updates shows a confirmation before deploying existing field edits", async ({page, extensionId}) => {
@@ -599,7 +603,7 @@ test.describe("Field Manager", () => {
 
       // Confirm and let the (mocked) PATCH succeed
       await page.locator(".slds-modal__footer button:has-text('Update')").click();
-      await expect(page.locator("#fields_table tbody tr .cursorPointer svg use.fillGreen")).toHaveCount(1, {timeout: 2000});
+      await expect(page.locator("#fields_table tbody tr .cursorPointer svg.slds-icon-text-success")).toHaveCount(1, {timeout: 2000});
     });
 
     test("CSV import updates a retrieved field instead of creating a duplicate row", async ({page, extensionId}) => {
@@ -617,8 +621,10 @@ test.describe("Field Manager", () => {
       // No new row was created
       await expect(page.locator("#fields_table tbody tr")).toHaveCount(2);
 
-      const updatedRow = page.locator("#fields_table tbody tr", {hasText: "Renamed Label"});
-      await expect(updatedRow).toHaveCount(1);
+      // "Existing_Text" is retrieved first (see retrieval-order test) - the Label input on that
+      // row (not textContent/hasText, which can't see input values) reflects the CSV update
+      const updatedRow = page.locator("#fields_table tbody tr").first();
+      await expect(updatedRow.locator("input[placeholder='Field label...']")).toHaveValue("Renamed Label");
       await expect(updatedRow.locator(".slds-badge:has-text('Existing')")).toBeVisible();
     });
 

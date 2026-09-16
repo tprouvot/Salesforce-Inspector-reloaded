@@ -26,7 +26,8 @@ const RETRIEVE_ONLY_FIELD_TYPES = {
   MetadataRelationship: "Metadata Relationship",
   ExternalLookup: "External Lookup",
   IndirectLookup: "Indirect Lookup",
-  Hierarchy: "Hierarchy"
+  Hierarchy: "Hierarchy",
+  Time: "Time"
 };
 
 function csvEscape(value, separator = ",") {
@@ -1027,7 +1028,7 @@ class FieldRow extends React.Component {
             type: "text",
             className: "slds-input",
             placeholder: "Field name...",
-            value: this.props.field.name,
+            value: this.props.field.isExisting ? `${this.props.field.name}__c` : this.props.field.name,
             disabled: this.props.field.isExisting,
             onChange: (e) => this.props.onNameChange(this.props.index, e.target.value)
           })

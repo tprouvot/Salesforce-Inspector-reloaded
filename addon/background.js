@@ -87,7 +87,7 @@ chrome.commands?.onCommand.addListener((command) => {
     });
   } else {
     chrome.tabs.create({
-      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+      url: chrome.runtime.getURL(`${command}.html`) + `?host=${sfHost}`
     });
   }
 });

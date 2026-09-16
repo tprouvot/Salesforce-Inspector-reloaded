@@ -384,7 +384,7 @@ export class Model {
     return Array.from(function* () {
       let importAction = self.importAction;
 
-      if (importAction == "delete" || importAction == "undelete") {
+      if (importAction == "delete" || importAction == "undelete" || importAction == "hardDelete" || importAction == "update") {
         yield "Id";
       } else if (importAction == "deleteMetadata") {
         yield "DeveloperName";

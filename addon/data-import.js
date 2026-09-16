@@ -1794,18 +1794,18 @@ export class App extends React.Component {
             key: "download-succeeded",
             type: "button",
             className: "slds-button slds-button_brand",
-            disabled: !complete,
+            disabled: !(complete || failed) || succeeded === 0,
             onClick: this.onDownloadBulkSucceeded,
-            title: complete ? "Download the successful records as a CSV file" : "Available once the job completes"
-          }, complete ? `Download Succeeded (${succeeded.toLocaleString()})` : "Download Succeeded"),
+            title: !(complete || failed) ? "Available once the job completes" : (succeeded === 0 ? "No successful records to download" : "Download the successful records as a CSV file")
+          }, (complete || failed) ? `Download Succeeded (${succeeded.toLocaleString()})` : "Download Succeeded"),
           h("button", {
             key: "download-failed",
             type: "button",
             className: "slds-button slds-button_neutral",
-            disabled: !complete,
+            disabled: !(complete || failed) || (job.recordsFailed || 0) === 0,
             onClick: this.onDownloadBulkFailed,
-            title: complete ? "Download the failed records, with their errors, as a CSV file" : "Available once the job completes"
-          }, complete ? `Download Failed (${(job.recordsFailed || 0).toLocaleString()})` : "Download Failed"),
+            title: !(complete || failed) ? "Available once the job completes" : ((job.recordsFailed || 0) === 0 ? "No failed records to download" : "Download the failed records, with their errors, as a CSV file")
+          }, (complete || failed) ? `Download Failed (${(job.recordsFailed || 0).toLocaleString()})` : "Download Failed"),
           h("button", {
             key: "refresh",
             key: "refresh",
@@ -1868,11 +1868,15 @@ export class App extends React.Component {
                 " \u00b7 ",
                 h("span", {}, entry.state)
               ),
-              entry.state === BULK_STATE.JOB_COMPLETE
+              [BULK_STATE.JOB_COMPLETE, BULK_STATE.FAILED, BULK_STATE.ABORTED].includes(entry.state)
                 ? h("div", {className: "slds-no-flex"},
-                  h("a", {href: "#", onClick: e => { e.preventDefault(); model.downloadBulkResults("successfulResults", entry); model.didUpdate(); }}, "Succeeded"),
+                  Math.max(0, (entry.recordsProcessed || 0) - (entry.recordsFailed || 0)) > 0
+                    ? h("a", {href: "#", onClick: e => { e.preventDefault(); model.downloadBulkResults("successfulResults", entry); model.didUpdate(); }}, "Succeeded")
+                    : h("span", {className: "slds-text-color_weak", title: "No successful records", style: { cursor: "default" }}, "Succeeded"),
                   h("span", {className: "slds-m-horizontal_xx-small"}, "/"),
-                  h("a", {href: "#", onClick: e => { e.preventDefault(); model.downloadBulkResults("failedResults", entry); model.didUpdate(); }}, "Failed")
+                  (entry.recordsFailed || 0) > 0
+                    ? h("a", {href: "#", onClick: e => { e.preventDefault(); model.downloadBulkResults("failedResults", entry); model.didUpdate(); }}, "Failed")
+                    : h("span", {className: "slds-text-color_weak", title: "No failed records", style: { cursor: "default" }}, "Failed")
                 )
                 : null
             )

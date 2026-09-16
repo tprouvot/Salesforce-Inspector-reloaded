@@ -2296,7 +2296,7 @@ class App extends React.Component {
       model.bulkPreview ? h("div", {className: "slds-m-top_small"},
         h("p", {className: "slds-text-title slds-m-bottom_xx-small"}, `Preview - first ${model.bulkPreview.rows.length} row${s(model.bulkPreview.rows.length)} of the downloaded file`),
         h("div", {style: {overflowX: "auto"}},
-          h("table", {className: "slds-table slds-table_bordered slds-table_fixed-layout slds-table_col-bordered"},
+          h("table", {className: "slds-table slds-table_bordered slds-table_fixed-layout slds-table_col-bordered bulk-preview-table"},
             h("thead", {},
               h("tr", {className: "slds-line-height_reset"},
                 model.bulkPreview.header.map((col, i) => h("th", {key: i, scope: "col"},

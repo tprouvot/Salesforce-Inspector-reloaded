@@ -72,7 +72,7 @@ test.describe("Options", () => {
       await expect(page.locator("a[role='tab']:has-text('API')")).toBeVisible();
       await expect(page.locator("a[role='tab']:has-text('Data Export')")).toBeVisible();
       await expect(page.locator("a[role='tab']:has-text('Data Import')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Field Creator')")).toBeVisible();
+      await expect(page.locator("a[role='tab']:has-text('Field Manager')")).toBeVisible();
       await expect(page.locator("a[role='tab']:has-text('Enable Logs')")).toBeVisible();
       await expect(page.locator("a[role='tab']:has-text('Metadata')")).toBeVisible();
       await expect(page.locator("a[role='tab']:has-text('Flow Scanner')")).toBeVisible();
@@ -313,16 +313,16 @@ test.describe("Options", () => {
     });
   });
 
-  test.describe("Field Creator", () => {
-    test("Switch to Field Creator Tab", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Field Creator");
+  test.describe("Field Manager", () => {
+    test("Switch to Field Manager Tab", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Field Manager");
 
       // Verify Field Naming Convention option is visible
       await expect(page.locator("text=Field Naming Convention")).toBeVisible();
     });
 
     test("Change Field Naming Convention", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId, null, "Field Creator");
+      await initOptionsPage(page, extensionId, null, "Field Manager");
 
       // Wait for Field Naming Convention select (find by looking for the text first)
       await page.waitForSelector("text=Field Naming Convention", {timeout: 1000});

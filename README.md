@@ -58,7 +58,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ma
 
 - **[REST Explorer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/rest-explorer/)**: Interact with Salesforce REST APIs directly from the extension with request templates, query history, and auto-completion
 - **[Dependencies Explorer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/dependencies-explorer/)**: Analyze Salesforce metadata dependencies to understand what depends on your metadata and what your metadata depends on
-- **[Field Creator](https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/)**: Create fields for standard objects, custom objects, platform events, and custom metadata types with bulk import support
+- **[Field Manager](https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-manager/)**: Create and edit fields for standard objects, custom objects, platform events, and custom metadata types with bulk import support
 - **[Flow Scanner](https://tprouvot.github.io/Salesforce-Inspector-reloaded/flow-scanner/)**: Analyze Salesforce Flows for best practices, errors, and potential issues with comprehensive rule checking
 - **[Debug Logs Viewer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/logs-viewer/)**: View, filter, analyze, and manage Salesforce debug logs with Agentforce-powered analysis and grep-like filtering
 - **[Event Monitor](https://tprouvot.github.io/Salesforce-Inspector-reloaded/event-monitor/)**: Subscribe to and display Salesforce Platform Events in real-time, including Change Events and custom channels

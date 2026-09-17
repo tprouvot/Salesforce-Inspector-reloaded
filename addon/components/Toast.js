@@ -15,13 +15,14 @@ class Toast extends React.Component {
       }
 
       // Handle message object with link
-      const {pre, linkText, linkTitle, link, post} = message;
+      const {pre, linkText, linkTitle, link, onLinkClick, post} = message;
       return h("p", {},
         pre && h("span", {}, pre),
         linkText && h("a", {
-          href: link,
+          href: link || "#",
           title: linkTitle,
-          className: "slds-text-link"
+          className: "slds-text-link",
+          onClick: onLinkClick ? (e) => { e.preventDefault(); onLinkClick(e); } : undefined
         }, linkText),
         post && h("span", {}, post)
       );

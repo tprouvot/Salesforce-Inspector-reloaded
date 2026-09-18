@@ -901,7 +901,8 @@ class Model {
 
   fieldDefinitionSoql(objectName) {
     const fields = "QualifiedApiName, EntityDefinition.QualifiedApiName, Description, ComplianceGroup, SecurityClassification, BusinessStatus, NamespacePrefix";
-    return `SELECT ${fields} FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${objectName.replace(/'/g, "\\'")}'`;
+    const escapedObjectName = objectName.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    return `SELECT ${fields} FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '${escapedObjectName}'`;
   }
 
   async fieldDefinitionBatch(objectNames) {

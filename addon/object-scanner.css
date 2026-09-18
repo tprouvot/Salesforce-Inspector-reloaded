@@ -1,77 +1,36 @@
 .sfir-object-scanner-page {
-  display: flex;
-  flex-direction: column;
   height: calc(100vh - 4rem);
 }
 
-.sfir-object-scanner-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.sfir-object-scanner-toolbar .slds-checkbox_toggle {
-  white-space: nowrap;
-}
-
 .sfir-object-scanner-main {
-  flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  gap: 0.75rem;
-  overflow: hidden;
 }
 
 .sfir-object-scanner-picker {
   flex: 0 0 22rem;
   min-width: 16rem;
   max-width: 28rem;
-  display: flex;
-  flex-direction: column;
   min-height: 0;
 }
 
 .sfir-object-scanner-picker > .slds-card {
-  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
 }
 
 .sfir-object-scanner-picker-body {
-  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
 }
 
 .sfir-object-scanner-picker-list {
-  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-}
-
-.sfir-object-scanner-results {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .sfir-object-scanner-results-tabs {
-  flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
-.sfir-object-scanner-results-tabs > .slds-tabs_default__nav {
-  flex: 0 0 auto;
-}
-
+/* Higher specificity than .slds-show (display:block) is required so the active tab panel stays a flex column. */
 .sfir-object-scanner-results-tabs > .slds-tabs_default__content {
-  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -79,14 +38,8 @@
   padding: 0;
 }
 
-.sfir-object-scanner-results-tabs > .slds-hide {
-  display: none;
-}
-
 .sfir-object-scanner-table-wrap {
-  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
 }
 
 .sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker {
@@ -110,12 +63,9 @@
   border: 0;
 }
 
-.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker-title {
-  display: none;
-}
-
-.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker-body {
-  display: none;
+.sfir-object-scanner-columns-open .sfir-object-scanner-results,
+.sfir-object-scanner-columns-open .sfir-object-scanner-main {
+  overflow: visible;
 }
 
 .sfir-object-scanner-summary-card {
@@ -127,11 +77,7 @@
 }
 
 .sfir-object-scanner-summary-selected {
-  box-shadow: inset 0 0 0 2px #0176d3;
-}
-
-.sfir-object-scanner-severity-error {
-  color: #c23934;
+  box-shadow: inset 0 0 0 2px var(--slds-g-color-brand-base-50);
 }
 
 .sfir-object-scanner-severity-warning {
@@ -139,15 +85,11 @@
 }
 
 .sfir-object-scanner-severity-info {
-  color: #0176d3;
+  color: var(--slds-g-color-brand-base-50);
 }
 
 .sfir-object-scanner-progress {
   min-width: 12rem;
-}
-
-.sfir-object-scanner-api-stats {
-  white-space: nowrap;
 }
 
 .sfir-object-scanner-toasts {
@@ -169,18 +111,12 @@
   pointer-events: auto;
 }
 
-.sfir-object-scanner-columns {
-  position: relative;
-}
-
 .sfir-object-scanner-columns-popover {
-  position: absolute;
   right: 0;
   top: calc(100% + 0.75rem);
   z-index: 20;
   min-width: 14rem;
   max-height: 24rem;
-  overflow: auto;
 }
 
 .sfir-object-scanner-columns-popover .slds-form-element__legend {
@@ -204,11 +140,6 @@
 .sfir-object-scanner-columns-popover .slds-form-element__label {
   margin-bottom: 0;
   padding-left: 0.5rem;
-}
-
-.sfir-object-scanner-columns-open .sfir-object-scanner-results,
-.sfir-object-scanner-columns-open .sfir-object-scanner-main {
-  overflow: visible;
 }
 
 .sfir-object-scanner-help-text {

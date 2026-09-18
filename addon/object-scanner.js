@@ -1086,7 +1086,7 @@ class DataModelColumnsBox extends React.Component {
   }
   render() {
     const {model} = this.props;
-    return h("span", {className: "sfir-object-scanner-columns"},
+    return h("span", {className: "slds-is-relative sfir-object-scanner-columns"},
       h("button", {
         className: "slds-button slds-button_neutral",
         type: "button",
@@ -1102,7 +1102,7 @@ class DataModelColumnsBox extends React.Component {
       ),
       model.columnPickerOpen
         ? h("section", {
-          className: "slds-popover slds-nubbin_top-right sfir-object-scanner-columns-popover",
+          className: "slds-popover slds-nubbin_top-right slds-is-absolute slds-scrollable sfir-object-scanner-columns-popover",
           role: "dialog",
           onClick: this.onPopoverClick
         },
@@ -1268,7 +1268,7 @@ class App extends React.Component {
     const modelRows = model.filteredModelRows();
     const findings = model.visibleFindings();
     const visibleCols = model.visibleDataModelColumns();
-    const pageClass = "slds-m-top_xx-large sfir-object-scanner-page"
+    const pageClass = "slds-m-top_xx-large slds-grid slds-grid_vertical sfir-object-scanner-page"
       + (model.pickerCollapsed ? " sfir-object-scanner-picker-collapsed" : "")
       + (model.columnPickerOpen ? " sfir-object-scanner-columns-open" : "");
 
@@ -1324,6 +1324,7 @@ class App extends React.Component {
             h("div", {className: "slds-col slds-grow-none"},
               h("label", {
                 className: "slds-checkbox_toggle slds-grid",
+                style: {whiteSpace: "nowrap"},
                 title: "Query FieldDefinition for description and PII classification. Extra Tooling API calls (5 objects per composite)."
               },
               h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Description & classification"),
@@ -1386,7 +1387,7 @@ class App extends React.Component {
                 ? `${model.scanProgress.phase || ""} ${model.scanProgress.done}/${model.scanProgress.total || model.selectedNames.size}`
                 : `${model.selectedNames.size} object(s) selected`
             ),
-            h("div", {className: "slds-col slds-col_bump-left slds-text-align_right sfir-object-scanner-api-stats"},
+            h("div", {className: "slds-col slds-col_bump-left slds-text-align_right sfir-object-scanner-api-stats", style: {whiteSpace: "nowrap"}},
               model.apiCallCount
                 ? h("span", {className: "slds-badge slds-m-right_small", title: model.apiCallTitle()}, "API calls: " + model.apiCallCount)
                 : null,
@@ -1396,11 +1397,11 @@ class App extends React.Component {
             )
           )
         ),
-        h("div", {className: "slds-grid slds-gutters_x-small slds-p-horizontal_small sfir-object-scanner-main"},
-          h("div", {className: "slds-col sfir-object-scanner-picker"},
-            h("article", {className: "slds-card slds-grid slds-grid_vertical"},
+        h("div", {className: "slds-grid slds-gutters_x-small slds-p-horizontal_small slds-grow slds-scrollable_none sfir-object-scanner-main"},
+          h("div", {className: "slds-col slds-grid slds-grid_vertical sfir-object-scanner-picker"},
+            h("article", {className: "slds-card slds-grid slds-grid_vertical slds-grow slds-scrollable_none"},
               h("div", {className: "slds-card__header slds-grid"},
-                h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate sfir-object-scanner-picker-title"},
+                h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate" + (model.pickerCollapsed ? " slds-hide" : "")},
                   h("div", {className: "slds-media__body"},
                     h("h2", {className: "slds-card__header-title"}, "Objects")
                   )
@@ -1418,7 +1419,7 @@ class App extends React.Component {
                   )
                 )
               ),
-              h("div", {className: "slds-card__body slds-card__body_inner sfir-object-scanner-picker-body slds-grid slds-grid_vertical"},
+              h("div", {className: "slds-card__body slds-card__body_inner slds-grid slds-grid_vertical slds-grow slds-scrollable_none sfir-object-scanner-picker-body" + (model.pickerCollapsed ? " slds-hide" : "")},
                 h("div", {className: "slds-form-element slds-m-bottom_x-small"},
                   h("div", {className: "slds-form-element__control"},
                     h("input", {className: "slds-input", type: "search", placeholder: "Search objects", value: model.objectSearch, onChange: this.onSearch})
@@ -1435,7 +1436,7 @@ class App extends React.Component {
                   h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: () => model.selectFiltered(true)}, "Select all"),
                   h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: () => model.selectFiltered(false)}, "Select none")
                 ),
-                h("div", {className: "sfir-object-scanner-picker-list"},
+                h("div", {className: "slds-grow slds-scrollable sfir-object-scanner-picker-list"},
                   filtered.map(entity => h("div", {key: entity.name, className: "slds-form-element"},
                     h("div", {className: "slds-form-element__control"},
                       h("div", {className: "slds-checkbox"},
@@ -1456,13 +1457,13 @@ class App extends React.Component {
               )
             )
           ),
-          h("div", {className: "slds-col sfir-object-scanner-results"},
+          h("div", {className: "slds-col slds-grid slds-grid_vertical slds-grow slds-no-space slds-scrollable_none sfir-object-scanner-results"},
             h("div", {className: "slds-grid slds-gutters_x-small slds-m-bottom_small"},
               [
                 {key: "objects", label: "Scanned", value: summary.objects},
                 {key: "fields", label: "Fields", value: summary.fields},
                 {key: "total", label: "Findings", value: summary.total, filter: "all"},
-                {key: "error", label: "Errors", value: summary.error, filter: "error", className: "sfir-object-scanner-severity-error"},
+                {key: "error", label: "Errors", value: summary.error, filter: "error", className: "slds-text-color_error"},
                 {key: "warning", label: "Warnings", value: summary.warning, filter: "warning", className: "sfir-object-scanner-severity-warning"},
                 {key: "info", label: "Info", value: summary.info, filter: "info", className: "sfir-object-scanner-severity-info"}
               ].map(card => h("div", {key: card.key, className: "slds-col sfir-object-scanner-summary-card"},
@@ -1498,8 +1499,8 @@ class App extends React.Component {
                 )
               )
             ),
-            h("div", {className: "slds-tabs_default sfir-object-scanner-results-tabs"},
-              h("ul", {className: "slds-tabs_default__nav", role: "tablist"},
+            h("div", {className: "slds-tabs_default slds-grid slds-grid_vertical slds-grow sfir-object-scanner-results-tabs"},
+              h("ul", {className: "slds-tabs_default__nav slds-grow-none slds-shrink-none", role: "tablist"},
                 h("li", {className: "slds-tabs_default__item" + (model.resultsTab === "data-model" ? " slds-is-active" : ""), title: "Data Model"},
                   h("a", {
                     className: "slds-tabs_default__link",
@@ -1524,7 +1525,7 @@ class App extends React.Component {
                 className: "slds-tabs_default__content " + (model.resultsTab === "data-model" ? "slds-show" : "slds-hide"),
                 role: "tabpanel"
               },
-              h("div", {className: "sfir-object-scanner-table-wrap"},
+              h("div", {className: "slds-grow slds-scrollable sfir-object-scanner-table-wrap"},
                 h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped", id: "object-scanner-model"},
                   h("thead", {},
                     h("tr", {className: "slds-line-height_reset"},
@@ -1567,7 +1568,7 @@ class App extends React.Component {
                 className: "slds-tabs_default__content " + (model.resultsTab === "findings" ? "slds-show" : "slds-hide"),
                 role: "tabpanel"
               },
-              h("div", {className: "sfir-object-scanner-table-wrap"},
+              h("div", {className: "slds-grow slds-scrollable sfir-object-scanner-table-wrap"},
                 h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped", id: "object-scanner-findings"},
                   h("thead", {},
                     h("tr", {className: "slds-line-height_reset"},
@@ -1581,7 +1582,10 @@ class App extends React.Component {
                   h("tbody", {},
                     findings.length
                       ? findings.map(item => h("tr", {key: item.id},
-                        h("td", {className: "sfir-object-scanner-severity-" + item.severity, "data-severity": item.severity}, item.severity),
+                        h("td", {
+                          className: item.severity === "error" ? "slds-text-color_error" : "sfir-object-scanner-severity-" + item.severity,
+                          "data-severity": item.severity
+                        }, item.severity),
                         h("td", {},
                           h("span", {}, item.ruleLabel || item.rule),
                           h(Tooltip, {idKey: item.id, tooltip: item.rule})

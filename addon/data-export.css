@@ -385,6 +385,43 @@ svg.button-icon {
   font-size: 1rem;
 }
 
+.autocomplete-filter-control {
+  position: relative;
+}
+
+.autocomplete-filter-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1000;
+  min-width: 180px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.autocomplete-filter-menu label {
+  display: block;
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.autocomplete-filter-menu select {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+}
+
+.autocomplete-filter-menu .autocomplete-filter-checkbox {
+  cursor: pointer;
+}
+
+.autocomplete-filter-checkbox input {
+  margin-right: 5px;
+}
+
 .autocomplete-results {
   overflow: hidden;
   display: flex;

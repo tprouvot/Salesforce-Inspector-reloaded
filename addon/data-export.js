@@ -55,6 +55,12 @@ class Model {
     this.savedHistory = createQueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
     this.expandAutocomplete = false;
+    this.autocompleteFilterOpen = false;
+    this.autocompleteFilters = {
+      objectType: "all",
+      fieldType: "all",
+      categories: {fields: true, aggregation: true, date: true, other: true}
+    };
     this.expandSavedOptions = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
@@ -158,6 +164,40 @@ class Model {
   }
   toggleExpand() {
     this.expandAutocomplete = !this.expandAutocomplete;
+  }
+  toggleAutocompleteFilter() {
+    this.autocompleteFilterOpen = !this.autocompleteFilterOpen;
+  }
+  setAutocompleteFilter(filterName, value) {
+    this.autocompleteFilters[filterName] = value;
+  }
+  setAutocompleteCategory(category, enabled) {
+    this.autocompleteFilters.categories[category] = enabled;
+  }
+  getAutocompleteFilterMode() {
+    const kinds = new Set((this.autocompleteResults.results || []).map(result => result.suggestionKind));
+    if (kinds.has("object")) return "object";
+    if (kinds.has("field") || kinds.has("function")) return "field";
+    return null;
+  }
+  getFilteredAutocompleteResults() {
+    const mode = this.getAutocompleteFilterMode();
+    if (!mode) return this.autocompleteResults.results || [];
+
+    return this.autocompleteResults.results.filter(result => {
+      if (mode === "object" && result.suggestionKind === "object") {
+        return this.autocompleteFilters.objectType === "all"
+          || (this.autocompleteFilters.objectType === "custom" ? result.isCustom : !result.isCustom);
+      }
+      if (result.suggestionKind === "field") {
+        return this.autocompleteFilters.fieldType === "all"
+          || (this.autocompleteFilters.fieldType === "custom" ? result.isCustom : !result.isCustom);
+      }
+      if (result.suggestionKind === "function") {
+        return this.autocompleteFilters.categories[result.suggestionCategory];
+      }
+      return true;
+    });
   }
   toggleSavedOptions() {
     this.expandSavedOptions = !this.expandSavedOptions;
@@ -438,7 +478,7 @@ class Model {
         title: "Objects suggestions:",
         results: new Enumerable(globalDescribe.sobjects)
           .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
-          .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
+           .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: "", suggestionKind: "object", isCustom: sobjectDescribe.custom === true}))
           .toArray()
           .sort(resultsSort)
       };
@@ -805,19 +845,27 @@ class Model {
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .flatMap(function* (field) {
-            yield {value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
+            const isCustom = field.custom === true || field.name.endsWith("__c");
+            yield {value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type, suggestionKind: "field", isCustom};
             if (field.relationshipName) {
-              yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
+              yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: "", suggestionKind: "field", isCustom};
             }
           })
           .concat(
             new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
-                if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
-                  return {value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: ""};
+                 const suggestionCategory = ["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)"].includes(fn)
+                   ? "fields"
+                   : ["AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "GROUPING"].includes(fn)
+                     ? "aggregation"
+                     : ["CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR"].includes(fn)
+                       ? "date"
+                       : "other";
+                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
+                   return {value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: "", suggestionKind: "function", suggestionCategory};
                 } else {
-                  return {value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: ""};
+                   return {value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: "", suggestionKind: "function", suggestionCategory};
                 }
               })
           )
@@ -1358,6 +1406,7 @@ class App extends React.Component {
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onToggleAutocompleteFilter = this.onToggleAutocompleteFilter.bind(this);
     this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
@@ -1491,6 +1540,12 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.toggleExpand();
+    model.didUpdate();
+  }
+  onToggleAutocompleteFilter(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.toggleAutocompleteFilter();
     model.didUpdate();
   }
   onToggleSavedOptions(e) {
@@ -1795,6 +1850,8 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
+    const autocompleteFilterMode = model.getAutocompleteFilterMode();
+    const filteredAutocompleteResults = model.getFilteredAutocompleteResults();
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
@@ -1989,7 +2046,50 @@ class App extends React.Component {
               h("div", {className: "autocomplete-header"},
                 h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),
                 h("ul", {className: "slds-button-group-row flex-right"},
-                  h("li", {className: "slds-button-group-item"},
+                   autocompleteFilterMode && h("li", {className: "slds-button-group-item autocomplete-filter-control"},
+                     h("button", {tabIndex: 5, className: "slds-button slds-button_neutral", onClick: this.onToggleAutocompleteFilter, title: "Filter autocomplete suggestions", "aria-label": "Filter autocomplete suggestions"}, "Filter"),
+                     model.autocompleteFilterOpen && h("div", {className: "autocomplete-filter-menu"},
+                       autocompleteFilterMode === "object"
+                         ? h("label", {}, "Object type",
+                           h("select", {
+                             "aria-label": "Object suggestion type",
+                             value: model.autocompleteFilters.objectType,
+                             onChange: e => { model.setAutocompleteFilter("objectType", e.target.value); model.didUpdate(); }
+                           },
+                           h("option", {value: "all"}, "All objects"),
+                           h("option", {value: "standard"}, "Standard objects"),
+                           h("option", {value: "custom"}, "Custom objects")
+                           )
+                         )
+                         : h("div", {},
+                           h("label", {}, "Field type",
+                             h("select", {
+                               "aria-label": "Field suggestion type",
+                               value: model.autocompleteFilters.fieldType,
+                               onChange: e => { model.setAutocompleteFilter("fieldType", e.target.value); model.didUpdate(); }
+                             },
+                             h("option", {value: "all"}, "All fields"),
+                             h("option", {value: "standard"}, "Standard fields"),
+                             h("option", {value: "custom"}, "Custom fields")
+                             )
+                           ),
+                           [
+                             ["fields", "Field functions"],
+                             ["aggregation", "Aggregation functions"],
+                             ["date", "Date functions"],
+                             ["other", "Other functions"]
+                           ].map(([category, label]) => h("label", {className: "autocomplete-filter-checkbox", key: category},
+                             h("input", {
+                               type: "checkbox",
+                               checked: model.autocompleteFilters.categories[category],
+                               onChange: e => { model.setAutocompleteCategory(category, e.target.checked); model.didUpdate(); }
+                             }),
+                             label
+                           ))
+                         )
+                     )
+                   ),
+                   h("li", {className: "slds-button-group-item"},
                     h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
                   ),
                   h("li", {className: "slds-button-group-item"},
@@ -2011,7 +2111,7 @@ class App extends React.Component {
                 ),
               ),
               h("div", {className: "autocomplete-results slds-m-top_small"},
-                model.autocompleteResults.results.map(r => (
+                 filteredAutocompleteResults.map(r => (
                   h("span", {className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", key: r.value},
                     h("span", {className: "slds-pill__icon_container " + r.autocompleteType + " " + r.dataType},
                       h("span", {className: "sfir-autocomplete-icon"})

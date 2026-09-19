@@ -147,7 +147,7 @@ class Model {
   }
   setQueryInput(queryInput) {
     this.queryInput = queryInput;
-    queryInput.value = this.initialQuery;
+    queryInput.value = this.queryTabs[this.activeTabIndex]?.query ?? this.initialQuery;
     this.initialQuery = null;
   }
   toggleHelp() {
@@ -1022,40 +1022,51 @@ class Model {
 
   loadQueryTabs(queryFromUrl) {
     const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
-    if (savedTabs) {
-      this.queryTabs = JSON.parse(savedTabs);
+    const parsedTabs = savedTabs ? JSON.parse(savedTabs) : [];
+    if (Array.isArray(parsedTabs) && parsedTabs.length > 0) {
+      // Tabs saved before pinning was introduced remain pinned so this change
+      // does not discard a user's existing query workspace.
+      this.queryTabs = parsedTabs.map(tab => ({...tab, pinned: tab.pinned !== false}));
       if (queryFromUrl) {
         const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.queryTabs.length + 1}`;
-        this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
+        this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false, pinned: false});
         this.activeTabIndex = this.queryTabs.length - 1;
         this.saveQueryTabs();
       } else {
         this.activeTabIndex = 0;
       }
     } else {
-      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false, pinned: true}];
       this.activeTabIndex = 0;
     }
   }
 
   saveQueryTabs() {
     // Create a copy of the tabs without the results property
-    const tabsToSave = this.queryTabs.map(tab => ({
+    const tabsToSave = this.queryTabs.filter(tab => tab.pinned).map(tab => ({
       name: tab.name,
       query: tab.query,
       queryTooling: tab.queryTooling,
       queryAll: tab.queryAll,
-      isManuallyRenamed: tab.isManuallyRenamed || false
+      isManuallyRenamed: tab.isManuallyRenamed || false,
+      pinned: true
     }));
     localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
   }
 
   addQueryTab() {
     const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
-    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
+    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false, pinned: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.setActiveTab(this.activeTabIndex);
     this.saveQueryTabs();
+  }
+
+  toggleQueryTabPinned(index) {
+    if (!this.queryTabs[index]) return;
+    this.queryTabs[index].pinned = !this.queryTabs[index].pinned;
+    this.saveQueryTabs();
+    this.didUpdate();
   }
 
   removeQueryTab(index) {
@@ -1390,6 +1401,7 @@ class App extends React.Component {
     this.onTabDragLeave = this.onTabDragLeave.bind(this);
     this.onTabDragEnd = this.onTabDragEnd.bind(this);
     this.onTabContextMenu = this.onTabContextMenu.bind(this);
+    this.onToggleTabPinned = this.onToggleTabPinned.bind(this);
     this.onOverlayContextMenu = this.onOverlayContextMenu.bind(this);
     this.onCloseContextMenu = this.onCloseContextMenu.bind(this);
 
@@ -1605,6 +1617,12 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.setActiveTab(index);
+  }
+
+  onToggleTabPinned(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.model.toggleQueryTabPinned(index);
   }
 
   onQueryInput(e) {
@@ -1966,6 +1984,13 @@ class App extends React.Component {
                   onDoubleClick: e => this.onTabNameEdit(e, index),
                   title: "Double-click to edit tab name"
                 }, tab.name),
+              h("button", {
+                type: "button",
+                className: "query-tab-pin",
+                onClick: e => this.onToggleTabPinned(e, index),
+                title: tab.pinned ? "Unpin query tab" : "Pin query tab",
+                "aria-label": tab.pinned ? "Unpin query tab" : "Pin query tab"
+              }, tab.pinned ? "★" : "☆"),
               h("span", {
                 className: "query-tab-close",
                 onClick: e => this.onRemoveTab(e, index),

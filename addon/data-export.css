@@ -740,6 +740,21 @@ svg.icon:hover {
   transition: background-color 0.1s;
 }
 
+.query-tab-pin {
+  border: 0;
+  background: transparent;
+  color: #706e6b;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 16px;
+  padding: 0;
+}
+
+.query-tab-pin:hover,
+.query-tab-pin:focus {
+  color: #1589ee;
+}
+
 .query-tab-close:hover {
   background: #f3f2f2;
   color: #c23934;

@@ -50,7 +50,7 @@ textarea[hidden] {
 
 #query {
   height: 5em;
-  min-height: 7em;
+  min-height: 2em;
 }
 
 #result-area {
@@ -59,6 +59,29 @@ textarea[hidden] {
   display: flex;
   flex-direction: column;
   padding: 0;
+  overflow: hidden;
+}
+
+.result-resizer {
+  height: 8px;
+  flex: 0 0 8px;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.result-resizer span {
+  width: 48px;
+  height: 3px;
+  border-radius: 2px;
+  background: #c9c7c5;
+}
+
+.result-resizer:hover span,
+.result-resizer.resizing span {
+  background: #1589ee;
 }
 
 .result-bar {

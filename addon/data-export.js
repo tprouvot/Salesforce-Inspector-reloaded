@@ -1392,6 +1392,8 @@ class App extends React.Component {
     this.onTabContextMenu = this.onTabContextMenu.bind(this);
     this.onOverlayContextMenu = this.onOverlayContextMenu.bind(this);
     this.onCloseContextMenu = this.onCloseContextMenu.bind(this);
+    this.onResultResizeStart = this.onResultResizeStart.bind(this);
+    this.resultResizeCleanup = null;
 
     // Tab editing state
     this.state = {
@@ -1400,7 +1402,9 @@ class App extends React.Component {
       editingTabName: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
-      contextMenu: null
+      contextMenu: null,
+      resultAreaHeight: null,
+      isResizingResult: false
     };
   }
   onQueryAllChange(e) {
@@ -1710,6 +1714,29 @@ class App extends React.Component {
     this.setState({contextMenu: null});
   }
 
+  onResultResizeStart(e) {
+    e.preventDefault();
+    const resultArea = this.refs.resultArea;
+    const startHeight = resultArea.getBoundingClientRect().height;
+    const startY = e.clientY;
+    const onMouseMove = moveEvent => {
+      const availableHeight = window.innerHeight - resultArea.getBoundingClientRect().top - 20;
+      const height = Math.max(120, Math.min(availableHeight, startHeight + moveEvent.clientY - startY));
+      this.setState({resultAreaHeight: height});
+    };
+    const cleanup = updateState => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      this.resultResizeCleanup = null;
+      if (updateState) this.setState({isResizingResult: false});
+    };
+    const onMouseUp = () => cleanup(true);
+    this.resultResizeCleanup = () => cleanup(false);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    this.setState({resultAreaHeight: startHeight, isResizingResult: true});
+  }
+
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
@@ -1780,6 +1807,9 @@ class App extends React.Component {
     }
     addEventListener("resize", resize);
     resize();
+  }
+  componentWillUnmount() {
+    if (this.resultResizeCleanup) this.resultResizeCleanup();
   }
   componentDidUpdate() {
     this.recalculateSize();
@@ -2044,13 +2074,21 @@ class App extends React.Component {
               )
             )
           )),
+        h("div", {
+          className: `result-resizer ${this.state.isResizingResult ? "resizing" : ""}`,
+          role: "separator",
+          "aria-label": "Resize result section",
+          onMouseDown: this.onResultResizeStart
+        }, h("span", {})),
         h(
           "div",
           {
             className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium",
             id: "result-area",
+            ref: "resultArea",
             style: {
-              flex: "1 1 0",
+              flex: this.state.resultAreaHeight == null ? "1 1 0" : "0 0 auto",
+              height: this.state.resultAreaHeight == null ? undefined : this.state.resultAreaHeight + "px",
               minHeight: 0,
               display: "flex",
               flexDirection: "column"

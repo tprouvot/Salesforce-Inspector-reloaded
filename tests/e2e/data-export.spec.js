@@ -161,4 +161,20 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
+  test("Query and Result Sections Expose Vertical Resize", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await expect.poll(async () => page.locator("#query").evaluate(element => parseFloat(getComputedStyle(element).minHeight))).toBeLessThan(50);
+    await expect(page.locator(".result-resizer")).toBeVisible();
+    const resultArea = page.locator("#result-area");
+    const before = await resultArea.boundingBox();
+    const resizer = await page.locator(".result-resizer").boundingBox();
+    await page.mouse.move(resizer.x + resizer.width / 2, resizer.y + resizer.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(resizer.x + resizer.width / 2, resizer.y - 100);
+    await page.mouse.up();
+    await expect.poll(async () => (await resultArea.boundingBox()).height).toBeLessThan(before.height - 20);
+  });
+
 });

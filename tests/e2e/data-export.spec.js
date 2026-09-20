@@ -166,6 +166,11 @@ test.describe("Data Export", () => {
 
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
+    await page.evaluate(() => localStorage.setItem("hideExportButtonsOption", JSON.stringify([
+      {name: "export-markdown", checked: true}
+    ])));
+    await page.reload();
+    await page.waitForSelector("textarea#query", {timeout: 2000});
     await page.locator("textarea#query").fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%' ORDER BY Name");
     await page.click("button:has-text('Run Export')");
     await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
@@ -182,6 +187,24 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain("| Id | Name |");
     expect(clipboardContent).toContain("| --- | --- |");
     expect(clipboardContent).toContain(`| ${id} | ${name} |`);
+  });
+
+  test("Copy format buttons follow Data Export settings", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await expect(page.locator("button:has-text('Copy (JSON)')")).toBeVisible();
+    await expect(page.locator("button:has-text('Copy (Markdown)')")).toHaveCount(0);
+
+    await page.evaluate(() => localStorage.setItem("hideExportButtonsOption", JSON.stringify([
+      {name: "export-json", checked: false},
+      {name: "export-markdown", checked: true}
+    ])));
+    await page.reload();
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await expect(page.locator("button:has-text('Copy (JSON)')")).toHaveCount(0);
+    await expect(page.locator("button:has-text('Copy (Markdown)')")).toBeVisible();
   });
 
 });

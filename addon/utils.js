@@ -302,13 +302,13 @@ export function nullToEmptyString(value) {
   return (value == null) ? "" : value;
 }
 
-export function isOptionEnabled(optionName, optionsArray){
+export function isOptionEnabled(optionName, optionsArray, defaultValue = true){
   const option = optionsArray?.find((element) => element.name == optionName);
   if (option){
     return option.checked;
   }
-  //if no option was found, enable by default
-  return true;
+  // If no option was found, use the feature's default value.
+  return defaultValue;
 }
 
 export function isSettingEnabled(settingName, defaultValue = false){

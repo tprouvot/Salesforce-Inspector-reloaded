@@ -789,22 +789,26 @@ svg.icon:hover {
   border-radius: 16px;
 }
 
+.bulk-preview-table {
+  width: max-content;
+}
+
 .bulk-preview-table thead th {
-    padding-top: 0.35rem;
-    padding-bottom: 0.35rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
 }
 
 .bulk-preview-table td {
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
 .bulk-preview-table th:first-child,
 .bulk-preview-table td:first-child {
-    border-left: 1px solid #dddbda;
+  border-left: 1px solid #dddbda;
 }
 
 .bulk-preview-table th:last-child,
 .bulk-preview-table td:last-child {
-    border-right: 1px solid #dddbda;
+  border-right: 1px solid #dddbda;
 }

@@ -50,7 +50,7 @@ textarea[hidden] {
 
 #query {
   height: 5em;
-  min-height: 7em;
+  min-height: 2.5em;
 }
 
 #result-area {

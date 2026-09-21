@@ -460,15 +460,14 @@ class Model {
     let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
     let csvContent = csvSerialize([header, ...data], separator);
     let objectName = this.importType; 
-    let actionVerb = this.getActionVerb(this.importAction);
-    actionVerb = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
+    let actionName = this.importAction[0].toUpperCase() + this.importAction.slice(1);
     const statuses = ["Succeeded", "Failed", "Processing", "Queued"];
     let countParts = statuses
       .filter(status => this.showStatus[status] && this.importData.counts[status] > 0)
       .map(status => `${status}_${this.importData.counts[status]}`);
     let countsStr = countParts.length > 0 ? "-" + countParts.join("-") : "";
     let dateStr = new Date().toLocaleDateString();
-    let filename = `${objectName}-${actionVerb}${countsStr}-${dateStr}.csv`;
+    let filename = `${objectName}-${actionName}${countsStr}-${dateStr}.csv`;
     downloadCsvFile(csvContent, filename);
   }
 

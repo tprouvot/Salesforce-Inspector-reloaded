@@ -30,6 +30,91 @@ const accountRecords = [
   }
 ];
 
+function mockDescribeForName(name) {
+  if (name === "Account") {
+    return {
+      name: "Account",
+      label: "Account",
+      custom: false,
+      fields: [
+        {name: "Id", label: "Account ID", type: "id", custom: false, nillable: false, referenceTo: []},
+        {name: "Name", label: "Account Name", type: "string", custom: false, nillable: false, referenceTo: []},
+        {name: "Industry__c", label: "Industry", type: "string", custom: true, nillable: true, referenceTo: []}
+      ],
+      recordTypeInfos: []
+    };
+  }
+  if (name === "Inspector_Test__c") {
+    return {
+      name: "Inspector_Test__c",
+      label: "Inspector Test",
+      custom: true,
+      fields: [
+        {name: "Id", label: "Record ID", type: "id", custom: false, referenceTo: []},
+        {name: "Name", label: "Name", type: "string", custom: false, referenceTo: []},
+        {name: "Checkbox__c", label: "Checkbox", type: "boolean", custom: true, referenceTo: []},
+        {name: "Email__c", label: "Email Address", type: "string", custom: true, unique: true, externalId: true, length: 80, inlineHelpText: "Customer email", referenceTo: []},
+        {name: "Status__c", label: "Status", type: "picklist", custom: true, restrictedPicklist: false, picklistValues: [
+          {value: "New", active: true},
+          {value: "Old1", active: false},
+          {value: "Old2", active: false},
+          {value: "Old3", active: false},
+          {value: "Old4", active: false}
+        ], referenceTo: []},
+        {name: "DupA__c", label: "Duplicate Label", type: "string", custom: true, referenceTo: []},
+        {name: "DupB__c", label: "Duplicate Label", type: "string", custom: true, referenceTo: []},
+        {name: "Encrypted_SSN__c", label: "Encrypted SSN", type: "string", custom: true, encrypted: true, referenceTo: []},
+        {name: "Account__c", label: "Account", type: "reference", custom: true, referenceTo: ["Account"], relationshipName: "Account__r"}
+      ],
+      recordTypeInfos: []
+    };
+  }
+  if (name === "Account_Backup__c") {
+    return {
+      name: "Account_Backup__c",
+      label: "Account Backup",
+      custom: true,
+      fields: [
+        {name: "Id", label: "Record ID", type: "id", custom: false, referenceTo: []},
+        {name: "Name", label: "Name", type: "string", custom: false, referenceTo: []},
+        {name: "Account_Status__c", label: "Account Status", type: "string", custom: true, referenceTo: []}
+      ],
+      recordTypeInfos: []
+    };
+  }
+  if (name === "Inspector_Test_Old__c") {
+    return {
+      name: "Inspector_Test_Old__c",
+      label: "Inspector Test Old",
+      custom: true,
+      fields: [
+        {name: "Id", label: "Record ID", type: "id", custom: false, referenceTo: []},
+        {name: "Name", label: "Name", type: "string", custom: false, referenceTo: []}
+      ],
+      recordTypeInfos: []
+    };
+  }
+  return {name, label: name, custom: /__c$/.test(name), fields: [], recordTypeInfos: []};
+}
+
+function mockFieldDefinitionRecords(query) {
+  const objectMatch = query.match(/qualifiedapiname = '([^']+)'/i) || query.match(/qualifiedapiname%20=%20'([^']+)'/i);
+  const objectName = objectMatch ? objectMatch[1] : "Inspector_Test__c";
+  if (objectName.toLowerCase() === "inspector_test__c") {
+    return [
+      {QualifiedApiName: "Email__c", Description: null, ComplianceGroup: null, SecurityClassification: null, BusinessStatus: null, NamespacePrefix: null},
+      {QualifiedApiName: "Status__c", Description: "Status of the record", ComplianceGroup: null, SecurityClassification: null, BusinessStatus: null, NamespacePrefix: null},
+      {QualifiedApiName: "DupA__c", Description: "", ComplianceGroup: null, SecurityClassification: null, BusinessStatus: null, NamespacePrefix: null},
+      {QualifiedApiName: "DupB__c", Description: "", ComplianceGroup: null, SecurityClassification: null, BusinessStatus: null, NamespacePrefix: null},
+      {QualifiedApiName: "Encrypted_SSN__c", Description: "SSN", ComplianceGroup: null, SecurityClassification: null, BusinessStatus: null, NamespacePrefix: null, IsEncrypted: true},
+      {QualifiedApiName: "Checkbox__c", Description: "A checkbox", ComplianceGroup: "PII", SecurityClassification: "Confidential", BusinessStatus: "Active", NamespacePrefix: null}
+    ];
+  }
+  return [
+    {QualifiedApiName: "Account_Status__c", Description: null, ComplianceGroup: null, SecurityClassification: null, BusinessStatus: null, NamespacePrefix: null}
+  ];
+}
+
 export async function routeMock(route, host) {
   //Extract request data
   const request = route.request();
@@ -214,10 +299,35 @@ export async function routeMock(route, host) {
         fields: [
           {name: "Id", label: "Record ID", type: "id", idLookup: true, createable: false, updateable: false, referenceTo: []},
           {name: "Name", label: "Name", type: "string", idLookup: true, createable: true, updateable: true, referenceTo: []},
-          {name: "Checkbox__c", label: "Checkbox", type: "boolean", createable: true, updateable: true, referenceTo: []},
-          {name: "Number__c", label: "Number", type: "double", createable: true, updateable: true, referenceTo: []},
-          {name: "Lookup__c", label: "Lookup", type: "reference", referenceTo: ["Inspector_Test__c"], createable: true, updateable: true, relationshipName: "Lookup__r"},
+          {name: "Checkbox__c", label: "Checkbox", type: "boolean", custom: true, createable: true, updateable: true, referenceTo: []},
+          {name: "Number__c", label: "Number", type: "double", custom: true, createable: true, updateable: true, referenceTo: []},
+          {name: "Lookup__c", label: "Lookup", type: "reference", custom: true, referenceTo: ["Inspector_Test__c"], createable: true, updateable: true, relationshipName: "Lookup__r"},
+          {name: "Email__c", label: "Email Address", type: "string", custom: true, createable: true, updateable: true, referenceTo: []},
+          {name: "Status__c", label: "Status", type: "picklist", custom: true, restrictedPicklist: false, picklistValues: [
+            {value: "New", active: true},
+            {value: "Old1", active: false},
+            {value: "Old2", active: false},
+            {value: "Old3", active: false},
+            {value: "Old4", active: false}
+          ], createable: true, updateable: true, referenceTo: []},
+          {name: "DupA__c", label: "Duplicate Label", type: "string", custom: true, createable: true, updateable: true, referenceTo: []},
+          {name: "DupB__c", label: "Duplicate Label", type: "string", custom: true, createable: true, updateable: true, referenceTo: []},
+          {name: "Encrypted_SSN__c", label: "Encrypted SSN", type: "string", custom: true, encrypted: true, createable: true, updateable: true, referenceTo: []},
           {name: "OwnerId", label: "Owner ID", type: "reference", referenceTo: ["User", "Group"], createable: true, updateable: true}
+        ]
+      });
+      return true;
+    }
+
+    if (path.includes("/sobjects/Account_Backup__c/describe")) {
+      await fulfillSuccess(route, {
+        name: "Account_Backup__c",
+        label: "Account Backup",
+        custom: true,
+        fields: [
+          {name: "Id", label: "Record ID", type: "id", createable: false, updateable: false, referenceTo: []},
+          {name: "Name", label: "Name", type: "string", createable: true, updateable: true, referenceTo: []},
+          {name: "Account_Status__c", label: "Account Status", type: "string", custom: true, createable: true, updateable: true, referenceTo: []}
         ]
       });
       return true;
@@ -287,6 +397,7 @@ export async function routeMock(route, host) {
               Label: "Account",
               KeyPrefix: "001",
               DurableId: "Account",
+              IsCustomizable: true,
               IsCustomSetting: false,
               RecordTypesSupported: false,
               NewUrl: null,
@@ -298,6 +409,31 @@ export async function routeMock(route, host) {
               Label: "Inspector Test",
               KeyPrefix: "a00",
               DurableId: "Inspector_Test__c",
+              IsCustomizable: true,
+              IsCustomSetting: false,
+              RecordTypesSupported: false,
+              NewUrl: null,
+              IsEverCreatable: true,
+              NamespacePrefix: null
+            },
+            {
+              QualifiedApiName: "Account_Backup__c",
+              Label: "Account Backup",
+              KeyPrefix: "a01",
+              DurableId: "Account_Backup__c",
+              IsCustomizable: true,
+              IsCustomSetting: false,
+              RecordTypesSupported: false,
+              NewUrl: null,
+              IsEverCreatable: true,
+              NamespacePrefix: null
+            },
+            {
+              QualifiedApiName: "Inspector_Test_Old__c",
+              Label: "Inspector Test Old",
+              KeyPrefix: "a02",
+              DurableId: "Inspector_Test_Old__c",
+              IsCustomizable: true,
               IsCustomSetting: false,
               RecordTypesSupported: false,
               NewUrl: null,
@@ -305,6 +441,15 @@ export async function routeMock(route, host) {
               NamespacePrefix: null
             }
           ]
+        });
+        return true;
+      }
+
+      if (query.includes("from fielddefinition") || query.includes("from+fielddefinition")) {
+        await fulfillSuccess(route, {
+          totalSize: 2,
+          done: true,
+          records: mockFieldDefinitionRecords(query)
         });
         return true;
       }
@@ -318,6 +463,7 @@ export async function routeMock(route, host) {
             InstanceName: "NA1",
             TrialExpirationDate: null,
             OrganizationType: "Enterprise Edition",
+            NamespacePrefix: null,
             type: "Organization",
             url: `/services/data/v${apiVersion}/sobjects/Organization/00D000000000000000`
           }]
@@ -696,6 +842,16 @@ export async function routeMock(route, host) {
       if (path.includes("/tooling/composite") && method === "POST") {
         if (body.compositeRequest && Array.isArray(body.compositeRequest)) {
           const responses = body.compositeRequest.map(req => {
+            const reqUrl = decodeURIComponent(req.url || "");
+            if (reqUrl.toLowerCase().includes("from fielddefinition")) {
+              return {
+                referenceId: req.referenceId,
+                httpStatusCode: 200,
+                body: {
+                  records: mockFieldDefinitionRecords(reqUrl)
+                }
+              };
+            }
             if (req.referenceId === "flow") {
               return {
                 referenceId: "flow",
@@ -746,17 +902,28 @@ export async function routeMock(route, host) {
         }
       }
 
-      // Mock Composite API for field usage
+      // Mock Composite API for describe batches and field usage
       if (body.compositeRequest) {
         await fulfillSuccess(route, {
-          compositeResponse: body.compositeRequest.map(req => ({
-            referenceId: req.referenceId,
-            httpStatusCode: 200,
-            body: {
-              totalSize: 100,
-              records: []
+          compositeResponse: body.compositeRequest.map(req => {
+            const reqUrl = decodeURIComponent(req.url || "");
+            const describeMatch = reqUrl.match(/\/sobjects\/([^/]+)\/describe/);
+            if (describeMatch) {
+              return {
+                referenceId: req.referenceId,
+                httpStatusCode: 200,
+                body: mockDescribeForName(describeMatch[1])
+              };
             }
-          }))
+            return {
+              referenceId: req.referenceId,
+              httpStatusCode: 200,
+              body: {
+                totalSize: 100,
+                records: []
+              }
+            };
+          })
         });
         return true;
       }

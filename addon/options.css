@@ -9,10 +9,6 @@
   min-width: 220px;
 }
 
-.options-tab {
-  min-width: 80px;
-}
-
 .sfir-options-tab-container {
   background-color: #f7f9fb;
   position: sticky;
@@ -184,6 +180,19 @@
 .enhanced-option-input {
   min-width: 120px;
   max-width: 180px;
+}
+
+.sfir-option-threshold-field {
+  min-width: 8.5rem;
+}
+
+.enhanced-option-row.sfir-option-row-with-thresholds {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.enhanced-option-row.sfir-option-row-with-thresholds > .slds-size_1-of-1 {
+  flex: 1 0 100%;
 }
 
 /* Tooltips use fixed positioning to escape container bounds */

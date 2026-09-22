@@ -621,25 +621,6 @@ class App extends React.PureComponent {
                 )
               )
               : null,
-            isOptionEnabled("object-scanner", hideButtonsOption)
-              ? h(
-                "div",
-                {
-                  className:
-                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-                },
-                h(
-                  "a",
-                  {
-                    ref: "objectScannerBtn",
-                    href: objectScannerHref,
-                    target: linkTarget,
-                    className: "page-button slds-button slds-button_neutral",
-                  },
-                  h("span", {}, "Object Sc", h("u", {}, "a"), "nner")
-                )
-              )
-              : null,
             isOptionEnabled("explore-api", hideButtonsOption)
               ? h(
                 "div",
@@ -692,7 +673,26 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Event ", h("u", {}, "M"), "onitor")
               )
-            )
+            ),
+            isOptionEnabled("object-scanner", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                  "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "objectScannerBtn",
+                    href: objectScannerHref,
+                    target: linkTarget,
+                    className: "page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "Object Sc", h("u", {}, "a"), "nner")
+                )
+              )
+              : null
           ),
           h(
             "div",

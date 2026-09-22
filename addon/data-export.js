@@ -1745,11 +1745,10 @@ class App extends React.Component {
       "string", "id", "reference", "textarea", "picklist", "multipicklist",
       "email", "phone", "url", "combobox", "encryptedstring", "base64"
     ]);
-    const NUMERIC_FIELD_TYPES = new Set(["int", "double", "currency", "percent", "long"]);
-    const DATE_FIELD_TYPES = new Set(["date", "datetime"]);
     const DESCRIBE_TIMEOUT_MS = 3000; // never let a paste wait longer than this on a describe call
     const NUMERIC_LITERAL_RE = /^-?(?:0|[1-9]\d*(?:,\d+)*)(?:\.\d+)?$/;
     const DATE_LITERAL_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$/;
+    const DISCRETE_DATE_LITERAL_RE = /^(TODAY|YESTERDAY|TOMORROW)$/i;
 
     function withTimeout(promise, ms) {
       return Promise.race([
@@ -1762,6 +1761,7 @@ class App extends React.Component {
       return (
         /^'.*'$/.test(item) || // Single-quoted string literal
         /^(true|false|null)$/i.test(item) || // Boolean/null
+        DISCRETE_DATE_LITERAL_RE.test(item) || // Discrete Date literal
         DATE_LITERAL_RE.test(item) || // ISO date/datetime
         /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(item) // STRICT Numeric literal (no commas, no leading zeros)
       );
@@ -1772,35 +1772,11 @@ class App extends React.Component {
     }
 
     function toSoqlLiteral(item) {
-      if (/^(true|false|null)$/i.test(item)) return item; // Booleans and Null
-      if (NUMERIC_LITERAL_RE.test(item)) return item.replaceAll(",", ""); // Strict SOQL Numbers
-      if (DATE_LITERAL_RE.test(item)) return item; // ISO date/datetime
-      return toSoqlStringLiteral(item); // Default: Treat as string (safely escaping backslashes and single quotes)
-    }
-
-    // Converts a raw pasted value into a SOQL literal, using the field type if known to avoid unnecessary describe calls.
-    function toSoqlLiteralForType(item, fieldType) {
-      if (/^null$/i.test(item)) return "null";
-      if (fieldType && STRING_FIELD_TYPES.has(fieldType)) return toSoqlStringLiteral(item);
-      if (fieldType === "boolean") {
-        return /^(true|false)$/i.test(item) ? item.toLowerCase() : toSoqlLiteral(item);
-      }
-      if (fieldType && NUMERIC_FIELD_TYPES.has(fieldType)) {
-        return NUMERIC_LITERAL_RE.test(item) ? item.replaceAll(",", "") : toSoqlLiteral(item);
-      }
-      if (fieldType && DATE_FIELD_TYPES.has(fieldType)) {
-        return DATE_LITERAL_RE.test(item) ? item : toSoqlLiteral(item);
-      }
-      return toSoqlLiteral(item);
-    }
-
-    // Classifies a raw pasted value's shape. Used to decide whether a describe call could possibly change the outcome.
-    function shapeCategory(item) {
-      if (/^null$/i.test(item)) return null;
-      if (/^(true|false)$/i.test(item)) return "bool";
-      if (NUMERIC_LITERAL_RE.test(item)) return "number";
-      if (DATE_LITERAL_RE.test(item)) return "date";
-      return "string";
+      if (/^(true|false|null)$/i.test(item)) return item.toLowerCase();
+      if (DISCRETE_DATE_LITERAL_RE.test(item)) return item.toUpperCase();
+      if (NUMERIC_LITERAL_RE.test(item)) return item.replaceAll(",", "");
+      if (DATE_LITERAL_RE.test(item)) return item;
+      return toSoqlStringLiteral(item); 
     }
 
     // Finds the sobject for the SELECT...FROM scope containing cursorPos. A "(" only opens a
@@ -1860,45 +1836,74 @@ class App extends React.Component {
       const pasteData = (e.clipboardData || window.clipboardData).getData("text");
       if (/^['"\s]+$/.test(pasteData)) return;
       if (/^\s*SELECT\b/i.test(pasteData)) return;
+
       const parsedTokens = (pasteData.match(/\s*'(?:\\'|[^'])*'\s*|[^,]+/g) || [])
         .map(item => item.trim())
         .filter(item => item.length > 0);
-      const isAlreadyFormatted = parsedTokens.length > 0 && parsedTokens.every(isSoqlLiteral);
+
+      // Check the first 5 items to see if the list is already formatted.
+      const isAlreadyFormatted = parsedTokens.length > 0 && parsedTokens.slice(0, 5).every(isSoqlLiteral);
       if (isAlreadyFormatted) return;
+
       let rawItems = pasteData
         .split(/[\r\n\t]+/)
         .map(item => item.trim().replace(/^['"]|['"]$/g, ''))
         .filter(item => item.length > 0);
       rawItems = [...new Set(rawItems)]; // De-duplicate
 
-      // Classify each item's shape so a describe call is only attempted when the answer is
-      // genuinely ambiguous locally. A mix of shapes, or an all-string/all-null paste, already
-      // tells us the right answer -- getFieldType couldn't change either outcome.
-      const categories = new Set(rawItems.map(shapeCategory).filter(c => c !== null));
-      const isAmbiguousShape = categories.size === 1 && !categories.has("string");
-
-      if (!isAmbiguousShape) {
-        e.preventDefault();
-        const {start, end, hasClosingParen} = capturePasteTarget();
-        const formattedList = rawItems.map(item => /^null$/i.test(item) ? "null" : toSoqlStringLiteral(item)).join(", ");
-        insertFormattedList(formattedList, start, end, hasClosingParen);
-        return;
-      }
-
-      // Shape alone can't decide this one (every item looks like the same bool/number/date shape) -- resolve the real field type,
-      // with a bounded wait, falling back to the old shape-based heuristic per item if we can't.
-      const fieldMatch = textBeforeCursor.match(/([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s+(?:NOT\s+)?(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i);
-      const fieldName = fieldMatch ? fieldMatch[1] : null;
-      const sobjectName = getCurrentSobject(queryInput.value, queryInput.selectionStart);
+      if (rawItems.length === 0) return;
 
       e.preventDefault();
       const {start, end, hasClosingParen} = capturePasteTarget();
       const originalValue = queryInput.value;
 
-      const fieldType = (sobjectName && fieldName) ? await withTimeout(getFieldType(sobjectName, fieldName), DESCRIBE_TIMEOUT_MS) : null;
-      if (queryInput.value !== originalValue) return; // value changed while we awaited the describe call
+      // --- The First-Meaningful-Item Loop ---
+      let needsDbCheck = false;
+      let definitiveString = false;
 
-      const formattedList = rawItems.map(item => toSoqlLiteralForType(item, fieldType)).join(", ");
+      for (const item of rawItems) {
+        if (/^null$/i.test(item)) continue; // Ignore null
+        if (/^(true|false)$/i.test(item) || DISCRETE_DATE_LITERAL_RE.test(item)) continue; // Ambiguous keywords
+        if (NUMERIC_LITERAL_RE.test(item) || DATE_LITERAL_RE.test(item)) {
+          // Found a Number or ISO Date
+          needsDbCheck = true;
+          break;
+        }
+        // Normal string found
+        definitiveString = true;
+        break;
+      }
+
+      // If the loop finished and only found nulls or ambiguous keywords, fall back to a DB check
+      if (!definitiveString && !needsDbCheck) {
+        needsDbCheck = true;
+      }
+
+      // --- Formatting & Insertion ---
+      if (definitiveString) {
+        // Stop checking, field must be a String/Picklist/Id.
+        // Blindly wrap ALL items in quotes (except null)
+        const formattedList = rawItems.map(item => /^null$/i.test(item) ? "null" : toSoqlStringLiteral(item)).join(", ");
+        insertFormattedList(formattedList, start, end, hasClosingParen);
+        return;
+      }
+
+      // --- The Database Check ---
+      const fieldMatch = textBeforeCursor.match(/([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s+(?:NOT\s+)?(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i);
+      const fieldName = fieldMatch ? fieldMatch[1] : null;
+      const sobjectName = getCurrentSobject(queryInput.value, queryInput.selectionStart);
+      const fieldType = (sobjectName && fieldName) ? await withTimeout(getFieldType(sobjectName, fieldName), DESCRIBE_TIMEOUT_MS) : null;
+      // Check if the user typed anything while we were waiting
+      if (queryInput.value !== originalValue) return;
+      // Based on the database response, format ALL items blindly
+      const formattedList = rawItems.map(item => {
+        if (/^null$/i.test(item)) return "null";
+        // If the database definitive says it's a string/picklist field, wrap in quotes
+        if (fieldType && STRING_FIELD_TYPES.has(fieldType)) return toSoqlStringLiteral(item);
+        // Otherwise, leave quotes off (treat as number, boolean, date, or fallback native literal)
+        return toSoqlLiteral(item);
+      }).join(", ");
+
       insertFormattedList(formattedList, start, end, hasClosingParen);
     });
 

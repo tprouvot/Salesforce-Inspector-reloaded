@@ -2300,14 +2300,14 @@ class App extends React.Component {
             h("thead", {},
               h("tr", {className: "slds-line-height_reset"},
                 model.bulkPreview.header.map((col, i) => h("th", {key: i, scope: "col"},
-                  h("div", {className: "slds-truncate", title: col}, col)
+                  h("div", {className: "slds-truncate"}, col)
                 ))
               )
             ),
             h("tbody", {},
               model.bulkPreview.rows.map((row, i) => h("tr", {key: i, className: "slds-hint-parent"},
                 row.map((cell, j) => h("td", {key: j},
-                  h("div", {className: "slds-truncate", title: cell}, cell)
+                  h("div", {className: "slds-truncate"}, cell)
                 ))
               ))
             )

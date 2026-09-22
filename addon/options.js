@@ -2030,19 +2030,23 @@ class ScannerRulesEditor extends React.Component {
   resetToDefaults() {
     // Remove stored rules to force reload with defaults
     localStorage.removeItem(this.props.rulesStorageKey);
-
-    // Increment reset counter to force component recreation
-    this.setState(prevState => ({
-      resetCounter: prevState.resetCounter + 1
-    }));
-
-    this.loadRules();
+    this.loadRules(true);
   }
 
-  loadRules() {
+  // bumpKey forces each rule's <Option> to remount with fresh values (Check All /
+  // Uncheck All update `rules` and `resetCounter` together already; this keeps
+  // resetToDefaults()/an external rules reload in sync the same way. Without this,
+  // the resetCounter bump and the rules update would land in separate renders, so
+  // React would reuse the already-remounted <Option> instances for the second
+  // render and their internally cached checked/severity would stay stale.)
+  loadRules(bumpKey = false) {
     Promise.resolve()
       .then(() => this.props.fetchRules())
-      .then(rules => this.setState({rules: rules || [], loading: false}))
+      .then(rules => this.setState(prevState => ({
+        rules: rules || [],
+        loading: false,
+        resetCounter: bumpKey ? prevState.resetCounter + 1 : prevState.resetCounter
+      })))
       .catch(error => {
         console.error(`Error loading ${this.props.ruleSetLabel} rules:`, error);
         this.setState({rules: [], loading: false});
@@ -2201,6 +2205,11 @@ class App extends React.Component {
     if (this.pendingImportFilters) {
       filterKeys = this.pendingImportFilters;
       this.pendingImportFilters = null; // Clear the flag
+    } else {
+      // This method also runs as the file input's onChange handler, in which
+      // case filterKeys is actually the DOM change event, not a real filter
+      // array. Only treat it as filters when it truly is one.
+      filterKeys = Array.isArray(filterKeys) ? filterKeys : null;
     }
 
     const file = fileInput.files[0];
@@ -2229,10 +2238,7 @@ class App extends React.Component {
             ? model.objectScannerRulesRef
             : model.flowScannerRulesRef;
           if (rulesRef) {
-            rulesRef.setState(prevState => ({
-              resetCounter: prevState.resetCounter + 1
-            }));
-            rulesRef.loadRules();
+            rulesRef.loadRules(true);
             model.didUpdate();
           }
         }

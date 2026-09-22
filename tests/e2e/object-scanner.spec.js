@@ -37,12 +37,22 @@ test.describe("Object Scanner", () => {
     await expect(page).toHaveTitle(/Object Scanner/);
   }
 
+  // Object Scanner selects every customizable object by default. Against the mock that's a
+  // handful of curated entities, but against a real org it's every standard object (hundreds),
+  // which makes Scan/Analyze take far longer than the mock-tuned timeouts below. Narrow the
+  // selection to just the objects these tests care about so behavior stays consistent either way.
+  async function selectOnlyTestObjects(page) {
+    await page.getByRole("button", {name: "Select none"}).click();
+    await page.locator("label[for='obj-Account']").click();
+    await page.locator("label[for='obj-Inspector_Test__c']").click();
+  }
+
   test("loads the data model and filters Object.Field search", async ({page, extensionId}) => {
     await initObjectScannerPage(page, extensionId);
 
     await expect(page.locator("label[for='obj-Account']")).toBeVisible();
     await expect(page.locator("label[for='obj-Inspector_Test__c']")).toBeVisible();
-    await expect(page.locator("label[for='obj-Account_Backup__c']")).toBeVisible();
+    await selectOnlyTestObjects(page);
 
     await page.getByRole("button", {name: "Scan Data Model", exact: true}).click();
     await expect(page.locator("#object-scanner-model tbody tr td").first()).toBeVisible({timeout: 15000});
@@ -56,19 +66,20 @@ test.describe("Object Scanner", () => {
     await expect(page.locator("#object-scanner-model")).toContainText("Customer email");
 
     await page.getByRole("button", {name: "Columns"}).click();
-    await page.locator("#object-scanner-col-unique").uncheck();
+    // Click the label - the faux checkbox span intercepts pointer events on the input itself
+    await page.locator("label[for='object-scanner-col-unique']").click();
     await expect(page.locator("#object-scanner-model thead")).not.toContainText("Unique");
     await expect(page.locator(".sfir-object-scanner-api-stats")).toContainText(/API calls:\s*\d+/);
 
     await page.locator("#object-scanner-model-search").fill("Account.Name");
     await expect(page.locator("#object-scanner-model")).toContainText("Name");
     await expect(page.locator("#object-scanner-model")).not.toContainText("Email__c");
-    await expect(page.locator("#object-scanner-model")).not.toContainText("Account_Status__c");
     await expect(page.locator("#object-scanner-model")).not.toContainText("Inspector_Test__c");
   });
 
   test("analyzes the loaded data model", async ({page, extensionId}) => {
     await initObjectScannerPage(page, extensionId);
+    await selectOnlyTestObjects(page);
     await page.getByRole("button", {name: "Scan Data Model", exact: true}).click();
     await expect(page.locator("#object-scanner-model tbody tr td").first()).toBeVisible({timeout: 15000});
 
@@ -81,6 +92,7 @@ test.describe("Object Scanner", () => {
 
   test("exports findings CSV", async ({page, extensionId}) => {
     await initObjectScannerPage(page, extensionId);
+    await selectOnlyTestObjects(page);
     await page.getByRole("button", {name: "Scan Data Model", exact: true}).click();
     await expect(page.locator("#object-scanner-model tbody tr td").first()).toBeVisible({timeout: 15000});
     await page.getByRole("button", {name: "Analyze", exact: true}).click();

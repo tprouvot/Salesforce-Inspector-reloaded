@@ -202,7 +202,7 @@ You can bulk deactivate flows using the Data Import feature with the Tooling API
 
 <img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
 
-You can add custom links to the "Shortcut" tab. These links will be stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
+You can add custom links to the "Shortcut" tab. By default, links are org-specific and stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
 
 * `label`: The label of the link
 * `link`: The link to the page
@@ -215,12 +215,20 @@ The links are displayed in a table format with the following features:
 * Search functionality to filter links by label, link, or section
 * Edit and delete buttons for each link
 * Add button to create new links
+* A "Global" toggle to share a link across every org instead of keeping it specific to the current org
+
+### Global links
+
+Each link has a "Global" toggle. When it's off (the default), the link is specific to the current org and stored under `sfHost + "_orgLinks"`. When it's turned on, the link is moved into a single shared `globalLinks` localStorage variable (not prefixed by org) and becomes visible in every org's Shortcut tab and popup search.
+
+Because `globalLinks` is a single list shared by all orgs, editing or deleting a global link from any org's Options page affects what every other org sees. Toggling the flag back off moves the link back into the current org's own list.
 
 To add a new link:
 
 1. Click the "+" button at the bottom of the table
 2. Fill in the label, link, and section fields
-3. Click the check icon to save or the X icon to cancel
+3. Optionally turn on the "Global" toggle to make the link visible in every org
+4. Click the check icon to save or the X icon to cancel
 
 To edit a link:
 
@@ -247,6 +255,27 @@ To sort links:
 The links are stored in the browser's localStorage, so they will persist between sessions. The links are specific to each org, so you can have different links for different orgs.
 
 <img width="278" alt="Custom Link Search" src="https://github.com/user-attachments/assets/5ccd6778-4fb2-46d5-9b54-cd47cb03c7bb" />
+
+### Switch between Lightning apps
+
+You can add custom shortcuts to jump directly to any Lightning app — no more navigating through the App Launcher.
+
+In Lightning, each app has a URL you can find in the browser by copying the link. Use that relative path as the **Link** value when creating a shortcut.
+
+<img width="1325" height="454" alt="Custom shortcuts configuration for switching apps" src="https://github.com/user-attachments/assets/a0e8a68d-5e0e-4f6f-83ad-5c118eea1c6f" />
+
+Once configured, the shortcuts appear in the popup and can be triggered by typing their label in the search box:
+
+<img width="278" height="702" alt="Switching apps from the shortcut tab" src="https://github.com/user-attachments/assets/23c6f67f-16a1-406a-b443-2a67a2ee889e" />
+
+### Switch between Classic and Lightning
+
+Use the following relative URLs to switch between Salesforce Classic and Lightning Experience:
+
+* **Switch to Lightning**: `/user/switchToLightning`
+* **Switch to Classic**: `/user/switchToClassic`
+
+Create one shortcut for each, give them descriptive labels (e.g. `Switch to Lightning` / `Switch to Classic`), and you can toggle between the two UIs in one click from the Shortcuts tab.
 
 ## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
 

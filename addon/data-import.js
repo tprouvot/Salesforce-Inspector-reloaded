@@ -459,7 +459,7 @@ class Model {
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
     let csvContent = csvSerialize([header, ...data], separator);
-    let objectName = this.importType; 
+    let objectName = this.importType;
     let actionName = this.importAction[0].toUpperCase() + this.importAction.slice(1);
     const statuses = ["Succeeded", "Failed", "Processing", "Queued"];
     let countParts = statuses

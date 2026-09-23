@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const config = {
       startOnLoad: true,
+      securityLevel: "strict",
       theme: isDark ? "dark" : "default",
       themeVariables: {
         // Dark theme configuration

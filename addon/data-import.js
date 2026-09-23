@@ -1580,8 +1580,13 @@ function convertValueForApi(value) {
   return !Number.isNaN(n) && String(n) === s ? n : s;
 }
 
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
 function setNestedValue(obj, path, value) {
   const parts = path.split(".");
+  if (parts.some(part => UNSAFE_KEYS.has(part))) {
+    throw new Error(`Invalid field path "${path}"`);
+  }
   let cur = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const k = parts[i];

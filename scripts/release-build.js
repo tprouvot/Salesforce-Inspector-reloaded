@@ -21,7 +21,7 @@
 
   fs.copySync("addon", target, {
     filter(path) {
-      let file = path.replace("\\", "/");
+      let file = path.replace(/\\/g, "/");
       return !file.startsWith("addon/test-") // Skip the test framework
         && !file.endsWith("-test.js") // Skip individual tests
         // Skip files in .gitignore

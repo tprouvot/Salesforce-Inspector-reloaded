@@ -42,6 +42,15 @@ test.describe("Options", () => {
     await expect(page.locator(".options-tab:has-text('" + (gotoTab || selectedTab || "User Experience") + "')")).toHaveClass(/slds-is-active/);
   }
 
+  // Object Scanner rules have no stable id (shared ScannerRulesEditor component, no storageKey),
+  // so rows are located by their rule label. Scoped to #object-scanner since the Flow Scanner tab
+  // renders the same component/markup (just hidden) with overlapping button titles and text.
+  function objectScannerRuleRow(page, label) {
+    return page.locator("#object-scanner .enhanced-option-row").filter({
+      has: page.locator(".enhanced-option-title-text", {hasText: label})
+    });
+  }
+
   test.describe("User Experience", () => {
     test("Load Options Page", async ({page, extensionId}) => {
       // Set up console error listener to debug
@@ -511,6 +520,139 @@ test.describe("Options", () => {
 
       // Verify it's hidden
       await expect(page.locator("text=Searchable Shortcut")).not.toBeVisible();
+    });
+  });
+
+  test.describe("Object Scanner", () => {
+    test("Switch to Object Scanner Tab", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Object Scanner");
+
+      await expect(page.locator(".options-tab:has-text('Object Scanner')")).toHaveClass(/slds-is-active/);
+
+      // A sample of rules render with their documented default state
+      await expect(objectScannerRuleRow(page, "Naming Convention").locator("input[type='checkbox']")).toBeChecked();
+      await expect(objectScannerRuleRow(page, "Duplicate Labels").locator("input[type='checkbox']")).toBeChecked();
+      await expect(objectScannerRuleRow(page, "PII Unclassified").locator("input[type='checkbox']")).not.toBeChecked();
+
+      // Over-customization exposes its multi-threshold config fields
+      await expect(objectScannerRuleRow(page, "Over-customization").locator("input#option_customFieldsWarning")).toBeVisible();
+    });
+
+    test("Toggle Object Scanner Rule", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Object Scanner");
+
+      const row = objectScannerRuleRow(page, "PII Unclassified");
+      const checkbox = row.locator("input[type='checkbox']");
+      await expect(checkbox).not.toBeChecked();
+
+      // Click the wrapping label - the faux toggle span intercepts pointer events on the input itself
+      await row.locator("label.slds-checkbox_toggle").click();
+      await expect(checkbox).toBeChecked();
+
+      // Persisted to localStorage under the shared Object Scanner rules key
+      const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("objectScannerRules") || "[]"));
+      const piiRule = stored.find(rule => rule.name === "PiiUnclassified");
+      expect(piiRule?.checked).toBe(true);
+    });
+
+    test("Change Object Scanner Rule Severity", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Object Scanner");
+
+      const severitySelect = objectScannerRuleRow(page, "Duplicate Labels").locator("select.severity-select");
+      await expect(severitySelect).toHaveValue("warning");
+
+      await severitySelect.selectOption("error");
+      await expect(severitySelect).toHaveValue("error");
+
+      const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("objectScannerRules") || "[]"));
+      const rule = stored.find(r => r.name === "DuplicateLabels");
+      expect(rule?.severity).toBe("error");
+    });
+
+    test("Check All and Uncheck All Object Scanner Rules", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Object Scanner");
+
+      const scanner = page.locator("#object-scanner");
+      const namingCheckbox = objectScannerRuleRow(page, "Naming Convention").locator("input[type='checkbox']");
+      const piiCheckbox = objectScannerRuleRow(page, "PII Unclassified").locator("input[type='checkbox']");
+
+      await scanner.locator("button[title='Disable all Object Scanner rules']").click();
+      await expect(namingCheckbox).not.toBeChecked();
+      await expect(piiCheckbox).not.toBeChecked();
+
+      await scanner.locator("button[title='Enable all Object Scanner rules']").click();
+      await expect(namingCheckbox).toBeChecked();
+      await expect(piiCheckbox).toBeChecked();
+    });
+
+    test("Reset Object Scanner Rules to Defaults", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Object Scanner");
+
+      const scanner = page.locator("#object-scanner");
+      const namingRow = objectScannerRuleRow(page, "Naming Convention");
+      const namingCheckbox = namingRow.locator("input[type='checkbox']");
+
+      // Click the wrapping label - the faux toggle span intercepts pointer events on the input itself
+      await namingRow.locator("label.slds-checkbox_toggle").click();
+      await expect(namingCheckbox).not.toBeChecked();
+
+      await scanner.locator("button[title='Reset all rules to their default settings']").click();
+      await expect(namingCheckbox).toBeChecked();
+
+      const stored = await page.evaluate(() => localStorage.getItem("objectScannerRules"));
+      expect(stored).toBeNull();
+    });
+
+    test("Export Object Scanner Rules", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Object Scanner");
+
+      const scanner = page.locator("#object-scanner");
+      // Force a localStorage write so the export has content to verify
+      await scanner.locator("button[title='Enable all Object Scanner rules']").click();
+
+      const downloadPromise = page.waitForEvent("download");
+      await scanner.locator("button[title='Export Object Scanner rules configuration to file']").click();
+      const download = await downloadPromise;
+
+      expect(download.suggestedFilename()).toBe("objectScannerRules.json");
+
+      const fs = await import("fs");
+      const filePath = await download.path();
+      const content = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      expect(Object.keys(content)).toEqual(["objectScannerRules"]);
+
+      const rules = JSON.parse(content.objectScannerRules);
+      expect(Array.isArray(rules)).toBe(true);
+      expect(rules.some(rule => rule.name === "DuplicateLabels")).toBe(true);
+    });
+
+    test("Import Object Scanner Rules", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Object Scanner");
+
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
+      const tempFile = path.join(os.tmpdir(), "object-scanner-rules-import.json");
+      const rulesOverride = [{name: "DuplicateLabels", checked: false, severity: "error"}];
+      fs.writeFileSync(tempFile, JSON.stringify({objectScannerRules: JSON.stringify(rulesOverride)}));
+
+      try {
+        await page.locator("#object-scanner button[title='Import Object Scanner rules configuration from file']").click();
+        await page.locator("input[type='file']").setInputFiles(tempFile);
+      } finally {
+        if (fs.existsSync(tempFile)) {
+          fs.unlinkSync(tempFile);
+        }
+      }
+
+      await expect(page.locator("text=Rules imported successfully!")).toBeVisible({timeout: 5000});
+
+      const duplicateLabelsRow = objectScannerRuleRow(page, "Duplicate Labels");
+      await expect(duplicateLabelsRow.locator("input[type='checkbox']")).not.toBeChecked();
+      await expect(duplicateLabelsRow.locator("select.severity-select")).toHaveValue("error");
+
+      // Unrelated rules are untouched by this partial import
+      await expect(objectScannerRuleRow(page, "Naming Convention").locator("input[type='checkbox']")).toBeChecked();
     });
   });
 

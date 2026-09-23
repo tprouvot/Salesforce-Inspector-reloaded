@@ -28,7 +28,10 @@ export class Constants {
   static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
   static ENABLE_RECENTLY_VIEWED_RECORDS = "enableRecentlyViewedRecords";
   static AUTO_SPLIT_LARGE_IN_CLAUSES = "autoSplitLargeInClauses";
+  static QA_INTERNAL_MODE = "qaInternalMode";
   static USER_SEARCH_EXCLUSIONS_KEY = "_userSearchExclusions";
+  // Custom Shortcuts shared across every org (not prefixed by sfHost)
+  static GLOBAL_LINKS_KEY = "globalLinks";
   /** Shared definition for "Exclude users from search (org specific)" */
   static USER_SEARCH_EXCLUSIONS_CHECKBOXES = [
     {label: " Exclude Portal users", name: "portal", stateKey: "excludePortalUsersFromSearch"},
@@ -858,7 +861,7 @@ export class DataCache {
         await browser.storage.local.remove(keysToRemove);
       }
     } catch (e) {
-      console.error(`Error clearing cache for ${storageKey}:`, e);
+      console.error("Error clearing cache for %s:", storageKey, e);
     }
   }
 
@@ -1118,6 +1121,9 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
           isEverCreatable,
           newUrl,
           layoutable: layoutable || false,
+          createable: createable || false,
+          deletable: deletable || false,
+          updateable: updateable || false,
         };
         entityMap.set(name, entity);
       }

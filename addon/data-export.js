@@ -462,7 +462,7 @@ class Model {
     this.describeInfo.reloadAll();
   }
   canCopy() {
-    return this.exportedData != null;
+    return this.exportedData != null && this.exportedData.table.length > 0;
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
@@ -481,7 +481,7 @@ class Model {
   }
   downloadAsCsv(){
     const csvContent = this.exportedData.csvSerialize(this.separator);
-    const filename = `${this.exportedData.records[0].attributes.type}-${new Date().toLocaleDateString()}.csv`;
+    const filename = `${this.exportedData.records[0]?.attributes.type}-${new Date().toLocaleDateString()}.csv`;
     downloadCsvFile(csvContent, filename);
   }
   deleteRecords(e) {
@@ -1635,6 +1635,7 @@ class App extends React.Component {
     this.onRemoveAllTabs = this.onRemoveAllTabs.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
+    this.updateQueryHighlight = this.updateQueryHighlight.bind(this);
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -1867,6 +1868,23 @@ class App extends React.Component {
     model.didUpdate();
   }
 
+  // Re-highlights the query text. Called after every render since many model
+  // methods write directly to queryInput.value (history, templates, autocomplete,
+  // AI generation, tab switching, typo fixing) without going through onQueryInput.
+  updateQueryHighlight() {
+    let queryInput = this.refs.query;
+    let queryHighlightCode = this.refs.queryHighlightCode;
+    if (!queryInput || !queryHighlightCode) {
+      return;
+    }
+    let code = queryInput.value;
+    // Textareas render an extra blank line when the value ends with "\n". Mirror that here so the highlight layer does not fall one line short and drift out of alignment.
+    if (code === "" || code.endsWith("\n")) {
+      code += " ";
+    }
+    queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+  }
+
   onTabNameEdit(e, index) {
     e.stopPropagation();
     let {model} = this.props;
@@ -1972,6 +1990,12 @@ class App extends React.Component {
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
     }
+    this.updateQueryHighlight();
+    // Keep the highlight layer's scroll position in sync since it sits behind the (scrollable) real textarea.
+    queryInput.addEventListener("scroll", () => {
+      this.refs.queryHighlight.scrollTop = queryInput.scrollTop;
+      this.refs.queryHighlight.scrollLeft = queryInput.scrollLeft;
+    });
 
     function queryAutocompleteEvent() {
       model.queryAutocompleteHandler();
@@ -2036,6 +2060,7 @@ class App extends React.Component {
   }
   componentDidUpdate() {
     this.recalculateSize();
+    this.updateQueryHighlight();
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
@@ -2232,12 +2257,18 @@ class App extends React.Component {
               title: "Add new query tab"
             }, "+")
             ),
-            h("textarea", {
-              id: "query",
-              ref: "query",
-              style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-              onChange: this.onQueryInput
-            }),
+            h("div", {className: "query-editor"},
+              h("pre", {className: "query-highlight", ref: "queryHighlight", "aria-hidden": "true"},
+                h("code", {className: "language-sql", ref: "queryHighlightCode"})
+              ),
+              h("textarea", {
+                id: "query",
+                ref: "query",
+                spellCheck: false,
+                style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+                onChange: this.onQueryInput
+              })
+            ),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},
                 h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),
@@ -2270,7 +2301,7 @@ class App extends React.Component {
                       h("span", {className: "sfir-autocomplete-icon"})
                     ),
                     h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "slds-pill__action slds-p-right_x-small"},
-                      h("span", {className: "slds-pill__label"}, r.value)
+                      h("span", {className: "slds-pill__label field-suggestions-label"}, r.value)
                     )
                   )))
               ),
@@ -2327,7 +2358,7 @@ class App extends React.Component {
                   )
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
-                  ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+                  ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
               ),
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},

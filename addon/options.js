@@ -2,6 +2,7 @@
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache, applyProductionStyling} from "./utils.js";
 import {getFlowScannerRules, FLOW_SCANNER_RULES_STORAGE_KEY} from "./flow-scanner-rules.js";
+import {getObjectScannerRules, OBJECT_SCANNER_RULES_STORAGE_KEY} from "./object-scanner-rules.js";
 /* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -89,11 +90,12 @@ class OptionsTabSelector extends React.Component {
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideButtonsOption",
-              length: 8,
+              length: 9,
               checkboxes: [
                 {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
+                {label: "Object Scanner", name: "object-scanner", checked: true},
                 {label: "Options", name: "options", checked: true},
                 {label: "Generate Access Token", name: "generate-token", checked: true},
                 {label: "Copy User Id", name: "copy-userId", checked: true},
@@ -159,6 +161,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}},
           {option: Option, props: {type: "toggle", title: "Enable API Stats Debug Mode", key: Constants.API_DEBUG_STATISTICS_MODE, default: false, tooltip: "When enabled, tracks API call statistics (REST and SOAP) to help monitor API usage. Statistics can be viewed on the API Debug Statistics page."}},
           {option: Option, props: {type: "toggle", title: "Preload SObjects before popup opens", key: Constants.PRELOAD_SOBJECTS_BEFORE_POPUP, default: true, tooltip: "When enabled, loads the SObjects list from cache before the popup is opened for faster context detection. Disable to reduce initial load time and only load when the Objects tab is accessed."}},
+          {option: Option, props: {type: "toggle", title: "QA Internal", key: Constants.QA_INTERNAL_MODE, default: false, tooltip: "When enabled, prefixes the API client id sent with internal QA."}},
         ]
       },
       {
@@ -355,7 +358,68 @@ class OptionsTabSelector extends React.Component {
               ]}
           },
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_flowScannerAgentForcePrompt", default: Constants.PromptTemplateFlow, tooltip: "Developer name of the prompt template to use for Flow Scanner"}},
-          {option: FlowScannerRules, props: {model: this.model}}
+          {option: ScannerRulesEditor,
+            props: {
+              model: this.model,
+              rulesStorageKey: FLOW_SCANNER_RULES_STORAGE_KEY,
+              refProp: "flowScannerRulesRef",
+              ruleSetLabel: "Flow Scanner",
+              defaultSeverity: "info",
+              keyPrefix: "flowScannerRule_",
+              emptyMessage: "No Flow Scanner rules available. Please ensure the Flow Scanner core library is loaded.",
+              fetchRules: () => typeof lightningflowscanner !== "undefined" ? getFlowScannerRules(lightningflowscanner) : []
+            }}
+        ]
+      },
+      {
+        id: "object-scanner",
+        tabTitle: "Object Scanner",
+        title: "Enabled Rules",
+        description: "Configure which Object Scanner rules are enabled and their settings. Only enabled rules will be used when scanning objects.",
+        descriptionTooltip: "Object Scanner rules check naming, standard-object replication, over-customization, picklist hygiene, and Salesforce data classification on customizable objects.",
+        actionButtons: [
+          {
+            type: "brand",
+            label: "Check All",
+            title: "Enable all Object Scanner rules",
+            method: this.handleCheckAll.bind(this)
+          },
+          {
+            type: "neutral",
+            label: "Uncheck All",
+            title: "Disable all Object Scanner rules",
+            method: this.handleUncheckAll.bind(this)
+          },
+          {
+            type: "neutral",
+            label: "Reset to Defaults",
+            title: "Reset all rules to their default settings",
+            method: this.handleResetToDefaults.bind(this)
+          },
+          {
+            type: "icon",
+            icon: "download",
+            title: "Export Object Scanner rules configuration to file",
+            method: this.handleExportRules.bind(this)
+          },
+          {
+            type: "icon",
+            icon: "upload",
+            title: "Import Object Scanner rules configuration from file",
+            method: this.handleImportRules.bind(this)
+          }
+        ],
+        content: [
+          {option: ScannerRulesEditor,
+            props: {
+              model: this.model,
+              rulesStorageKey: OBJECT_SCANNER_RULES_STORAGE_KEY,
+              refProp: "objectScannerRulesRef",
+              ruleSetLabel: "Object Scanner",
+              defaultSeverity: "warning",
+              keyPrefix: "objectScannerRule_",
+              fetchRules: () => getObjectScannerRules()
+            }}
         ]
       },
       {
@@ -408,39 +472,50 @@ class OptionsTabSelector extends React.Component {
     this.onTabSelect = this.onTabSelect.bind(this);
   }
 
+  activeRulesRef() {
+    if (this.state.selectedTabId === "object-scanner") {
+      return this.model.objectScannerRulesRef;
+    }
+    return this.model.flowScannerRulesRef;
+  }
+
+  activeRulesStorageKey() {
+    if (this.state.selectedTabId === "object-scanner") {
+      return OBJECT_SCANNER_RULES_STORAGE_KEY;
+    }
+    return FLOW_SCANNER_RULES_STORAGE_KEY;
+  }
+
   handleCheckAll() {
-    // Implementation to check all Flow Scanner rules
-    if (this.model.flowScannerRulesRef) {
-      this.model.flowScannerRulesRef.checkAllRules();
+    const ref = this.activeRulesRef();
+    if (ref) {
+      ref.checkAllRules();
     }
   }
 
   handleUncheckAll() {
-    // Implementation to uncheck all Flow Scanner rules
-    if (this.model.flowScannerRulesRef) {
-      this.model.flowScannerRulesRef.uncheckAllRules();
+    const ref = this.activeRulesRef();
+    if (ref) {
+      ref.uncheckAllRules();
     }
   }
 
   handleResetToDefaults() {
-    // Implementation to reset Flow Scanner rules to defaults
-    if (this.model.flowScannerRulesRef) {
-      this.model.flowScannerRulesRef.resetToDefaults();
+    const ref = this.activeRulesRef();
+    if (ref) {
+      ref.resetToDefaults();
     }
   }
 
   handleExportRules() {
-    // Export only Flow Scanner related localStorage keys
-    const flowScannerFilters = [FLOW_SCANNER_RULES_STORAGE_KEY];
-    // Get reference to App component to call its exportOptions method
     if (this.appRef) {
-      this.appRef.exportOptions(flowScannerFilters);
+      this.appRef.exportOptions([this.activeRulesStorageKey()]);
     }
   }
 
   handleImportRules() {
     if (this.appRef) {
-      this.appRef.pendingImportFilters = [FLOW_SCANNER_RULES_STORAGE_KEY];
+      this.appRef.pendingImportFilters = [this.activeRulesStorageKey()];
       this.appRef.refs.fileInput.click();
     }
   }
@@ -459,7 +534,7 @@ class OptionsTabSelector extends React.Component {
 
   render() {
     return h("div", {className: "slds-tabs_default"},
-      h("ul", {className: "sfir-options-tab-container slds-tabs_default__nav", role: "tablist"},
+      h("ul", {className: "sfir-options-tab-container slds-tabs_default__nav slds-scrollable_x", role: "tablist"},
         this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.tabTitle || tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
       ),
       this.tabs.map((tab) => h(OptionsContainer, {
@@ -481,7 +556,7 @@ class OptionsTabSelector extends React.Component {
 class OptionsTab extends React.Component {
 
   getClass() {
-    return "options-tab slds-text-align_center slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
+    return "options-tab slds-text-align_center slds-tabs_default__item slds-shrink-none" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
   }
 
   render() {
@@ -687,6 +762,7 @@ class Option extends React.Component {
     this.onChange = this.onChange.bind(this);
     this.onChangeToggle = this.onChangeToggle.bind(this);
     this.onChangeConfig = this.onChangeConfig.bind(this);
+    this.onChangeConfigField = this.onChangeConfigField.bind(this);
     this.toggleDescriptionExpanded = this.toggleDescriptionExpanded.bind(this);
     this.checkForTruncation = this.checkForTruncation.bind(this);
     this.descriptionRef = {current: null};
@@ -710,6 +786,7 @@ class Option extends React.Component {
     // Configurable rule properties
     this.isConfigurable = props.isConfigurable;
     this.configType = props.configType;
+    this.configFields = props.configFields || null;
     this.configStorageKey = props.configStorageKey;
     this.onConfigChange = props.onConfigChange;
     this.onToggleChange = props.onToggleChange;
@@ -732,6 +809,7 @@ class Option extends React.Component {
 
     // Initialize config value if configurable (value comes from props)
     let configValue = props.configValue || null;
+    const config = props.config && typeof props.config === "object" ? {...props.config} : {};
 
     this.state = {
       [this.key || "checked"]: isFlowScannerRule ? value
@@ -739,6 +817,7 @@ class Option extends React.Component {
       : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
       : value,
       configValue,
+      config,
       descriptionExpanded: false,
       showExpandButton: false
     };
@@ -765,6 +844,14 @@ class Option extends React.Component {
     this.setState({configValue});
     if (this.onConfigChange) {
       this.onConfigChange(this.key, configValue);
+    }
+  }
+
+  onChangeConfigField(fieldKey, e) {
+    const config = {...this.state.config, [fieldKey]: e.target.value};
+    this.setState({config});
+    if (this.onConfigChange) {
+      this.onConfigChange(this.key, config);
     }
   }
 
@@ -855,6 +942,33 @@ class Option extends React.Component {
   }
 
   renderConfigInput() {
+    if (this.configFields && this.configFields.length) {
+      return h("div", {className: "slds-grid slds-gutters_xx-small slds-wrap"},
+        this.configFields.map(field => {
+          const fieldId = `${this.key || "option"}_${field.key}`;
+          const value = this.state.config[field.key] != null && this.state.config[field.key] !== ""
+            ? this.state.config[field.key]
+            : (field.defaultValue != null ? field.defaultValue : "");
+          return h("div", {key: field.key, className: "slds-col slds-grow-none sfir-option-threshold-field"},
+            h("div", {className: "slds-form-element"},
+              h("label", {className: "slds-form-element__label", htmlFor: fieldId}, field.label),
+              h("div", {className: "slds-form-element__control"},
+                h("input", {
+                  type: "number",
+                  id: fieldId,
+                  min: "1",
+                  className: "slds-input",
+                  value,
+                  onChange: (e) => this.onChangeConfigField(field.key, e),
+                  title: field.label
+                })
+              )
+            )
+          );
+        })
+      );
+    }
+
     if (!this.isConfigurable || !this.configType) {
       return null;
     }
@@ -883,19 +997,14 @@ class Option extends React.Component {
     const isEnhanced = this.enhancedTitle || this.badge || this.severity || this.description;
 
     if (isEnhanced) {
-      // Enhanced layout
-      return h("div", {className: "enhanced-option-row"},
-        // Main content area
+      return h("div", {className: "enhanced-option-row" + (this.configFields && this.configFields.length ? " sfir-option-row-with-thresholds" : "")},
         h("div", {className: "enhanced-option-content"},
-          // Enhanced title with badge
           h("div", {className: "enhanced-option-title"},
             h("h4", {className: "enhanced-option-title-text"}, this.enhancedTitle || this.title),
             this.badge && h("span", {
               className: `${this.badge.type || "beta"}-badge`
             }, this.badge.label)
           ),
-
-          // Description on the same line with expand functionality
           this.description && h("div", {className: "enhanced-option-description-container"},
             h("span", {
               className: `enhanced-option-description ${this.state.descriptionExpanded ? "expanded" : ""}`,
@@ -906,7 +1015,6 @@ class Option extends React.Component {
                 }
               }
             }, this.description),
-            // Expand icon (only show when text is truncated)
             this.state.showExpandButton && h("button", {
               className: "enhanced-option-expand-btn",
               onClick: this.toggleDescriptionExpanded,
@@ -918,20 +1026,15 @@ class Option extends React.Component {
             )
           )
         ),
-
-        // Controls on the right
         h("div", {className: "enhanced-option-controls"},
-          // Configuration input (for configurable rules)
-          this.renderConfigInput(),
-
-          // Severity selector
+          !(this.configFields && this.configFields.length) && this.renderConfigInput(),
           this.severity && h("select", {
             className: `severity-select severity-${this.severity}`,
             value: this.severity,
             onChange: (e) => {
               const newSeverity = e.target.value;
               this.severity = newSeverity;
-              this.setState({}); // Force re-render
+              this.setState({});
               if (this.props.onSeverityChange) {
                 this.props.onSeverityChange(this.key, newSeverity);
               }
@@ -941,8 +1044,6 @@ class Option extends React.Component {
           h("option", {value: "warning"}, "Warning"),
           h("option", {value: "error"}, "Error")
           ),
-
-          // Toggle control for all enhanced options (positioned at the end)
           isToggle && h("div", {className: "slds-form-element__control"},
             h("label", {className: "slds-checkbox_toggle slds-grid"},
               h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key || "checked"], onChange: this.onChangeToggle}),
@@ -953,10 +1054,11 @@ class Option extends React.Component {
               )
             )
           ),
-
-          // Input controls for non-toggle and non-button types
           !isToggle && !isButton && this.renderInputControl(id, true)
-        )
+        ),
+        this.configFields && this.configFields.length
+          ? h("div", {className: "slds-col slds-size_1-of-1 slds-p-top_x-small"}, this.renderConfigInput())
+          : null
       );
     } else {
       // Standard layout with responsive grid
@@ -1488,16 +1590,33 @@ class CustomShortcuts extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onSort = this.onSort.bind(this);
     this.onSearch = this.onSearch.bind(this);
+    this.onToggleGlobal = this.onToggleGlobal.bind(this);
     this.state = {
-      shortcuts: JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]"),
+      shortcuts: this.loadShortcuts(),
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: "", isExternal: false},
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false},
       sortConfig: {
         key: null,
         direction: "asc"
       },
       searchTerm: ""
     };
+  }
+
+  loadShortcuts() {
+    const orgShortcuts = JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]")
+      .map((shortcut) => ({...shortcut, isGlobal: false}));
+    const globalShortcuts = JSON.parse(localStorage.getItem(Constants.GLOBAL_LINKS_KEY) || "[]")
+      .map((shortcut) => ({...shortcut, isGlobal: true}));
+    return [...orgShortcuts, ...globalShortcuts];
+  }
+
+  persistShortcuts(shortcuts) {
+    const toStoredShortcut = ({label, link, section, isExternal}) => ({label, link, section, isExternal});
+    const orgShortcuts = shortcuts.filter((shortcut) => !shortcut.isGlobal).map(toStoredShortcut);
+    const globalShortcuts = shortcuts.filter((shortcut) => shortcut.isGlobal).map(toStoredShortcut);
+    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(orgShortcuts));
+    localStorage.setItem(Constants.GLOBAL_LINKS_KEY, JSON.stringify(globalShortcuts));
   }
 
   onSearch(e) {
@@ -1580,7 +1699,7 @@ class CustomShortcuts extends React.Component {
   onAddShortcut() {
     this.setState({
       editingIndex: this.state.shortcuts.length,
-      newShortcut: {label: "", link: "", section: "", isExternal: false}
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
     });
   }
 
@@ -1595,7 +1714,7 @@ class CustomShortcuts extends React.Component {
     const newShortcuts = [...this.state.shortcuts];
     newShortcuts.splice(index, 1);
     this.setState({shortcuts: newShortcuts});
-    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+    this.persistShortcuts(newShortcuts);
   }
 
   onSaveShortcut() {
@@ -1614,16 +1733,29 @@ class CustomShortcuts extends React.Component {
     this.setState({
       shortcuts: newShortcuts,
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: "", isExternal: false}
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
     });
 
-    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+    this.persistShortcuts(newShortcuts);
   }
 
   onCancelEdit() {
     this.setState({
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: ""}
+      newShortcut: {label: "", link: "", section: "", isGlobal: false}
+    });
+  }
+
+  onToggleGlobal(index) {
+    const newShortcuts = [...this.state.shortcuts];
+    newShortcuts[index] = {...newShortcuts[index], isGlobal: !newShortcuts[index].isGlobal};
+    this.setState({shortcuts: newShortcuts});
+    this.persistShortcuts(newShortcuts);
+  }
+
+  onToggleNewShortcutGlobal(checked) {
+    this.setState({
+      newShortcut: {...this.state.newShortcut, isGlobal: checked}
     });
   }
 
@@ -1699,6 +1831,9 @@ class CustomShortcuts extends React.Component {
               h("div", {className: "slds-truncate", title: "External"}, "External")
             ),
             h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Global"}, "Global")
+            ),
+            h("th", {scope: "col"},
               h("div", {className: "slds-truncate", title: "Actions"}, "Actions")
             )
           )
@@ -1747,6 +1882,22 @@ class CustomShortcuts extends React.Component {
                   )
                 )
               ),
+              h("td", {key: "global", "data-label": "Global"},
+                h("div", {className: "slds-truncate"},
+                  h("label", {className: "slds-checkbox_toggle slds-grid", title: newShortcut.isGlobal ? "Visible in every org" : "Visible only in this org"},
+                    h("input", {
+                      type: "checkbox",
+                      checked: !!newShortcut.isGlobal,
+                      onChange: (e) => this.onToggleNewShortcutGlobal(e.target.checked)
+                    }),
+                    h("span", {className: "slds-checkbox_faux_container center-label"},
+                      h("span", {className: "slds-checkbox_faux"}),
+                      h("span", {className: "slds-checkbox_on"}, "Global"),
+                      h("span", {className: "slds-checkbox_off"}, "Org")
+                    )
+                  )
+                )
+              ),
               h("td", {key: "actions", "data-label": "Actions"},
                 h("div", {className: "slds-truncate"},
                   h("button", {
@@ -1779,6 +1930,22 @@ class CustomShortcuts extends React.Component {
                 h("div", {className: "slds-truncate"},
                   shortcut.isExternal && h("svg", {className: "slds-button__icon"},
                     h("use", {xlinkHref: "symbols.svg#check"})
+                  )
+                )
+              ),
+              h("td", {key: "global", "data-label": "Global"},
+                h("div", {className: "slds-truncate"},
+                  h("label", {className: "slds-checkbox_toggle slds-grid", title: shortcut.isGlobal ? "Visible in every org - toggle to make it specific to this org" : "Visible only in this org - toggle to make it global"},
+                    h("input", {
+                      type: "checkbox",
+                      checked: !!shortcut.isGlobal,
+                      onChange: () => this.onToggleGlobal(index)
+                    }),
+                    h("span", {className: "slds-checkbox_faux_container center-label"},
+                      h("span", {className: "slds-checkbox_faux"}),
+                      h("span", {className: "slds-checkbox_on"}, "Global"),
+                      h("span", {className: "slds-checkbox_off"}, "Org")
+                    )
                   )
                 )
               ),
@@ -1820,7 +1987,9 @@ class CustomShortcuts extends React.Component {
   }
 }
 
-class FlowScannerRules extends React.Component {
+// Shared by the Flow Scanner and Object Scanner "Enabled Rules" tabs (configured entirely via props,
+// since both scanners' rule editors only differ in storage key, rule source, and label/severity defaults).
+class ScannerRulesEditor extends React.Component {
 
   constructor(props) {
     super(props);
@@ -1835,9 +2004,9 @@ class FlowScannerRules extends React.Component {
 
   componentDidMount() {
     this.loadRules();
-    // Set up reference for parent component interaction
+    // Set up reference for parent component interaction (see OptionsTabSelector.activeRulesRef)
     if (this.props.model) {
-      this.props.model.flowScannerRulesRef = this;
+      this.props.model[this.props.refProp] = this;
     }
   }
 
@@ -1848,7 +2017,7 @@ class FlowScannerRules extends React.Component {
       rules: updatedRules,
       resetCounter: prevState.resetCounter + 1
     }));
-    localStorage.setItem(FLOW_SCANNER_RULES_STORAGE_KEY, JSON.stringify(updatedRules));
+    localStorage.setItem(this.props.rulesStorageKey, JSON.stringify(updatedRules));
   }
 
   checkAllRules() {
@@ -1861,33 +2030,28 @@ class FlowScannerRules extends React.Component {
 
   resetToDefaults() {
     // Remove stored rules to force reload with defaults
-    localStorage.removeItem(FLOW_SCANNER_RULES_STORAGE_KEY);
-
-    // Increment reset counter to force component recreation
-    this.setState(prevState => ({
-      resetCounter: prevState.resetCounter + 1
-    }));
-
-    this.loadRules();
+    localStorage.removeItem(this.props.rulesStorageKey);
+    this.loadRules(true);
   }
 
-  async loadRules() {
-    try {
-      // Try to load the actual flow-scanner-core if available
-      let flowScannerCore = null;
-
-      if (typeof lightningflowscanner !== "undefined") {
-        flowScannerCore = lightningflowscanner;
-        const rules = getFlowScannerRules(flowScannerCore);
-        this.setState({rules, loading: false});
-      } else {
-        // No flow scanner core available
+  // bumpKey forces each rule's <Option> to remount with fresh values (Check All /
+  // Uncheck All update `rules` and `resetCounter` together already; this keeps
+  // resetToDefaults()/an external rules reload in sync the same way. Without this,
+  // the resetCounter bump and the rules update would land in separate renders, so
+  // React would reuse the already-remounted <Option> instances for the second
+  // render and their internally cached checked/severity would stay stale.)
+  loadRules(bumpKey = false) {
+    Promise.resolve()
+      .then(() => this.props.fetchRules())
+      .then(rules => this.setState(prevState => ({
+        rules: rules || [],
+        loading: false,
+        resetCounter: bumpKey ? prevState.resetCounter + 1 : prevState.resetCounter
+      })))
+      .catch(error => {
+        console.error(`Error loading ${this.props.ruleSetLabel} rules:`, error);
         this.setState({rules: [], loading: false});
-      }
-    } catch (error) {
-      console.error("Error loading Flow Scanner rules:", error);
-      this.setState({rules: [], loading: false});
-    }
+      });
   }
 
   onRuleChange(ruleName, field, value) {
@@ -1899,6 +2063,9 @@ class FlowScannerRules extends React.Component {
           } else if (field === "severity") {
             return {...rule, severity: value};
           } else if (field === "config") {
+            if (value && typeof value === "object") {
+              return {...rule, config: {...rule.config, ...value}};
+            }
             // Update the main config object for the scanner, and configValue for the UI
             const newConfig = rule.configType ? {[rule.configType]: value} : {};
             return {...rule, config: newConfig, configValue: value};
@@ -1908,7 +2075,7 @@ class FlowScannerRules extends React.Component {
       });
 
       // Save to localStorage
-      localStorage.setItem(FLOW_SCANNER_RULES_STORAGE_KEY, JSON.stringify(updatedRules));
+      localStorage.setItem(this.props.rulesStorageKey, JSON.stringify(updatedRules));
 
       return {rules: updatedRules};
     });
@@ -1916,6 +2083,7 @@ class FlowScannerRules extends React.Component {
 
   render() {
     const {rules, loading} = this.state;
+    const {ruleSetLabel, defaultSeverity, keyPrefix, emptyMessage} = this.props;
 
     if (loading) {
       return h("div", {className: "slds-text-align_center slds-p-vertical_large"},
@@ -1923,74 +2091,61 @@ class FlowScannerRules extends React.Component {
           h("div", {className: "slds-spinner__dot-a"}),
           h("div", {className: "slds-spinner__dot-b"})
         ),
-        h("p", {className: "slds-m-top_small"}, "Loading Flow Scanner rules...")
+        h("p", {className: "slds-m-top_small"}, `Loading ${ruleSetLabel} rules...`)
       );
     }
 
     if (rules.length === 0) {
       return h("div", {className: "slds-text-align_center slds-p-vertical_large"},
-        h("p", {}, "No Flow Scanner rules available. Please ensure the Flow Scanner core library is loaded.")
+        h("p", {}, emptyMessage || `No ${ruleSetLabel} rules available.`)
       );
     }
 
     const sortedRules = [...rules].sort((a, b) => a.label.localeCompare(b.label));
 
     return h("div", {className: "flow-scanner-rules-container"},
-      sortedRules
-        .map(rule => {
+      sortedRules.map(rule => {
         // Determine badge
-          let badge = null;
-          if (rule.isBeta) {
-            badge = {label: "Beta", type: "beta"};
+        const badge = rule.isBeta ? {label: "Beta", type: "beta"} : null;
+
+        // Resolve config value from rule object (skip for multi-field rules, which render their own inputs)
+        let resolvedConfigValue = null;
+        if (rule.isConfigurable && !(rule.configFields && rule.configFields.length)) {
+          if (rule.configValue !== undefined && rule.configValue !== null) {
+            resolvedConfigValue = rule.configValue;
+          } else if (rule.config && rule.configType && rule.config[rule.configType] !== undefined) {
+            resolvedConfigValue = rule.config[rule.configType];
+          } else {
+            resolvedConfigValue = rule.defaultValue;
           }
+        }
 
-          // Resolve config value from rule object
-          let resolvedConfigValue = null;
-          if (rule.isConfigurable) {
-            if (rule.configValue !== undefined && rule.configValue !== null) {
-              resolvedConfigValue = rule.configValue;
-            } else if (rule.defaultValue !== undefined && rule.defaultValue !== null) {
-              resolvedConfigValue = rule.defaultValue;
-            } else if (rule.config !== undefined && rule.config !== null) {
-              // Extract the specific config value based on configType
-              if (rule.configType === "expression" && rule.config.expression !== undefined) {
-                resolvedConfigValue = rule.config.expression;
-              } else if (rule.configType === "threshold" && rule.config.threshold !== undefined) {
-                resolvedConfigValue = rule.config.threshold;
-              } else {
-                // Fallback to the entire config object (shouldn't happen with well-formed rules)
-                resolvedConfigValue = rule.config;
-              }
-            }
+        return h(Option, {
+          type: "toggle",
+          enhancedTitle: rule.label,
+          badge,
+          severity: (rule.severity === "note" ? "info" : rule.severity) || defaultSeverity,
+          description: rule.description,
+          // No storageKey - managed by ScannerRulesEditor
+          key: `${keyPrefix}${rule.name}_${this.state.resetCounter}`,
+          checked: rule.checked !== undefined ? rule.checked : true,
+          // Rule configuration properties
+          isConfigurable: rule.isConfigurable,
+          configType: rule.configType,
+          configFields: rule.configFields,
+          config: rule.config,
+          configValue: resolvedConfigValue,
+          onToggleChange: (checked) => {
+            this.onRuleChange(rule.name, "checked", checked);
+          },
+          onSeverityChange: (key, newSeverity) => {
+            this.onRuleChange(rule.name, "severity", newSeverity);
+          },
+          onConfigChange: (key, newConfig) => {
+            this.onRuleChange(rule.name, "config", newConfig);
           }
-
-          // Create enhanced option props
-          const optionProps = {
-            type: "toggle",
-            enhancedTitle: rule.label,
-            badge,
-            severity: (rule.severity === "note" ? "info" : rule.severity) || "info",
-            description: rule.description,
-            // No storageKey - managed by FlowScannerRules component
-            key: `flowScannerRule_${rule.name}_${this.state.resetCounter}`,
-            checked: rule.checked !== undefined ? rule.checked : true,
-            // Rule configuration properties
-            isConfigurable: rule.isConfigurable,
-            configType: rule.configType,
-            configValue: resolvedConfigValue,
-            onToggleChange: (checked) => {
-              this.onRuleChange(rule.name, "checked", checked);
-            },
-            onSeverityChange: (key, newSeverity) => {
-              this.onRuleChange(rule.name, "severity", newSeverity);
-            },
-            onConfigChange: (key, newConfig) => {
-              this.onRuleChange(rule.name, "config", newConfig);
-            }
-          };
-
-          return h(Option, optionProps);
-        })
+        });
+      })
     );
   }
 }
@@ -2022,7 +2177,7 @@ class App extends React.Component {
           localStorageData[key] = localStorage.getItem(key);
         }
       }
-      filename = `${FLOW_SCANNER_RULES_STORAGE_KEY}.json`;
+      filename = `${filterKeys[0]}.json`;
     } else {
       // Export all localStorage
       localStorageData = {...localStorage};
@@ -2051,6 +2206,11 @@ class App extends React.Component {
     if (this.pendingImportFilters) {
       filterKeys = this.pendingImportFilters;
       this.pendingImportFilters = null; // Clear the flag
+    } else {
+      // This method also runs as the file input's onChange handler, in which
+      // case filterKeys is actually the DOM change event, not a real filter
+      // array. Only treat it as filters when it truly is one.
+      filterKeys = Array.isArray(filterKeys) ? filterKeys : null;
     }
 
     const file = fileInput.files[0];
@@ -2074,20 +2234,19 @@ class App extends React.Component {
 
         // Force refresh of Flow Scanner rules if they exist
         const {model} = this.props;
-        if (filterKeys && model && model.flowScannerRulesRef) {
-          // Force component re-creation by incrementing reset counter
-          model.flowScannerRulesRef.setState(prevState => ({
-            resetCounter: prevState.resetCounter + 1
-          }));
-          // Reload rules from localStorage (which now has the imported data)
-          model.flowScannerRulesRef.loadRules();
-          // Force a re-render of the parent model
-          model.didUpdate();
+        if (filterKeys && model) {
+          const rulesRef = filterKeys.includes(OBJECT_SCANNER_RULES_STORAGE_KEY)
+            ? model.objectScannerRulesRef
+            : model.flowScannerRulesRef;
+          if (rulesRef) {
+            rulesRef.loadRules(true);
+            model.didUpdate();
+          }
         }
 
         this.setState({
           showToast: true,
-          toastMessage: Array.isArray(filterKeys) ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
+          toastMessage: Array.isArray(filterKeys) ? "Rules imported successfully!" : "Options Imported Successfully!",
           toastVariant: "success",
           toastTitle: "Success"
         });

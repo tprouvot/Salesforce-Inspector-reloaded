@@ -23,6 +23,9 @@ const SOQL_QUERY_URL_SAFE_LENGTH = 10000;
 const REST_CACHE_BUSTER_LENGTH = 32;
 const SOQL_QUERY_METHODS = new Set(["query", "queryAll", "tooling/query"]);
 const MAX_HISTORY_QUERY_LENGTH = 8000;
+// Ordering, limits, grouping and row locks only hold within one batch, so queries using them cannot be merged back from batches.
+const SOQL_UNSAFE_CLAUSE = /(?:ORDER|GROUP)\s+BY\b|(?:LIMIT|OFFSET)\s+\d|FOR\s+(?:UPDATE|VIEW|REFERENCE)\b|HAVING\b/iy;
+const SOQL_AGGREGATE_FUNCTIONS = new Set(["COUNT", "COUNT_DISTINCT", "SUM", "AVG", "MIN", "MAX"]);
 
 function isSoqlIdentifierCharacter(character) {
   return character != null && /[A-Za-z0-9_]/.test(character);
@@ -91,8 +94,12 @@ function isSoqlKeywordAt(value, index, keyword) {
     && !isSoqlIdentifierCharacter(value[index + keyword.length]);
 }
 
-function findSingleSoqlInClause(value) {
-  let clause = null;
+function isSoqlSubquery(value, openingIndex) {
+  return isSoqlKeywordAt(value, skipWhitespace(value, openingIndex + 1), "SELECT");
+}
+
+function findSoqlInLists(value) {
+  let lists = [];
   for (let index = 0; index < value.length; index++) {
     if (value[index] == "'") {
       index = skipSoqlString(value, index);
@@ -108,38 +115,137 @@ function findSingleSoqlInClause(value) {
     }
 
     let openingIndex = skipWhitespace(value, index + 2);
-    if (value[openingIndex] != "(") {
+    if (value[openingIndex] != "(" || isSoqlSubquery(value, openingIndex)) {
       continue;
     }
 
-    // Splitting NOT IN changes the meaning of the query, so leave it on the
-    // existing export path.
-    if (previousSoqlKeyword(value, index) == "NOT") {
-      return null;
-    }
-
     let closingIndex = findClosingSoqlParenthesis(value, openingIndex);
-    if (closingIndex == -1 || clause != null) {
+    if (closingIndex == -1) {
       return null;
     }
-    clause = {openingIndex, closingIndex};
+    lists.push({openingIndex, closingIndex});
     index = closingIndex;
   }
-  return clause;
+  return lists;
 }
 
-function parseQuotedSoqlInValues(value, openingIndex, closingIndex) {
+// Returns the index after the WHERE keyword of the query in [start, end), -1 if
+// it has no WHERE, or null if batches of it could not be merged back.
+function findSoqlWhereStart(value, start, end) {
+  let whereStart = -1;
+  for (let index = start; index < end; index++) {
+    if (value[index] == "'") {
+      index = skipSoqlString(value, index);
+      if (index == -1) {
+        return null;
+      }
+      index--;
+    } else if (value[index] == "(") {
+      if (SOQL_AGGREGATE_FUNCTIONS.has(previousSoqlKeyword(value, index))) {
+        return null;
+      }
+      index = findClosingSoqlParenthesis(value, index);
+      if (index == -1) {
+        return null;
+      }
+    } else if (!isSoqlIdentifierCharacter(value[index - 1])) {
+      SOQL_UNSAFE_CLAUSE.lastIndex = index;
+      if (SOQL_UNSAFE_CLAUSE.test(value)) {
+        return null;
+      }
+      if (whereStart == -1 && isSoqlKeywordAt(value, index, "WHERE")) {
+        whereStart = index + 5;
+      }
+    }
+  }
+  return whereStart;
+}
+
+// Whether the condition in [start, end) has an OR at its own level (not inside nested parentheses).
+function hasSoqlOr(value, start, end) {
+  for (let index = start; index < end; index++) {
+    if (value[index] == "'") {
+      index = skipSoqlString(value, index);
+      if (index == -1) {
+        return true;
+      }
+      index--;
+    } else if (value[index] == "(") {
+      index = findClosingSoqlParenthesis(value, index);
+      if (index == -1) {
+        return true;
+      }
+    } else if (isSoqlKeywordAt(value, index, "OR")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Collects the IN (...) lists of a condition that can be split into batches whose
+// results add up to the original: those that are not negated, including the ones
+// inside IN (SELECT ...) subqueries. NOT IN, NOT (...) and everything below them
+// stay untouched, since a smaller list would return more records there.
+// Lists at or below a level that has an OR are skipped too: the other side of the
+// OR would be fetched again by every batch.
+function collectSplittableSoqlInLists(value, start, end, lists, isUnderOr = false) {
+  isUnderOr = isUnderOr || hasSoqlOr(value, start, end);
+  let isNegated = false;
+  for (let index = start; index < end; index++) {
+    if (value[index] == "'") {
+      index = skipSoqlString(value, index);
+      if (index == -1) {
+        return false;
+      }
+      index--;
+    } else if (value[index] == "(") {
+      let closingIndex = findClosingSoqlParenthesis(value, index);
+      if (closingIndex == -1) {
+        return false;
+      }
+      if (!isNegated) {
+        let isInOperand = previousSoqlKeyword(value, index) == "IN";
+        if (isInOperand && !isSoqlSubquery(value, index)) {
+          let values = parseSoqlInValues(value, index, closingIndex);
+          if (values != null && !isUnderOr) {
+            lists.push({openingIndex: index, closingIndex, values});
+          }
+        } else {
+          let innerStart = isInOperand ? findSoqlWhereStart(value, index + 1, closingIndex) : index + 1;
+          if (innerStart != null && innerStart != -1
+            && !collectSplittableSoqlInLists(value, innerStart, closingIndex, lists, isUnderOr)) {
+            return false;
+          }
+        }
+      }
+      index = closingIndex;
+    } else if (isSoqlKeywordAt(value, index, "NOT")) {
+      isNegated = true;
+    } else if (isSoqlKeywordAt(value, index, "AND") || isSoqlKeywordAt(value, index, "OR")) {
+      isNegated = false;
+    }
+  }
+  return true;
+}
+
+function parseSoqlInValues(value, openingIndex, closingIndex) {
   let values = [];
   let index = openingIndex + 1;
   while (index < closingIndex) {
     index = skipWhitespace(value, index);
-    if (value[index] != "'") {
-      return null;
-    }
-
-    let valueEnd = skipSoqlString(value, index);
-    if (valueEnd == -1 || valueEnd > closingIndex) {
-      return null;
+    let valueEnd = index;
+    if (value[index] == "'") {
+      valueEnd = skipSoqlString(value, index);
+      if (valueEnd == -1 || valueEnd > closingIndex) {
+        return null;
+      }
+    } else {
+      while (valueEnd < closingIndex && !/[\s,()']/.test(value[valueEnd])) {
+        valueEnd++;
+      }
+      if (valueEnd == index) {
+        return null;
+      }
     }
     values.push(value.slice(index, valueEnd));
 
@@ -170,52 +276,55 @@ function splitLargeSoqlInClause(query, queryMethod, sfHost) {
     return null;
   }
 
-  let clause = findSingleSoqlInClause(query);
+  let whereStart = findSoqlWhereStart(query, 0, query.length);
+  let lists = [];
+  if (whereStart == null || whereStart == -1
+    || !collectSplittableSoqlInLists(query, whereStart, query.length, lists)) {
+    return null;
+  }
+
+  // Only the largest list is split, every other list stays as written.
+  let valueCost = value => encodeURIComponent(value).length + 3; // value + encoded comma
+  let clause = null;
+  let clauseCost = 0;
+  for (let list of lists) {
+    // IN semantics ignore duplicate literals. Removing exact duplicates keeps
+    // the batches smaller and disjoint.
+    let values = Array.from(new Set(list.values));
+    let cost = values.reduce((sum, value) => sum + valueCost(value), 0);
+    if (values.length > 1 && cost > clauseCost) {
+      clause = {...list, values};
+      clauseCost = cost;
+    }
+  }
   if (clause == null) {
     return null;
   }
 
-  let values = parseQuotedSoqlInValues(query, clause.openingIndex, clause.closingIndex);
-  if (values == null || values.length < 2) {
-    return null;
-  }
-
-  // IN semantics ignore duplicate literals. Removing exact duplicates prevents
-  // a record from being returned twice when a duplicate crosses a batch edge.
-  let seenValues = new Set();
-  values = values.filter(value => {
-    if (seenValues.has(value)) {
-      return false;
-    }
-    seenValues.add(value);
-    return true;
-  });
-
   let makeQuery = batchValues => query.slice(0, clause.openingIndex + 1)
     + batchValues.join(",") + query.slice(clause.closingIndex);
+  // The encoded URL length is the length without the list plus the encoded list.
+  let budget = SOQL_QUERY_URL_SAFE_LENGTH - getSoqlRequestUrlLength(makeQuery([]), queryMethod, sfHost);
   let batches = [];
-  let currentBatch = [];
-  for (let value of values) {
-    let candidateBatch = currentBatch.concat(value);
-    let candidateQuery = makeQuery(candidateBatch);
-    if (getSoqlRequestUrlLength(candidateQuery, queryMethod, sfHost) <= SOQL_QUERY_URL_SAFE_LENGTH) {
-      currentBatch = candidateBatch;
-      continue;
-    }
-
-    if (currentBatch.length == 0) {
+  let batch = [];
+  let batchCost = 0;
+  for (let value of clause.values) {
+    let cost = valueCost(value);
+    if (cost > budget) {
       // One value alone cannot fit safely, so splitting cannot help.
       return null;
     }
-    batches.push(makeQuery(currentBatch));
-    currentBatch = [value];
-    if (getSoqlRequestUrlLength(makeQuery(currentBatch), queryMethod, sfHost) > SOQL_QUERY_URL_SAFE_LENGTH) {
-      return null;
+    if (batchCost + cost > budget) {
+      batches.push(makeQuery(batch));
+      batch = [];
+      batchCost = 0;
     }
+    batch.push(value);
+    batchCost += cost;
   }
-  batches.push(makeQuery(currentBatch));
+  batches.push(makeQuery(batch));
 
-  return batches.length > 1 ? batches : null;
+  return batches;
 }
 
 class Model {
@@ -1052,6 +1161,7 @@ class Model {
     vm.queryInput.value = query; // Update the input value with the cleaned query
     let splitQueries = null;
     let isSplitQueryExport = false;
+    let seenRecordUrls = new Set();
     function batchHandler(batch, batchNumber = 0, isFirstPage = true) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -1079,7 +1189,22 @@ class Model {
           });
           exportedData.addToTable(dataGraph);
         } else {
-          exportedData.addToTable(data[fieldsResponses[exportedData.queryMethod]]);
+          let records = data[fieldsResponses[exportedData.queryMethod]];
+          if (isSplitQueryExport && isSoql) {
+            // Batches can overlap (OR, IN subqueries, 15 and 18 character Ids), so keep each record once.
+            records = records.filter(record => {
+              let url = record.attributes?.url;
+              if (url == null) {
+                return true;
+              }
+              if (seenRecordUrls.has(url)) {
+                return false;
+              }
+              seenRecordUrls.add(url);
+              return true;
+            });
+          }
+          exportedData.addToTable(records);
         }
 
         let recs = exportedData.records.length;
@@ -1118,19 +1243,22 @@ class Model {
           vm.didUpdate();
           return pr;
         }
+        if (isSplitQueryExport && !data.aborted) {
+          // Batches can return the same record, so the summed totals may be too high.
+          total = exportedData.totalSize = recs;
+        }
         try {
           if (query.length <= MAX_HISTORY_QUERY_LENGTH) {
             vm.queryHistory.add({ query, useToolingApi: exportedData.isTooling });
           } else {
             let historyQuery = query;
-            let clause = findSingleSoqlInClause(query);
-            if (clause != null) {
-              let values = parseQuotedSoqlInValues(query, clause.openingIndex, clause.closingIndex);
+            for (let list of (findSoqlInLists(query) || []).reverse()) {
+              let values = parseSoqlInValues(query, list.openingIndex, list.closingIndex);
               if (values != null && values.length > 1) {
                 let remainingCount = (values.length - 1).toLocaleString();
-                historyQuery = query.slice(0, clause.openingIndex + 1)
+                historyQuery = historyQuery.slice(0, list.openingIndex + 1)
                   + values[0] + ", ... [+" + remainingCount + " more values]"
-                  + query.slice(clause.closingIndex);
+                  + historyQuery.slice(list.closingIndex);
               }
             }
             if (historyQuery.length <= MAX_HISTORY_QUERY_LENGTH) {

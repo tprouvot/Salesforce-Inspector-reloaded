@@ -1580,18 +1580,24 @@ function convertValueForApi(value) {
   return !Number.isNaN(n) && String(n) === s ? n : s;
 }
 
-const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+function isUnsafeKey(key) {
+  return key === "__proto__" || key === "constructor" || key === "prototype";
+}
 
 function setNestedValue(obj, path, value) {
   const parts = path.split(".");
-  if (parts.some(part => UNSAFE_KEYS.has(part))) {
-    throw new Error(`Invalid field path "${path}"`);
-  }
   let cur = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const k = parts[i];
+    if (isUnsafeKey(k)) {
+      throw new Error(`Invalid field path "${path}"`);
+    }
     if (!(cur[k] && typeof cur[k] === "object")) cur[k] = {};
     cur = cur[k];
   }
-  cur[parts[parts.length - 1]] = value;
+  const lastKey = parts[parts.length - 1];
+  if (isUnsafeKey(lastKey)) {
+    throw new Error(`Invalid field path "${path}"`);
+  }
+  cur[lastKey] = value;
 }

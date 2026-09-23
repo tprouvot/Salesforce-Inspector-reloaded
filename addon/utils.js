@@ -860,7 +860,7 @@ export class DataCache {
         await browser.storage.local.remove(keysToRemove);
       }
     } catch (e) {
-      console.error(`Error clearing cache for ${storageKey}:`, e);
+      console.error("Error clearing cache for %s:", storageKey, e);
     }
   }
 

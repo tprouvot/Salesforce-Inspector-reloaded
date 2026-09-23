@@ -758,7 +758,22 @@ Please structure your response in a clear, organized manner using these sections
 
     if (patterns.length === 0) return this.previewLog.body;
 
-    const filteredLines = lines.filter(line => patterns.some(pattern => line.includes(pattern)));
+    // A log entry can span several lines. Keep its continuation lines when
+    // the entry header matches the filter instead of returning a fragment.
+    const entries = [];
+    let entry = [];
+    for (const line of lines) {
+      if (/^\d{2}:\d{2}:\d{2}\.\d+\|/.test(line) && entry.length > 0) {
+        entries.push(entry);
+        entry = [];
+      }
+      entry.push(line);
+    }
+    if (entry.length > 0) entries.push(entry);
+
+    const filteredLines = entries
+      .filter(logEntry => patterns.some(pattern => logEntry.some(line => line.includes(pattern))))
+      .flat();
 
     return filteredLines.join("\n");
   }

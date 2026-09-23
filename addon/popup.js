@@ -3182,6 +3182,18 @@ class UserDetails extends React.PureComponent {
       }
       let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
 
+      // Resolve the debug level to use before checking for an existing trace flag,
+      // so a missing configured level always falls back to the same "sfir" level
+      // (otherwise repeated clicks would keep creating duplicate trace flags).
+      let debugLog = await this.getDebugLog(debugLogDebugLevel);
+      let debugLevelId;
+      if (debugLog && debugLog.size > 0) {
+        debugLevelId = debugLog.records[0].Id;
+      } else {
+        debugLevelId = await this.getOrCreateSfirDebugLevel();
+        debugLogDebugLevel = "sfir";
+      }
+
       let traceFlags = await this.getTraceFlags(
         user.Id,
         DTnow,
@@ -3195,22 +3207,12 @@ class UserDetails extends React.PureComponent {
         await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
         //Else create new trace flag
       } else {
-        let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-        if (debugLog && debugLog.size > 0) {
-          await this.insertTraceFlag(
-            user.Id,
-            debugLog.records[0].Id,
-            DTnow,
-            debugTimeInMs
-          );
-        } else {
-          throw new Error(
-            'Debug Level with developerName = "'
-              + debugLogDebugLevel
-              + '" not found'
-          );
-        }
+        await this.insertTraceFlag(
+          user.Id,
+          debugLevelId,
+          DTnow,
+          debugTimeInMs
+        );
       }
       // Update button state to show it's enabled
       this.setState({
@@ -3324,6 +3326,40 @@ class UserDetails extends React.PureComponent {
       return sfConn.rest(
         "/services/data/v" + apiVersion + "/tooling/" + query,
         {method: "GET"}
+      );
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
+  async getOrCreateSfirDebugLevel() {
+    const sfirDebugLevelName = "sfir";
+    let debugLog = await this.getDebugLog(sfirDebugLevelName);
+    if (debugLog && debugLog.size > 0) {
+      return debugLog.records[0].Id;
+    }
+    let createdDebugLevel = await this.createDebugLevel(sfirDebugLevelName);
+    return createdDebugLevel.id;
+  }
+
+  createDebugLevel(developerName) {
+    try {
+      let newDebugLevel = {
+        DeveloperName: developerName,
+        MasterLabel: developerName,
+        ApexCode: "FINEST",
+        ApexProfiling: "FINEST",
+        Callout: "FINEST",
+        Database: "FINEST",
+        System: "FINEST",
+        Validation: "FINEST",
+        Visualforce: "FINEST",
+        Workflow: "FINEST",
+      };
+      return sfConn.rest(
+        "/services/data/v" + apiVersion + "/tooling/sobjects/debuglevel",
+        {method: "POST", body: newDebugLevel}
       );
     } catch (e) {
       console.error(e);

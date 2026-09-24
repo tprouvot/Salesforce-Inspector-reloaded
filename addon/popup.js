@@ -4734,7 +4734,6 @@ class AllDataSearch extends React.PureComponent {
     this.state = {
       queryString: "",
       matchingResults: [],
-      recentItems: [],
       searchLoading: false,
       ariaExpanded: false,
       ariaActiveIndex: -1,
@@ -4813,7 +4812,7 @@ class AllDataSearch extends React.PureComponent {
     this.setState({ariaExpanded, ariaActiveIndex});
   }
   render() {
-    let {queryString, matchingResults, recentItems, searchLoading, ariaExpanded, ariaActiveIndex} = this.state;
+    let {queryString, matchingResults, searchLoading, ariaExpanded, ariaActiveIndex} = this.state;
     let {placeholderText, resultRender, sfHost, rightIcon} = this.props;
     let {idPrefix} = this;
     return h(
@@ -4842,7 +4841,6 @@ class AllDataSearch extends React.PureComponent {
         ref: "autoComplete",
         updateInput: this.updateAllDataInput,
         matchingResults: resultRender(matchingResults, queryString),
-        recentItems: resultRender(recentItems, queryString),
         queryString,
         sfHost,
         onAriaStateChange: this.onAriaStateChange,
@@ -4907,6 +4905,7 @@ class Autocomplete extends React.PureComponent {
     super(props);
     this.state = {
       showResults: false,
+      recentItems: [], // Recently viewed records, shown after focusing the search until the user types or selects a result.
       selectedIndex: 0, // Index of the selected autocomplete item.
       scrollToSelectedIndex: 0, // Changed whenever selectedIndex is updated (even if updated to a value it already had). Used to scroll to the selected item.
       scrollTopIndex: 0, // Index of the first autocomplete item that is visible according to the current scroll position.
@@ -4922,12 +4921,14 @@ class Autocomplete extends React.PureComponent {
   handleInput() {
     this.setState({
       showResults: true,
+      recentItems: [],
       selectedIndex: 0,
       scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
     });
   }
   handleFocus() {
-    let {recentItems} = this.props;
+    let recentItems = [];
+    let focusQuery = this.props.queryString;
     if (!isSettingEnabled(Constants.ENABLE_RECENTLY_VIEWED_RECORDS, true)) {
       return;
     }
@@ -4936,6 +4937,9 @@ class Autocomplete extends React.PureComponent {
         `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+WHERE+Type!='ListView'+LIMIT+${RECENT_ITEMS_RENDERED_COUNT}`
       )
       .then((res) => {
+        if (this.props.queryString !== focusQuery) {
+          return;
+        }
         let itemsIds = new Set();
         res.records.forEach((recentItem) => {
           if (!itemsIds.has(recentItem.Id)) {
@@ -5003,7 +5007,7 @@ class Autocomplete extends React.PureComponent {
         e.preventDefault();
         let {value} = matchingResults[selectedIndex];
         this.props.updateInput(value);
-        this.setState({showResults: false, selectedIndex: 0});
+        this.setState({showResults: false, recentItems: [], selectedIndex: 0});
       }
       return;
     }
@@ -5068,7 +5072,7 @@ class Autocomplete extends React.PureComponent {
       );
     } else {
       this.props.updateInput(value);
-      this.setState({showResults: false, selectedIndex: 0});
+      this.setState({showResults: false, recentItems: [], selectedIndex: 0});
     }
   }
   handleNavigation(e, url, navigationParams) {
@@ -5089,7 +5093,8 @@ class Autocomplete extends React.PureComponent {
     }
   }
   getResults() {
-    let {matchingResults, recentItems} = this.props;
+    let {matchingResults} = this.props;
+    let {recentItems} = this.state;
     return recentItems.length > 0 ? recentItems : matchingResults;
   }
   isOpen() {

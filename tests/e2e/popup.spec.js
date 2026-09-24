@@ -522,6 +522,25 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=" + TEST_CONSTANTS.accountRecordId)).toBeVisible({timeout: 1000});
     });
 
+    test("Focusing the empty search shows recently viewed records until typing", async ({page, extensionId}) => {
+      // Recently viewed records depend on the org's history, so only the mocked response is predictable.
+      test.skip(!TEST_CONSTANTS.mockEnabled, "Needs the mocked RecentlyViewed response");
+      await initPopupPage(page, extensionId);
+      await waitForObjectsTabToLoad(page);
+
+      const frame = page.frameLocator(".insext-popup");
+      const searchInput = frame.locator("input[placeholder*='Record id']");
+      const recentContact = frame.locator(".autocomplete-item:has-text('003000000000001AAA')");
+
+      await searchInput.click();
+      await expect(recentContact).toBeVisible();
+      await expect(frame.locator(".autocomplete-item")).toHaveCount(2);
+
+      await searchInput.pressSequentially("Account", {delay: 50});
+      await expect(recentContact).toHaveCount(0);
+      await expect(frame.locator(".autocomplete-item:has-text('Account')").first()).toBeVisible();
+    });
+
     test("Show All Data Button", async ({page, extensionId}) => {
       await initPopupPage(page, extensionId);
       await waitForObjectsTabToLoad(page);

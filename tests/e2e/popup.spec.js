@@ -522,6 +522,25 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=" + TEST_CONSTANTS.accountRecordId)).toBeVisible({timeout: 1000});
     });
 
+    test("Focusing the empty search shows recently viewed records until typing", async ({page, extensionId}) => {
+      // Recently viewed records depend on the org's history, so only the mocked response is predictable.
+      test.skip(!TEST_CONSTANTS.mockEnabled, "Needs the mocked RecentlyViewed response");
+      await initPopupPage(page, extensionId);
+      await waitForObjectsTabToLoad(page);
+
+      const frame = page.frameLocator(".insext-popup");
+      const searchInput = frame.locator("input[placeholder*='Record id']");
+      const recentContact = frame.locator(".autocomplete-item:has-text('003000000000001AAA')");
+
+      await searchInput.click();
+      await expect(recentContact).toBeVisible();
+      await expect(frame.locator(".autocomplete-item")).toHaveCount(2);
+
+      await searchInput.pressSequentially("Account", {delay: 50});
+      await expect(recentContact).toHaveCount(0);
+      await expect(frame.locator(".autocomplete-item:has-text('Account')").first()).toBeVisible();
+    });
+
     test("Show All Data Button", async ({page, extensionId}) => {
       await initPopupPage(page, extensionId);
       await waitForObjectsTabToLoad(page);
@@ -557,6 +576,68 @@ test.describe("Popup", () => {
       // Verify links appear (use href to avoid matching "Waitlist*" links that contain "List")
       await expect(page.frameLocator(".insext-popup").locator("a:has-text('Fields')")).toBeVisible({timeout: 1000});
       await expect(page.frameLocator(".insext-popup").locator("a[href*='Account/list']")).toBeVisible();
+    });
+  });
+
+  test.describe("Autocomplete Accessibility (ARIA combobox)", () => {
+    // Guards the WAI-ARIA combobox contract on the AllDataSearch inputs (see #1108).
+    // The Objects tab is the vehicle here; the same pattern backs the Users and Shortcuts tabs.
+    test("Combobox exposes correct ARIA roles and a resolvable active option", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      await waitForObjectsTabToLoad(page);
+
+      const frame = page.frameLocator(".insext-popup");
+      const input = frame.locator("input[placeholder*='Record id']");
+
+      // aria-activedescendant must name an option that is rendered and marked selected.
+      // A virtualised list can leave it pointing at an unrendered node, which silently
+      // breaks screen reader announcement even though the markup looks correct.
+      async function expectActiveOptionResolves() {
+        const activeId = await input.getAttribute("aria-activedescendant");
+        expect(activeId).toBeTruthy();
+        const activeOption = frame.locator("#" + activeId);
+        await expect(activeOption).toBeVisible();
+        await expect(activeOption).toHaveAttribute("role", "option");
+        await expect(activeOption).toHaveAttribute("aria-selected", "true");
+        return activeId;
+      }
+
+      // Static combobox wiring is present while collapsed
+      await expect(input).toHaveAttribute("role", "combobox");
+      await expect(input).toHaveAttribute("aria-autocomplete", "list");
+      await expect(input).toHaveAttribute("aria-expanded", "false");
+      await expect(input).not.toHaveAttribute("aria-activedescendant");
+      const listboxId = await input.getAttribute("aria-controls");
+      expect(listboxId).toBeTruthy();
+      const listbox = frame.locator("#" + listboxId);
+      await expect(listbox).toHaveAttribute("role", "listbox");
+
+      // A query with no matches keeps the list hidden, so the combobox must stay collapsed
+      await input.pressSequentially("zzzNoSuchObject", {delay: 20});
+      await expect(input).toHaveAttribute("aria-expanded", "false");
+      await expect(input).not.toHaveAttribute("aria-activedescendant");
+
+      // Typing a matching query opens the listbox with the first option active
+      await input.fill("");
+      await input.pressSequentially("Account", {delay: 50});
+      await expect(listbox.locator("[role='option']").first()).toBeVisible();
+      await expect(input).toHaveAttribute("aria-expanded", "true");
+      await expectActiveOptionResolves();
+
+      // Escape collapses the listbox and clears the active option
+      await input.press("Escape");
+      await expect(input).toHaveAttribute("aria-expanded", "false");
+      await expect(input).not.toHaveAttribute("aria-activedescendant");
+
+      // Arrow keys reopen the list and move the active option
+      await input.fill("");
+      await input.press("ArrowDown");
+      await expect(input).toHaveAttribute("aria-expanded", "true");
+      const firstId = await expectActiveOptionResolves();
+      await input.press("ArrowDown");
+      await expect(input).not.toHaveAttribute("aria-activedescendant", firstId);
+      await expectActiveOptionResolves();
+      await expect(frame.locator("#" + firstId)).toHaveAttribute("aria-selected", "false");
     });
   });
 

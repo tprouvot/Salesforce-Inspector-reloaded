@@ -5185,7 +5185,7 @@ class Autocomplete extends React.PureComponent {
                 id: idPrefix + "-option-" + (index + firstRenderedIndex),
                 "aria-selected": selectedIndex === index + firstRenderedIndex,
               },
-              h("span", {className: "slds-p-horizontal_small"}, element)
+              h("a", {className: "slds-p-horizontal_small"}, element)
             )
           )
       )

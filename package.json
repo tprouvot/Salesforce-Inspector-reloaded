@@ -6,9 +6,10 @@
     "chrome-release-build": "node scripts/release-build.js chrome",
     "build-flow-scanner": "node scripts/build-flow-scanner.js",
     "set-test-constants": "node scripts/set-test-constants-from-org.js",
-    "test:e2e": "playwright test",
-    "test:e2e:mock": "cp tests/e2e/test-constants.template.js tests/e2e/test-constants.local.js && playwright test",
-    "test:e2e:debug": "npx playwright test --ui --debug",
+    "ensure-test-constants": "node scripts/ensure-test-constants.js",
+    "test:e2e": "npm run ensure-test-constants && playwright test",
+    "test:e2e:mock": "npm run ensure-test-constants && cp tests/e2e/test-constants.template.js tests/e2e/test-constants.local.js && playwright test",
+    "test:e2e:debug": "npm run ensure-test-constants && npx playwright test --ui --debug",
     "chrome-beta-build": "ENVIRONMENT_TYPE=BETA node scripts/release-build.js chrome"
   },
   "devDependencies": {

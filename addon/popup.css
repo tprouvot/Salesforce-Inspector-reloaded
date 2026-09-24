@@ -170,7 +170,7 @@ input.api-input {
 
 .input-with-dropdown:not(.sfir-has-right-icon) .slds-input__icon_left {
   left: auto;
-  right: var(--sfir-spacing-md);
+  right: var(--sfir-spacing-sm);
   top: 50%;
   margin-top: -0.375rem;
 }
@@ -181,6 +181,13 @@ input.api-input {
   width: var(--sfir-font-sm);
   height: var(--sfir-font-sm);
   fill: var(--sfir-text-secondary);
+}
+
+.input-with-dropdown.sfir-has-right-icon .slds-input__icon_left {
+  left: var(--sfir-spacing-sm);
+  right: auto;
+  top: 50%;
+  margin-top: -0.375rem;
 }
 
 .input-with-dropdown .sfir-search-spinner {
@@ -194,13 +201,32 @@ input.api-input {
 }
 
 .input-with-dropdown:not(.sfir-has-right-icon) .sfir-search-spinner {
-  right: var(--sfir-spacing-md);
+  right: var(--sfir-spacing-sm);
   left: auto;
 }
 
 .input-with-dropdown.sfir-has-right-icon .sfir-search-spinner {
-  left: var(--sfir-spacing-md);
+  left: var(--sfir-spacing-sm);
   right: auto;
+}
+
+.input-with-dropdown.sfir-has-right-icon .slds-input__icon_right.sfir-input-right-icon {
+  position: absolute;
+  top: 50%;
+  transform: none;
+  margin-top: -0.375rem;
+  right: var(--sfir-spacing-sm);
+  left: auto;
+}
+
+.input-with-dropdown:not(.sfir-has-right-icon) input {
+  padding-left: 0.75rem;
+  padding-right: 1.75rem;
+}
+
+.input-with-dropdown.sfir-has-right-icon input {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
 }
 
 .input-with-dropdown .sfir-search-spinner .slds-spinner {

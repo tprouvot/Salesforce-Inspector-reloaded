@@ -11,7 +11,7 @@
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-We all know and love Salesforce Inspector: As the great Søren Krabbe did not maintain it anymore, I decided to take over so trailblazer community can keep asking for new features !
+We all know and love Salesforce Inspector: As the great Søren Krabbe did not maintain it anymore, I decided to take over so the trailblazer community can keep asking for new features!
 
 - [New features compared to the original SF Inspector](#new-features-compared-to-original-sf-inspector)
 - [Security and Privacy](#security-and-privacy)
@@ -60,6 +60,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ma
 - **[Dependencies Explorer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/dependencies-explorer/)**: Analyze Salesforce metadata dependencies to understand what depends on your metadata and what your metadata depends on
 - **[Field Creator](https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/)**: Create fields for standard objects, custom objects, platform events, and custom metadata types with bulk import support
 - **[Flow Scanner](https://tprouvot.github.io/Salesforce-Inspector-reloaded/flow-scanner/)**: Analyze Salesforce Flows for best practices, errors, and potential issues with comprehensive rule checking
+- **[Object Scanner](https://tprouvot.github.io/Salesforce-Inspector-reloaded/object-scanner/)**: Load and export a customizable data model, search objects and fields (`Account.Name`), and optionally run hygiene analysis
 - **[Debug Logs Viewer](https://tprouvot.github.io/Salesforce-Inspector-reloaded/logs-viewer/)**: View, filter, analyze, and manage Salesforce debug logs with Agentforce-powered analysis and grep-like filtering
 - **[Event Monitor](https://tprouvot.github.io/Salesforce-Inspector-reloaded/event-monitor/)**: Subscribe to and display Salesforce Platform Events in real-time, including Change Events and custom channels
 - **[Metadata Retrieve](https://tprouvot.github.io/Salesforce-Inspector-reloaded/download-metadata/)**: Retrieve and deploy metadata from Salesforce with package.xml generation and deployment options
@@ -107,7 +108,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ma
 - Favicon and banner customization for each org
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
-- Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
+- Add shortcuts links to (list of record types, current SObject RecordType and object details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
 - Control access to Salesforce Inspector reloaded with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 - Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 
@@ -154,7 +155,7 @@ Thank you for shaping our extension's future! Your feedback makes it better.
 ### Local Installation
 
 1. Download or clone the repo.
-2. Checkout the releaseCandidate branch.
+2. Checkout the `releaseCandidate` branch.
 3. Open `chrome://extensions/`.
 4. Enable `Developer mode`.
 5. Click `Load unpacked`.
@@ -218,11 +219,11 @@ This branch will be merged into beta and then master when the new version is pub
 
 ### Firefox
 
-1. Rename the manifest-firefox.json file to manifest.json (and manifest.json to manifest-chrome.json).
+1. Generate the Firefox add-on with `npm run firefox-release-build`. This copies `addon/manifest-firefox.json` to `target/firefox/dist/manifest.json` (see `scripts/release-build.js`).
 2. In Firefox, open `about:debugging`.
 3. Select `This Firefox` at the top left.
 4. Click `Load Temporary Add-on…`.
-5. Select the file `addon/manifest.json`.
+5. Select the file `target/firefox/dist/manifest.json`.
 
 ### Unit tests
 

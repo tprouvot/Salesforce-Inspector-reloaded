@@ -1645,8 +1645,6 @@ class AllDataBoxUsers extends React.PureComponent {
         inputSearchDelay: 400,
         placeholderText: "Name, username, email or alias",
         resultRender: this.resultRender,
-        // Unique ID prefix prevents ARIA ID collisions across 3 autocomplete instances
-        idPrefix: "users-ac",
         rightIcon: h(
           "div",
           {
@@ -2048,8 +2046,6 @@ class AllDataBoxSObject extends React.PureComponent {
         placeholderText: "Record id, id prefix or object name",
         title: "Click to show recent items",
         resultRender: this.resultRender,
-        // Unique ID prefix prevents ARIA ID collisions across 3 autocomplete instances
-        idPrefix: "objects-ac",
       }),
       selectedValue
         ? h(AllDataSelection, {
@@ -2773,8 +2769,6 @@ class AllDataBoxShortcut extends React.PureComponent {
         sfHost,
         icon: "add",
         onIconClick: this.onAddShortcut,
-        // Unique ID prefix prevents ARIA ID collisions across 3 autocomplete instances
-        idPrefix: "shortcuts-ac",
       }),
       h(
         "div",
@@ -4730,10 +4724,13 @@ class AllDataRecordDetails extends React.PureComponent {
     }
   }
 }
+let allDataSearchCount = 0;
 class AllDataSearch extends React.PureComponent {
   constructor(props) {
     super(props);
     this.inputIcon = props.icon ? props.icon : "down";
+    // Prefix for the listbox and option ids, unique per instance because the popup renders several searches
+    this.idPrefix = "sfir-autocomplete-" + ++allDataSearchCount;
     this.state = {
       queryString: "",
       matchingResults: [],
@@ -4811,14 +4808,14 @@ class AllDataSearch extends React.PureComponent {
       }
     }, inputSearchDelay);
   }
-  // Callback from Autocomplete child: mirrors its showResults/selectedIndex for ARIA attributes.
-  // Input element lives here but state lives in Autocomplete, so callback avoids lifting state.
-  onAriaStateChange(showResults, selectedIndex) {
-    this.setState({ariaExpanded: showResults, ariaActiveIndex: selectedIndex});
+  // The input owns the combobox attributes, but Autocomplete owns the open state and active option.
+  onAriaStateChange(ariaExpanded, ariaActiveIndex) {
+    this.setState({ariaExpanded, ariaActiveIndex});
   }
   render() {
     let {queryString, matchingResults, recentItems, searchLoading, ariaExpanded, ariaActiveIndex} = this.state;
-    let {placeholderText, resultRender, sfHost, rightIcon, idPrefix} = this.props;
+    let {placeholderText, resultRender, sfHost, rightIcon} = this.props;
+    let {idPrefix} = this;
     return h(
       "div",
       {
@@ -4836,12 +4833,10 @@ class AllDataSearch extends React.PureComponent {
         onKeyDown: this.onAllDataKeyDown,
         value: queryString,
         role: "combobox",
-        // ARIA attributes must be string "true"/"false", not boolean
-        "aria-expanded": String(ariaExpanded),
+        "aria-expanded": ariaExpanded,
         "aria-autocomplete": "list",
-        "aria-haspopup": "listbox",
         "aria-controls": idPrefix + "-listbox",
-        "aria-activedescendant": ariaExpanded && ariaActiveIndex >= 0 ? idPrefix + "-option-" + ariaActiveIndex : undefined,
+        "aria-activedescendant": ariaActiveIndex >= 0 ? idPrefix + "-option-" + ariaActiveIndex : undefined,
       }),
       h(Autocomplete, {
         ref: "autoComplete",
@@ -4925,16 +4920,14 @@ class Autocomplete extends React.PureComponent {
     this.onScroll = this.onScroll.bind(this);
   }
   handleInput() {
-    let onAriaStateChange = this.props.onAriaStateChange;
     this.setState({
       showResults: true,
       selectedIndex: 0,
       scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
     });
-    if (onAriaStateChange) onAriaStateChange(true, 0);
   }
   handleFocus() {
-    let {recentItems, onAriaStateChange} = this.props;
+    let {recentItems} = this.props;
     if (!isSettingEnabled(Constants.ENABLE_RECENTLY_VIEWED_RECORDS, true)) {
       return;
     }
@@ -4989,16 +4982,13 @@ class Autocomplete extends React.PureComponent {
           selectedIndex: 0,
           scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
         });
-        if (onAriaStateChange) onAriaStateChange(true, 0);
       });
   }
   handleBlur() {
-    let onAriaStateChange = this.props.onAriaStateChange;
     this.setState({showResults: false});
-    if (onAriaStateChange && !this.state.resultsMouseIsDown) onAriaStateChange(false, this.state.selectedIndex);
   }
   handleKeyDown(e) {
-    let {matchingResults, onAriaStateChange} = this.props;
+    let {matchingResults} = this.props;
     let {selectedIndex, showResults, scrollToSelectedIndex} = this.state;
     if (e.key == "Enter") {
       if (!showResults) {
@@ -5007,7 +4997,6 @@ class Autocomplete extends React.PureComponent {
           selectedIndex: 0,
           scrollToSelectedIndex: scrollToSelectedIndex + 1,
         });
-        if (onAriaStateChange) onAriaStateChange(true, 0);
         return;
       }
       if (selectedIndex < matchingResults.length) {
@@ -5015,14 +5004,12 @@ class Autocomplete extends React.PureComponent {
         let {value} = matchingResults[selectedIndex];
         this.props.updateInput(value);
         this.setState({showResults: false, selectedIndex: 0});
-        if (onAriaStateChange) onAriaStateChange(false, 0);
       }
       return;
     }
     if (e.key == "Escape") {
       e.preventDefault();
       this.setState({showResults: false, selectedIndex: 0});
-      if (onAriaStateChange) onAriaStateChange(false, 0);
       return;
     }
     let selectionMove = 0;
@@ -5040,7 +5027,6 @@ class Autocomplete extends React.PureComponent {
           selectedIndex: 0,
           scrollToSelectedIndex: scrollToSelectedIndex + 1,
         });
-        if (onAriaStateChange) onAriaStateChange(true, 0);
         return;
       }
       let index = selectedIndex + selectionMove;
@@ -5055,20 +5041,16 @@ class Autocomplete extends React.PureComponent {
         selectedIndex: index,
         scrollToSelectedIndex: scrollToSelectedIndex + 1,
       });
-      if (onAriaStateChange) onAriaStateChange(true, index);
     }
   }
   onResultsMouseDown() {
     this.setState({resultsMouseIsDown: true});
   }
   onResultsMouseUp() {
-    let onAriaStateChange = this.props.onAriaStateChange;
     this.setState({resultsMouseIsDown: false});
-    // handleBlur skips onAriaStateChange when mouse is down; if blur already hid dropdown, notify now
-    if (onAriaStateChange && !this.state.showResults) onAriaStateChange(false, this.state.selectedIndex);
   }
   onResultClick(e, value) {
-    const {sfHost, onAriaStateChange} = this.props;
+    const {sfHost} = this.props;
 
     if (value.isRecent) {
       this.handleNavigation(e, `https://${sfHost}/${value.recordId}`, {
@@ -5087,19 +5069,16 @@ class Autocomplete extends React.PureComponent {
     } else {
       this.props.updateInput(value);
       this.setState({showResults: false, selectedIndex: 0});
-      if (onAriaStateChange) onAriaStateChange(false, 0);
     }
   }
   handleNavigation(e, url, navigationParams) {
     navigateWithExtensionCheck(e, url, navigationParams);
   }
   onResultMouseEnter(index) {
-    let onAriaStateChange = this.props.onAriaStateChange;
     this.setState({
       selectedIndex: index,
       scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
     });
-    if (onAriaStateChange) onAriaStateChange(this.state.showResults, index);
   }
   onScroll() {
     let scrollTopIndex = Math.floor(
@@ -5109,9 +5088,22 @@ class Autocomplete extends React.PureComponent {
       this.setState({scrollTopIndex});
     }
   }
+  getResults() {
+    let {matchingResults, recentItems} = this.props;
+    return recentItems.length > 0 ? recentItems : matchingResults;
+  }
+  isOpen() {
+    let {showResults, resultsMouseIsDown} = this.state;
+    return (showResults && this.getResults().length > 0) || resultsMouseIsDown;
+  }
   componentDidUpdate(prevProps, prevState) {
+    // AllDataSearch is a PureComponent, so reporting unchanged values does not re-render it.
+    let isOpen = this.isOpen();
+    let {selectedIndex} = this.state;
+    let hasActiveOption = isOpen && selectedIndex < this.getResults().length;
+    this.props.onAriaStateChange(isOpen, hasActiveOption ? selectedIndex : -1);
     if (this.state.itemHeight == 1) {
-      let anItem = this.refs.scrollBox.querySelector(".slds-dropdown__item");
+      let anItem = this.refs.scrollBox.querySelector(".autocomplete-item");
       if (anItem) {
         let itemHeight = anItem.offsetHeight;
         if (itemHeight > 0) {
@@ -5135,17 +5127,14 @@ class Autocomplete extends React.PureComponent {
     }
   }
   render() {
-    let {matchingResults, recentItems, idPrefix} = this.props;
+    let {idPrefix} = this.props;
     let {
-      showResults,
       selectedIndex,
       scrollTopIndex,
       itemHeight,
-      resultsMouseIsDown,
     } = this.state;
 
-    let autocompleteResults
-      = recentItems.length > 0 ? recentItems : matchingResults;
+    let autocompleteResults = this.getResults();
     let lastIndex = autocompleteResults.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(
@@ -5163,14 +5152,10 @@ class Autocomplete extends React.PureComponent {
       {
         className: "slds-dropdown slds-dropdown_fluid",
         style: {
-          display:
-            (showResults && autocompleteResults.length > 0)
-            || resultsMouseIsDown
-              ? ""
-              : "none",
+          display: this.isOpen() ? "" : "none",
         },
         onMouseDown: this.onResultsMouseDown,
-        onMouseUp: () => this.onResultsMouseUp(),
+        onMouseUp: this.onResultsMouseUp,
       },
       h(
         "div",
@@ -5198,7 +5183,7 @@ class Autocomplete extends React.PureComponent {
                   this.onResultMouseEnter(index + firstRenderedIndex),
                 role: "option",
                 id: idPrefix + "-option-" + (index + firstRenderedIndex),
-                "aria-selected": selectedIndex === index + firstRenderedIndex ? "true" : "false",
+                "aria-selected": selectedIndex === index + firstRenderedIndex,
               },
               h("span", {className: "slds-p-horizontal_small"}, element)
             )

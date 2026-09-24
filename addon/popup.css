@@ -543,11 +543,6 @@ a.icon-url {
   text-overflow: ellipsis;
 }
 
-/* <span> lacks default pointer cursor; explicit cursor needed for clickable behavior */
-.slds-dropdown__item > span {
-  cursor: pointer;
-}
-
 /* OBJECTS INFO */
 .sfir-background-grey {
   background-color: var(--sfir-light-gray);

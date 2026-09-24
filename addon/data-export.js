@@ -1831,7 +1831,7 @@ class App extends React.Component {
       const isSmartPasteEnabled = localStorage.getItem("enableSmartPaste") !== "false";
       if (!isSmartPasteEnabled) return;
       const textBeforeCursor = queryInput.value.substring(0, queryInput.selectionStart);
-      const isInsideListClause = /\b(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i.test(textBeforeCursor);
+      const isInsideListClause = /\b(?:IN|EXCLUDES|INCLUDES)\s*\((?!\s*SELECT\s)[^)]*$/i.test(textBeforeCursor);
       if (!isInsideListClause) return;
       const pasteData = (e.clipboardData || window.clipboardData).getData("text");
       if (/^['"\s]+$/.test(pasteData)) return;
@@ -1857,33 +1857,42 @@ class App extends React.Component {
       const {start, end, hasClosingParen} = capturePasteTarget();
       const originalValue = queryInput.value;
 
-      // --- The First-Meaningful-Item Loop ---
+      // Instantly format Multi-Select Picklists
+      const isMultiSelect = /\b(?:INCLUDES|EXCLUDES)\s*\([^)]*$/i.test(textBeforeCursor);
       let needsDbCheck = false;
       let definitiveString = false;
 
-      for (const item of rawItems) {
-        if (/^null$/i.test(item)) continue; // Ignore null
-        if (/^(true|false)$/i.test(item) || DISCRETE_DATE_LITERAL_RE.test(item)) continue; // Ambiguous keywords
-        if (NUMERIC_LITERAL_RE.test(item) || DATE_LITERAL_RE.test(item)) {
-          // Found a Number or ISO Date
-          needsDbCheck = true;
+      if (isMultiSelect) {
+        definitiveString = true; // Force it to format as strings instantly
+      } else {
+        // --- The First-Meaningful-Item Loop ---
+        for (const item of rawItems) {
+          if (/^null$/i.test(item)) continue; // Ignore null
+          if (/^(true|false)$/i.test(item) || DISCRETE_DATE_LITERAL_RE.test(item)) continue; // Ambiguous keywords
+          if (NUMERIC_LITERAL_RE.test(item) || DATE_LITERAL_RE.test(item)) {
+            // Found a Number or ISO Date
+            needsDbCheck = true;
+            break;
+          }
+          // Normal string found
+          definitiveString = true;
           break;
         }
-        // Normal string found
-        definitiveString = true;
-        break;
-      }
 
-      // If the loop finished and only found nulls or ambiguous keywords, fall back to a DB check
-      if (!definitiveString && !needsDbCheck) {
-        needsDbCheck = true;
+        // If the loop finished and only found nulls or ambiguous keywords, fall back to a DB check
+        if (!definitiveString && !needsDbCheck) {
+          needsDbCheck = true;
+        }
       }
 
       // --- Formatting & Insertion ---
       if (definitiveString) {
         // Stop checking, field must be a String/Picklist/Id.
         // Blindly wrap ALL items in quotes (except null)
-        const formattedList = rawItems.map(item => /^null$/i.test(item) ? "null" : toSoqlStringLiteral(item)).join(", ");
+        const formattedList = rawItems.map(item => {
+          if (isMultiSelect) return toSoqlStringLiteral(item);
+          return /^null$/i.test(item) ? "null" : toSoqlStringLiteral(item);
+        }).join(", ");
         insertFormattedList(formattedList, start, end, hasClosingParen);
         return;
       }

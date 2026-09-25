@@ -73,7 +73,7 @@
       throw new Error("No org result in sf org display output");
     }
     const instanceUrl = result.instanceUrl;
-    const apiVersion = result.apiVersion || "66.0";
+    const apiVersion = result.apiVersion || "67.0";
 
     if (!instanceUrl) {
       throw new Error("Could not extract instanceUrl from org display");

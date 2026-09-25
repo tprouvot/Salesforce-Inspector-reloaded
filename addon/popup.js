@@ -107,6 +107,13 @@ function initLinks({sfHost}) {
       setupLinks.push(link);
     });
   }
+  //add global custom links (shared across every org) to setupLink
+  if (localStorage.getItem(Constants.GLOBAL_LINKS_KEY)) {
+    let globalLinks = JSON.parse(localStorage.getItem(Constants.GLOBAL_LINKS_KEY));
+    globalLinks.forEach((link) => {
+      setupLinks.push(link);
+    });
+  }
 }
 
 class App extends React.PureComponent {
@@ -126,6 +133,7 @@ class App extends React.PureComponent {
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
+      objectScannerHref: "object-scanner.html?" + hostArg,
       apiStatisticsHref: "api-statistics.html?" + hostArg,
       latestNotesViewed:
         localStorage.getItem("latestReleaseNotesVersionViewed")
@@ -174,17 +182,22 @@ class App extends React.PureComponent {
     });
   }
   onContextUrlMessage(e) {
-    if (e.source == parent && e.data.insextUpdateRecordId) {
-      let {locationHref} = e.data;
-      this.setState({
-        isInSetup: locationHref.includes("/lightning/setup/"),
-        contextUrl: locationHref,
-        isPopupExpanded: true, // Popup is expanded when we receive this message
-      });
+    if (e.source == parent && e.data) {
+      if (e.data.insextUpdateRecordId) {
+        let {locationHref} = e.data;
+        this.setState({
+          isInSetup: locationHref.includes("/lightning/setup/"),
+          contextUrl: locationHref,
+          isPopupExpanded: true, // Popup is expanded when we receive this message
+        });
+      }
+
+      if ("isFieldsPresent" in e.data) {
+        this.setState({
+          isFieldsPresent: e.data.isFieldsPresent,
+        });
+      }
     }
-    this.setState({
-      isFieldsPresent: e.data.isFieldsPresent,
-    });
   }
   async getListViewQuery(sobjectName, filterName) {
     if (localStorage.getItem("enableListViewExport") !== "true" || !sobjectName || !filterName) {
@@ -393,6 +406,7 @@ class App extends React.PureComponent {
       eventMonitorHref,
       fieldCreatorHref,
       limitsHref,
+      objectScannerHref,
       apiStatisticsHref,
       isFieldsPresent,
       latestNotesViewed,
@@ -579,7 +593,7 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a", {ref: "dependenciesExplorerBtn", href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
-                h("span", {}, "Depen", h("u", {}, "c"), "encies Explorer")
+                h("span", {}, "Dependen", h("u", {}, "c"), "ies Explorer")
               )
             )
           ),
@@ -669,7 +683,26 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Event ", h("u", {}, "M"), "onitor")
               )
-            )
+            ),
+            isOptionEnabled("object-scanner", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                  "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "objectScannerBtn",
+                    href: objectScannerHref,
+                    target: linkTarget,
+                    className: "page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "Object Sc", h("u", {}, "a"), "nner")
+                )
+              )
+              : null
           ),
           h(
             "div",
@@ -1622,7 +1655,7 @@ class AllDataBoxUsers extends React.PureComponent {
         inputSearchDelay: 400,
         placeholderText: "Name, username, email or alias",
         resultRender: this.resultRender,
-        rightIcon:         h(
+        rightIcon: h(
           "div",
           {
             ref: "filterDropdownRef",
@@ -1834,14 +1867,11 @@ class AllDataBoxSObject extends React.PureComponent {
   getBestMatch(query) {
     let {sobjectsList} = this.props;
     // Find the best match based on the record id or object name from the page URL.
-    if (!query) {
-      return null;
-    }
-    if (!sobjectsList) {
+    if (!query || !sobjectsList) {
       return null;
     }
     let sobject = sobjectsList.find(
-      (sobject) => sobject.name.toLowerCase() == query.toLowerCase()
+      (sobject) => (sobject.name || "").toLowerCase() == query.toLowerCase()
     );
     let queryKeyPrefix = query.substring(0, 3);
     if (!sobject) {
@@ -1877,33 +1907,39 @@ class AllDataBoxSObject extends React.PureComponent {
     let res = sobjectsList
       .filter(
         (sobject) =>
-          sobject.name.toLowerCase().includes(query.toLowerCase())
-          || sobject.label.toLowerCase().includes(query.toLowerCase())
+          (sobject.name || "").toLowerCase().includes(query.toLowerCase())
+          || (sobject.label || "").toLowerCase().includes(query.toLowerCase())
           || sobject.keyPrefix == queryKeyPrefix
       )
-      .map((sobject) => ({
-        recordId: null,
-        sobject,
-        // TO-DO: merge with the sortRank function in data-export
-        relevance:
-          (sobject.keyPrefix == queryKeyPrefix
-            ? 2
-            : sobject.name.toLowerCase() == query.toLowerCase()
-              ? 3
-              : sobject.label.toLowerCase() == query.toLowerCase()
-                ? 4
-                : sobject.name.toLowerCase().startsWith(query.toLowerCase())
-                  ? 5
-                  : sobject.label.toLowerCase().startsWith(query.toLowerCase())
-                    ? 6
-                    : sobject.name.toLowerCase().includes("__" + query.toLowerCase())
-                      ? 7
-                      : sobject.name.toLowerCase().includes("_" + query.toLowerCase())
-                        ? 8
-                        : sobject.label.toLowerCase().includes(" " + query.toLowerCase())
-                          ? 9
-                          : 10) + (sobject.availableApis.length == 0 ? 20 : 0),
-      }));
+      .map((sobject) => {
+        let sName = (sobject.name || "").toLowerCase();
+        let sLabel = (sobject.label || "").toLowerCase();
+        let q = query.toLowerCase();
+
+        return {
+          recordId: null,
+          sobject,
+          // TO-DO: merge with the sortRank function in data-export
+          relevance:
+            (sobject.keyPrefix == queryKeyPrefix
+              ? 2
+              : sName == q
+                ? 3
+                : sLabel == q
+                  ? 4
+                  : sName.startsWith(q)
+                    ? 5
+                    : sLabel.startsWith(q)
+                      ? 6
+                      : sName.includes("__" + q)
+                        ? 7
+                        : sName.includes("_" + q)
+                          ? 8
+                          : sLabel.includes(" " + q)
+                            ? 9
+                            : 10) + (sobject.availableApis.length == 0 ? 20 : 0),
+        };
+      });
     query = query || contextRecordId || "";
     queryKeyPrefix = query.substring(0, 3);
     if (query.match(/^([a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/)) {
@@ -1917,7 +1953,7 @@ class AllDataBoxSObject extends React.PureComponent {
     res.sort(
       (a, b) =>
         a.relevance - b.relevance
-        || a.sobject.name.localeCompare(b.sobject.name)
+        || (a.sobject.name || "").localeCompare(b.sobject.name || "")
     );
     return res;
   }
@@ -1953,6 +1989,7 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   resultRender(matches, userQuery) {
+    let qLower = (userQuery || "").toLowerCase();
     return matches.map((value, index) => {
       const itemKey = value.recordId + "#" + value.sobject.name + "#" + index;
       return {
@@ -1964,10 +2001,8 @@ class AllDataBoxSObject extends React.PureComponent {
             {className: "dropdown-item slds-wrap", key: "main-" + itemKey},
             value.recordId
               || h(MarkSubstring, {
-                text: value.sobject.name,
-                start: value.sobject.name
-                  .toLowerCase()
-                  .indexOf(userQuery.toLowerCase()),
+                text: value.sobject.name || "",
+                start: (value.sobject.name || "").toLowerCase().indexOf(qLower),
                 length: userQuery.length,
               }),
             value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
@@ -1983,10 +2018,8 @@ class AllDataBoxSObject extends React.PureComponent {
             }),
             " • ",
             h(MarkSubstring, {
-              text: value.sobject.label,
-              start: value.sobject.label
-                .toLowerCase()
-                .indexOf(userQuery.toLowerCase()),
+              text: value.sobject.label || "",
+              start: (value.sobject.label || "").toLowerCase().indexOf(qLower),
               length: userQuery.length,
             })
           ),
@@ -2388,10 +2421,85 @@ class AllDataBoxShortcut extends React.PureComponent {
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
     this.onAddShortcut = this.onAddShortcut.bind(this);
+    this.resultRender = this.resultRender.bind(this);
   }
 
   componentDidMount() {
     this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+
+  /**
+   * Parse Shortcut tab query prefixes:
+   * - "/term" → setup links only
+   * - "!term" → all metadata types
+   * - "!flow term" / "!profile term" / "!class term" / "!perm term" → one metadata type
+   * - "term" → setup links + metadata (default)
+   */
+  parseShortcutSearch(shortcutSearch) {
+    const METADATA_TYPE_ALIASES = {
+      flow: "flows",
+      profile: "profiles",
+      class: "classes",
+      perm: "permissionSets"
+    };
+    const ALL_METADATA_TYPES = [
+      "flows",
+      "profiles",
+      "permissionSets",
+      "classes",
+    ];
+
+    if (shortcutSearch.startsWith("/")) {
+      return {
+        includeLinks: true,
+        includeMetadata: false,
+        metadataTypes: [],
+        query: shortcutSearch.slice(1).trim(),
+      };
+    }
+
+    if (shortcutSearch.startsWith("!")) {
+      const rest = shortcutSearch.slice(1).trim();
+      const typeMatch = rest.match(/^([a-zA-Z]+)\s+(.*)$/);
+      if (typeMatch) {
+        const alias = METADATA_TYPE_ALIASES[typeMatch[1].toLowerCase()];
+        if (alias) {
+          return {
+            includeLinks: false,
+            includeMetadata: true,
+            metadataTypes: [alias],
+            query: typeMatch[2].trim(),
+            forceMetadata: true,
+          };
+        }
+      }
+      const singleType = METADATA_TYPE_ALIASES[rest.toLowerCase()];
+      if (singleType) {
+        // "!profile" with no search term yet
+        return {
+          includeLinks: false,
+          includeMetadata: true,
+          metadataTypes: [singleType],
+          query: "",
+          forceMetadata: true,
+        };
+      }
+      return {
+        includeLinks: false,
+        includeMetadata: true,
+        metadataTypes: ALL_METADATA_TYPES,
+        query: rest,
+        forceMetadata: true,
+      };
+    }
+
+    return {
+      includeLinks: true,
+      includeMetadata: true,
+      metadataTypes: null, // use options
+      query: shortcutSearch,
+      forceMetadata: false,
+    };
   }
 
   async getMatches(shortcutSearch) {
@@ -2400,19 +2508,33 @@ class AllDataBoxShortcut extends React.PureComponent {
       return [];
     }
     try {
-      setIsLoading(true);
       shortcutSearch = shortcutSearch.trim();
+      const {
+        includeLinks,
+        includeMetadata,
+        metadataTypes,
+        query,
+        forceMetadata,
+      } = this.parseShortcutSearch(shortcutSearch);
 
-      //search for shortcuts
-      let result = setupLinks.filter((item) =>
-        item.label.toLowerCase().includes(shortcutSearch.toLowerCase())
-      );
-      result.forEach((element) => {
-        element.detail = element.section;
-        element.name = element.link;
-        element.Id = element.name;
-        element.isSetupLink = true;
-      });
+      if (!query) {
+        return [];
+      }
+
+      let result = [];
+
+      //search for setup / custom shortcuts
+      if (includeLinks) {
+        result = setupLinks.filter((item) =>
+          item.label.toLowerCase().includes(query.toLowerCase())
+        );
+        result.forEach((element) => {
+          element.detail = element.section;
+          element.name = element.link;
+          element.Id = element.name;
+          element.isSetupLink = true;
+        });
+      }
 
       let metadataShortcutSearchOptions = localStorage.getItem(
         "metadataShortcutSearchOptions"
@@ -2429,24 +2551,31 @@ class AllDataBoxShortcut extends React.PureComponent {
           != undefined;
       }
 
-      //search for metadata if user did not disabled it (min 2 chars to avoid heavy queries)
-      if (metadataShortcutSearch && shortcutSearch.length >= 2) {
+      // Explicit ! prefix always searches metadata; otherwise respect options
+      const canSearchMetadata
+        = includeMetadata
+        && query.length >= 2
+        && (forceMetadata || metadataShortcutSearch);
+
+      //search for metadata if enabled (min 2 chars to avoid heavy queries)
+      if (canSearchMetadata) {
+        setIsLoading(true);
         const queries = {
           flows:
             "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 15",
           profiles:
             "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 15",
           permissionSets:
             "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 15",
           classes:
             "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 20",
         };
         // If metadataShortcutSearchOptions is null, assume all options are checked
@@ -2459,89 +2588,99 @@ class AllDataBoxShortcut extends React.PureComponent {
         const effectiveOptions
           = metadataShortcutSearchOptions || defaultOptions;
 
-        const compositeRequest = effectiveOptions
-          .filter((setting) => setting.checked && queries[setting.name])
-          .map((setting) => ({
+        let typesToQuery;
+        if (metadataTypes) {
+          // Prefix selected specific types (or all for bare "!")
+          typesToQuery = metadataTypes.filter((name) => queries[name]);
+        } else {
+          typesToQuery = effectiveOptions
+            .filter((setting) => setting.checked && queries[setting.name])
+            .map((setting) => setting.name);
+        }
+
+        if (typesToQuery.length > 0) {
+          const compositeRequest = typesToQuery.map((name) => ({
             method: "GET",
             url:
               "/services/data/v"
               + apiVersion
               + "/query/?q="
-              + encodeURIComponent(queries[setting.name]),
-            referenceId: setting.name + "Select",
+              + encodeURIComponent(queries[name]),
+            referenceId: name + "Select",
           }));
 
-        const searchResult = await sfConn.rest(
-          "/services/data/v" + apiVersion + "/composite",
-          {method: "POST", body: {compositeRequest}}
-        );
-        let results = searchResult.compositeResponse.filter(
-          (elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0
-        );
+          const searchResult = await sfConn.rest(
+            "/services/data/v" + apiVersion + "/composite",
+            {method: "POST", body: {compositeRequest}}
+          );
+          let results = searchResult.compositeResponse.filter(
+            (elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0
+          );
 
-        let enablePermSetSummary
-          = localStorage.getItem("enablePermSetSummary") === "true";
+          let enablePermSetSummary
+            = localStorage.getItem("enablePermSetSummary") === "true";
 
-        results.forEach((element) => {
-          element.body.records.forEach((rec) => {
-            if (rec.attributes.type === "FlowDefinitionView") {
-              rec.link
-                = "/builder_platform_interaction/flowBuilder.app?flowDefId="
-                + rec.DurableId
-                + "&flowId="
-                + rec.LatestVersionId;
-              rec.label = rec.Label;
-              rec.name = rec.ApiName;
-              rec.detail = rec.attributes.type + " • " + rec.ProcessType;
-            } else if (rec.attributes.type === "Profile") {
-              rec.link
-                = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
-              rec.label = rec.Name;
-              rec.name = rec.Id;
-              rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
-            } else if (rec.attributes.type === "PermissionSet") {
-              rec.label = rec.Label;
-              rec.name = rec.Name;
-              rec.detail = rec.attributes.type + " • " + rec.Type;
-              rec.detail
-                += rec.License?.Name != null ? " • " + rec.License?.Name : "";
+          results.forEach((element) => {
+            element.body.records.forEach((rec) => {
+              if (rec.attributes.type === "FlowDefinitionView") {
+                rec.link
+                  = "/builder_platform_interaction/flowBuilder.app?flowDefId="
+                  + rec.DurableId
+                  + "&flowId="
+                  + rec.LatestVersionId;
+                rec.label = rec.Label;
+                rec.name = rec.ApiName;
+                rec.detail = rec.attributes.type + " • " + rec.ProcessType;
+              } else if (rec.attributes.type === "Profile") {
+                rec.link
+                  = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
+                rec.label = rec.Name;
+                rec.name = rec.Id;
+                rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
+              } else if (rec.attributes.type === "PermissionSet") {
+                rec.label = rec.Label;
+                rec.name = rec.Name;
+                rec.detail = rec.attributes.type + " • " + rec.Type;
+                rec.detail
+                  += rec.License?.Name != null ? " • " + rec.License?.Name : "";
 
-              const isGroup = rec.Type === "Group";
-              let psetOrGroupId = isGroup ? rec.PermissionSetGroupId : rec.Id;
-              let type = isGroup ? "PermSetGroups" : "PermSets";
-              let endLink = enablePermSetSummary
-                ? psetOrGroupId + "/summary"
-                : "page?address=%2F" + psetOrGroupId;
-              rec.link = "/lightning/setup/" + type + "/" + endLink;
-            } else if (rec.attributes.type === "ApexClass") {
-              rec.link
-                = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
-              rec.label = rec.Name;
-              rec.name = rec.NamespacePrefix
-                ? rec.NamespacePrefix + "__" + rec.Name
-                : rec.Name;
-              rec.detail
-                = rec.attributes.type
-                + " • "
-                + rec.ApiVersion
-                + ".0 • "
-                + rec.Status
-                + (rec.NamespacePrefix
-                  ? ""
-                  : " • Length: " + rec.LengthWithoutComments);
-            }
-            rec.title = rec.name;
-            result.push(rec);
+                const isGroup = rec.Type === "Group";
+                let psetOrGroupId = isGroup ? rec.PermissionSetGroupId : rec.Id;
+                let type = isGroup ? "PermSetGroups" : "PermSets";
+                let endLink = enablePermSetSummary
+                  ? psetOrGroupId + "/summary"
+                  : "page?address=%2F" + psetOrGroupId;
+                rec.link = "/lightning/setup/" + type + "/" + endLink;
+              } else if (rec.attributes.type === "ApexClass") {
+                rec.link
+                  = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
+                rec.label = rec.Name;
+                rec.name = rec.NamespacePrefix
+                  ? rec.NamespacePrefix + "__" + rec.Name
+                  : rec.Name;
+                rec.detail
+                  = rec.attributes.type
+                  + " • "
+                  + rec.ApiVersion
+                  + ".0 • "
+                  + rec.Status
+                  + (rec.NamespacePrefix
+                    ? ""
+                    : " • Length: " + rec.LengthWithoutComments);
+              }
+              rec.title = rec.name;
+              result.push(rec);
+            });
           });
-        });
+        }
       }
       //if no result found, add the global search link
       result.length > 0
         ? result
         : result.push({
-          Id: "global-search-" + shortcutSearch,
-          link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch),
-          label: '"' + shortcutSearch + '"',
+          Id: "global-search-" + query,
+          link: "/one/one.app#" + this.getEncodedGlobalSearch(query),
+          label: '"' + query + '"',
           detail: "No results found",
           name: "Use Global Search",
         });
@@ -2578,6 +2717,8 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   resultRender(matches, shortcutQuery) {
+    const {query} = this.parseShortcutSearch((shortcutQuery || "").trim());
+    const highlightQuery = query || shortcutQuery || "";
     return matches.map((value, index) => ({
       key: value.Id || "shortcut-" + index,
       value,
@@ -2593,8 +2734,8 @@ class AllDataBoxShortcut extends React.PureComponent {
             text: value.label,
             start: value.label
               .toLowerCase()
-              .indexOf(shortcutQuery.toLowerCase()),
-            length: shortcutQuery.length,
+              .indexOf(highlightQuery.toLowerCase()),
+            length: highlightQuery.length,
           })
         ),
         h(
@@ -2609,8 +2750,8 @@ class AllDataBoxShortcut extends React.PureComponent {
             text: value.name,
             start: value.name
               .toLowerCase()
-              .indexOf(shortcutQuery.toLowerCase()),
-            length: shortcutQuery.length,
+              .indexOf(highlightQuery.toLowerCase()),
+            length: highlightQuery.length,
           })
         ),
       ],
@@ -2633,7 +2774,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         getMatches: this.getMatches,
         onDataSelect: this.onDataSelect,
         inputSearchDelay: 200,
-        placeholderText: "Quick find links, shortcuts",
+        placeholderText: "Search… /links !perm !flow !profile !class",
         resultRender: this.resultRender,
         sfHost,
         icon: "add",
@@ -2687,14 +2828,17 @@ class AllDataBoxOrg extends React.PureComponent {
 
   getNextMajorRelease(maintenances) {
     if (maintenances) {
-      let event = maintenances.find((event) =>
-        event.name.endsWith("Major Release")
+      let event = maintenances.find((e) =>
+        e && e.name && e.name.endsWith("Major Release")
       );
-      return (
-        event.name.replace(" Major Release", "")
-        + " on "
-        + new Date(event.plannedStartTime).toDateString()
-      );
+
+      if (event) {
+        return (
+          event.name.replace(" Major Release", "")
+          + " on "
+          + new Date(event.plannedStartTime).toDateString()
+        );
+      }
     }
     return null;
   }
@@ -2935,9 +3079,11 @@ class AllDataBoxOrg extends React.PureComponent {
                 h(
                   "td",
                   {},
-                  this.getNextMajorRelease(
-                    this.state.instanceStatus?.Maintenances
-                  )
+                  this.state.instanceStatus
+                    ? this.getNextMajorRelease(
+                      this.state.instanceStatus.Maintenances
+                    ) || "None scheduled"
+                    : ""
                 )
               )
             )
@@ -3046,6 +3192,18 @@ class UserDetails extends React.PureComponent {
       }
       let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
 
+      // Resolve the debug level to use before checking for an existing trace flag,
+      // so a missing configured level always falls back to the same "sfir" level
+      // (otherwise repeated clicks would keep creating duplicate trace flags).
+      let debugLog = await this.getDebugLog(debugLogDebugLevel);
+      let debugLevelId;
+      if (debugLog && debugLog.size > 0) {
+        debugLevelId = debugLog.records[0].Id;
+      } else {
+        debugLevelId = await this.getOrCreateSfirDebugLevel();
+        debugLogDebugLevel = "sfir";
+      }
+
       let traceFlags = await this.getTraceFlags(
         user.Id,
         DTnow,
@@ -3059,22 +3217,12 @@ class UserDetails extends React.PureComponent {
         await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
         //Else create new trace flag
       } else {
-        let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-        if (debugLog && debugLog.size > 0) {
-          await this.insertTraceFlag(
-            user.Id,
-            debugLog.records[0].Id,
-            DTnow,
-            debugTimeInMs
-          );
-        } else {
-          throw new Error(
-            'Debug Level with developerName = "'
-              + debugLogDebugLevel
-              + '" not found'
-          );
-        }
+        await this.insertTraceFlag(
+          user.Id,
+          debugLevelId,
+          DTnow,
+          debugTimeInMs
+        );
       }
       // Update button state to show it's enabled
       this.setState({
@@ -3195,6 +3343,40 @@ class UserDetails extends React.PureComponent {
     }
   }
 
+  async getOrCreateSfirDebugLevel() {
+    const sfirDebugLevelName = "sfir";
+    let debugLog = await this.getDebugLog(sfirDebugLevelName);
+    if (debugLog && debugLog.size > 0) {
+      return debugLog.records[0].Id;
+    }
+    let createdDebugLevel = await this.createDebugLevel(sfirDebugLevelName);
+    return createdDebugLevel.id;
+  }
+
+  createDebugLevel(developerName) {
+    try {
+      let newDebugLevel = {
+        DeveloperName: developerName,
+        MasterLabel: developerName,
+        ApexCode: "FINEST",
+        ApexProfiling: "FINEST",
+        Callout: "FINEST",
+        Database: "FINEST",
+        System: "FINEST",
+        Validation: "FINEST",
+        Visualforce: "FINEST",
+        Workflow: "FINEST",
+      };
+      return sfConn.rest(
+        "/services/data/v" + apiVersion + "/tooling/sobjects/debuglevel",
+        {method: "POST", body: newDebugLevel}
+      );
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
   insertTraceFlag(userId, debugLogId, DTnow, debugTimeInMs) {
     try {
       let newTraceFlag = {
@@ -3241,8 +3423,7 @@ class UserDetails extends React.PureComponent {
     let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
     //No API to determine if user is allowed to login as given user. See https://salesforce.stackexchange.com/questions/224342/query-can-i-login-as-for-users
-    const isFrozen = !!user?.UserLogins?.records?.[0]?.IsFrozen;
-    if (!user || user.Id == currentUserId || !user.IsActive || isFrozen) {
+    if (!user || user.Id == currentUserId || !user.IsActive) {
       return false;
     }
     return true;
@@ -3252,14 +3433,14 @@ class UserDetails extends React.PureComponent {
     return user.IsActive && user.NetworkId;
   }
 
-  getLoginAsLink(userId) {
-    let {sfHost, contextOrgId, contextPath} = this.props;
+  // Relative servlet.su path — used for the plain LoginAs link and as redirect_uri
+  // for the Single Access call in loginAsInIncognito.
+  getLoginAsPath(userId) {
+    let {contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
     const targetUrl = contextPath || "/";
     return (
-      "https://"
-      + sfHost
-      + "/servlet/servlet.su"
+      "/servlet/servlet.su"
       + "?oid="
       + encodeURIComponent(contextOrgId)
       + "&suorgadminid="
@@ -3271,7 +3452,35 @@ class UserDetails extends React.PureComponent {
     );
   }
 
-  loginAsInIncognito(userId) {
+  getLoginAsLink(userId) {
+    let {sfHost} = this.props;
+    return "https://" + sfHost + this.getLoginAsPath(userId);
+  }
+
+  async loginAsInIncognito(userId) {
+    // Reusing the live session id to bootstrap a second browser context gets flagged
+    // as a hijack and kills the main tab's session. Use Salesforce's Single Access
+    // UI Bridge API instead - it mints a separate one-time frontdoor URL without
+    // touching the live session.
+    // suppressSessionError: a 401/403 here is an expected "this org/session doesn't
+    // support Single Access" signal, not a real expired-session event - don't let it
+    // pop the global "Access Token Expired" toast banner on the main tab.
+    try {
+      const redirectUri = this.getLoginAsPath(userId).replace(/^\//, "");
+      const singleAccess = await sfConn.rest(
+        "/services/oauth2/singleaccess?redirect_uri=" + encodeURIComponent(redirectUri),
+        {method: "GET", suppressSessionError: true}
+      );
+      if (singleAccess && singleAccess.frontdoor_uri) {
+        console.log("[LoginAs Incognito] Single Access UI Bridge succeeded, using frontdoor_uri");
+        this.openUrlInIncognito(singleAccess.frontdoor_uri);
+        return;
+      }
+      console.warn("[LoginAs Incognito] Single Access UI Bridge returned no frontdoor_uri, falling back to frontdoor.jsp with session id", singleAccess);
+    } catch (e) {
+      console.warn(`[LoginAs Incognito] Single Access UI Bridge request failed (${e.name || "Error"}: ${e.message}), falling back to frontdoor.jsp with session id`, e);
+    }
+    // Fallback if Single Access isn't available for this org/token
     const targetUrl
       = "https://"
       + this.sfHost
@@ -4951,9 +5160,9 @@ class Autocomplete extends React.PureComponent {
               {
                 key: key || "result-" + (firstRenderedIndex + index),
                 className:
-                  "slds-dropdown__item "
+                  "slds-dropdown__item autocomplete-item "
                   + (selectedIndex == index + firstRenderedIndex
-                    ? "selected-old"
+                    ? "selected"
                     : ""),
                 onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () =>
@@ -5093,9 +5302,15 @@ function sfLocaleKeyToCountryCode(localeKey) {
     return "";
   }
   const splitted = localeKey.split("_");
-  return splitted[
+  const code = splitted[
     splitted.length > 1 && !localeKey.includes("_LATN_") ? 1 : 0
   ].toLowerCase();
+  // Languages without their own ISO 3166 country code: Catalan (ca) and Basque (eu), added in Salesforce Summer '26
+  const regionalFlags = {ca: "catalonia", eu: "basque"};
+  if (splitted.length === 1 && regionalFlags[code]) {
+    return regionalFlags[code];
+  }
+  return code;
 }
 
 window.getRecordId = getRecordId; // for unit tests

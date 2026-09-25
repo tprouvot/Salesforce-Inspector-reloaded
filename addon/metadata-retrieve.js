@@ -1157,6 +1157,7 @@ class App extends React.Component {
                   },
                   h("option", {value: "NoTestRun"}, "No Test Run"),
                   h("option", {value: "RunSpecifiedTests"}, "Run Specified Tests"),
+                  h("option", {value: "RunRelevantTests"}, "Run Relevant Tests (beta)"),
                   h("option", {value: "RunLocalTests"}, "Run Local Tests"),
                   h("option", {value: "RunAllTestsInOrg"}, "Run All Tests in Org")
                   )

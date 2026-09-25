@@ -48,7 +48,84 @@ textarea[hidden] {
 
 #query {
   height: 5em;
-  min-height: 7em;
+  min-height: 2.5em;
+}
+
+/*
+ * Query editor overlay: a transparent #query textarea sits on top of the
+ * .query-highlight <pre> so the real caret/selection/resize-handle stay
+ * native while Prism-highlighted text shows through underneath.
+ * Font metrics and box model below MUST stay identical between the two
+ * layers (font-family/size/line-height/letter-spacing, box-sizing,
+ * padding, border width, white-space) or characters drift out of
+ * alignment, especially over long lines.
+ */
+.query-editor {
+  position: relative;
+  width: 100%;
+}
+
+.query-editor #query,
+.query-editor .query-highlight {
+  box-sizing: border-box;
+  font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  word-wrap: normal;
+  tab-size: 4;
+}
+
+.query-editor #query {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  color: transparent;
+  caret-color: #16325c;
+}
+
+.query-editor #query::selection {
+  /* The browser paints ::selection as an opaque rect on top of the (real)
+     textarea, hiding the highlighted <pre> underneath it. Fall back to a
+     plain, readable text color here instead of transparent, since syntax
+     colors from the layer below cannot show through a selection. */
+  color: #16325c;
+  background-color: rgba(21, 137, 238, 0.35);
+}
+
+.query-editor .query-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #fff;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-bottom-right-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+}
+
+.query-editor .query-highlight code {
+  display: block;
+  font: inherit;
+  white-space: inherit;
+  background: none;
+  text-shadow: none;
+  padding: 0;
+  margin: 0;
+  /* Override prism.css's unscoped code[class*="language-"] rule, which
+     otherwise gives the code element its own scroll box (height/max-height:
+     inherit + overflow: auto), competing with the scrollTop we sync onto
+     the outer .query-highlight <pre>. */
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 #result-area {

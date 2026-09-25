@@ -516,6 +516,22 @@ export class Model {
     copyToClipboard(csvSerialize([header, ...data], separator));
   }
 
+  downloadResult(separator) {
+    let header = this.importData.importTable.header.map(c => c.columnValue);
+    let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
+    let csvContent = csvSerialize([header, ...data], separator);
+    let objectName = this.importType;
+    let actionName = this.importAction[0].toUpperCase() + this.importAction.slice(1);
+    const statuses = ["Succeeded", "Failed", "Processing", "Queued"];
+    let countParts = statuses
+      .filter(status => this.showStatus[status] && this.importData.counts[status] > 0)
+      .map(status => `${status}_${this.importData.counts[status]}`);
+    let countsStr = countParts.length > 0 ? "-" + countParts.join("-") : "";
+    let dateStr = new Date().toLocaleDateString();
+    let filename = `${objectName}-${actionName}${countsStr}-${dateStr}.csv`;
+    downloadCsvFile(csvContent, filename);
+  }
+
   importCounts() {
     return this.importData.counts;
   }
@@ -1474,6 +1490,7 @@ export class App extends React.Component {
     this.onRetryFailedClick = this.onRetryFailedClick.bind(this);
     this.onCopyAsExcelClick = this.onCopyAsExcelClick.bind(this);
     this.onCopyAsCsvClick = this.onCopyAsCsvClick.bind(this);
+    this.onDownloadAsCsvClick = this.onDownloadAsCsvClick.bind(this);
     this.onCopyOptionsClick = this.onCopyOptionsClick.bind(this);
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
@@ -1612,6 +1629,15 @@ export class App extends React.Component {
       separator = localStorage.getItem("csvSeparator");
     }
     model.copyResult(separator);
+  }
+  onDownloadAsCsvClick(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+    model.downloadResult(separator);
   }
   onCopyOptionsClick(e) {
     e.preventDefault();
@@ -2053,8 +2079,13 @@ export class App extends React.Component {
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
               h("div", {className: "slds-button-group"},
-                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel format)"),
+                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel)"),
                 h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"}, "Copy (CSV)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsvClick, title: "Download as a CSV file"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#download"})
+                  )
+                )
               ),
             ),
             h("div", {className: "slds-col"},
@@ -2267,15 +2298,26 @@ function convertValueForApi(value) {
   return !Number.isNaN(n) && String(n) === s ? n : s;
 }
 
+function isUnsafeKey(key) {
+  return key === "__proto__" || key === "constructor" || key === "prototype";
+}
+
 function setNestedValue(obj, path, value) {
   const parts = path.split(".");
   let cur = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const k = parts[i];
+    if (isUnsafeKey(k)) {
+      throw new Error(`Invalid field path "${path}"`);
+    }
     if (!(cur[k] && typeof cur[k] === "object")) cur[k] = {};
     cur = cur[k];
   }
-  cur[parts[parts.length - 1]] = value;
+  const lastKey = parts[parts.length - 1];
+  if (isUnsafeKey(lastKey)) {
+    throw new Error(`Invalid field path "${path}"`);
+  }
+  cur[lastKey] = value;
 }
 
 // Neither SOAP upsert() nor the REST sObject Collections upsert endpoint can refuse to insert.

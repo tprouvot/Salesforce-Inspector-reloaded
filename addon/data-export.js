@@ -1356,8 +1356,13 @@ function RecordTable(vm) {
       let order = parseSelectFieldOrder(vm.queryInput && vm.queryInput.value);
       if (order) {
         order.forEach((field, idx) => {
-          if (!fieldRank.has(field)) {
-            fieldRank.set(field, idx);
+          let parts = field.split(".");
+          let tempPath = "";
+          for (let part of parts) {
+            tempPath = tempPath ? tempPath + "." + part : part;
+            if (!fieldRank.has(tempPath)) {
+              fieldRank.set(tempPath, idx);
+            }
           }
         });
       }

@@ -6,22 +6,20 @@ import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile, BulkJobStore, BULK_STATE, BULK_MAX_UPLOAD_BYTES, isBulkJobTerminal, utf8ByteLength} from "./utils.js";
 
-const BULK_API = "Bulk";
-
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
   {value: "Tooling", label: "Tooling"},
   {value: "Metadata", label: "Metadata"},
-  {value: BULK_API, label: "Bulk API 2.0"}
+  {value: "Bulk", label: "Bulk API 2.0"}
 ];
 
 const allActions = [
-  {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling", BULK_API], bulkOperation: "insert"},
-  {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling", BULK_API], bulkOperation: "update"},
-  {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling", BULK_API], bulkOperation: "upsert"},
+  {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "insert"},
+  {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "update"},
+  {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "upsert"},
   {value: "upsertUpdateOnly", label: "Upsert (Update Only)", supportedApis: ["Enterprise"]},
-  {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling", BULK_API], bulkOperation: "delete"},
-  {value: "hardDelete", label: "Hard Delete", supportedApis: [BULK_API], bulkOperation: "hardDelete"},
+  {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "delete"},
+  {value: "hardDelete", label: "Hard Delete", supportedApis: ["Bulk"], bulkOperation: "hardDelete"},
   {value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"]},
   {value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"]},
   {value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"]}
@@ -114,7 +112,7 @@ export class Model {
   }
 
   isBulk() {
-    return this.apiType === BULK_API;
+    return this.apiType === "Bulk";
   }
 
   // set available actions based on api type, and set the first one as the default
@@ -219,7 +217,7 @@ export class Model {
     if (sobj) {
       // We avoid overwriting the Tooling or Bulk option in case it was already set
       this.apiType = sobj.endsWith("__mdt") ? "Metadata"
-        : this.apiType === "Tooling" || this.apiType === BULK_API ? this.apiType
+        : this.apiType === "Tooling" || this.apiType === "Bulk" ? this.apiType
         : "Enterprise";
       this.updateAvailableActions();
       this.importType = sobj;

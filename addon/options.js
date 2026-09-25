@@ -135,6 +135,7 @@ class OptionsTabSelector extends React.Component {
               ]}
           },
           {option: Option, props: {type: "toggle", title: "Enable Dynamic Popup Height", key: "popupHeighDynamictMode", default: false, tooltip: "When enabled, the popup height will be dynamically adjusted based on the content."}},
+          {option: Option, props: {type: "toggle", title: "Hide duplicate popup in embedded pages", key: "popupHideInEmbeddedPages", default: false, tooltip: "When enabled, hides the popup in embedded pages (such as Reports, Dashboards, Setup pages, and Visualforce pages) to prevent duplicate arrows on the screen."}},
           {option: Option, props: {type: "toggle", title: "Show recently viewed records in popup", key: Constants.ENABLE_RECENTLY_VIEWED_RECORDS, default: true, tooltip: "When enabled, queries and displays recently viewed records when focusing the Object search field in the popup."}},
         ]
       },

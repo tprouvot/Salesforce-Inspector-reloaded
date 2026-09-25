@@ -7,7 +7,7 @@ const visualForceDomains = ["visualforce.com", "vf.force.com"];
 if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
-    if (sfHost) {
+    if (sfHost && !document.getElementById("insext")) {
       initButton(sfHost, false);
       let script = document.createElement("script");
       script.src = chrome.runtime.getURL("inject.js");
@@ -19,6 +19,9 @@ if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #s
 function initButton(sfHost, inInspector) {
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
+  if (window !== window.top) {
+    rootEl.style.display = "none";
+  }
   let btn = document.createElement("button");
   let iFrameLocalStorage = {};
   btn.type = "button";
@@ -227,6 +230,10 @@ function initButton(sfHost, inInspector) {
         resetPopupClass("iframe", dynamicHeight, o, pos, dir);
         if (dir) {
           popupEl.classList.add(`insext-popup-${o}-${dir}`);
+        }
+        const hideIframes = getKeyFromStorage("iframe", "popupHideInEmbeddedPages", "true") === "true";
+        if (window !== window.top && !hideIframes) {
+          rootEl.style.display = "";
         }
         setRootCSSProperties(rootEl, btn);
         setFavicon(sfHost);

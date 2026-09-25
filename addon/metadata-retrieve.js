@@ -1,7 +1,7 @@
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, generatePackageXml} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, generatePackageXml, SearchFocusManager} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
 
@@ -560,11 +560,19 @@ class App extends React.Component {
     if (packageXml) {
       packageXml.addEventListener("paste", this.onPastePackage);
     }
+
+    this.searchFocusManager = new SearchFocusManager(() => {
+      return this.refs.metadataFilter;
+    });
+    this.searchFocusManager.register();
   }
   componentWillUnmount() {
     const packageXml = document.getElementById("packageXml");
     if (packageXml) {
       packageXml.removeEventListener("paste", this.onPastePackage);
+    }
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
     }
   }
   componentDidUpdate(){

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {UserInfoModel, createSpinForMethod, isRecordId, generatePackageXml} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, isRecordId, generatePackageXml, SearchFocusManager} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 /* global initButton */
 
@@ -1845,6 +1845,17 @@ ${(() => {
 }
 
 class App extends React.Component {
+  componentDidMount() {
+    this.searchFocusManager = new SearchFocusManager(() => {
+      return document.getElementById("depDropdownSearch");
+    });
+    this.searchFocusManager.register();
+  }
+  componentWillUnmount() {
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
+  }
 
   render() {
     let {model} = this.props;
@@ -2440,6 +2451,7 @@ class App extends React.Component {
                   className: "dep-dropdown-search"
                 },
                 h("input", {
+                  id: "depDropdownSearch",
                   type: "text",
                   placeholder: "Search...",
                   value: model._dropdownSearch,

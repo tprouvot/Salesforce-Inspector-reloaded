@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile, SearchFocusManager} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -1174,9 +1174,17 @@ class App extends React.Component {
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
     model.updateImportTableResult();
+
+    this.searchFocusManager = new SearchFocusManager(() => {
+      return document.getElementById("form-search-object");
+    });
+    this.searchFocusManager.register();
   }
   componentWillUnmount() {
     window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
   componentDidUpdate() {
     let {model} = this.props;

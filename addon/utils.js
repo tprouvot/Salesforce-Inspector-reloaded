@@ -1177,9 +1177,10 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent("SELECT COUNT() FROM EntityDefinition")}`)
         .then((res) => {
           const entityNb = res.totalSize;
+          const requests = [];
           for (let bucket = 0; bucket < Math.ceil(entityNb / batchSize); bucket++) {
             const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName LIMIT ${batchSize} OFFSET ${bucket * batchSize}`;
-            sfConn
+            requests.push(sfConn
               .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`)
               .then((respEntity) => {
                 for (let record of respEntity.records) {
@@ -1204,8 +1205,9 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
               })
               .catch((err) => {
                 console.error("list entity definitions: ", err);
-              });
+              }));
           }
+          return Promise.all(requests);
         })
         .catch((err) => {
           console.error("count entity definitions: ", err);

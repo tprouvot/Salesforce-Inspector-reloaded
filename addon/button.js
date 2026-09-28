@@ -7,13 +7,52 @@ const visualForceDomains = ["visualforce.com", "vf.force.com"];
 if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
-    if (sfHost) {
-      initButton(sfHost, false);
+    if (sfHost && !document.getElementById("insext")) {
+      if (!isEmbeddedInSalesforce()) {
+        initButton(sfHost, false);
+      }
       let script = document.createElement("script");
       script.src = chrome.runtime.getURL("inject.js");
       document.body.appendChild(script);
     }
   });
+}
+
+// Salesforce renders some pages (Reports, Dashboards, Setup) in iframes, where the content script also runs.
+// Those frames must not get a second button, but a Salesforce page embedded in an external site (e.g. a portal) should.
+function isEmbeddedInSalesforce() {
+  if (window === window.top) {
+    return false;
+  }
+  // Reuse the content script host patterns ("https://*.salesforce.com/*" -> ".salesforce.com")
+  const sfDomains = chrome.runtime.getManifest().content_scripts
+    .flatMap(cs => cs.matches)
+    .map(match => match.replace(/^https:\/\/\*|\/\*$/g, ""));
+  const isSalesforceOrigin = origin => {
+    try {
+      const hostname = new URL(origin).hostname;
+      return sfDomains.some(domain => hostname.endsWith(domain));
+    } catch {
+      return false;
+    }
+  };
+  // Chromium: origin of the direct parent frame, so only the outermost Salesforce frame gets the button
+  if (location.ancestorOrigins) {
+    return location.ancestorOrigins.length > 0 && isSalesforceOrigin(location.ancestorOrigins[0]);
+  }
+  // Firefox: the parent frame is only readable when same-origin, which means Salesforce
+  try {
+    if (isSalesforceOrigin(window.parent.location.origin)) {
+      return true;
+    }
+  } catch {
+    // cross-origin parent frame
+  }
+  if (document.referrer) {
+    return isSalesforceOrigin(document.referrer);
+  }
+  // Unknown parent: keep the button
+  return false;
 }
 
 function initButton(sfHost, inInspector) {

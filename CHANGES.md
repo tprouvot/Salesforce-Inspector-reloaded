@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Popup` Hide the duplicate popup button when a Salesforce page is embedded in another Salesforce page (Reports, Dashboards, Setup pages), while keeping it for Salesforce pages embedded in external sites such as portals [issue #1383](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1383) (contribution by [Ruben Halman](https://github.com/RubenHalman) and [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing
 - `Show All Data` Improve selected text visibility on highlighted rows [issue #1097](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1097) (contribution by [James C](https://github.com/Exotic209093))
 - `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by Prem Kumar)

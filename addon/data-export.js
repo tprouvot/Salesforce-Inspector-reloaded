@@ -142,6 +142,9 @@ class Model {
   isBulk() {
     return this.queryApiMode === API_MODE.BULK;
   }
+  isBulkJobRunning() {
+    return this.isBulkWorking || (this.bulkJob && !isBulkJobTerminal(this.bulkJob.state));
+  }
   // Tooling API has no queryAll equivalent
   supportsQueryAll() {
     return !this.isTooling();
@@ -901,6 +904,9 @@ class Model {
       this.doBulkExport();
       return;
     }
+    if (this.isWorking) {
+      return; // Prevent duplicate standard export calls while one is running
+    }
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
     exportedData.isTooling = vm.isTooling();
@@ -1152,9 +1158,11 @@ class Model {
     this.queryInput.value = query;
     this.bulkMessage = null;
     this.bulkPreview = null;
-    this.exportError = null;
+    if (this.isBulk()) {
+      this.exportError = null;
+      this.exportStatus = "Submitting bulk job...";
+    }
     this.isBulkWorking = true;
-    this.exportStatus = "Submitting bulk job...";
 
     this.spinFor(this.bulkRest(this.bulkEndpoint(), {
       method: "POST",
@@ -1177,15 +1185,19 @@ class Model {
         recordCount: null,
         errorMessage: null
       });
-      this.exportStatus = "Bulk job queued";
+      if (this.isBulk()) {
+        this.exportStatus = "Bulk job queued";
+      }
       this.queryHistory.add(this.historyEntryFor(query));
       this.startBulkPolling();
       this.didUpdate();
     }).catch(error => {
       console.error(error);
       this.isBulkWorking = false;
-      this.exportStatus = "Error";
-      this.exportError = "Could not create bulk job: " + error.message;
+      if (this.isBulk()) {
+        this.exportStatus = "Error";
+        this.exportError = "Could not create bulk job: " + error.message;
+      }
       this.didUpdate();
     }));
   }
@@ -1211,17 +1223,23 @@ class Model {
       if (terminal) {
         this.isBulkWorking = false;
         this.stopBulkPolling();
-        this.exportStatus = res.state === BULK_STATE.JOB_COMPLETE
-          ? `Bulk job complete${this.bulkJob.recordCount != null ? ` - ${this.bulkJob.recordCount} record${s(this.bulkJob.recordCount)}` : ""}`
-          : `Bulk job ${res.state.toLowerCase()}`;
+        if (this.isBulk()) {
+          this.exportStatus = res.state === BULK_STATE.JOB_COMPLETE
+            ? `Bulk job complete${this.bulkJob.recordCount != null ? ` - ${this.bulkJob.recordCount} record${s(this.bulkJob.recordCount)}` : ""}`
+            : `Bulk job ${res.state.toLowerCase()}`;
+        }
       } else {
-        this.exportStatus = `Bulk job ${res.state}...`;
+        if (this.isBulk()) {
+          this.exportStatus = `Bulk job ${res.state}...`;
+        }
       }
       this.didUpdate();
     }).catch(error => {
       console.error(error);
       this.bulkPollFailures++;
-      this.exportError = "Could not read bulk job status: " + error.message;
+      if (this.isBulk()) {
+        this.exportError = "Could not read bulk job status: " + error.message;
+      }
       // Tolerate transient network errors up to the failure limit
       if (this.bulkPollFailures >= Model.BULK_POLL_MAX_FAILURES) {
         this.stopBulkPolling();
@@ -1296,12 +1314,16 @@ class Model {
       return;
     }
     this.bulkMessage = null;
-    this.exportStatus = "Downloading bulk results...";
+    if (this.isBulk()) {
+      this.exportStatus = "Downloading bulk results...";
+    }
     this.spinFor(this.fetchBulkResults(job).then(csv => {
       const label = job.object || "bulk-export";
       downloadCsvFile(csv, `${label}-${new Date().toISOString().slice(0, 10)}.csv`);
       this.bulkPreview = buildCsvPreview(csv);
-      this.exportStatus = `Downloaded${job.recordCount != null ? ` ${job.recordCount} record${s(job.recordCount)}` : ""}`;
+      if (this.isBulk()) {
+        this.exportStatus = `Downloaded${job.recordCount != null ? ` ${job.recordCount} record${s(job.recordCount)}` : ""}`;
+      }
       this.didUpdate();
     }).catch(error => {
       console.error(error);
@@ -1310,10 +1332,14 @@ class Model {
         this.bulkJobStore.forget(jobId);
         this.bulkJob = this.bulkJobStore.get();
         this.bulkMessage = "Results are no longer available for that job - Salesforce keeps them for 7 days.";
-      } else {
+      } else if (this.isBulk()) {
         this.exportError = "Could not download bulk results: " + error.message;
+      } else {
+        this.bulkMessage = "Could not download bulk results: " + error.message;
       }
-      this.exportStatus = "Error";
+      if (this.isBulk()) {
+        this.exportStatus = "Error";
+      }
       this.didUpdate();
     }));
   }
@@ -1325,7 +1351,9 @@ class Model {
     this.bulkPreview = null;
     this.bulkMessage = null;
     this.isBulkWorking = false;
-    this.exportStatus = "Ready";
+    if (this.isBulk()) {
+      this.exportStatus = "Ready";
+    }
   }
 
   bulkElapsed() {
@@ -2573,7 +2601,13 @@ class App extends React.Component {
                     )
                   ),
                   h("li", {className: "slds-button-group-item"},
-                    h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
+                    h("button", {
+                      tabIndex: 1,
+                      disabled: model.isBulk() ? model.isBulkJobRunning() : model.isWorking,
+                      onClick: this.onExport,
+                      title: "Ctrl+Enter / F5",
+                      className: "slds-button slds-button_brand"
+                    }, "Run Export")
                   ),
                   h("li", {className: "slds-button-group-item"},
                     isOptionEnabled("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "slds-button slds-button_neutral copy-id"}, "Export Query") : null

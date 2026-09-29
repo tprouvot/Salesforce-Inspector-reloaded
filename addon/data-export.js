@@ -404,8 +404,118 @@ class Model {
       return sortRank(a) - sortRank(b) || a.rank - b.rank || a.value.localeCompare(b.value);
     }
 
+    // Parse query scope hierarchy (main query and subqueries) ignoring string literals
+    let inString = false;
+    let stringChar = "";
+    let mainScope = { start: 0, close: query.length, children: [], parent: null };
+    let scopeStack = [mainScope];
+
+    for (let i = 0; i < query.length; i++) {
+      let c = query[i];
+      if (inString) {
+        if (c === stringChar) {
+          if (c === "'" && query[i + 1] === "'") {
+            i++;
+          } else {
+            inString = false;
+          }
+        } else if (c === "\\") {
+          i++;
+        }
+        continue;
+      }
+      if (c === "'" || c === '"') {
+        inString = true;
+        stringChar = c;
+        continue;
+      }
+      if (c === "(") {
+        let rest = query.substring(i + 1);
+        if (/^\s*select\b/i.test(rest)) {
+          let parentScope = scopeStack[scopeStack.length - 1];
+          let newScope = { start: i, close: query.length, children: [], parent: parentScope };
+          parentScope.children.push(newScope);
+          scopeStack.push(newScope);
+        }
+      } else if (c === ")") {
+        if (scopeStack.length > 1) {
+          let topScope = scopeStack.pop();
+          topScope.close = i;
+        }
+      }
+    }
+
+    function getInnermostScope(scope) {
+      for (let child of scope.children) {
+        if (selStart > child.start && selStart <= child.close) {
+          return getInnermostScope(child);
+        }
+      }
+      return scope;
+    }
+    let activeScope = getInnermostScope(mainScope);
+
+    // Resolves the target SObject API name for a scope, mapping child relationship names (e.g., Contacts) to child SObjects (e.g., Contact) via parent describe metadata
+    function getScopeSobjectName(scope) {
+      if (!scope) return "";
+      let sStart = scope.start;
+      let sClose = scope.close;
+      let sChars = query.substring(sStart, sClose + 1).split("");
+      for (let child of scope.children) {
+        let cStart = child.start - sStart;
+        let cEnd = child.close - sStart;
+        for (let k = cStart; k <= cEnd && k < sChars.length; k++) {
+          sChars[k] = " ";
+        }
+      }
+      let mQuery = sChars.join("");
+      let fMatch = [...mQuery.matchAll(/(^|\s)from\s+([a-z0-9_]*)/gi)].pop();
+      if (!fMatch) return "";
+      let relOrObjName = fMatch[2];
+      if (!relOrObjName) return "";
+
+      if (scope.parent) {
+        let parentObjName = getScopeSobjectName(scope.parent);
+        if (parentObjName) {
+          let {sobjectDescribe: parentDescribe} = vm.describeInfo.describeSobject(useToolingApi, parentObjName);
+          if (parentDescribe && parentDescribe.childRelationships) {
+            let rel = parentDescribe.childRelationships.find(r => (r.relationshipName && r.relationshipName.toLowerCase() === relOrObjName.toLowerCase()) || (r.childSObject && r.childSObject.toLowerCase() === relOrObjName.toLowerCase()));
+            if (rel && rel.childSObject) {
+              return rel.childSObject;
+            }
+          }
+        }
+      }
+      return relOrObjName;
+    }
+
     // If we are just after the "from" keyword, autocomplete the sobject name
     if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
+      if (activeScope && activeScope.parent) {
+        let parentObjName = getScopeSobjectName(activeScope.parent);
+        if (parentObjName) {
+          let {sobjectDescribe: parentDescribe} = vm.describeInfo.describeSobject(useToolingApi, parentObjName);
+          if (parentDescribe && parentDescribe.childRelationships) {
+            vm.autocompleteResults = {
+              sobjectName: parentObjName,
+              title: "Child relationships for " + parentObjName + ":",
+              results: new Enumerable(parentDescribe.childRelationships)
+                .filter(rel => rel.relationshipName && (rel.relationshipName.toLowerCase().includes(searchTerm.toLowerCase()) || rel.childSObject.toLowerCase().includes(searchTerm.toLowerCase())))
+                .map(rel => ({
+                  value: rel.relationshipName,
+                  title: rel.childSObject + " (" + rel.field + ")",
+                  suffix: " ",
+                  rank: 1,
+                  autocompleteType: "object",
+                  dataType: ""
+                }))
+                .toArray()
+                .sort(resultsSort)
+            };
+            return;
+          }
+        }
+      }
       let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
       if (!globalDescribe) {
         switch (globalStatus) {
@@ -446,15 +556,28 @@ class Model {
     }
 
     let sobjectName, isAfterFrom;
-    // Find out what sobject we are querying, by using the word after the "from" keyword.
-    // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
-    let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
+    sobjectName = getScopeSobjectName(activeScope);
+
+    let scopeStart = activeScope.start;
+    let scopeClose = activeScope.close;
+    let scopeTextChars = query.substring(scopeStart, scopeClose + 1).split("");
+    for (let child of activeScope.children) {
+      let cStart = child.start - scopeStart;
+      let cEnd = child.close - scopeStart;
+      for (let k = cStart; k <= cEnd && k < scopeTextChars.length; k++) {
+        scopeTextChars[k] = " ";
+      }
+    }
+    let maskedScopeQuery = scopeTextChars.join("");
+
+    let fromKeywordMatch = [...maskedScopeQuery.matchAll(/(^|\s)from\s+([a-z0-9_]*)/gi)].pop();
+
     let findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
     let graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
     if (fromKeywordMatch) {
-      sobjectName = fromKeywordMatch[2];
-      isAfterFrom = selStart > fromKeywordMatch.index + 1;
-    } else {
+      let fromIndex = scopeStart + fromKeywordMatch.index + fromKeywordMatch[1].length;
+      isAfterFrom = selStart > fromIndex;
+    } else if (!sobjectName) {
       // We still want to find the from keyword if the user is typing just before the keyword, and there is no space.
       fromKeywordMatch = /^from\s+([a-z0-9_]*)/i.exec(query.substring(selEnd));
       if (fromKeywordMatch) {
@@ -468,16 +591,6 @@ class Model {
           results: []
         };
         return;
-      }
-    }
-    // If we are in a subquery, try to detect that.
-    fromKeywordMatch = /\(\s*select.*\sfrom\s+([a-z0-9_]*)/i.exec(query);
-    if (fromKeywordMatch && fromKeywordMatch.index < selStart) {
-      let subQuery = query.substring(fromKeywordMatch.index, selStart);
-      // Try to detect if the subquery ends before the selection
-      if (subQuery.split(")").length < subQuery.split("(").length) {
-        sobjectName = fromKeywordMatch[1];
-        isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
       }
     }
     vm.updateCurrentTabName(sobjectName);

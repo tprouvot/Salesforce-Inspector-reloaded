@@ -125,6 +125,136 @@ export class StorageHistory {
   }
 }
 
+// Bulk API 2.0 job states
+export const BULK_STATE = {
+  OPEN: "Open",
+  UPLOAD_COMPLETE: "UploadComplete",
+  IN_PROGRESS: "InProgress",
+  JOB_COMPLETE: "JobComplete",
+  FAILED: "Failed",
+  ABORTED: "Aborted"
+};
+export const BULK_TERMINAL_STATES = [BULK_STATE.JOB_COMPLETE, BULK_STATE.FAILED, BULK_STATE.ABORTED];
+
+// Salesforce retains completed bulk job results for 7 days
+export const BULK_RESULTS_RETENTION_DAYS = 7;
+
+// Salesforce limits per-job raw CSV uploads to ~100MB (due to a 150MB base64 limit).
+// Larger datasets must be split across multiple jobs.
+export const BULK_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
+export function isBulkJobTerminal(state) {
+  return BULK_TERMINAL_STATES.includes(state);
+}
+
+// Calculate UTF-8 byte length without allocating a buffer
+export function utf8ByteLength(str) {
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code < 0x80) {
+      bytes += 1;
+    } else if (code < 0x800) {
+      bytes += 2;
+    } else if (code >= 0xd800 && code <= 0xdbff) {
+      bytes += 4; // surrogate pair, consumed as one 4-byte sequence
+      i++;
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
+}
+
+/**
+ * Persists state for an active Bulk API 2.0 job and a history of recent jobs.
+ * Scoped per org via domain-prefixed localStorage keys. Synchronizes state 
+ * across multiple tabs using the 'storage' event.
+ */
+export class BulkJobStore {
+  constructor(storageKey, {historyMax = 5, retentionDays = BULK_RESULTS_RETENTION_DAYS} = {}) {
+    this.storageKey = storageKey;
+    this.historyKey = storageKey + "History";
+    this.retentionDays = retentionDays;
+    this.history = new StorageHistory(this.historyKey, historyMax, {
+      isValidEntry: (e) => e != null && typeof e === "object" && typeof e.jobId === "string",
+      matchAdd: (e, ent) => e.jobId === ent.jobId,
+      matchRemove: (e, ent) => e.jobId === ent.jobId,
+      addToFront: true
+    });
+    this.pruneHistory();
+  }
+
+  get() {
+    let job;
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      job = stored ? JSON.parse(stored) : null;
+    } catch {
+      job = null;
+    }
+    return job && typeof job === "object" && job.jobId ? job : null;
+  }
+
+  set(job) {
+    localStorage.setItem(this.storageKey, JSON.stringify(job));
+    if (isBulkJobTerminal(job.state)) {
+      this.history.add(job);
+    }
+    return job;
+  }
+
+  // Merge a patch into the stored job. No-op if empty.
+  update(patch) {
+    const job = this.get();
+    return job ? this.set({...job, ...patch}) : null;
+  }
+
+  clear() {
+    localStorage.removeItem(this.storageKey);
+  }
+
+  // True if Salesforce has deleted the job results (past retention period)
+  isExpired(job) {
+    const stamp = Date.parse(job?.completedAt || job?.submittedAt || "");
+    if (isNaN(stamp)) {
+      return false;
+    }
+    return Date.now() - stamp > this.retentionDays * 24 * 60 * 60 * 1000;
+  }
+
+  // Drop history entries whose results have expired
+  pruneHistory() {
+    for (const entry of [...this.history.list]) {
+      if (this.isExpired(entry)) {
+        this.history.remove(entry);
+      }
+    }
+    return this.history.list;
+  }
+
+  forget(jobId) {
+    this.history.remove({jobId});
+    if (this.get()?.jobId === jobId) {
+      this.clear();
+    }
+  }
+
+  // Invoke callback when another tab changes this store. Returns cleanup function.
+  onExternalChange(callback) {
+    const listener = (e) => {
+      if (e.key !== this.storageKey && e.key !== this.historyKey) {
+        return;
+      }
+      this.history._get();
+      this.pruneHistory();
+      callback(this.get());
+    };
+    addEventListener("storage", listener);
+    return () => removeEventListener("storage", listener);
+  }
+}
+
 /**
  * Mapping of standard Salesforce objects to their name fields.
  * Objects with "Name" field are not included (assumed default).

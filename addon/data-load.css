@@ -89,3 +89,17 @@
   margin: 102px 232px 0 0;
   z-index: 2;
 }
+
+.slds-has-dividers_bottom-space > .slds-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.slds-box.slds-theme_default {
+  padding-inline: 12px 16px;
+  border-radius: 16px;
+}
+
+button[hidden] {
+  display: none;
+}

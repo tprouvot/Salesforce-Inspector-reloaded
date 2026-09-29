@@ -1260,7 +1260,7 @@ class FieldRow extends TableRow {
   }
   fieldUsage() {
     // If we don't have field describe info, we can't calculate usage
-    if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address") {
+    if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address" || this.fieldDescribe.type === "location") {
       return "";
     }
 
@@ -1285,7 +1285,7 @@ class FieldRow extends TableRow {
 
   fieldUsageTitle() {
     // If we don't have field describe info, we can't calculate usage
-    if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address") {
+    if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address" || this.fieldDescribe.type === "location") {
       return "";
     }
 

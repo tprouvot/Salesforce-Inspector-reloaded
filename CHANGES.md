@@ -2,6 +2,16 @@
 
 ## Version 2.1
 
+- `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain
+- `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing
+- `Show All Data` Improve selected text visibility on highlighted rows [issue #1097](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1097) (contribution by [James C](https://github.com/Exotic209093))
+- `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by Prem Kumar)
+- `Data Export` Add coloration on the query editor [issue #666](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/666)
+- `Org Limits` Fix gauge falsely displaying as full/blue when a limit is "0 of 0 consumed" [issue #1347](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1347)
+- `Data Import` Fix Run button doesn't update when selecting Undelete before data is loaded [issue #1331](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1331) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Import` Fix Object field briefly shows a false "Unknown object" error after page load [issue #1333](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1333) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fix Login-as Incognito disconnecting the session on the main tab [issue #1239](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1239) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Event Monitor` Fix "no customChannel found" when the org has more than one custom channel [issue #1323](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1323)
 - `Popup` Fix missing record details in the Winter '27 release and resolve missing Org details when no maintenance is scheduled [issue #1316](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1316) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Allow editing Batch Size and Threads during an active import [issue #1036](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1036)
 - `Popup` Fix "Show Field API Names" button not rendering correctly in certain environments [issue #1246](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1246) (contribution by [Prem Kumar](https://github.com/prem-k-r))

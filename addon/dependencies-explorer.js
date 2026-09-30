@@ -234,7 +234,7 @@ const Helpers = {
    * @returns {Error} Formatted error
    */
   handleApiError(error, context = "") {
-    console.error(`API Error${context ? ` in ${context}` : ""}:`, error);
+    console.error("API Error%s:", context ? ` in ${context}` : "", error);
     const message = error.message || "Unknown error occurred";
     return Helpers.createError(`Failed to fetch data${context ? ` for ${context}` : ""}: ${message}`, error);
   }

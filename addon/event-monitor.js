@@ -297,7 +297,7 @@ class App extends React.Component {
       } else if (channelType == "platformEvent") {
         query = "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE isCustomizable = TRUE AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
       } else if (channelType == "customChannel"){
-        query = "SELECT FullName, MasterLabel FROM PlatformEventChannel ORDER BY DeveloperName";
+        query = "SELECT DeveloperName, MasterLabel, NamespacePrefix FROM PlatformEventChannel ORDER BY DeveloperName";
       } else if (channelType == "changeEvent") {
         // Add "All" option first
         channels.push({
@@ -311,7 +311,8 @@ class App extends React.Component {
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
         .then(result => {
           result.records.forEach((channel) => {
-            let name = channel.QualifiedApiName || channel.FullName || channel.SelectedEntity || channel.EntityName;
+            let name = channel.QualifiedApiName || channel.SelectedEntity || channel.EntityName
+              || (channel.DeveloperName && ((channel.NamespacePrefix ? channel.NamespacePrefix + "__" : "") + channel.DeveloperName + "__chn"));
             channels.push({
               name,
               label: channel.SelectedEntity ? channel.SelectedEntity.replace(/([A-Z])/g, " $1").replace(/__?/g, "__c") : channel.Label || channel.MasterLabel || channel.EntityName + " (" + name + ")"

@@ -133,6 +133,7 @@ class App extends React.PureComponent {
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
+      objectScannerHref: "object-scanner.html?" + hostArg,
       apiStatisticsHref: "api-statistics.html?" + hostArg,
       latestNotesViewed:
         localStorage.getItem("latestReleaseNotesVersionViewed")
@@ -395,6 +396,7 @@ class App extends React.PureComponent {
       eventMonitorHref,
       fieldCreatorHref,
       limitsHref,
+      objectScannerHref,
       apiStatisticsHref,
       isFieldsPresent,
       latestNotesViewed,
@@ -671,7 +673,26 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Event ", h("u", {}, "M"), "onitor")
               )
-            )
+            ),
+            isOptionEnabled("object-scanner", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                  "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "objectScannerBtn",
+                    href: objectScannerHref,
+                    target: linkTarget,
+                    className: "page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "Object Sc", h("u", {}, "a"), "nner")
+                )
+              )
+              : null
           ),
           h(
             "div",
@@ -3161,6 +3182,18 @@ class UserDetails extends React.PureComponent {
       }
       let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
 
+      // Resolve the debug level to use before checking for an existing trace flag,
+      // so a missing configured level always falls back to the same "sfir" level
+      // (otherwise repeated clicks would keep creating duplicate trace flags).
+      let debugLog = await this.getDebugLog(debugLogDebugLevel);
+      let debugLevelId;
+      if (debugLog && debugLog.size > 0) {
+        debugLevelId = debugLog.records[0].Id;
+      } else {
+        debugLevelId = await this.getOrCreateSfirDebugLevel();
+        debugLogDebugLevel = "sfir";
+      }
+
       let traceFlags = await this.getTraceFlags(
         user.Id,
         DTnow,
@@ -3174,22 +3207,12 @@ class UserDetails extends React.PureComponent {
         await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
         //Else create new trace flag
       } else {
-        let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-        if (debugLog && debugLog.size > 0) {
-          await this.insertTraceFlag(
-            user.Id,
-            debugLog.records[0].Id,
-            DTnow,
-            debugTimeInMs
-          );
-        } else {
-          throw new Error(
-            'Debug Level with developerName = "'
-              + debugLogDebugLevel
-              + '" not found'
-          );
-        }
+        await this.insertTraceFlag(
+          user.Id,
+          debugLevelId,
+          DTnow,
+          debugTimeInMs
+        );
       }
       // Update button state to show it's enabled
       this.setState({
@@ -3310,6 +3333,40 @@ class UserDetails extends React.PureComponent {
     }
   }
 
+  async getOrCreateSfirDebugLevel() {
+    const sfirDebugLevelName = "sfir";
+    let debugLog = await this.getDebugLog(sfirDebugLevelName);
+    if (debugLog && debugLog.size > 0) {
+      return debugLog.records[0].Id;
+    }
+    let createdDebugLevel = await this.createDebugLevel(sfirDebugLevelName);
+    return createdDebugLevel.id;
+  }
+
+  createDebugLevel(developerName) {
+    try {
+      let newDebugLevel = {
+        DeveloperName: developerName,
+        MasterLabel: developerName,
+        ApexCode: "FINEST",
+        ApexProfiling: "FINEST",
+        Callout: "FINEST",
+        Database: "FINEST",
+        System: "FINEST",
+        Validation: "FINEST",
+        Visualforce: "FINEST",
+        Workflow: "FINEST",
+      };
+      return sfConn.rest(
+        "/services/data/v" + apiVersion + "/tooling/sobjects/debuglevel",
+        {method: "POST", body: newDebugLevel}
+      );
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
   insertTraceFlag(userId, debugLogId, DTnow, debugTimeInMs) {
     try {
       let newTraceFlag = {
@@ -3366,14 +3423,14 @@ class UserDetails extends React.PureComponent {
     return user.IsActive && user.NetworkId;
   }
 
-  getLoginAsLink(userId) {
-    let {sfHost, contextOrgId, contextPath} = this.props;
+  // Relative servlet.su path — used for the plain LoginAs link and as redirect_uri
+  // for the Single Access call in loginAsInIncognito.
+  getLoginAsPath(userId) {
+    let {contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
     const targetUrl = contextPath || "/";
     return (
-      "https://"
-      + sfHost
-      + "/servlet/servlet.su"
+      "/servlet/servlet.su"
       + "?oid="
       + encodeURIComponent(contextOrgId)
       + "&suorgadminid="
@@ -3385,7 +3442,35 @@ class UserDetails extends React.PureComponent {
     );
   }
 
-  loginAsInIncognito(userId) {
+  getLoginAsLink(userId) {
+    let {sfHost} = this.props;
+    return "https://" + sfHost + this.getLoginAsPath(userId);
+  }
+
+  async loginAsInIncognito(userId) {
+    // Reusing the live session id to bootstrap a second browser context gets flagged
+    // as a hijack and kills the main tab's session. Use Salesforce's Single Access
+    // UI Bridge API instead - it mints a separate one-time frontdoor URL without
+    // touching the live session.
+    // suppressSessionError: a 401/403 here is an expected "this org/session doesn't
+    // support Single Access" signal, not a real expired-session event - don't let it
+    // pop the global "Access Token Expired" toast banner on the main tab.
+    try {
+      const redirectUri = this.getLoginAsPath(userId).replace(/^\//, "");
+      const singleAccess = await sfConn.rest(
+        "/services/oauth2/singleaccess?redirect_uri=" + encodeURIComponent(redirectUri),
+        {method: "GET", suppressSessionError: true}
+      );
+      if (singleAccess && singleAccess.frontdoor_uri) {
+        console.log("[LoginAs Incognito] Single Access UI Bridge succeeded, using frontdoor_uri");
+        this.openUrlInIncognito(singleAccess.frontdoor_uri);
+        return;
+      }
+      console.warn("[LoginAs Incognito] Single Access UI Bridge returned no frontdoor_uri, falling back to frontdoor.jsp with session id", singleAccess);
+    } catch (e) {
+      console.warn(`[LoginAs Incognito] Single Access UI Bridge request failed (${e.name || "Error"}: ${e.message}), falling back to frontdoor.jsp with session id`, e);
+    }
+    // Fallback if Single Access isn't available for this org/token
     const targetUrl
       = "https://"
       + this.sfHost
@@ -5131,13 +5216,19 @@ function getRecordId(href) {
   }
 
   // Lightning Experience
-  const lightningHostnames = [
-    ".lightning.force.com",
-    ".lightning.force.mil",
-    ".lightning.crmforce.mil",
-    ".lightning.force.com.mcas.ms",
+  // Match on the "lightning" label being present anywhere in the hostname rather than
+  // an exact suffix, since some domains insert extra labels between "lightning" and the
+  // base domain.
+  const lightningBaseDomains = [
+    ".force.com",
+    ".force.mil",
+    ".crmforce.mil",
+    ".force.com.mcas.ms",
   ];
-  if (lightningHostnames.some((hostname) => url.hostname.endsWith(hostname))) {
+  if (
+    url.hostname.includes(".lightning.")
+    && lightningBaseDomains.some((domain) => url.hostname.endsWith(domain))
+  ) {
     let match;
     if (url.pathname == "/one/one.app") {
       match = url.hash.match(/\/sObject\/([a-zA-Z0-9]+)(?:\/|$)/);

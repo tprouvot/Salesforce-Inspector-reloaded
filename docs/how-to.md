@@ -324,6 +324,9 @@ By default, this will enable logs with level "SFDC_DevConsole" for 15 minutes.
 
 <img width="279" alt="Enable Log button" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e87d2ed6-5c21-4e03-8fb1-16e3bc6121f3">
 
+> **Note**
+> If the configured debug level doesn't exist in the org (e.g. a custom name with no matching Debug Level record), the extension automatically creates (or reuses, if already present) a "sfir" Debug Level with every category set to FINEST, and uses it instead.
+
 You can update the debug level (configuration is per organization) and duration (for all organizations) on the Options page.
 
 <img width="788" alt="DebugLog Options" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f7aa5680-742a-4581-ad29-770089d2b55e">

@@ -1382,6 +1382,7 @@ class App extends React.Component {
     this.onRemoveAllTabs = this.onRemoveAllTabs.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
+    this.updateQueryHighlight = this.updateQueryHighlight.bind(this);
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -1614,6 +1615,23 @@ class App extends React.Component {
     model.didUpdate();
   }
 
+  // Re-highlights the query text. Called after every render since many model
+  // methods write directly to queryInput.value (history, templates, autocomplete,
+  // AI generation, tab switching, typo fixing) without going through onQueryInput.
+  updateQueryHighlight() {
+    let queryInput = this.refs.query;
+    let queryHighlightCode = this.refs.queryHighlightCode;
+    if (!queryInput || !queryHighlightCode) {
+      return;
+    }
+    let code = queryInput.value;
+    // Textareas render an extra blank line when the value ends with "\n". Mirror that here so the highlight layer does not fall one line short and drift out of alignment.
+    if (code === "" || code.endsWith("\n")) {
+      code += " ";
+    }
+    queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+  }
+
   onTabNameEdit(e, index) {
     e.stopPropagation();
     let {model} = this.props;
@@ -1719,6 +1737,12 @@ class App extends React.Component {
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
     }
+    this.updateQueryHighlight();
+    // Keep the highlight layer's scroll position in sync since it sits behind the (scrollable) real textarea.
+    queryInput.addEventListener("scroll", () => {
+      this.refs.queryHighlight.scrollTop = queryInput.scrollTop;
+      this.refs.queryHighlight.scrollLeft = queryInput.scrollLeft;
+    });
 
     function queryAutocompleteEvent() {
       model.queryAutocompleteHandler();
@@ -1783,6 +1807,7 @@ class App extends React.Component {
   }
   componentDidUpdate() {
     this.recalculateSize();
+    this.updateQueryHighlight();
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
@@ -1979,12 +2004,18 @@ class App extends React.Component {
               title: "Add new query tab"
             }, "+")
             ),
-            h("textarea", {
-              id: "query",
-              ref: "query",
-              style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-              onChange: this.onQueryInput
-            }),
+            h("div", {className: "query-editor"},
+              h("pre", {className: "query-highlight", ref: "queryHighlight", "aria-hidden": "true"},
+                h("code", {className: "language-sql", ref: "queryHighlightCode"})
+              ),
+              h("textarea", {
+                id: "query",
+                ref: "query",
+                spellCheck: false,
+                style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+                onChange: this.onQueryInput
+              })
+            ),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},
                 h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),

@@ -2,6 +2,8 @@
 
 ## Issue ticket number and link
 
+Use a closing keyword so GitHub links the issue, for example `Fixes #123` or `Closes #123`.
+
 ## Checklist before requesting a review
 
 - [ ] I have **read and understand** the [Contributions section](https://github.com/tprouvot/Salesforce-Inspector-reloaded#contributions)

@@ -1202,9 +1202,13 @@ class App extends React.Component {
         break;
 
       case "LongTextArea":
+        newField.Metadata.length = parseInt(field.length) || 32768;
+        newField.Metadata.visibleLines = parseInt(field.vislines) || 3;
+        break;
+
       case "Html":
         newField.Metadata.length = parseInt(field.length) || 32768;
-        newField.Metadata.visibleLines = parseInt(field.vislines) || 6;
+        newField.Metadata.visibleLines = parseInt(field.vislines) || 25;
         break;
 
       default:
@@ -1359,9 +1363,16 @@ class App extends React.Component {
       validatedType = allowedTypesForPE.includes(type) ? type : "Text";
     }
 
+    const typeDefaults = {
+      Checkbox: {checkboxDefault: "unchecked"},
+      LongTextArea: {vislines: "3", length: "32768"},
+      Html: {vislines: "25", length: "32768"},
+      MultiselectPicklist: {vislines: "4"},
+    };
+
     this.setState((prevState) => ({
       fields: prevState.fields.map((field, i) =>
-        i === index ? {...field, type: validatedType} : field
+        i === index ? {...field, type: validatedType, ...(typeDefaults[validatedType] || {})} : field
       ),
     }));
   };

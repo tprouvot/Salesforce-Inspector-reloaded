@@ -86,6 +86,7 @@ nav:
           - Download Metadata: download-metadata.md
           - Field Manager: field-manager.md
           - Flow Scanner: flow-scanner.md
+          - Object Scanner: object-scanner.md
       - API:
           - Event Monitor: event-monitor.md
           - REST Explorer: rest-explorer.md

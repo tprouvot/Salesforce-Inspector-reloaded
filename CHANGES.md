@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Show All Data` Fix "Get field usage" displaying as Error for location type fields [issue #1386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1386) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain
 - `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing
 - `Show All Data` Improve selected text visibility on highlighted rows [issue #1097](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1097) (contribution by [James C](https://github.com/Exotic209093))

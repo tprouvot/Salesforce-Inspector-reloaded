@@ -839,6 +839,87 @@ test.describe("Popup", () => {
     });
   });
 
+  test.describe("Get Record Id", () => {
+    // popup.js exposes window.getRecordId for unit testing (see popup.js: "window.getRecordId = getRecordId;").
+    // Each case below documents a distinct URL shape the function needs to parse a record/flow id out of.
+    const CASES = [
+      {
+        description: "Parse Lightning Record Page URL",
+        url: "https://myorg.lightning.force.com/lightning/r/Account/001000000000001AAA/view",
+        expected: "001000000000001AAA"
+      },
+      {
+        description: "Parse Lightning Test Pod Domain URL (extra label between 'lightning' and the base domain)",
+        url: "https://orgfarm-e3030ec8dd.test1.lightning.pc-rnd.force.com/lightning/r/Account/001000000000001AAA/view",
+        expected: "001000000000001AAA"
+      },
+      {
+        description: "Parse Lightning Console Hash Route URL",
+        url: "https://myorg.lightning.force.com/one/one.app#/sObject/001000000000001AAA/view",
+        expected: "001000000000001AAA"
+      },
+      {
+        description: "Parse Lightning List View URL (no record selected)",
+        url: "https://myorg.lightning.force.com/lightning/o/Account/list?filterName=AllAccounts",
+        expected: "list"
+      },
+      {
+        description: "Parse Lightning Setup Address Param URL",
+        url: "https://myorg.lightning.force.com/lightning/setup/ObjectManager/page?address=%2F001000000000001AAA",
+        expected: "001000000000001AAA"
+      },
+      {
+        description: "Parse Flow Builder URL (flowId query param)",
+        url: "https://myorg.lightning.force.com/builder_platform_interaction/flowBuilder.app?flowId=301000000000001AAA",
+        expected: "301000000000001AAA"
+      },
+      {
+        description: "Parse Salesforce Classic Record Page URL",
+        url: "https://myorg.my.salesforce.com/001000000000001AAA",
+        expected: "001000000000001AAA"
+      },
+      {
+        description: "Parse Salesforce Classic Tab/KeyPrefix URL (3-char id)",
+        url: "https://myorg.my.salesforce.com/001",
+        expected: "001"
+      },
+      {
+        description: "Parse Visualforce Id Param URL",
+        url: "https://myorg.visualforce.com/apex/SomePage?id=001000000000001AAA",
+        expected: "001000000000001AAA"
+      },
+      {
+        description: "Parse Non-Standard Param Name Holding a Record Id",
+        url: "https://mysite.force.com/s/?recId=001000000000001AAA",
+        expected: "001000000000001AAA"
+      },
+      {
+        description: "Return Null When No Record Id Is Present",
+        url: "https://myorg.lightning.force.com/lightning/page/home",
+        expected: null
+      }
+    ];
+
+    async function getPopupFrame(page) {
+      // Match "/popup.html" (with the leading slash) so this doesn't also match the
+      // outer "test-popup.html" harness page, whose URL contains "popup.html" too.
+      const frame = page.frames().find(f => f.url().includes("/popup.html?"));
+      if (!frame) {
+        throw new Error("Popup frame not found");
+      }
+      return frame;
+    }
+
+    for (const {description, url, expected} of CASES) {
+      test(description, async ({page, extensionId}) => {
+        await initPopupPage(page, extensionId);
+        const frame = await getPopupFrame(page);
+        const result = await frame.evaluate((u) => window.getRecordId(u), url);
+        expect(result).toBe(expected);
+      });
+    }
+  });
+
   test.describe("Org Tab", () => {
     test("Switch to Org Tab", async ({page, extensionId}) => {
       await initPopupPage(page, extensionId);

@@ -5216,13 +5216,19 @@ function getRecordId(href) {
   }
 
   // Lightning Experience
-  const lightningHostnames = [
-    ".lightning.force.com",
-    ".lightning.force.mil",
-    ".lightning.crmforce.mil",
-    ".lightning.force.com.mcas.ms",
+  // Match on the "lightning" label being present anywhere in the hostname rather than
+  // an exact suffix, since some domains insert extra labels between "lightning" and the
+  // base domain.
+  const lightningBaseDomains = [
+    ".force.com",
+    ".force.mil",
+    ".crmforce.mil",
+    ".force.com.mcas.ms",
   ];
-  if (lightningHostnames.some((hostname) => url.hostname.endsWith(hostname))) {
+  if (
+    url.hostname.includes(".lightning.")
+    && lightningBaseDomains.some((domain) => url.hostname.endsWith(domain))
+  ) {
     let match;
     if (url.pathname == "/one/one.app") {
       match = url.hash.match(/\/sObject\/([a-zA-Z0-9]+)(?:\/|$)/);

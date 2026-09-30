@@ -416,6 +416,9 @@ button:hover,
 .fillRed {
   fill: #ba0517;
 }
+.fillOrange {
+  fill: #fe9339;
+}
 .fillGray {
   fill: #9c9c9c;
 }

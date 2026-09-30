@@ -787,7 +787,9 @@ class FieldRow extends React.Component {
           className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small width20px",
           viewBox: "0 0 52 52"
         },
-        h("use", {xlinkHref: "symbols.svg#success", className: "fillGreen"})
+        this.props.field.deploymentError
+          ? h("use", {xlinkHref: "symbols.svg#warning", className: "fillOrange"})
+          : h("use", {xlinkHref: "symbols.svg#success", className: "fillGreen"})
         );
         break;
       case "error":
@@ -1215,11 +1217,12 @@ class App extends React.Component {
       method: "POST",
       body: newField
     })
-      .then(data => this.setFieldPermissions(field, data.id, objectName))
-      .catch(error => {
-        console.error("Error creating field:", error);
-        throw error;
-      });
+      .then(data => this.setFieldPermissions(field, data.id, objectName)
+        .catch(permError => {
+          console.warn("Field created but permission assignment failed:", permError);
+          return {id: data.id, permissionError: permError.message};
+        })
+      );
   }
 
   mapFieldType(uiType) {
@@ -1451,6 +1454,8 @@ class App extends React.Component {
         errorMessage = field.deploymentError || errorMessage;
       }
       this.setState({fieldErrorMessage: errorMessage});
+    } else if (field.deploymentStatus === "success" && field.deploymentError) {
+      this.setState({fieldErrorMessage: field.deploymentError});
     } else if (field.deploymentStatus === "pending") {
       this.setState({fieldErrorMessage: "Field deployment is in progress"});
     }
@@ -1557,9 +1562,14 @@ class App extends React.Component {
     fieldsToProcess.forEach((field) => {
       const index = fields.findIndex(f => f === field);
       this.createField(field, this.state.selectedObject.name)
-        .then(() => {
+        .then((result) => {
           const newFields = [...this.state.fields];
-          newFields[index].deploymentStatus = "success";
+          if (result && result.permissionError) {
+            newFields[index].deploymentStatus = "success";
+            newFields[index].deploymentError = "Field created, but permission assignment failed: " + result.permissionError;
+          } else {
+            newFields[index].deploymentStatus = "success";
+          }
           this.setState({fields: newFields});
         })
         .catch(error => {

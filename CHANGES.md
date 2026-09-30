@@ -2,9 +2,11 @@
 
 ## Version 2.1
 
+- `Data Export` Fix object and field autocomplete suggestions when writing subqueries [issue #600](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/600) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Export` Fix autocomplete suggestions when a field name starts with "from" [issue #557](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/557) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing
 - `Show All Data` Improve selected text visibility on highlighted rows [issue #1097](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1097) (contribution by [James C](https://github.com/Exotic209093))
-- `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by Prem Kumar)
+- `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Add coloration on the query editor [issue #666](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/666)
 - `Org Limits` Fix gauge falsely displaying as full/blue when a limit is "0 of 0 consumed" [issue #1347](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1347)
 - `Data Import` Fix Run button doesn't update when selecting Undelete before data is loaded [issue #1331](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1331) (contribution by [Prem Kumar](https://github.com/prem-k-r))

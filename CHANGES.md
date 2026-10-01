@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Show All Data` Replace the plain-text editor for picklist, multipicklist, and boolean fields with an SLDS2 combobox, including dependent picklist filtering and validation [feature #405](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/405), [feature #1207](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1207) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Fix "Get field usage" displaying as Error for location type fields [issue #1386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1386) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain
 - `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing

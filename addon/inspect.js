@@ -6,6 +6,7 @@ import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
+import {Combobox, getControllerValueIndex, isValueValidForControllerIndex} from "./combobox.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
@@ -694,6 +695,11 @@ class RowList {
     }
     return row;
   }
+  // Like getRow, but never creates a row that doesn't already exist (used
+  // for dependent-picklist controller lookups).
+  findRow(name) {
+    return name ? this._map.get(name) : undefined;
+  }
   sortRowsBy(col) {
     this._sortDir = col == this._sortCol ? -this._sortDir : 1;
     this._sortCol = col;
@@ -802,6 +808,22 @@ class FieldRowList extends RowList {
     this.bulkUsageRequestInProgress = false;
     this.totalRecordCount = null;
     this.totalRecordCountRequested = false;
+  }
+
+  // Re-validates currently-editing dependent fields after `controllerFieldName`
+  // changes. Fields not being edited are left alone; they validate on open instead.
+  revalidateDependents(controllerFieldName) {
+    for (let row of this.rows) {
+      if (!row.isEditing() || !row.fieldDescribe || !row.fieldDescribe.controllerName) {
+        continue;
+      }
+      let rowControllerName = row.controllerFieldName();
+      let matchesController = rowControllerName === controllerFieldName
+        || (rowControllerName === "RecordType" && controllerFieldName === "RecordTypeId");
+      if (matchesController) {
+        row.dependentPicklistError = !row.dependentPicklistIsValueValid(row.dataEditValue);
+      }
+    }
   }
 
   // Add a field to the pending usage requests queue
@@ -1127,6 +1149,9 @@ class FieldRow extends TableRow {
     this.fieldDescribe = undefined;
     this.dataTypedValue = undefined;
     this.dataEditValue = null;
+    // True when a dependent value is no longer valid for the controller's
+    // current value (see tryEdit / FieldRowList.revalidateDependents).
+    this.dependentPicklistError = false;
     this.detailLayoutInfo = undefined;
     this.editLayoutInfo = undefined;
     this.entityParticle = undefined;
@@ -1351,7 +1376,7 @@ class FieldRow extends TableRow {
       return this.fieldName + "\n"
         + (fieldDescribe.calculatedFormula ? "Formula: " + fieldDescribe.calculatedFormula + "\n" : "")
         + (fieldDescribe.inlineHelpText ? "Help text: " + fieldDescribe.inlineHelpText + "\n" : "")
-        + (fieldDescribe.picklistValues && fieldDescribe.picklistValues.length > 0 ? "Values: (iterate with ↑ & ↓) " + fieldDescribe.picklistValues.map(pickval => pickval.value).join(", ") + "\n" : "")
+        + (fieldDescribe.picklistValues && fieldDescribe.picklistValues.length > 0 ? "Values: " + fieldDescribe.picklistValues.map(pickval => pickval.value).join(", ") + "\n" : "")
       ;
     }
     // Entity particle does not contain any of this information
@@ -1377,13 +1402,21 @@ class FieldRow extends TableRow {
       if (this.rowList.model.editMode == null) {
         this.rowList.model.editMode = "update";
       }
+      // Controller may have changed since this value was last saved, so
+      // check now rather than waiting for the controller to change again.
+      if (this.fieldDescribe && this.fieldDescribe.controllerName) {
+        this.dependentPicklistError = !this.dependentPicklistIsValueValid(this.dataEditValue);
+      }
       return true;
     }
     return false;
   }
   saveDataValue(recordData) {
     if (this.isEditing()) {
-      if (this.dataEditValue == "") {
+      if (this.fieldDescribe && this.fieldDescribe.type === "boolean") {
+        // Native JSON boolean, not the string "true"/"false".
+        recordData[this.fieldDescribe.name] = this.dataEditValue === "true";
+      } else if (this.dataEditValue == "") {
         if (this.rowList.model.editMode != "create") {
           recordData[this.fieldDescribe.name] = null;
         }
@@ -1391,6 +1424,92 @@ class FieldRow extends TableRow {
         recordData[this.fieldDescribe.name] = this.dataEditValue;
       }
     }
+  }
+  // --- Picklist / multipicklist / boolean combobox support ---------------
+
+  // Needs fieldDescribe.picklistValues to know what options to render, so
+  // entityParticle-only rows (no full describe) keep using the textarea.
+  isComboEditableType() {
+    return !!this.fieldDescribe && (this.fieldDescribe.type === "picklist" || this.fieldDescribe.type === "multipicklist" || this.fieldDescribe.type === "boolean");
+  }
+  comboMode() {
+    return this.fieldDescribe && this.fieldDescribe.type === "multipicklist" ? "multi" : "single";
+  }
+  controllerFieldName() {
+    return this.fieldDescribe ? this.fieldDescribe.controllerName : null;
+  }
+  // Record-type controllers report controllerName "RecordType", but the
+  // row here is keyed by the actual field name "RecordTypeId".
+  controllerFieldRow() {
+    let controllerName = this.controllerFieldName();
+    if (!controllerName) {
+      return null;
+    }
+    let row = this.rowList.findRow(controllerName);
+    if (!row && controllerName === "RecordType") {
+      row = this.rowList.findRow("RecordTypeId");
+    }
+    return row || null;
+  }
+  controllerCurrentValue() {
+    let controllerRow = this.controllerFieldRow();
+    if (!controllerRow) {
+      return undefined;
+    }
+    return controllerRow.isEditing() ? controllerRow.dataEditValue : controllerRow.dataTypedValue;
+  }
+  // Active picklist values, filtered by the controller's current value for
+  // dependent picklists, plus a synthetic "--None--" for plain picklists
+  // that are nillable or already blank.
+  comboOptions() {
+    let fieldDescribe = this.fieldDescribe;
+    if (!fieldDescribe) {
+      return [];
+    }
+    if (fieldDescribe.type === "boolean") {
+      return [{label: "true", value: "true"}, {label: "false", value: "false"}];
+    }
+    if (fieldDescribe.type !== "picklist" && fieldDescribe.type !== "multipicklist") {
+      return [];
+    }
+    let options = (fieldDescribe.picklistValues || []).filter(pv => pv.active);
+    if (fieldDescribe.controllerName) {
+      let controllerRow = this.controllerFieldRow();
+      let controllerIndex = getControllerValueIndex(controllerRow && controllerRow.fieldDescribe, this.controllerCurrentValue());
+      options = options.filter(pv => isValueValidForControllerIndex(pv.validFor, controllerIndex));
+    }
+    options = options.map(pv => ({label: pv.label, value: pv.value}));
+    if (fieldDescribe.type === "picklist") {
+      let currentValueIsBlank = this.dataTypedValue == null || this.dataTypedValue === "";
+      if (fieldDescribe.nillable || currentValueIsBlank) {
+        options = [{label: "--None--", value: ""}, ...options];
+      }
+    }
+    return options;
+  }
+  // Whether `value` (possibly semicolon-separated, for multipicklists) is
+  // still valid given the controller's current value.
+  dependentPicklistIsValueValid(value) {
+    let fieldDescribe = this.fieldDescribe;
+    if (!fieldDescribe || !fieldDescribe.controllerName || value == null || value === "") {
+      return true;
+    }
+    let controllerRow = this.controllerFieldRow();
+    let controllerIndex = getControllerValueIndex(controllerRow && controllerRow.fieldDescribe, this.controllerCurrentValue());
+    let picklistValues = fieldDescribe.picklistValues || [];
+    let isValueValid = v => {
+      let pv = picklistValues.find(p => p.value === v);
+      return !!pv && isValueValidForControllerIndex(pv.validFor, controllerIndex);
+    };
+    if (fieldDescribe.type === "multipicklist") {
+      return value.split(";").filter(v => v !== "").every(isValueValid);
+    }
+    return isValueValid(value);
+  }
+  dependentPicklistErrorMessage() {
+    let controllerRow = this.controllerFieldRow();
+    let controllerLabel = (controllerRow && controllerRow.fieldLabel()) || this.controllerFieldName() || "the controlling field";
+    return "This value is no longer valid for the selected " + controllerLabel + ". Choose a new value.";
   }
   isId() {
     if (this.fieldDescribe) {
@@ -2251,6 +2370,7 @@ class FieldValueCell extends React.Component {
     this.onRecordIdClick = this.onRecordIdClick.bind(this);
     this.onLinkClick = this.onLinkClick.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
+    this.onComboChange = this.onComboChange.bind(this);
 
     this.state = {picklistValueIndex: -1};
     this.closePopMenu = this.closePopMenu.bind(this);
@@ -2259,7 +2379,7 @@ class FieldValueCell extends React.Component {
     let {row} = this.props;
     if (row.tryEdit()) {
       let td = e.currentTarget;
-      row.rowList.model.didUpdate(() => td.querySelector("textarea").focus());
+      row.rowList.model.didUpdate(() => td.querySelector("textarea, .slds-combobox__input")?.focus());
     }
   }
   onDataEditValueInput(e) {
@@ -2271,6 +2391,22 @@ class FieldValueCell extends React.Component {
     e.preventDefault();
     let {row} = this.props;
     row.dataEditValue = null;
+    row.dependentPicklistError = false;
+    // This field's effective value just reverted to its saved value - if
+    // it's a controller for other fields being edited, they need to be
+    // re-checked against that reverted value too.
+    row.rowList.revalidateDependents(row.fieldName);
+    row.rowList.model.didUpdate();
+  }
+  onComboChange(newValue) {
+    let {row} = this.props;
+    row.dataEditValue = newValue;
+    if (row.fieldDescribe && row.fieldDescribe.controllerName) {
+      row.dependentPicklistError = !row.dependentPicklistIsValueValid(newValue);
+    }
+    // This field may itself be a controller for other dependent fields -
+    // re-validate any of those that are currently being edited.
+    row.rowList.revalidateDependents(row.fieldName);
     row.rowList.model.didUpdate();
   }
   onRecordIdClick(e) {
@@ -2311,12 +2447,38 @@ class FieldValueCell extends React.Component {
   render() {
     let {row, col} = this.props;
     if (row.isEditing()) {
-      return h("td", {className: col.className},
-        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
-        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "slds-button slds-button_icon slds-align-top slds-button_icon-x-small"},
-          h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
-            h("use", {xlinkHref: "symbols.svg#undo"})
+      let undoButton = h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "slds-button slds-button_icon slds-button_icon-x-small"},
+        h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
+          h("use", {xlinkHref: "symbols.svg#undo"})
+        )
+      );
+      if (row.isComboEditableType()) {
+        return h("td", {className: col.className},
+          h("div", {className: "sfir-edit-cell"},
+            h(Combobox, {
+              mode: row.comboMode(),
+              options: row.comboOptions(),
+              value: row.dataEditValue,
+              hasError: row.dependentPicklistError,
+              errorMessage: row.dependentPicklistError ? row.dependentPicklistErrorMessage() : null,
+              ariaLabel: row.fieldName,
+              placeholder: "--None--",
+              onChange: this.onComboChange,
+              onCancel: () => {
+                row.dataEditValue = null;
+                row.dependentPicklistError = false;
+                row.rowList.revalidateDependents(row.fieldName);
+                row.rowList.model.didUpdate();
+              }
+            }),
+            undoButton
           )
+        );
+      }
+      return h("td", {className: col.className},
+        h("div", {className: "sfir-edit-cell"},
+          h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown, "aria-label": row.fieldName}),
+          undoButton
         )
       );
     } else if (row.isId()) {
@@ -2339,7 +2501,7 @@ class FieldValueCell extends React.Component {
       );
     } else {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
-        h(TypedValue, {value: row.sortKey(col.name)})
+        h(TypedValue, {value: row.sortKey(col.name), isEditable: row.canEdit()})
       );
     }
   }
@@ -2467,6 +2629,8 @@ class ChildObjectCell extends React.Component {
   }
 }
 
+// `isEditable` (optional): true/false applies read-only/editable color
+// coding; omitted leaves type-based coloring as-is.
 let TypedValue = props =>
   h("div", {
     className:
@@ -2479,6 +2643,7 @@ let TypedValue = props =>
       + (props.value === null ? "value-is-blank " : "")
       + (props.value === true ? "value-is-boolean-true " : "")
       + (props.value === undefined || props.value === null ? "" : "quick-select ")
+      + (props.isEditable === true ? "value-is-editable " : props.isEditable === false ? "value-is-readonly " : "")
   },
   props.value === undefined ? "(Unknown)"
   : props.value === null ? "(Blank)"

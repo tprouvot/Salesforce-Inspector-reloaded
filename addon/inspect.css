@@ -20,13 +20,15 @@
 }
 
 .sfir-inspect-table-text.value-is-blank {
-  color: #aaa;
+  color: var(--slds-g-color-neutral-base-70, #aaa);
   font-style: italic;
+  opacity: 0.6;
 }
 
 .sfir-inspect-table-text.value-is-unknown {
-  color: #aaa;
+  color: var(--slds-g-color-neutral-base-70, #aaa);
   font-style: italic;
+  opacity: 0.6;
 }
 
 tr.fieldCalculated {
@@ -56,4 +58,65 @@ tr.fieldHidden a[href] {
   width: 0.875rem;
   height: 0.875rem;
   fill: currentColor;
+}
+
+/* --- Inline field editors (textarea, and the combobox for picklist /
+   multipicklist / boolean) --- */
+/* Wrapper inside the <td>, not the <td> itself: display:flex on a <td>
+   overrides display:table-cell and breaks the table's row sizing. */
+.sfir-edit-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sfir-edit-cell .slds-combobox_container,
+.sfir-edit-cell textarea {
+  flex: 1 1 auto;
+  min-width: 10rem;
+}
+
+.sfir-edit-cell .slds-combobox__input {
+  cursor: pointer;
+  background-color: var(--slds-g-color-surface-container-1, #fff);
+}
+
+/* .slds-table td defaults to white-space:nowrap, inherited here, which was
+   rendering this as one unbroken line running off-screen instead of wrapping. */
+.sfir-edit-cell .slds-form-element__help {
+  white-space: normal;
+}
+
+/* Dependent picklist with nothing valid for the controller's current value. */
+.sfir-combobox-empty {
+  color: var(--slds-g-color-neutral-base-70, #aaa);
+  font-style: italic;
+  cursor: default;
+}
+
+.sfir-combobox-empty:hover {
+  background-color: transparent;
+}
+
+/* .slds-icon fills from --slds-c-icon-color-foreground, which nothing
+   here sets, so it fell through to an unreadable inherited color. */
+.sfir-combobox-check-icon {
+  fill: var(--slds-g-color-brand-base-50, #066afe);
+}
+
+/* Label shown inline next to an option's value when they differ. */
+.sfir-combobox-option-label-hint {
+  opacity: 0.6;
+  font-size: 0.8125rem;
+}
+
+/* --- Value column: read-only (black) vs editable (teal) ---
+   Appended after the type-based value-is-* rules above so they take
+   precedence (same specificity, later wins) when isEditable is passed. */
+.sfir-inspect-table-text.value-is-readonly {
+  color: var(--slds-g-color-neutral-base-10, #181818);
+}
+
+.sfir-inspect-table-text.value-is-editable {
+  color: var(--slds-g-color-palette-teal-40, #056764);
 }

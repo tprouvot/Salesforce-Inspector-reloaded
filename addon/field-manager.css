@@ -1,0 +1,11 @@
+.cursorPointer {
+  cursor: pointer;
+}
+.userSelectNone {
+  user-select: none;
+}
+/* React 15 (bundled here) drops CSS custom properties passed via the inline style
+   object, so the accent color has to be set as a real class instead of inline style. */
+.fillAccent {
+  fill: var(--slds-g-color-accent-2);
+}

@@ -5,6 +5,11 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 
+// Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
+// cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
+// so we fall back to plain (uncolored) text instead of colorizing on every keystroke.
+const MAX_HIGHLIGHT_LENGTH = 100000;
+
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
@@ -1630,6 +1635,15 @@ class App extends React.Component {
     if (code === "" || code.endsWith("\n")) {
       code += " ";
     }
+    if (code.length > MAX_HIGHLIGHT_LENGTH) {
+      queryInput.classList.add("query-plain");
+      // Signature stays constant while oversized, so this clears the (now stale) backdrop only once instead of on every keystroke.
+      this.highlightGuard("__plain__", () => {
+        queryHighlightCode.textContent = "";
+      });
+      return;
+    }
+    queryInput.classList.remove("query-plain");
     // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
     this.highlightGuard(code, () => {
       queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");

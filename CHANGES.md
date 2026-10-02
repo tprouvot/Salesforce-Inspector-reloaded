@@ -2,8 +2,8 @@
 
 ## Version 2.1
 
+- `Show All Data` Replace the plain-text editor for picklist, multipicklist, and boolean fields with an SLDS2 combobox, including dependent picklist filtering and validation [feature #405](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/405), [feature #1207](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1207) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`
-
 - `Field Manager` Rename `Field Creator` to `Field Manager`, rework the UI with SLDS, and add the ability to retrieve, view and edit existing custom fields' Label, Description and Help Text - including previously unsupported types such as Lookup, Master-Detail, Roll-Up Summary and Auto Number [discussion #1361](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1361)
 - `Show All Data` Fix "Get field usage" displaying as Error for location type fields [issue #1386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1386) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain

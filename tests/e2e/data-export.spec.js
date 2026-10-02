@@ -127,6 +127,42 @@ test.describe("Data Export", () => {
     await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account");
   });
 
+  test("Autocomplete Object Filter Shows Custom Objects", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id FROM ");
+
+    await expect(page.locator(".autocomplete-results")).toContainText("Account");
+    await page.getByRole("button", {name: "Filter autocomplete suggestions"}).click();
+    await page.getByLabel("Object suggestion type").selectOption("custom");
+
+    await expect(page.locator(".autocomplete-results")).toContainText("Inspector_Test__c");
+    await expect(page.locator(".autocomplete-results")).not.toContainText("Account");
+  });
+
+  test("Autocomplete Field Filter Shows Custom Fields", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+    const queryInput = page.locator("textarea#query");
+    const query = "SELECT  FROM Inspector_Test__c";
+    await queryInput.fill(query);
+    await page.evaluate(() => {
+      const input = document.querySelector("textarea#query");
+      const cursor = input.value.indexOf("FROM") - 1;
+      input.selectionStart = cursor;
+      input.selectionEnd = cursor;
+      input.dispatchEvent(new Event("input", {bubbles: true}));
+    });
+
+    await expect(page.locator(".autocomplete-header")).toContainText("Inspector_Test__c fields suggestions");
+    await page.getByRole("button", {name: "Filter autocomplete suggestions"}).click();
+    await page.getByLabel("Field suggestion type").selectOption("custom");
+
+    await expect(page.locator(".autocomplete-results")).toContainText("Checkbox__c");
+    await expect(page.locator(".autocomplete-results")).not.toContainText("Id");
+  });
+
   test("Copy as CSV", async ({page, context, extensionId}) => {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);

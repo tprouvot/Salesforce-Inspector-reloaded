@@ -1761,6 +1761,12 @@ class App extends React.Component {
       this.refs.queryHighlight.scrollTop = queryInput.scrollTop;
       this.refs.queryHighlight.scrollLeft = queryInput.scrollLeft;
     });
+    // Reverse sync: If the browser's native Ctrl+F forces the background highlight layer to scroll, 
+    // sync that position back to the native textarea so they do not visually detach.
+    this.refs.queryHighlight.addEventListener("scroll", () => {
+      queryInput.scrollTop = this.refs.queryHighlight.scrollTop;
+      queryInput.scrollLeft = this.refs.queryHighlight.scrollLeft;
+    });
 
     function queryAutocompleteEvent() {
       model.queryAutocompleteHandler();

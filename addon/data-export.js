@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -1383,6 +1383,7 @@ class App extends React.Component {
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
     this.updateQueryHighlight = this.updateQueryHighlight.bind(this);
+    this.highlightGuard = createChangeGuard();
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -1629,7 +1630,10 @@ class App extends React.Component {
     if (code === "" || code.endsWith("\n")) {
       code += " ";
     }
-    queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+    // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
+    this.highlightGuard(code, () => {
+      queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+    });
   }
 
   onTabNameEdit(e, index) {

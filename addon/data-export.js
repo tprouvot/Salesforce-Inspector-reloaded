@@ -8,7 +8,9 @@ import {PageHeader} from "./components/PageHeader.js";
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
 // so we fall back to plain (uncolored) text instead of colorizing on every keystroke.
-const MAX_HIGHLIGHT_LENGTH = 100000;
+const MAX_HIGHLIGHT_LENGTH = 20000;
+// Delay for the autocomplete execution on massive queries
+const AUTOCOMPLETE_DEBOUNCE_MS = 200;
 
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
@@ -1616,8 +1618,17 @@ class App extends React.Component {
 
   onQueryInput(e) {
     let {model} = this.props;
-    model.updateCurrentTabQuery(e.target.value);
-    model.queryAutocompleteHandler();
+    let query = e.target.value;
+    model.updateCurrentTabQuery(query);
+    if (this.autocompleteTimeout) clearTimeout(this.autocompleteTimeout);
+    if (query.length < MAX_HIGHLIGHT_LENGTH) {
+      model.queryAutocompleteHandler();
+    } else {
+      this.autocompleteTimeout = setTimeout(() => {
+        model.queryAutocompleteHandler();
+        model.didUpdate();
+      }, AUTOCOMPLETE_DEBOUNCE_MS);
+    }
     model.didUpdate();
   }
 
@@ -1761,11 +1772,25 @@ class App extends React.Component {
       this.refs.queryHighlight.scrollTop = queryInput.scrollTop;
       this.refs.queryHighlight.scrollLeft = queryInput.scrollLeft;
     });
+    // Reverse sync: If the browser's native Ctrl+F forces the background highlight layer to scroll, 
+    // sync that position back to the native textarea so they do not visually detach.
+    this.refs.queryHighlight.addEventListener("scroll", () => {
+      queryInput.scrollTop = this.refs.queryHighlight.scrollTop;
+      queryInput.scrollLeft = this.refs.queryHighlight.scrollLeft;
+    });
 
-    function queryAutocompleteEvent() {
-      model.queryAutocompleteHandler();
-      model.didUpdate();
-    }
+    let queryAutocompleteEvent = () => {
+      if (this.autocompleteTimeout) clearTimeout(this.autocompleteTimeout);
+      if (queryInput.value.length < MAX_HIGHLIGHT_LENGTH) {
+        model.queryAutocompleteHandler();
+        model.didUpdate();
+      } else {
+        this.autocompleteTimeout = setTimeout(() => {
+          model.queryAutocompleteHandler();
+          model.didUpdate();
+        }, AUTOCOMPLETE_DEBOUNCE_MS);
+      }
+    };
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);
 
@@ -1778,10 +1803,13 @@ class App extends React.Component {
     queryInput.addEventListener("keydown", e => {
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
+        // Always execute instantly on explicit user request (Ctrl+Space)
+        if (this.autocompleteTimeout) clearTimeout(this.autocompleteTimeout);
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       }
     });
+
     addEventListener("message", e => {
       if (e.data.command === "open-export-autocomplete") {
         model.queryAutocompleteHandler({ctrlSpace: true});

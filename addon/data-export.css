@@ -87,6 +87,12 @@ textarea[hidden] {
   caret-color: #16325c;
 }
 
+.query-editor #query.query-plain {
+  /* Colorization is disabled above MAX_HIGHLIGHT_LENGTH (data-export.js), so there is no highlighted
+     backdrop to show through anymore - make the real text visible again instead of transparent. */
+  color: #000000;
+}
+
 .query-editor #query::selection {
   /* The browser paints ::selection as an opaque rect on top of the (real)
      textarea, hiding the highlighted <pre> underneath it. Fall back to a

@@ -1,7 +1,7 @@
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, generatePackageXml} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, generatePackageXml} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
 
@@ -553,6 +553,9 @@ class App extends React.Component {
     this.onCopyMetadataXml = this.onCopyMetadataXml.bind(this);
     this.onDownloadMetadataXml = this.onDownloadMetadataXml.bind(this);
     this.state = {};
+    this.packageXmlHighlightGuard = createChangeGuard();
+    this.modalXmlHighlightGuard = createChangeGuard();
+    this.wasMetadataModalVisible = false;
   }
   componentDidMount() {
     this.refs.metadataFilter.focus();
@@ -568,20 +571,29 @@ class App extends React.Component {
     }
   }
   componentDidUpdate(){
+    let {model} = this.props;
+    // Only re-run Prism when the displayed package.xml actually changed, not on every unrelated render.
     if (window.Prism) {
-      window.Prism.highlightAll();
+      this.packageXmlHighlightGuard([model.metadataObjects, model.packageXml], () => window.Prism.highlightAll());
     }
-    // Highlight XML in modal if it's open
+    // Highlight XML in modal if it's open. The modal is unmounted/remounted when toggled, so force
+    // a highlight right after it becomes visible again, even if the content matches a previous view.
     if (this.state.showMetadataModal) {
+      let forceHighlight = !this.wasMetadataModalVisible;
       setTimeout(() => {
         if (window.Prism) {
           const modalCode = document.getElementById("metadata-xml-content");
           if (modalCode) {
-            window.Prism.highlightElement(modalCode);
+            if (forceHighlight) {
+              window.Prism.highlightElement(modalCode);
+            } else {
+              this.modalXmlHighlightGuard(this.state.metadataXmlContent, () => window.Prism.highlightElement(modalCode));
+            }
           }
         }
       }, 0);
     }
+    this.wasMetadataModalVisible = this.state.showMetadataModal;
   }
   onSelectAllChange(e) {
     let {model} = this.props;

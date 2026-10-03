@@ -3,6 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {Combobox} from "./components/combobox.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
 
 function createRestQueryHistory(storageKey, max) {
@@ -424,9 +425,10 @@ class App extends React.Component {
     this.onUpdateHeaders = this.onUpdateHeaders.bind(this);
     this.highlightGuard = createChangeGuard();
   }
-  onSelectEntry(e, list) {
+  onSelectEntry(val, list) {
     let {model} = this.props;
-    const selectedRequest = list.filter(template => template.key.toString() === e.target.value)[0];
+    const selectedRequest = list.find(template => template.key.toString() === val);
+    if (!selectedRequest) return;
     // Preserve headers editor state and headers if they exist
     const currentHeaders = model.request.headers || "";
     const showHeadersEditor = model.showHeadersEditor;
@@ -439,27 +441,30 @@ class App extends React.Component {
     this.refs.endpoint.value = model.request.endpoint;
     this.resetRequest(model);
     model.didUpdate();
+    if (this.refs.endpoint) {
+      this.refs.endpoint.focus();
+    }
   }
-  onSelectHistoryEntry(e) {
+  onSelectHistoryEntry(val) {
     let {model} = this.props;
-    this.onSelectEntry(e, model.queryHistory.list);
+    this.onSelectEntry(val, model.queryHistory.list);
   }
-  onSelectRequestTemplate(e) {
+  onSelectRequestTemplate(val) {
     let {model} = this.props;
-    this.onSelectEntry(e, model.requestTemplates);
+    this.onSelectEntry(val, model.requestTemplates);
   }
-  onSelectSavedEntry(e) {
+  onSelectSavedEntry(val) {
     let {model} = this.props;
-    this.onSelectEntry(e, model.savedHistory.list);
+    this.onSelectEntry(val, model.savedHistory.list);
   }
   resetRequest(model) {
     model.apiResponse = "";
     model.responseCounter++;
     model.didUpdate();
   }
-  onSelectQueryMethod(e) {
+  onSelectQueryMethod(val) {
     let {model} = this.props;
-    model.request.method = e.target.value;
+    model.request.method = val;
     this.canSendRequest();
     model.didUpdate();
   }
@@ -638,38 +643,50 @@ class App extends React.Component {
                 ),
                 h("div", {},
                   h("div", {className: "slds-form-element__control"},
-                    h("div", {className: "slds-grid slds-grid_align-end"},
-                      h("div", {className: "slds-size_1-of-6"}),
-                      h("div", {className: "slds-size-1-of-6 slds-p-horizontal_xx-small"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "slds-select", title: "Check documentation to customize templates"},
-                            h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-                            model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
-                          ),
-                        )
+                    h("div", {className: "slds-grid slds-grid_align-end slds-gutters_xx-small"},
+                      h("div", {className: "slds-col", style: {minWidth: "150px", maxWidth: "300px"}},
+                        h(Combobox, {
+                          placeholder: "Templates",
+                          value: "",
+                          isSearchable: true,
+                          clearOnSelect: true,
+                          dropdownWidth: "700px",
+                          dropdownHeight: "600px",
+                          showCheckmark: false,
+                          options: model.requestTemplates.map(req => ({ value: req.key.toString(), label: req.method + " " + req.endpoint })),
+                          onChange: this.onSelectRequestTemplate
+                        })
                       ),
-                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "slds-select"},
-                            h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                            model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
-                          ),
-                        )
+                      h("div", {className: "slds-col", style: {minWidth: "150px", maxWidth: "300px"}},
+                        h(Combobox, {
+                          placeholder: "History",
+                          value: "",
+                          isSearchable: true,
+                          clearOnSelect: true,
+                          dropdownWidth: "700px",
+                          dropdownHeight: "600px",
+                          showCheckmark: false,
+                          options: model.queryHistory.list.map(q => ({ value: q.key.toString(), label: q.method + " " + q.endpoint })),
+                          onChange: this.onSelectHistoryEntry
+                        })
                       ),
-                      h("div", {className: "slds-col slds-p-horizontal_xx-small slds-p-horizontal_xx-small slds-m-right_large"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
-                        )
+                      h("div", {className: "slds-col slds-grow-none slds-p-right_x-large"},
+                        h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
                       ),
-                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "slds-select"},
-                            h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                            model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
-                          ),
-                        )
+                      h("div", {className: "slds-col", style: {minWidth: "150px", maxWidth: "300px"}},
+                        h(Combobox, {
+                          placeholder: "Saved",
+                          value: "",
+                          isSearchable: true,
+                          clearOnSelect: true,
+                          dropdownWidth: "500px",
+                          dropdownHeight: "600px",
+                          showCheckmark: false,
+                          options: model.savedHistory.list.map(q => ({ value: q.key.toString(), label: (q.label ? q.label + " " : "") + q.method + " " + q.endpoint })),
+                          onChange: this.onSelectSavedEntry
+                        })
                       ),
-                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
+                      h("div", {className: "slds-col", style: {minWidth: "150px", maxWidth: "300px"}},
                         h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
                           h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
                             h("use", {xlinkHref: "symbols.svg#save"})
@@ -677,7 +694,7 @@ class App extends React.Component {
                           h("input", {className: "slds-input", placeholder: "Query Label", value: model.queryName, onInput: this.onSetQueryName})
                         )
                       ),
-                      h("div", {className: "slds-col slds-p-left_xx-small"},
+                      h("div", {className: "slds-col slds-grow-none slds-p-left_xx-small"},
                         h("div", {className: "slds-button-group", role: "group"},
                           h("button", {
                             className: "slds-button slds-button_neutral",
@@ -701,7 +718,7 @@ class App extends React.Component {
                                   h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
                                     h("span", {onClick: this.onClearSavedHistory, title: "Clear Saved Queries"}, "Clear Saved Queries")
                                   )
-                                ),
+                                )
                               )
                             )
                           )
@@ -715,19 +732,17 @@ class App extends React.Component {
             h("div", {className: "slds-card__body slds-card__body_inner"},
               h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
                 h("div", {className: "slds-size_1-of-12 slds-p-right_xx-small"},
-                  h("div", {className: "slds-form-element"},
-                    h("div", {className: "slds-form-element__control"},
-                      h("div", {className: "slds-select_container"},
-                        h("select", {className: "slds-select", value: model.request.method, onChange: this.onSelectQueryMethod},
-                          h("option", {key: "get", value: "GET"}, "GET"),
-                          h("option", {key: "post", value: "POST"}, "POST"),
-                          h("option", {key: "put", value: "PUT"}, "PUT"),
-                          h("option", {key: "patch", value: "PATCH"}, "PATCH"),
-                          h("option", {key: "delete", value: "DELETE"}, "DELETE")
-                        )
-                      )
-                    )
-                  )
+                  h(Combobox, {
+                    value: model.request.method,
+                    options: [
+                      {value: "GET", label: "GET"},
+                      {value: "POST", label: "POST"},
+                      {value: "PUT", label: "PUT"},
+                      {value: "PATCH", label: "PATCH"},
+                      {value: "DELETE", label: "DELETE"}
+                    ],
+                    onChange: this.onSelectQueryMethod
+                  })
                 ),
                 h("div", {className: "slds-col sfir-full-width slds-p-horizontal_xx-small"},
                   h("input", {ref: "endpoint", className: "slds-input", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint})

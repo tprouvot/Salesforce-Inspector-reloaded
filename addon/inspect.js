@@ -6,7 +6,7 @@ import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
-import {Combobox, getControllerValueIndex, isValueValidForControllerIndex} from "./combobox.js";
+import {Combobox, getControllerValueIndex, isValueValidForControllerIndex} from "./components/combobox.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
@@ -1467,7 +1467,10 @@ class FieldRow extends TableRow {
       return [];
     }
     if (fieldDescribe.type === "boolean") {
-      return [{label: "true", value: "true"}, {label: "false", value: "false"}];
+      return [
+        {value: "true", label: "true", title: "true"}, 
+        {value: "false", label: "false", title: "false"}
+      ];
     }
     if (fieldDescribe.type !== "picklist" && fieldDescribe.type !== "multipicklist") {
       return [];
@@ -1478,11 +1481,19 @@ class FieldRow extends TableRow {
       let controllerIndex = getControllerValueIndex(controllerRow && controllerRow.fieldDescribe, this.controllerCurrentValue());
       options = options.filter(pv => isValueValidForControllerIndex(pv.validFor, controllerIndex));
     }
-    options = options.map(pv => ({label: pv.label, value: pv.value}));
+    
+    // Map carefully: Selected = API (label), Hover = Label (title), Dropdown = Label (secondaryText)
+    options = options.map(pv => ({
+      value: pv.value,
+      label: pv.value, 
+      title: pv.label,
+      secondaryText: pv.label
+    }));
+    
     if (fieldDescribe.type === "picklist") {
       let currentValueIsBlank = this.dataTypedValue == null || this.dataTypedValue === "";
       if (fieldDescribe.nillable || currentValueIsBlank) {
-        options = [{label: "--None--", value: ""}, ...options];
+        options = [{value: "", label: "--None--", title: "--None--"}, ...options];
       }
     }
     return options;
@@ -2463,6 +2474,7 @@ class FieldValueCell extends React.Component {
               errorMessage: row.dependentPicklistError ? row.dependentPicklistErrorMessage() : null,
               ariaLabel: row.fieldName,
               placeholder: "--None--",
+              showSecondaryText: true,
               onChange: this.onComboChange,
               onCancel: () => {
                 row.dataEditValue = null;

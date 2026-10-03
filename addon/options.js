@@ -9,6 +9,7 @@ import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {Combobox} from "./components/combobox.js";
 
 class Model {
 
@@ -652,10 +653,9 @@ class ArrowButtonOption extends React.Component {
     this.timeout;
   }
 
-  onChangeArrowOrientation(e) {
-    let orientation = e.target.value;
-    this.setState({arrowButtonOrientation: orientation});
-    localStorage.setItem("popupArrowOrientation", orientation);
+  onChangeArrowOrientation(val) {
+    this.setState({arrowButtonOrientation: val});
+    localStorage.setItem("popupArrowOrientation", val);
     window.location.reload();
   }
 
@@ -681,11 +681,15 @@ class ArrowButtonOption extends React.Component {
       h("div", {className: "slds-col slds-size_9-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
         h("label", {className: "slds-text-align_right slds-m-left_medium slds-m-right_small"}, "Orientation:"),
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("div", {className: "slds-select_container"},
-            h("select", {className: "slds-select", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation},
-              h("option", {value: "horizontal"}, "Horizontal"),
-              h("option", {value: "vertical"}, "Vertical")
-            ))),
+          h(Combobox, {
+            value: this.state.arrowButtonOrientation,
+            options: [
+              {value: "horizontal", label: "Horizontal"},
+              {value: "vertical", label: "Vertical"}
+            ],
+            onChange: this.onChangeArrowOrientation
+          })
+        ),
         h("label", {className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider"}, "Position (%):"),
         h("div", {className: "slds-form-element__control slider-container slds-col slds-size_3-of-12"},
           h("div", {className: "slds-slider"},
@@ -855,7 +859,8 @@ class Option extends React.Component {
   }
 
   onChange(e) {
-    let inputValue = e.target.value;
+    // Check if it's a native event or a direct string from Combobox
+    let inputValue = e && e.target !== undefined ? e.target.value : e;
     this.setState({[this.key]: inputValue});
     localStorage.setItem(this.key, inputValue);
   }
@@ -920,14 +925,12 @@ class Option extends React.Component {
         onChange: this.onChange,
         readOnly: this.readOnly
       })
-      : isSelect ? h("select", {
-        className: isEnhanced ? "slds-select enhanced-option-input" : "slds-select slds-m-right_small",
+      : isSelect ? h(Combobox, {
+        className: isEnhanced ? "enhanced-option-input" : "slds-m-right_small",
         value: this.state[this.key],
+        options: this.props.options,
         onChange: this.onChange
-      },
-      this.props.options.map(opt =>
-        h("option", {key: opt.value, value: opt.value}, opt.label)
-      ))
+      })
       : null;
 
     if (isEnhanced) {

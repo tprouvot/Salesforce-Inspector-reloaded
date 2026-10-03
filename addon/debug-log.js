@@ -5,6 +5,7 @@ import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import AgentforceModal from "./components/AgentforceModal.js";
 import Toast from "./components/Toast.js";
+import {Combobox} from "./components/combobox.js";
 
 const h = React.createElement;
 
@@ -1405,21 +1406,14 @@ function LogsTable({model, hideButtonsOption}) {
               )
             ),
             h("div", {className: "slds-col slds-grow-none"},
-              h("div", {className: "slds-form-element"},
-                h("label", {className: "slds-form-element__label", htmlFor: "sfir-page-size"}, "Page size"),
-                h("div", {className: "slds-form-element__control"},
-                  h("div", {className: "slds-select_container"},
-                    h("select", {
-                      id: "sfir-page-size",
-                      className: "slds-select",
-                      value: String(model.pageSize),
-                      onChange: (e) => model.setPageSize(e.target.value)
-                    },
-                    ...model.allowedPageSizes.map(v => h("option", {key: v, value: String(v)}, String(v)))
-                    )
-                  )
-                )
-              )
+              h(Combobox, {
+                label: "Page size",
+                value: String(model.pageSize),
+                options: model.allowedPageSizes.map(v => ({label: String(v), value: String(v)})),
+                onChange: (val) => model.setPageSize(val),
+                width: "80px",
+                textAlign: "center"
+              })
             )
           )
         ),
@@ -1824,22 +1818,13 @@ function PreviewModal({model, hideButtonsOption}) {
   // Filter template row
   h("div", {className: "slds-grid slds-gutters slds-m-bottom_x-small"},
     h("div", {className: "slds-col"},
-      h("div", {className: "slds-form-element"},
-        h("label", {className: "slds-form-element__label", htmlFor: "sfir-log-filter-template"}, "Filter Template"),
-        h("div", {className: "slds-form-element__control"},
-          h("div", {className: "slds-select_container"},
-            h("select", {
-              id: "sfir-log-filter-template",
-              className: "slds-select",
-              value: model.previewFilterInput,
-              onChange: (e) => model.applyPreviewFilter(e.target.value),
-              disabled: isLoading
-            },
-            ...model.filterTemplates.map(t => h("option", {key: t.value, value: t.value}, t.label))
-            )
-          )
-        )
-      )
+      h(Combobox, {
+        label: "Filter Template",
+        value: model.previewFilterInput,
+        options: model.filterTemplates,
+        disabled: isLoading,
+        onChange: (val) => model.applyPreviewFilter(val)
+      })
     ),
     h("div", {className: "slds-col"},
       h("div", {className: "slds-form-element"},

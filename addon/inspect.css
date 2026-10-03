@@ -70,10 +70,11 @@ tr.fieldHidden a[href] {
   gap: 0.25rem;
 }
 
-.sfir-edit-cell .slds-combobox_container,
+.sfir-edit-cell > div,
 .sfir-edit-cell textarea {
   flex: 1 1 auto;
   min-width: 10rem;
+  width: 100%;
 }
 
 .sfir-edit-cell .slds-combobox__input {
@@ -87,32 +88,6 @@ tr.fieldHidden a[href] {
   white-space: normal;
 }
 
-/* Dependent picklist with nothing valid for the controller's current value. */
-.sfir-combobox-empty {
-  color: var(--slds-g-color-neutral-base-70, #aaa);
-  font-style: italic;
-  cursor: default;
-}
-
-.sfir-combobox-empty:hover {
-  background-color: transparent;
-}
-
-/* .slds-icon fills from --slds-c-icon-color-foreground, which nothing
-   here sets, so it fell through to an unreadable inherited color. */
-.sfir-combobox-check-icon {
-  fill: var(--slds-g-color-brand-base-50, #066afe);
-}
-
-/* Label shown inline next to an option's value when they differ. */
-.sfir-combobox-option-label-hint {
-  opacity: 0.6;
-  font-size: 0.8125rem;
-}
-
-/* --- Value column: read-only (black) vs editable (teal) ---
-   Appended after the type-based value-is-* rules above so they take
-   precedence (same specificity, later wins) when isEditable is passed. */
 .sfir-inspect-table-text.value-is-readonly {
   color: var(--slds-g-color-neutral-base-10, #181818);
 }

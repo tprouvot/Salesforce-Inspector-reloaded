@@ -1780,6 +1780,23 @@ class App extends React.Component {
         e.preventDefault();
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "'") {
+        e.preventDefault();
+        let start = queryInput.selectionStart;
+        let end = queryInput.selectionEnd;
+        let selectedText = queryInput.value.substring(start, end);
+        if (selectedText.length >= 2 && selectedText.startsWith("'") && selectedText.endsWith("'")) {
+          let unquotedText = selectedText.slice(1, -1);
+          queryInput.setRangeText(unquotedText, start, end, 'select');
+        } else {
+          queryInput.setRangeText(`'${selectedText}'`, start, end, 'select');
+          if (start === end) {
+            queryInput.selectionStart = start + 1;
+            queryInput.selectionEnd = start + 1;
+          }
+        }
+        model.updateCurrentTabQuery(queryInput.value);
+        model.didUpdate();
       }
     });
     addEventListener("message", e => {
@@ -2080,6 +2097,7 @@ class App extends React.Component {
                 " query in the box above and press Export."
               ),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
+              h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+' to wrap the selected text in single quotes, or remove them if already present."),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Enter or F5 to execute the export."),
               h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
               h("p", {className: "slds-m-bottom_x-small"}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")

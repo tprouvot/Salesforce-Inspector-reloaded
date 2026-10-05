@@ -1414,7 +1414,6 @@ class FieldRow extends TableRow {
   saveDataValue(recordData) {
     if (this.isEditing()) {
       if (this.fieldDescribe && this.fieldDescribe.type === "boolean") {
-        // Native JSON boolean, not the string "true"/"false".
         recordData[this.fieldDescribe.name] = this.dataEditValue === "true";
       } else if (this.dataEditValue == "") {
         if (this.rowList.model.editMode != "create") {
@@ -1425,7 +1424,7 @@ class FieldRow extends TableRow {
       }
     }
   }
-  // --- Picklist / multipicklist / boolean combobox support ---------------
+  // ---------- Picklist / multipicklist / boolean combobox ---------------
 
   // Needs fieldDescribe.picklistValues to know what options to render, so
   // entityParticle-only rows (no full describe) keep using the textarea.
@@ -1482,7 +1481,7 @@ class FieldRow extends TableRow {
       options = options.filter(pv => isValueValidForControllerIndex(pv.validFor, controllerIndex));
     }
     
-    // Map carefully: Selected = API (label), Hover = Label (title), Dropdown = Label (secondaryText)
+    // Selected = API (label), Hover = Label (title), Dropdown = Label (secondaryText)
     options = options.map(pv => ({
       value: pv.value,
       label: pv.value, 

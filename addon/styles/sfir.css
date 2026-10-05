@@ -247,7 +247,6 @@ a.download-salesforce {
   background-color: transparent;
 }
 
-/* Ensure the check icon stands out */
 .sfir-combobox-check-icon {
   fill: var(--slds-g-color-brand-base-50, #066afe);
 }
@@ -273,24 +272,21 @@ a.download-salesforce {
   align-items: center;
   justify-content: center;
 }
-/* =========================================
-   Table Dropdown Z-Index & Clipping Fixes
-   ========================================= */
 
-/* 1. Elevate the active row and cell so the dropdown floats ABOVE subsequent table rows */
+/* Elevate the active row and cell so the dropdown floats ABOVE subsequent table rows */
 tr:has(.slds-is-open),
 td:has(.slds-is-open) {
   z-index: 9999;
   position: relative;
 }
 
-/* 2. Prevent scrollable table wrappers from clipping/chopping off the bottom of the dropdown menu */
+/* Prevent scrollable table wrappers from clipping/chopping off the bottom of the dropdown menu */
 .slds-scrollable_x:has(.slds-is-open),
 .slds-card__body:has(.slds-is-open) {
   overflow: visible !important;
 }
 
-/* 3. Ensure the combobox container itself acts as the positioning anchor */
+/* Ensure the combobox container itself acts as the positioning anchor */
 .slds-combobox_container {
   position: relative;
 }

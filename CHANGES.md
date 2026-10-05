@@ -3,6 +3,11 @@
 ## Version 2.1
 
 - `Popup` Screen readers now announce the result list and the active result in the Objects, Users, and Shortcuts searches [issue #1108](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1108) (contribution by [Andrew Johnson](https://github.com/akj))
+- Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`
+
+- `Field Manager` Rename `Field Creator` to `Field Manager`, rework the UI with SLDS, and add the ability to retrieve, view and edit existing custom fields' Label, Description and Help Text - including previously unsupported types such as Lookup, Master-Detail, Roll-Up Summary and Auto Number [discussion #1361](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1361)
+- `Show All Data` Fix "Get field usage" displaying as Error for location type fields [issue #1386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1386) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain
 - `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing
 - `Show All Data` Improve selected text visibility on highlighted rows [issue #1097](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1097) (contribution by [James C](https://github.com/Exotic209093))
 - `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by Prem Kumar)

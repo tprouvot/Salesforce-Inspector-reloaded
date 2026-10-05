@@ -1297,7 +1297,15 @@ class App extends React.Component {
                                 h("div", {className: "slds-size_11-of-12 slds-p-right_xx-small"},
                                   h(Combobox, {
                                     isSearchable: true,
-                                    options: model.sobjectList().map(s => ({ label: s.name, value: s.name, title: s.label })),
+                                    dropdownWidth: "310px",
+                                    showSecondaryText: true,
+                                    options: model.sobjectList().map(s => ({ 
+                                      value: s.name,            // API Name
+                                      label: s.name,            // Primary display text
+                                      title: s.label,           // Hover tooltip
+                                      // Only show secondary text if the API name and Label are different
+                                      secondaryText: s.name !== s.label ? s.label : undefined 
+                                    })),
                                     value: model.importType,
                                     disabled: model.isWorking(),
                                     hasError: !!model.importTypeError(),

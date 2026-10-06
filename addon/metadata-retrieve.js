@@ -1498,36 +1498,44 @@ class ObjectSelector extends React.Component {
                 style: {position: "relative"}
               },
               h("h4", {className: "slds-accordion__summary-heading"},
-                h("button", {"aria-controls": "accordion-details-" + child.fullName, "aria-expanded": child.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
-                  child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-                    h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
-                  ) : null,
-                  h("input", {
-                    type: "checkbox",
-                    className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
-                    checked: !!child.selected,
-                    ref: (input) => {
-                      if (input) {
-                        input.indeterminate = !!child.indeterminate;
-                      }
+                h("button", {
+                  "aria-controls": "accordion-details-" + child.fullName,
+                  "aria-expanded": child.expanded,
+                  "aria-label": child.isFolder
+                    ? child.fullName + ", press Enter to " + (child.expanded ? "collapse" : "open") + " the list of " + child.fullName + " items"
+                    : child.fullName,
+                  className: "slds-button slds-button_reset slds-accordion__summary-action"
+                },
+                child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
+                ) : null,
+                h("input", {
+                  type: "checkbox",
+                  className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
+                  checked: !!child.selected,
+                  "aria-label": child.isFolder ? "Select all items in " + child.fullName : "Select " + child.fullName,
+                  ref: (input) => {
+                    if (input) {
+                      input.indeterminate = !!child.indeterminate;
                     }
-                  }),
-                  h("span", {
-                    className: "slds-text-body_small slds-accordion__summary-content",
-                    title: child.fullName,
-                    style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
-                  },
-                  child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
-                  !child.isFolder && isHovered && !metadataType.toLowerCase().includes("bundle") && h("svg", {
-                    className: "slds-icon slds-icon_x-small slds-icon-text-default",
-                    style: {cursor: "pointer", flexShrink: 0},
-                    viewBox: "0 0 52 52",
-                    onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
-                    title: "View metadata"
-                  },
-                  h("use", {xlinkHref: "symbols.svg#preview"})
-                  )
-                  )
+                  }
+                }),
+                h("span", {
+                  className: "slds-text-body_small slds-accordion__summary-content",
+                  title: child.fullName,
+                  style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
+                },
+                child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
+                !child.isFolder && isHovered && !metadataType.toLowerCase().includes("bundle") && h("svg", {
+                  className: "slds-icon slds-icon_x-small slds-icon-text-default",
+                  style: {cursor: "pointer", flexShrink: 0},
+                  viewBox: "0 0 52 52",
+                  onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
+                  title: "View metadata"
+                },
+                h("use", {xlinkHref: "symbols.svg#preview"})
+                )
+                )
                 )
               )
               ),
@@ -1549,28 +1557,34 @@ class ObjectSelector extends React.Component {
           onClick: (event) => { this.onSelectMeta(event); }
         },
         h("h3", {className: "slds-accordion__summary-heading"},
-          h("button", {"aria-controls": "accordion-details-" + metadataObject.xmlName, "aria-expanded": metadataObject.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
-            h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-              h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
-            ),
-            h("input", {
-              type: "checkbox",
-              className: "metadata",
-              checked: !!metadataObject.selected,
-              onChange: this.onChange,
-              key: metadataObject.xmlName,
-              ref: (input) => {
-                if (input) {
-                  input.indeterminate = !!metadataObject.indeterminate;
-                }
+          h("button", {
+            "aria-controls": "accordion-details-" + metadataObject.xmlName,
+            "aria-expanded": metadataObject.expanded,
+            "aria-label": metadataObject.xmlName + ", press Enter to " + (metadataObject.expanded ? "collapse" : "open") + " the list of " + metadataObject.xmlName + " items",
+            className: "slds-button slds-button_reset slds-accordion__summary-action"
+          },
+          h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
+          ),
+          h("input", {
+            type: "checkbox",
+            className: "metadata",
+            checked: !!metadataObject.selected,
+            onChange: this.onChange,
+            key: metadataObject.xmlName,
+            "aria-label": "Select all " + metadataObject.xmlName,
+            ref: (input) => {
+              if (input) {
+                input.indeterminate = !!metadataObject.indeterminate;
               }
-            }),
-            h("span", {
-              className: "slds-accordion__summary-content",
-              title: metadataObject.xmlName
-            },
-            metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : "")
-            )
+            }
+          }),
+          h("span", {
+            className: "slds-accordion__summary-content",
+            title: metadataObject.xmlName
+          },
+          metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : "")
+          )
           )
         )
         ),

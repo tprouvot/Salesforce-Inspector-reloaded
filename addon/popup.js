@@ -4724,15 +4724,19 @@ class AllDataRecordDetails extends React.PureComponent {
     }
   }
 }
+let allDataSearchCount = 0;
 class AllDataSearch extends React.PureComponent {
   constructor(props) {
     super(props);
     this.inputIcon = props.icon ? props.icon : "down";
+    // Prefix for the listbox and option ids, unique per instance because the popup renders several searches
+    this.idPrefix = "sfir-autocomplete-" + ++allDataSearchCount;
     this.state = {
       queryString: "",
       matchingResults: [],
-      recentItems: [],
       searchLoading: false,
+      ariaExpanded: false,
+      ariaActiveIndex: -1,
     };
     this.queryDelayTimerRef = {current: null};
     this.searchGeneration = 0;
@@ -4742,6 +4746,7 @@ class AllDataSearch extends React.PureComponent {
     this.onAllDataKeyDown = this.onAllDataKeyDown.bind(this);
     this.onAllDataArrowClick = this.onAllDataArrowClick.bind(this);
     this.updateAllDataInput = this.updateAllDataInput.bind(this);
+    this.onAriaStateChange = this.onAriaStateChange.bind(this);
   }
   componentDidMount() {
     let {queryString} = this.state;
@@ -4802,9 +4807,14 @@ class AllDataSearch extends React.PureComponent {
       }
     }, inputSearchDelay);
   }
+  // The input owns the combobox attributes, but Autocomplete owns the open state and active option.
+  onAriaStateChange(ariaExpanded, ariaActiveIndex) {
+    this.setState({ariaExpanded, ariaActiveIndex});
+  }
   render() {
-    let {queryString, matchingResults, recentItems, searchLoading} = this.state;
+    let {queryString, matchingResults, searchLoading, ariaExpanded, ariaActiveIndex} = this.state;
     let {placeholderText, resultRender, sfHost, rightIcon} = this.props;
+    let {idPrefix} = this;
     return h(
       "div",
       {
@@ -4821,14 +4831,20 @@ class AllDataSearch extends React.PureComponent {
         onBlur: this.onAllDataBlur,
         onKeyDown: this.onAllDataKeyDown,
         value: queryString,
+        role: "combobox",
+        "aria-expanded": ariaExpanded,
+        "aria-autocomplete": "list",
+        "aria-controls": idPrefix + "-listbox",
+        "aria-activedescendant": ariaActiveIndex >= 0 ? idPrefix + "-option-" + ariaActiveIndex : undefined,
       }),
       h(Autocomplete, {
         ref: "autoComplete",
         updateInput: this.updateAllDataInput,
         matchingResults: resultRender(matchingResults, queryString),
-        recentItems: resultRender(recentItems, queryString),
         queryString,
         sfHost,
+        onAriaStateChange: this.onAriaStateChange,
+        idPrefix,
       }),
       searchLoading
         ? h(
@@ -4889,6 +4905,7 @@ class Autocomplete extends React.PureComponent {
     super(props);
     this.state = {
       showResults: false,
+      recentItems: [], // Recently viewed records, shown after focusing the search until the user types or selects a result.
       selectedIndex: 0, // Index of the selected autocomplete item.
       scrollToSelectedIndex: 0, // Changed whenever selectedIndex is updated (even if updated to a value it already had). Used to scroll to the selected item.
       scrollTopIndex: 0, // Index of the first autocomplete item that is visible according to the current scroll position.
@@ -4904,12 +4921,14 @@ class Autocomplete extends React.PureComponent {
   handleInput() {
     this.setState({
       showResults: true,
+      recentItems: [],
       selectedIndex: 0,
       scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
     });
   }
   handleFocus() {
-    let {recentItems} = this.props;
+    let recentItems = [];
+    let focusQuery = this.props.queryString;
     if (!isSettingEnabled(Constants.ENABLE_RECENTLY_VIEWED_RECORDS, true)) {
       return;
     }
@@ -4918,6 +4937,9 @@ class Autocomplete extends React.PureComponent {
         `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+WHERE+Type!='ListView'+LIMIT+${RECENT_ITEMS_RENDERED_COUNT}`
       )
       .then((res) => {
+        if (this.props.queryString !== focusQuery) {
+          return;
+        }
         let itemsIds = new Set();
         res.records.forEach((recentItem) => {
           if (!itemsIds.has(recentItem.Id)) {
@@ -4985,7 +5007,7 @@ class Autocomplete extends React.PureComponent {
         e.preventDefault();
         let {value} = matchingResults[selectedIndex];
         this.props.updateInput(value);
-        this.setState({showResults: false, selectedIndex: 0});
+        this.setState({showResults: false, recentItems: [], selectedIndex: 0});
       }
       return;
     }
@@ -5050,7 +5072,7 @@ class Autocomplete extends React.PureComponent {
       );
     } else {
       this.props.updateInput(value);
-      this.setState({showResults: false, selectedIndex: 0});
+      this.setState({showResults: false, recentItems: [], selectedIndex: 0});
     }
   }
   handleNavigation(e, url, navigationParams) {
@@ -5070,7 +5092,21 @@ class Autocomplete extends React.PureComponent {
       this.setState({scrollTopIndex});
     }
   }
+  getResults() {
+    let {matchingResults} = this.props;
+    let {recentItems} = this.state;
+    return recentItems.length > 0 ? recentItems : matchingResults;
+  }
+  isOpen() {
+    let {showResults, resultsMouseIsDown} = this.state;
+    return (showResults && this.getResults().length > 0) || resultsMouseIsDown;
+  }
   componentDidUpdate(prevProps, prevState) {
+    // AllDataSearch is a PureComponent, so reporting unchanged values does not re-render it.
+    let isOpen = this.isOpen();
+    let {selectedIndex} = this.state;
+    let hasActiveOption = isOpen && selectedIndex < this.getResults().length;
+    this.props.onAriaStateChange(isOpen, hasActiveOption ? selectedIndex : -1);
     if (this.state.itemHeight == 1) {
       let anItem = this.refs.scrollBox.querySelector(".autocomplete-item");
       if (anItem) {
@@ -5081,56 +5117,47 @@ class Autocomplete extends React.PureComponent {
       }
       return;
     }
-    let sel = this.refs.selectedItem;
-    let marginTop = 5;
-    if (
-      this.state.scrollToSelectedIndex != prevState.scrollToSelectedIndex
-      && sel
-      && sel.offsetParent
-    ) {
-      if (sel.offsetTop + marginTop < sel.offsetParent.scrollTop) {
-        sel.offsetParent.scrollTop = sel.offsetTop + marginTop;
-      } else if (
-        sel.offsetTop + marginTop + sel.offsetHeight
-        > sel.offsetParent.scrollTop + sel.offsetParent.offsetHeight
-      ) {
-        sel.offsetParent.scrollTop
-          = sel.offsetTop
-          + marginTop
-          + sel.offsetHeight
-          - sel.offsetParent.offsetHeight;
+    if (this.state.scrollToSelectedIndex !== prevState.scrollToSelectedIndex) {
+      let scrollBox = this.refs.scrollBox;
+      if (scrollBox) {
+        let itemHeight = this.state.itemHeight;
+        let selectedTop = this.state.selectedIndex * itemHeight;
+        let selectedBottom = selectedTop + itemHeight;
+        if (selectedTop < scrollBox.scrollTop) {
+          scrollBox.scrollTop = selectedTop;
+        } else if (selectedBottom > scrollBox.scrollTop + scrollBox.offsetHeight) {
+          scrollBox.scrollTop = selectedBottom - scrollBox.offsetHeight;
+        }
       }
     }
   }
   render() {
-    let {matchingResults, recentItems} = this.props;
+    let {idPrefix} = this.props;
     let {
-      showResults,
       selectedIndex,
       scrollTopIndex,
       itemHeight,
-      resultsMouseIsDown,
     } = this.state;
 
-    let autocompleteResults
-      = recentItems.length > 0 ? recentItems : matchingResults;
+    let autocompleteResults = this.getResults();
     let lastIndex = autocompleteResults.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(
       lastIndex,
       firstRenderedIndex + RECENT_ITEMS_RENDERED_COUNT
     );
+    // Ensures selected item is in rendered DOM range so aria-activedescendant points to existing element
+    if (selectedIndex < firstRenderedIndex || selectedIndex > lastRenderedIndex) {
+      firstRenderedIndex = Math.max(0, selectedIndex - 2);
+      lastRenderedIndex = Math.min(lastIndex, firstRenderedIndex + RECENT_ITEMS_RENDERED_COUNT);
+    }
 
     return h(
       "div",
       {
         className: "slds-dropdown slds-dropdown_fluid",
         style: {
-          display:
-            (showResults && autocompleteResults.length > 0)
-            || resultsMouseIsDown
-              ? ""
-              : "none",
+          display: this.isOpen() ? "" : "none",
         },
         onMouseDown: this.onResultsMouseDown,
         onMouseUp: this.onResultsMouseUp,
@@ -5141,6 +5168,8 @@ class Autocomplete extends React.PureComponent {
           className: "slds-dropdown__list",
           onScroll: this.onScroll,
           ref: "scrollBox",
+          role: "listbox",
+          id: idPrefix + "-listbox",
         },
         autocompleteResults
           .slice(firstRenderedIndex, lastRenderedIndex + 1)
@@ -5157,6 +5186,9 @@ class Autocomplete extends React.PureComponent {
                 onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () =>
                   this.onResultMouseEnter(index + firstRenderedIndex),
+                role: "option",
+                id: idPrefix + "-option-" + (index + firstRenderedIndex),
+                "aria-selected": selectedIndex === index + firstRenderedIndex,
               },
               h("a", {className: "slds-p-horizontal_small"}, element)
             )

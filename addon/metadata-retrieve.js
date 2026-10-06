@@ -4,6 +4,7 @@ import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, generatePackageXml} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
+import {Combobox} from "./components/Combobox.js";
 
 class Model {
   constructor(sfHost) {
@@ -24,7 +25,7 @@ class Model {
     this.metadataObjects = [];
     this.metadataTypeMap = {}; // Map of xmlName to metadata object with suffix
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
+    this.sortMetadataBy = (localStorage.getItem("sortMetadataBy") || "fullName").replace(/"/g, "");
     this.packageXml;
     this.metadataFilter = "";
     this.deployRequestId;
@@ -1141,31 +1142,30 @@ class App extends React.Component {
             ),
             h("div", {className: "slds-grid slds-grid_align-spread"},
               h("div", {className: "slds-col slds-size_1-of-4 slds-p-around_x-small"},
-                h("label", {className: "slds-form-element__label"}, "Test Level"),
-                h("div", {className: "slds-form-element__control"},
-                  h("select", {
-                    className: "slds-select",
-                    value: model.deployOptions.testLevel,
-                    onChange: (e) => {
-                      model.deployOptions.testLevel = e.target.value;
-                      if (e.target.value === "RunSpecifiedTests") {
-                        setTimeout(() => {
-                          const specifiedTestsInput = document.querySelector('input[placeholder="Comma-separated test class names"]');
-                          if (specifiedTestsInput) {
-                            specifiedTestsInput.focus();
-                          }
-                        }, 0);
-                      }
-                      model.didUpdate();
+                h(Combobox, {
+                  id: "sfir-test-level",
+                  label: "Test Level",
+                  value: model.deployOptions.testLevel,
+                  options: [
+                    {value: "NoTestRun", label: "No Test Run"},
+                    {value: "RunSpecifiedTests", label: "Run Specified Tests"},
+                    {value: "RunRelevantTests", label: "Run Relevant Tests (beta)"},
+                    {value: "RunLocalTests", label: "Run Local Tests"},
+                    {value: "RunAllTestsInOrg", label: "Run All Tests in Org"}
+                  ],
+                  onChange: (val) => {
+                    model.deployOptions.testLevel = val;
+                    if (val === "RunSpecifiedTests") {
+                      setTimeout(() => {
+                        const specifiedTestsInput = document.querySelector('input[placeholder="Comma-separated test class names"]');
+                        if (specifiedTestsInput) {
+                          specifiedTestsInput.focus();
+                        }
+                      }, 0);
                     }
-                  },
-                  h("option", {value: "NoTestRun"}, "No Test Run"),
-                  h("option", {value: "RunSpecifiedTests"}, "Run Specified Tests"),
-                  h("option", {value: "RunRelevantTests"}, "Run Relevant Tests (beta)"),
-                  h("option", {value: "RunLocalTests"}, "Run Local Tests"),
-                  h("option", {value: "RunAllTestsInOrg"}, "Run All Tests in Org")
-                  )
-                )
+                    model.didUpdate();
+                  }
+                })
               ),
               model.deployOptions.testLevel === "RunSpecifiedTests" && h("div", {className: "slds-col slds-size_3-of-4 slds-p-around_x-small"},
                 h("label", {className: "slds-form-element__label"}, "Specified Tests"),

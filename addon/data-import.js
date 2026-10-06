@@ -5,6 +5,7 @@ import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
+import {Combobox} from "./components/Combobox.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -12,6 +13,7 @@ const allApis = [
   {value: "Metadata", label: "Metadata"}
 ];
 
+// Set available actions based on api type, and set the first one as the default
 const allActions = [
   {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"]},
   {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"]},
@@ -348,9 +350,9 @@ class Model {
       let importAction = self.importAction;
 
       if (importAction == "delete" || importAction == "undelete") {
-        yield "Id";
+        yield { value: "Id", title: "Record ID" };
       } else if (importAction == "deleteMetadata") {
-        yield "DeveloperName";
+        yield { value: "DeveloperName", title: "Developer Name" };
       } else {
         let sobjectName = self.importType;
         let sobjectDescribe = self.describeInfo.describeSobject(self.apiType == "Tooling", sobjectName).sobjectDescribe;
@@ -358,31 +360,31 @@ class Model {
           let idFieldName = self.idFieldName();
           for (let field of sobjectDescribe.fields) {
             if (field.createable || field.updateable) {
-              yield field.name;
+              yield { value: field.name, title: field.label };
               for (let referenceSobjectName of field.referenceTo) {
                 let referenceSobjectDescribe = self.describeInfo.describeSobject(self.apiType == "Tooling", referenceSobjectName).sobjectDescribe;
                 if (referenceSobjectDescribe) {
                   for (let referenceField of referenceSobjectDescribe.fields) {
                     if (referenceField.idLookup) {
-                      yield field.relationshipName + ":" + referenceSobjectDescribe.name + ":" + referenceField.name;
+                      yield { value: field.relationshipName + ":" + referenceSobjectDescribe.name + ":" + referenceField.name, title: referenceField.label + " (External ID)" };
                     }
                   }
                 }
               }
             } else if (field.idLookup && field.name.toLowerCase() == idFieldName.toLowerCase()) {
-              yield field.name;
+              yield { value: field.name, title: field.label };
             } else if (importAction == "upsertMetadata") {
               if (["DeveloperName", "MasterLabel"].includes(field.name) || field.custom) {
-                yield field.name;
+                yield { value: field.name, title: field.label };
               }
             }
           }
         }
       }
-      yield "__Status";
-      yield "__Id";
-      yield "__Action";
-      yield "__Errors";
+      yield { value: "__Status", title: "Import Status" };
+      yield { value: "__Id", title: "Result ID" };
+      yield { value: "__Action", title: "Result Action" };
+      yield { value: "__Errors", title: "Result Errors" };
     }());
   }
 
@@ -691,9 +693,9 @@ class Model {
     }
     let columnName = col.split(".");
     if (columnName.length == 2) {
-      let externalIdColumn = this.columnList().find(s => s.toLowerCase().startsWith(columnName[0].toLowerCase()) && s.toLowerCase().endsWith(columnName[1].toLowerCase()));
+      let externalIdColumn = this.columnList().find(s => s.value.toLowerCase().startsWith(columnName[0].toLowerCase()) && s.value.toLowerCase().endsWith(columnName[1].toLowerCase()));
       if (externalIdColumn) {
-        return externalIdColumn;
+        return externalIdColumn.value;
       }
     }
     return col.trim();
@@ -743,7 +745,7 @@ class Model {
         if (!columnVm.columnValid()) return "Invalid field name";
         const v = columnVm.columnValue;
         if (v.includes(".") && !v.includes(":")) return "";
-        if (!self.columnList().some(s => s.toLowerCase() == v.toLowerCase())) return "Unknown field";
+        if (!self.columnList().some(s => s.value.toLowerCase() == v.toLowerCase())) return "Unknown field";
         return "";
       },
       columnUnknownField() {
@@ -1243,25 +1245,45 @@ class App extends React.Component {
                       h("div", {className: "slds-form-element__row"},
                         h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element "},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-api-type", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types."}, "API Type"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "form-api-type", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types."}, "API Type"),
                             h("div", {className: "slds-form-element__control"},
-                              h("div", {className: "slds-select_container"},
-                                h("select", {className: "slds-select", id: "form-api-type", value: model.apiType, onChange: this.onApiTypeChange, disabled: model.isWorking()},
-                                  ...allApis.map((api, index) => h("option", {key: index, value: api.value}, api.label))
-                                )
-                              )
+                              h(Combobox, {
+                                id: "form-api-type",
+                                options: allApis,
+                                value: model.apiType,
+                                disabled: model.isWorking(),
+                                onChange: (val) => {
+                                  model.apiType = val;
+                                  model.updateAvailableActions();
+                                  model.importAction = model.availableActions[0].value;
+                                  model.importActionName = allActions.find(action => action.value == model.importAction).label;
+                                  model.updateImportTableResult();
+                                  model.didUpdate();
+                                }
+                              })
                             )
                           )
                         ),
                         h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element "},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-import-action"}, "Action"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "form-import-action"}, "Action"),
                             h("div", {className: "slds-form-element__control"},
-                              h("div", {className: "slds-select_container"},
-                                h("select", {className: "slds-select", id: "form-import-action", value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking()},
-                                  ...model.availableActions.map((action, index) => h("option", {key: index, value: action.value}, action.label))
-                                )
-                              )
+                              h(Combobox, {
+                                id: "form-import-action",
+                                options: model.availableActions,
+                                value: model.importAction,
+                                disabled: model.isWorking(),
+                                onChange: (val) => {
+                                  model.importAction = val;
+                                  let selectedActionObj = model.availableActions.find(a => a.value === val);
+                                  model.importActionName = selectedActionObj ? selectedActionObj.label : val;
+                                  model.importActionSelected = true;
+                                  if (model.importAction === "undelete") {
+                                    this.onImportUndelete(model);
+                                  }
+                                  model.didUpdate();
+                                }
+                              })
                             )
                           )
                         ),
@@ -1269,12 +1291,32 @@ class App extends React.Component {
                       h("div", {className: "slds-form-element__row"},
                         h("div", {className: "slds-size_2-of-4 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element "},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-search-object"}, "Object"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "form-search-object"}, "Object"),
                             h("div", {className: "slds-form-element__control"},
                               h("div", {className: "slds-grid slds-grid_align-spread"},
                                 h("div", {className: "slds-size_11-of-12 slds-p-right_xx-small"},
-                                  h("input", {id: "form-search-object", className: model.importTypeError() ? "slds-input slds-has-error" : "slds-input", type: "search", value: model.importType, onChange: this.onImportTypeChange, disabled: model.isWorking(), list: "sobjectlist"}),
-                                  h("div", {id: "error-search-object", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.importTypeError()}, model.importTypeError())
+                                  h(Combobox, {
+                                    id: "form-search-object",
+                                    isSearchable: true,
+                                    dropdownWidth: "310px",
+                                    showSecondaryText: true,
+                                    options: model.sobjectList().map(s => ({ 
+                                      value: s.name,            // API Name
+                                      label: s.name,            // Primary display text
+                                      title: s.label,           // Hover tooltip
+                                      // Only show secondary text if the API name and Label are different
+                                      secondaryText: s.name !== s.label ? s.label : undefined 
+                                    })),
+                                    value: model.importType,
+                                    disabled: model.isWorking(),
+                                    hasError: !!model.importTypeError(),
+                                    errorMessage: model.importTypeError(),
+                                    onChange: (val) => {
+                                      model.importType = val;
+                                      model.refreshColumn();
+                                      model.didUpdate();
+                                    }
+                                  })
                                 ),
                                 h("div", {className: "slds-size_1-of-12 slds-text-align_right"},
                                   h("a", {className: "slds-button slds-button_icon slds-button_icon-border-filled", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object"},
@@ -1289,10 +1331,21 @@ class App extends React.Component {
                         ),
                         h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small", hidden: model.importAction != "upsert"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"}, "External ID"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"}, "External ID"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-external-id", className: model.externalIdError() ? "slds-input slds-has-error" : "slds-input", type: "text", value: model.externalId, onChange: this.onExternalIdChange, disabled: model.isWorking(), list: "idlookuplist"}),
-                              h("div", {id: "error-external-id", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.externalIdError()}, model.externalIdError())
+                              h(Combobox, {
+                                id: "form-external-id",
+                                isSearchable: true,
+                                options: model.idLookupList().map(s => ({ label: s, value: s, title: s })),
+                                value: model.externalId,
+                                disabled: model.isWorking(),
+                                hasError: !!model.externalIdError(),
+                                errorMessage: model.externalIdError(),
+                                onChange: (val) => {
+                                  model.externalId = val;
+                                  model.didUpdate();
+                                }
+                              })
                             )
                           )
                         ),
@@ -1300,7 +1353,7 @@ class App extends React.Component {
                       h("div", {className: "slds-form-element__row"},
                         h("div", {className: "slds-size_2-of-4 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "data-paste"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
                               h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
@@ -1309,7 +1362,7 @@ class App extends React.Component {
                         ),
                         h("div", {className: "slds-size_1-of-4 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-batch-size"}, "Batch size"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "form-batch-size"}, "Batch size"),
                             h("div", {className: "slds-form-element__control"},
                               h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange}),
                               h("div", {id: "error-batch-size", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchSizeError()}, model.batchSizeError())
@@ -1318,7 +1371,7 @@ class App extends React.Component {
                         ),
                         h("div", {className: "slds-size_1-of-4 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-threads"}, "Threads"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "form-threads"}, "Threads"),
                             h("div", {className: "slds-form-element__control"},
                               h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange}),
                               h("div", {id: "error-threads", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
@@ -1329,7 +1382,7 @@ class App extends React.Component {
                       h("div", {className: "slds-form-element__row"},
                         h("div", {className: "slds-size_6-of-6 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-custom-headers"}, "Custom Headers"),
+                            h("label", {className: "slds-form-element__label", htmlFor: "form-custom-headers"}, "Custom Headers"),
                             h("div", {className: "slds-form-element__control"},
                               h("textarea", {id: "form-custom-headers", className: "slds-textarea", type: "textarea", rows: 1, placeholder: "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange}),
                             )
@@ -1338,10 +1391,7 @@ class App extends React.Component {
                       )
 
                     )
-                  ),
-                  h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
-                  h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
-                  h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
+                  )
                 )),
             ),
             h("div", {className: "slds-col slds-size_1-of-2"},
@@ -1349,7 +1399,7 @@ class App extends React.Component {
                 h("div", {className: "slds-card__header"},
                   h("h3", {className: "slds-text-heading_small"}, "Field Mapping")
                 ),
-                h("div", {className: "slds-card__body slds-card__body_inner", style: {maxHeight: "325px", overflowY: "auto"}},
+                h("div", {className: "slds-card__body slds-card__body_inner sfir-field-mapping-body", style: {maxHeight: "325px", overflowY: "auto"}},
                   h("div", {className: "slds-p-horizontal_medium"},
                     model.getRequiredMissingFields().map((field, index) => h("div", {key: index, className: "slds-text-color_error"}, `The field mapping has no '${field}' column`)),
                     model.columns().map((column, index) => h(ColumnMapper, {key: index, model, column}))
@@ -1497,13 +1547,7 @@ class App extends React.Component {
 class ColumnMapper extends React.Component {
   constructor(props) {
     super(props);
-    this.onColumnValueChange = this.onColumnValueChange.bind(this);
     this.onColumnSkipClick = this.onColumnSkipClick.bind(this);
-  }
-  onColumnValueChange(e) {
-    let {model, column} = this.props;
-    column.columnValue = e.target.value;
-    model.didUpdate();
   }
   onColumnSkipClick(e) {
     let {model, column} = this.props;
@@ -1513,13 +1557,36 @@ class ColumnMapper extends React.Component {
   }
   render() {
     let {model, column} = this.props;
-    let inputClassName = column.columnError() ? "slds-input slds-has-error slds-size_8-of-12" : ((column.isColumnSkipped() && model.greyOutSkippedColumns) ? "slds-input slds-disabled slds-input slds-size_12-of-12" : "slds-input slds-size_12-of-12");
+    
+    // Check if the column is skipped (starts with _)
+    let isSkipped = column.isColumnSkipped() && model.greyOutSkippedColumns;
+    let widthClass = column.columnError() ? "slds-size_8-of-12" : "slds-size_12-of-12";
+    
     return h("div", {className: "slds-form-element__row"},
-      h("div", {className: "slds-form-element"},
-        h("span", {className: "slds-form-element__label", htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
+      h("div", {className: "slds-form-element slds-size_1-of-1"},
+        h("label", {className: "slds-form-element__label"}, column.columnOriginalValue),
         h("div", {className: "slds-form-element__control slds-grid"},
-          h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: inputClassName, disabled: model.isWorking(), id: "col-" + column.columnIndex}),
-          h("div", {className: "slds-size_4-of-12 slds-text-align_right", hidden: !column.columnError()},
+          h(Combobox, {
+            className: widthClass + (isSkipped ? " slds-disabled" : ""),
+            style: isSkipped ? { opacity: 0.75 } : {},
+            isSearchable: true,
+            fixedDropdown: true,
+            options: model.columnList().map(s => ({ 
+              value: s.value, 
+              label: s.value,         // Selected = API
+              title: s.title,         // Hover = Label
+              secondaryText: s.title  // Dropdown Hint = Label
+            })),
+            value: column.columnValue,
+            disabled: model.isWorking(),
+            hasError: !!column.columnError(),
+            showSecondaryText: true,  // Display "API Name - Label" format
+            onChange: (val) => {
+              column.columnValue = val;
+              model.didUpdate();
+            }
+          }),
+          h("div", {className: "slds-size_4-of-12 slds-text-align_right", hidden: !column.columnError(), style: { paddingLeft: "0.5rem", flexShrink: 0 }},
             h("span", {className: "slds-text-color_error"}, column.columnError()), " ",
             h("button", {className: "slds-button slds-button_neutral", onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip")
           )

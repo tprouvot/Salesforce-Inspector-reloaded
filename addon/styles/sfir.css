@@ -235,3 +235,58 @@ a.download-salesforce {
   top: 50%;
   transform: translateY(-50%);
 }
+
+/* Dependent picklist with nothing valid for the controller's current value. */
+.sfir-combobox-empty {
+  color: var(--slds-g-color-neutral-base-70, #aaa);
+  font-style: italic;
+  cursor: default;
+}
+
+.sfir-combobox-empty:hover {
+  background-color: transparent;
+}
+
+.sfir-combobox-check-icon {
+  fill: var(--slds-g-color-brand-base-50, #066afe);
+}
+
+/* Label shown inline next to an option's value when they differ. */
+.sfir-combobox-option-label-hint {
+  opacity: 0.6;
+}
+
+/* Ensures dropdown breaks out of standard constrained containers */
+.sfir-combobox-dropdown {
+  z-index: 9999;
+}
+
+.slds-combobox__form-element .slds-input__icon_right {
+  top: 50%;
+  transform: translateY(-50%);
+  margin-block-start: 0;
+  margin-top: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Elevate the active row and cell so the dropdown floats ABOVE subsequent table rows */
+tr:has(.slds-is-open),
+td:has(.slds-is-open) {
+  z-index: 9999;
+  position: relative;
+}
+
+/* Prevent scrollable table wrappers from clipping/chopping off the bottom of the dropdown menu.
+   Excludes containers that must keep their own scrollbar (e.g. Data Import field mapping). */
+.slds-scrollable_x:has(.slds-is-open),
+.slds-card__body:not(.sfir-field-mapping-body):has(.slds-is-open) {
+  overflow: visible !important;
+}
+
+/* Ensure the combobox container itself acts as the positioning anchor */
+.slds-combobox_container {
+  position: relative;
+}

@@ -3,6 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
 import Toast from "./components/Toast.js";
 import ConfirmModal from "./components/ConfirmModal.js";
+import {Combobox} from "./components/Combobox.js";
 import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants, applyProductionStyling, copyToClipboard} from "./utils.js";
 
 let h = React.createElement;
@@ -1034,18 +1035,14 @@ class FieldRow extends React.Component {
           })
         ),
         h("td", {className: "slds-align-middle"},
-          h("div", {className: "slds-select_container"},
-            h("select", {
-              className: "slds-select",
-              value: this.props.field.type,
-              disabled: this.props.field.isExisting,
-              onChange: (e) => this.props.onTypeChange(this.props.index, e.target.value)
-            },
-            this.getAvailableFieldTypes().map(fieldType =>
-              h("option", {key: fieldType.value, value: fieldType.value}, fieldType.label)
-            )
-            )
-          )
+          h(Combobox, {
+            className: "sfir-field-type",
+            options: this.getAvailableFieldTypes(),
+            value: this.props.field.type,
+            disabled: this.props.field.isExisting,
+            dropdownHeight: "11.3rem",
+            onChange: (val) => this.props.onTypeChange(this.props.index, val)
+          })
         ),
         h("td", {className: "slds-align-middle"},
           h("button", {

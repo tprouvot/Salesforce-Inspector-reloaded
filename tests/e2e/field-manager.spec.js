@@ -2,7 +2,8 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  waitSuccessfulHttpResponse
+  waitSuccessfulHttpResponse,
+  selectComboboxOption
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -143,11 +144,11 @@ test.describe("Field Manager", () => {
     await initPage(page, extensionId, "Account");
 
     // Find the type select in the first row
-    const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.slds-select");
-    await typeSelect.selectOption("Number");
+    const typeSelect = page.locator("#fields_table tbody tr").first().locator(".sfir-field-type .slds-combobox__input");
+    await selectComboboxOption(page, typeSelect, "Number");
 
     // Verify type is changed
-    await expect(typeSelect).toHaveValue("Number");
+    await expect(typeSelect).toHaveAttribute("data-value", "Number");
   });
 
   test("Open Field Options Modal", async ({page, extensionId}) => {
@@ -156,7 +157,7 @@ test.describe("Field Manager", () => {
     // Set field label and type
     await page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']").fill("Test Field");
 
-    await page.locator("#fields_table tbody tr").first().locator("select.slds-select").selectOption("Text");
+    await selectComboboxOption(page, page.locator("#fields_table tbody tr").first().locator(".sfir-field-type .slds-combobox__input"), "Text");
 
     // Click Options button
     await page.locator("#fields_table tbody tr").first().locator("button:has-text('Options')").click();
@@ -170,8 +171,8 @@ test.describe("Field Manager", () => {
     await initPage(page, extensionId, "Account");
 
     // Set field type to Text
-    const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.slds-select");
-    await typeSelect.selectOption("Text");
+    const typeSelect = page.locator("#fields_table tbody tr").first().locator(".sfir-field-type .slds-combobox__input");
+    await selectComboboxOption(page, typeSelect, "Text");
 
     // Click Options button
     const optionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Options')");
@@ -189,8 +190,8 @@ test.describe("Field Manager", () => {
     await initPage(page, extensionId, "Account");
 
     // Set field type to Picklist
-    const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.slds-select");
-    await typeSelect.selectOption("Picklist");
+    const typeSelect = page.locator("#fields_table tbody tr").first().locator(".sfir-field-type .slds-combobox__input");
+    await selectComboboxOption(page, typeSelect, "Picklist");
 
     // Click Options button
     const optionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Options')");
@@ -210,8 +211,8 @@ test.describe("Field Manager", () => {
     const labelInput = page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']");
     await labelInput.fill("Test Field");
 
-    const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.slds-select");
-    await typeSelect.selectOption("Text");
+    const typeSelect = page.locator("#fields_table tbody tr").first().locator(".sfir-field-type .slds-combobox__input");
+    await selectComboboxOption(page, typeSelect, "Text");
 
     // Click Options button
     const optionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Options')");
@@ -475,14 +476,14 @@ test.describe("Field Manager", () => {
 
     // Note: We would need to mock a platform event object for this test
     // For now, we'll test that the field type dropdown exists and works
-    const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.slds-select");
+    const typeSelect = page.locator("#fields_table tbody tr").first().locator(".sfir-field-type .slds-combobox__input");
 
     // Verify field types are available
     await expect(typeSelect).toBeVisible();
 
     // Change to a valid type
-    await typeSelect.selectOption("Text");
-    await expect(typeSelect).toHaveValue("Text");
+    await selectComboboxOption(page, typeSelect, "Text");
+    await expect(typeSelect).toHaveAttribute("data-value", "Text");
   });
 
   test.describe("Retrieve and Update Existing Fields", () => {
@@ -516,7 +517,7 @@ test.describe("Field Manager", () => {
       // Name and Type are disabled for a retrieved field, Label stays editable
       const firstRow = rows.first();
       await expect(firstRow.locator("input[placeholder='Field name...']")).toBeDisabled();
-      await expect(firstRow.locator("select.slds-select")).toBeDisabled();
+      await expect(firstRow.locator(".sfir-field-type .slds-combobox__input")).toBeDisabled();
       await expect(firstRow.locator("input[placeholder='Field label...']")).toBeEditable();
 
       // Clicking Retrieve again doesn't duplicate already-retrieved fields

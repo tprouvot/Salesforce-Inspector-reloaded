@@ -254,7 +254,6 @@ a.download-salesforce {
 /* Label shown inline next to an option's value when they differ. */
 .sfir-combobox-option-label-hint {
   opacity: 0.6;
-  font-size: 0.8125rem;
 }
 
 /* Ensures dropdown breaks out of standard constrained containers */

@@ -548,7 +548,7 @@ test.describe("Options", () => {
       const severitySelect = objectScannerRuleRow(page, "Duplicate Labels").locator("select.severity-select");
       await expect(severitySelect).toHaveValue("warning");
 
-      await selectComboboxOption(page, severitySelect, "error");
+      await severitySelect.selectOption("error");
       await expect(severitySelect).toHaveValue("error");
 
       const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("objectScannerRules") || "[]"));

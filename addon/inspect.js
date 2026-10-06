@@ -6,7 +6,7 @@ import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
-import {Combobox, getControllerValueIndex, isValueValidForControllerIndex} from "./components/combobox.js";
+import {Combobox, getControllerValueIndex, isValueValidForControllerIndex, isPicklistValueValidForController} from "./components/Combobox.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
@@ -1506,11 +1506,7 @@ class FieldRow extends TableRow {
     }
     let controllerRow = this.controllerFieldRow();
     let controllerIndex = getControllerValueIndex(controllerRow && controllerRow.fieldDescribe, this.controllerCurrentValue());
-    let picklistValues = fieldDescribe.picklistValues || [];
-    let isValueValid = v => {
-      let pv = picklistValues.find(p => p.value === v);
-      return !!pv && isValueValidForControllerIndex(pv.validFor, controllerIndex);
-    };
+    let isValueValid = v => isPicklistValueValidForController(fieldDescribe, v, controllerIndex);
     if (fieldDescribe.type === "multipicklist") {
       return value.split(";").filter(v => v !== "").every(isValueValid);
     }

@@ -4,7 +4,7 @@ import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, generatePackageXml} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
-import {Combobox} from "./components/combobox.js";
+import {Combobox} from "./components/Combobox.js";
 
 class Model {
   constructor(sfHost) {

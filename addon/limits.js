@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {Combobox} from "./components/combobox.js";
+import {Combobox} from "./components/Combobox.js";
 import {UserInfoModel, copyToClipboard} from "./utils.js";
 /* global initButton */
 

@@ -1,22 +1,58 @@
 /* global React */
 
 /**
- * Reusable SLDS2 Combobox/Listbox component.
- * 
- * Supports single-select, multi-select, and searchable/typeahead modes.
- * 
- * PROPS:
- * -----------------------------------------------------------------
- * 1. Core Data: options, value, mode ("single" | "multi")
- * 2. Event Handlers: onChange, onCancel, onToggle 
- * 3. Search Mode: isSearchable (allows free-text typing & filtering), clearOnSelect (clears input after picking)
- * 4. Dimensions & Layout: width, height, dropdownWidth, dropdownHeight, textAlign, className, style
- * 5. Labels & Text: label, placeholder, ariaLabel, showLabel, showSecondaryText
- * 6. State & Validation: disabled, hasError, errorMessage, showCheckmark, autoFocus
- * 7. HTML Attributes: autoComplete, spellCheck, autoCorrect
- * 8. Positioning: fixedDropdown (renders the dropdown with position: fixed so it can escape
- *    overflow-clipping scroll containers; flips upward when there is no room below and
- *    closes when the trigger is scrolled out of its scroll container)
+ * Reusable SLDS2 Combobox Component
+ *
+ * This component provides a consistent picklist/listbox across all pages with support for
+ * single-select, multi-select and searchable (typeahead) modes, replacing native select dropdowns.
+ *
+ * @param {Object} props - Component properties
+ * @param {Array} props.options - Array of options: {value, label, title, secondaryText}
+ * @param {string} [props.value] - Selected value (semicolon-separated in multi mode)
+ * @param {string} [props.mode="single"] - Selection mode: "single" or "multi"
+ * @param {Function} [props.onChange] - Called with the new value (semicolon-joined in multi mode; typed text in searchable mode, debounced 300ms)
+ * @param {Function} [props.onCancel] - Called when Escape is pressed
+ * @param {Function} [props.onToggle] - Called with true/false when the dropdown opens/closes
+ * @param {boolean} [props.isSearchable] - Allows free-text typing and filters options by value, label, title and secondaryText
+ * @param {boolean} [props.clearOnSelect] - Clears the input after an option is picked (searchable mode)
+ * @param {string} [props.width] - Width of the root element
+ * @param {string} [props.height] - Height of the root element and input
+ * @param {string} [props.dropdownWidth] - Width of the dropdown (defaults to the input width)
+ * @param {string} [props.dropdownHeight] - Max height of the dropdown
+ * @param {string} [props.textAlign] - Text alignment of the input
+ * @param {string} [props.className] - Additional CSS class for the root element
+ * @param {Object} [props.style] - Inline style for the root element
+ * @param {boolean} [props.fixedDropdown] - Renders the dropdown with position: fixed so it can float above overflow-clipping containers (flips upward when there is no room below)
+ * @param {string} [props.label] - Form element label (wraps the combobox in slds-form-element)
+ * @param {boolean} [props.showLabel=true] - Shows the label visibly (false keeps it as assistive text)
+ * @param {string} [props.placeholder] - Placeholder text
+ * @param {string} [props.ariaLabel] - Accessible label (defaults to label)
+ * @param {boolean} [props.showSecondaryText=false] - Displays option.secondaryText next to each option
+ * @param {boolean} [props.showCheckmark=true] - Shows a checkmark next to selected options
+ * @param {boolean} [props.disabled] - Disables the combobox
+ * @param {boolean} [props.hasError] - Applies the SLDS error state
+ * @param {string} [props.errorMessage] - Error text shown below the combobox (requires label)
+ * @param {boolean} [props.autoFocus] - Focuses the input on mount
+ * @param {string} [props.autoComplete="nope"] - Input autocomplete attribute
+ * @param {boolean} [props.spellCheck=false] - Input spellcheck attribute
+ * @param {string} [props.autoCorrect="off"] - Input autocorrect attribute
+ *
+ * Example usage:
+ *
+ * h(Combobox, {
+ *   isSearchable: true,
+ *   showSecondaryText: true,
+ *   fixedDropdown: true,
+ *   options: fields.map(f => ({
+ *     value: f.name,
+ *     label: f.name,
+ *     title: f.label,
+ *     secondaryText: f.label
+ *   })),
+ *   value: this.state.fieldName,
+ *   hasError: !!this.state.error,
+ *   onChange: val => this.setState({fieldName: val})
+ * })
  */
 
 let h = React.createElement;
@@ -41,6 +77,11 @@ export function getControllerValueIndex(controllerFieldDescribe, controllerValue
   }
   if (!controllerFieldDescribe.picklistValues || controllerValue == null || controllerValue === "") return -1;
   return controllerFieldDescribe.picklistValues.findIndex(pv => pv.value === controllerValue);
+}
+
+export function isPicklistValueValidForController(fieldDescribe, value, controllerIndex) {
+  if (!fieldDescribe || !fieldDescribe.picklistValues) return false;
+  return fieldDescribe.picklistValues.some(pv => pv.value === value && isValueValidForControllerIndex(pv.validFor, controllerIndex));
 }
 
 let nextComboboxId = 0;

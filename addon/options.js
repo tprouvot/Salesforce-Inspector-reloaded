@@ -9,7 +9,7 @@ import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {Combobox} from "./components/combobox.js";
+import {Combobox} from "./components/Combobox.js";
 
 class Model {
 

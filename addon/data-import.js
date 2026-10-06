@@ -5,7 +5,7 @@ import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
-import {Combobox} from "./components/combobox.js";
+import {Combobox} from "./components/Combobox.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},

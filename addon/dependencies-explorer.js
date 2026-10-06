@@ -2,7 +2,7 @@
 import {sfConn, apiVersion} from "./inspector.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, isRecordId, generatePackageXml} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {Combobox} from "./components/combobox.js";
+import {Combobox} from "./components/Combobox.js";
 /* global initButton */
 
 // Configuration constants

@@ -5,7 +5,7 @@ import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import AgentforceModal from "./components/AgentforceModal.js";
 import Toast from "./components/Toast.js";
-import {Combobox} from "./components/combobox.js";
+import {Combobox} from "./components/Combobox.js";
 
 const h = React.createElement;
 

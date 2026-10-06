@@ -5,7 +5,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {CometD} from "./lib/cometd/cometd.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {Combobox} from "./components/combobox.js";
+import {Combobox} from "./components/Combobox.js";
 
 const channelTypes = [
   {value: "standardPlatformEvent", label: "Standard Platform Event", prefix: "/event/"},

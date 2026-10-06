@@ -1143,6 +1143,7 @@ class App extends React.Component {
             h("div", {className: "slds-grid slds-grid_align-spread"},
               h("div", {className: "slds-col slds-size_1-of-4 slds-p-around_x-small"},
                 h(Combobox, {
+                  id: "sfir-test-level",
                   label: "Test Level",
                   value: model.deployOptions.testLevel,
                   options: [

@@ -1248,10 +1248,10 @@ class App extends React.Component {
                             h("label", {className: "slds-form-element__label", htmlFor: "form-api-type", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types."}, "API Type"),
                             h("div", {className: "slds-form-element__control"},
                               h(Combobox, {
+                                id: "form-api-type",
                                 options: allApis,
                                 value: model.apiType,
                                 disabled: model.isWorking(),
-                                hideOptionLabel: true,
                                 onChange: (val) => {
                                   model.apiType = val;
                                   model.updateAvailableActions();
@@ -1269,10 +1269,10 @@ class App extends React.Component {
                             h("label", {className: "slds-form-element__label", htmlFor: "form-import-action"}, "Action"),
                             h("div", {className: "slds-form-element__control"},
                               h(Combobox, {
+                                id: "form-import-action",
                                 options: model.availableActions,
                                 value: model.importAction,
                                 disabled: model.isWorking(),
-                                hideOptionLabel: true,
                                 onChange: (val) => {
                                   model.importAction = val;
                                   let selectedActionObj = model.availableActions.find(a => a.value === val);
@@ -1296,6 +1296,7 @@ class App extends React.Component {
                               h("div", {className: "slds-grid slds-grid_align-spread"},
                                 h("div", {className: "slds-size_11-of-12 slds-p-right_xx-small"},
                                   h(Combobox, {
+                                    id: "form-search-object",
                                     isSearchable: true,
                                     dropdownWidth: "310px",
                                     showSecondaryText: true,
@@ -1333,6 +1334,7 @@ class App extends React.Component {
                             h("label", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"}, "External ID"),
                             h("div", {className: "slds-form-element__control"},
                               h(Combobox, {
+                                id: "form-external-id",
                                 isSearchable: true,
                                 options: model.idLookupList().map(s => ({ label: s, value: s, title: s })),
                                 value: model.externalId,

@@ -3,7 +3,8 @@ import {
   TEST_CONSTANTS,
   TEST_GUID,
   injectSessionData,
-  waitSuccessfulHttpResponse
+  waitSuccessfulHttpResponse,
+  selectComboboxOption
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -39,10 +40,10 @@ test.describe("REST Explore", () => {
     await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
 
     // Wait for app load
-    await page.waitForSelector("select.slds-select", {timeout: 1000});
+    await page.waitForSelector("#sfir-rest-method", {timeout: 2000});
 
     // Select GET
-    await page.locator('select.slds-select:has(option[value="GET"])').selectOption("GET");
+    await selectComboboxOption(page, page.locator("#sfir-rest-method"), "GET");
 
     // Fill Query
     const query = `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+WHERE+Name+like+'Test%20Account%25'+LIMIT+2`;
@@ -63,16 +64,16 @@ test.describe("REST Explore", () => {
   test("CRUD Flow (POST, PATCH, GET, DELETE)", async ({page, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
     // Wait for app load
-    await page.waitForSelector("select.slds-select", {timeout: 1000});
+    await page.waitForSelector("#sfir-rest-method", {timeout: 2000});
 
-    const methodSelect = page.locator('select.slds-select:has(option[value="GET"])');
+    const methodSelect = page.locator("#sfir-rest-method");
     const endpointInput = page.locator('input[placeholder*="/services/data/v"]');
     const sendBtn = page.locator('button:has-text("Send")');
     const responseCode = page.locator("code.language-json");
     const bodyInput = page.locator("textarea.slds-textarea");
 
     // 1. POST (Create)
-    await methodSelect.selectOption("POST");
+    await selectComboboxOption(page, methodSelect, "POST");
     await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Inspector_Test__c/`);
     await bodyInput.fill('{ "Name" : "SFIR-' + TEST_GUID + '" }');
     await sendBtn.click();
@@ -92,7 +93,7 @@ test.describe("REST Explore", () => {
     console.log("id: " + id);
 
     // 2. PATCH (Update)
-    await methodSelect.selectOption("PATCH");
+    await selectComboboxOption(page, methodSelect, "PATCH");
     await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Inspector_Test__c/${id}`);
     await bodyInput.fill('{ "Name" : "SFIR Updated-' + TEST_GUID + '" }');
     await sendBtn.click();
@@ -103,7 +104,7 @@ test.describe("REST Explore", () => {
     await expect(statusBadge).toContainText("Status: 204");
 
     // 3. GET (Retrieve)
-    await methodSelect.selectOption("GET");
+    await selectComboboxOption(page, methodSelect, "GET");
     await sendBtn.click();
 
     await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/Inspector_Test__c/" + id, 1000);
@@ -113,7 +114,7 @@ test.describe("REST Explore", () => {
     await expect(statusBadge).toContainText("Status: 200");
 
     // 4. DELETE (Delete)
-    await methodSelect.selectOption("DELETE");
+    await selectComboboxOption(page, methodSelect, "DELETE");
     await sendBtn.click();
 
     await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/Inspector_Test__c/" + id, 1000);

@@ -211,6 +211,7 @@ class App extends React.Component {
               ),
               h("div", {className: "slds-col slds-size_2-of-12", style: { display: "flex", justifyContent: "flex-end" }},
                 h(Combobox, {
+                  id: "sfir-limits-sort",
                   value: model.sortBy.value,
                   options: model.sortOptions,
                   onChange: this.onSortBy,

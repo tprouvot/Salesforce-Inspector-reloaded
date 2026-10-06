@@ -646,6 +646,7 @@ class App extends React.Component {
                     h("div", {className: "slds-grid slds-grid_align-end slds-gutters_xx-small"},
                       h("div", {className: "slds-col", style: {minWidth: "150px", maxWidth: "300px"}},
                         h(Combobox, {
+                          id: "sfir-rest-templates",
                           placeholder: "Templates",
                           value: "",
                           isSearchable: true,
@@ -659,6 +660,7 @@ class App extends React.Component {
                       ),
                       h("div", {className: "slds-col", style: {minWidth: "150px", maxWidth: "300px"}},
                         h(Combobox, {
+                          id: "sfir-rest-history",
                           placeholder: "History",
                           value: "",
                           isSearchable: true,
@@ -675,6 +677,7 @@ class App extends React.Component {
                       ),
                       h("div", {className: "slds-col", style: {minWidth: "150px", maxWidth: "300px"}},
                         h(Combobox, {
+                          id: "sfir-rest-saved",
                           placeholder: "Saved",
                           value: "",
                           isSearchable: true,
@@ -733,6 +736,7 @@ class App extends React.Component {
               h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
                 h("div", {className: "slds-size_1-of-12 slds-p-right_xx-small"},
                   h(Combobox, {
+                    id: "sfir-rest-method",
                     value: model.request.method,
                     options: [
                       {value: "GET", label: "GET"},

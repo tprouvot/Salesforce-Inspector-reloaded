@@ -1036,6 +1036,7 @@ class FieldRow extends React.Component {
         ),
         h("td", {className: "slds-align-middle"},
           h(Combobox, {
+            className: "sfir-field-type",
             options: this.getAvailableFieldTypes(),
             value: this.props.field.type,
             disabled: this.props.field.isExisting,

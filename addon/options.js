@@ -682,6 +682,8 @@ class ArrowButtonOption extends React.Component {
         h("label", {className: "slds-text-align_right slds-m-left_medium slds-m-right_small"}, "Orientation:"),
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
           h(Combobox, {
+            id: "arrowOrientation",
+            name: "arrowPosition",
             value: this.state.arrowButtonOrientation,
             options: [
               {value: "horizontal", label: "Horizontal"},
@@ -926,6 +928,7 @@ class Option extends React.Component {
         readOnly: this.readOnly
       })
       : isSelect ? h(Combobox, {
+        id,
         className: isEnhanced ? "enhanced-option-input" : "slds-m-right_small",
         value: this.state[this.key],
         options: this.props.options,

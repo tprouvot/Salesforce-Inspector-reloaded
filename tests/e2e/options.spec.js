@@ -2,7 +2,8 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  createModelExposureSetup
+  createModelExposureSetup,
+  selectComboboxOption
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -169,16 +170,16 @@ test.describe("Options", () => {
       await initOptionsPage(page, extensionId);
 
       // Find arrow orientation select
-      await page.waitForSelector("select[name='arrowPosition']", {timeout: 1000});
+      await page.waitForSelector("input[name='arrowPosition']", {timeout: 1000});
 
-      const orientationSelect = page.locator("select[name='arrowPosition']");
+      const orientationSelect = page.locator("input[name='arrowPosition']");
       await expect(orientationSelect).toBeVisible();
 
       // Change orientation to horizontal
-      await orientationSelect.selectOption("horizontal");
+      await selectComboboxOption(page, orientationSelect, "horizontal");
 
       // Verify value is changed
-      await expect(orientationSelect).toHaveValue("horizontal");
+      await expect(orientationSelect).toHaveAttribute("data-value", "horizontal");
 
       // Find position slider
       const positionSlider = page.locator("input#arrowPositionSlider");
@@ -338,14 +339,14 @@ test.describe("Options", () => {
 
       // Find Field Naming Convention select - look for select near the text
       const fieldNamingText = page.locator("text=Field Naming Convention").first();
-      const namingSelect = fieldNamingText.locator("..").locator("..").locator("select.slds-select").first();
+      const namingSelect = fieldNamingText.locator("..").locator("..").locator(".slds-combobox__input").first();
       await expect(namingSelect).toBeVisible();
 
       // Change to Underscores
-      await namingSelect.selectOption("underscore");
+      await selectComboboxOption(page, namingSelect, "underscore");
 
       // Verify value is changed
-      await expect(namingSelect).toHaveValue("underscore");
+      await expect(namingSelect).toHaveAttribute("data-value", "underscore");
     });
   });
 
@@ -547,7 +548,7 @@ test.describe("Options", () => {
       const severitySelect = objectScannerRuleRow(page, "Duplicate Labels").locator("select.severity-select");
       await expect(severitySelect).toHaveValue("warning");
 
-      await severitySelect.selectOption("error");
+      await selectComboboxOption(page, severitySelect, "error");
       await expect(severitySelect).toHaveValue("error");
 
       const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("objectScannerRules") || "[]"));
@@ -745,14 +746,14 @@ test.describe("Options", () => {
 
       // Find Sort metadata components select - look for select near the text
       const sortMetadataText = page.locator("text=Sort metadata components").first();
-      const sortSelect = sortMetadataText.locator("..").locator("..").locator("select.slds-select").first();
+      const sortSelect = sortMetadataText.locator("..").locator("..").locator(".slds-combobox__input").first();
       await expect(sortSelect).toBeVisible();
 
       // Change to Last Modified Date DESC
-      await sortSelect.selectOption("lastModifiedDate");
+      await selectComboboxOption(page, sortSelect, "lastModifiedDate");
 
       // Verify value is changed
-      await expect(sortSelect).toHaveValue("lastModifiedDate");
+      await expect(sortSelect).toHaveAttribute("data-value", "lastModifiedDate");
     });
   });
 
@@ -802,4 +803,3 @@ test.describe("Options", () => {
     });
   });
 });
-

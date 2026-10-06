@@ -23,6 +23,8 @@
  * @param {string} [props.className] - Additional CSS class for the root element
  * @param {Object} [props.style] - Inline style for the root element
  * @param {boolean} [props.fixedDropdown] - Renders the dropdown with position: fixed so it can float above overflow-clipping containers (flips upward when there is no room below)
+ * @param {string} [props.id] - id of the input (lets <label htmlFor> and tests target the combobox); must be unique, so omit or make row-unique in tables
+ * @param {string} [props.name] - name attribute of the input
  * @param {string} [props.label] - Form element label (wraps the combobox in slds-form-element)
  * @param {boolean} [props.showLabel=true] - Shows the label visibly (false keeps it as assistive text)
  * @param {string} [props.placeholder] - Placeholder text
@@ -40,6 +42,7 @@
  * Example usage:
  *
  * h(Combobox, {
+ *   id: "sfir-field-select",
  *   isSearchable: true,
  *   showSecondaryText: true,
  *   fixedDropdown: true,
@@ -390,7 +393,7 @@ export class Combobox extends React.Component {
     let {
       options = [], value, onChange, mode, isSearchable,
       width, height, dropdownHeight, dropdownWidth, className, style, textAlign, fixedDropdown,
-      label, placeholder, ariaLabel, showLabel = true, showSecondaryText = false,
+      id, name, label, placeholder, ariaLabel, showLabel = true, showSecondaryText = false,
       disabled, hasError, errorMessage, showCheckmark = true,
       autoComplete = "nope", spellCheck = false, autoCorrect = "off"
     } = this.props;
@@ -433,6 +436,9 @@ export class Combobox extends React.Component {
       },
         h("input", {
           type: "text",
+          id: id,
+          name: name,
+          "data-value": this.isMulti() ? this.selectedValues().join(";") : (value == null ? "" : value),
           className: "slds-input slds-combobox__input",
           placeholder: placeholder,
           readOnly: !isSearchable,
@@ -497,6 +503,7 @@ export class Combobox extends React.Component {
                 return h("li", { className: "slds-listbox__item", role: "presentation", key: option.value },
                   h("div", {
                     id: optionId(i),
+                    "data-value": option.value,
                     className: "slds-media slds-media_center slds-listbox__option slds-listbox__option_plain slds-media_small"
                       + (this.isSelected(option) ? " slds-is-selected" : "")
                       + (i === highlightedIndex ? " slds-has-focus" : ""),

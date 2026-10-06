@@ -1407,6 +1407,7 @@ function LogsTable({model, hideButtonsOption}) {
             ),
             h("div", {className: "slds-col slds-grow-none"},
               h(Combobox, {
+                id: "sfir-page-size",
                 label: "Page size",
                 value: String(model.pageSize),
                 options: model.allowedPageSizes.map(v => ({label: String(v), value: String(v)})),
@@ -1819,6 +1820,7 @@ function PreviewModal({model, hideButtonsOption}) {
   h("div", {className: "slds-grid slds-gutters slds-m-bottom_x-small"},
     h("div", {className: "slds-col"},
       h(Combobox, {
+        id: "sfir-log-filter-template",
         label: "Filter Template",
         value: model.previewFilterInput,
         options: model.filterTemplates,

@@ -972,6 +972,7 @@ class App extends React.Component {
                   ),
                   h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
                     h(Combobox, {
+                      id: "sfir-channel-type",
                       label: "Channel Type",
                       value: model.selectedChannelType,
                       options: channelTypes,
@@ -981,6 +982,7 @@ class App extends React.Component {
                   ),
                   h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
                     h(Combobox, {
+                      id: "sfir-channel",
                       label: "Channel",
                       value: model.selectedChannel || "",
                       dropdownWidth: "350px",
@@ -1190,6 +1192,7 @@ class App extends React.Component {
       h("div", {className: "slds-grid slds-gutters slds-m-bottom_small"},
         h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_2-of-6"},
           h(Combobox, {
+            id: "sfir-event-history",
             label: "History",
             placeholder: "History",
             value: model.selectedHistoryEntry ? String(model.selectedHistoryEntry.key) : "",
@@ -1207,6 +1210,7 @@ class App extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-6"},
           h(Combobox, {
+            id: "sfir-event-saved",
             label: "Saved",
             placeholder: "Saved",
             value: model.selectedSavedEntry ? String(model.selectedSavedEntry.key) : "",

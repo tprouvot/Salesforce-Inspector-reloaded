@@ -1397,7 +1397,7 @@ class App extends React.Component {
                 h("div", {className: "slds-card__header"},
                   h("h3", {className: "slds-text-heading_small"}, "Field Mapping")
                 ),
-                h("div", {className: "slds-card__body slds-card__body_inner", style: {maxHeight: "325px", overflowY: "auto"}},
+                h("div", {className: "slds-card__body slds-card__body_inner sfir-field-mapping-body", style: {maxHeight: "325px", overflowY: "auto"}},
                   h("div", {className: "slds-p-horizontal_medium"},
                     model.getRequiredMissingFields().map((field, index) => h("div", {key: index, className: "slds-text-color_error"}, `The field mapping has no '${field}' column`)),
                     model.columns().map((column, index) => h(ColumnMapper, {key: index, model, column}))
@@ -1568,6 +1568,7 @@ class ColumnMapper extends React.Component {
             className: widthClass + (isSkipped ? " slds-disabled" : ""),
             style: isSkipped ? { opacity: 0.75 } : {},
             isSearchable: true,
+            fixedDropdown: true,
             options: model.columnList().map(s => ({ 
               value: s.value, 
               label: s.value,         // Selected = API

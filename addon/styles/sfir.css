@@ -280,9 +280,10 @@ td:has(.slds-is-open) {
   position: relative;
 }
 
-/* Prevent scrollable table wrappers from clipping/chopping off the bottom of the dropdown menu */
+/* Prevent scrollable table wrappers from clipping/chopping off the bottom of the dropdown menu.
+   Excludes containers that must keep their own scrollbar (e.g. Data Import field mapping). */
 .slds-scrollable_x:has(.slds-is-open),
-.slds-card__body:has(.slds-is-open) {
+.slds-card__body:not(.sfir-field-mapping-body):has(.slds-is-open) {
   overflow: visible !important;
 }
 

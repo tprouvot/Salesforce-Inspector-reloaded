@@ -14,6 +14,9 @@
  * 5. Labels & Text: label, placeholder, ariaLabel, showLabel, showSecondaryText
  * 6. State & Validation: disabled, hasError, errorMessage, showCheckmark, autoFocus
  * 7. HTML Attributes: autoComplete, spellCheck, autoCorrect
+ * 8. Positioning: fixedDropdown (renders the dropdown with position: fixed so it can escape
+ *    overflow-clipping scroll containers; flips upward when there is no room below and
+ *    closes when the trigger is scrolled out of its scroll container)
  */
 
 let h = React.createElement;
@@ -48,15 +51,19 @@ export class Combobox extends React.Component {
     this.state = { 
       isOpen: false, 
       highlightedIndex: -1,
-      inputValue: props.value || ""
+      inputValue: props.value || "",
+      dropdownStyle: null
     };
     this.debounceTimeout = null;
     this.instanceId = "sfir-combobox-" + (nextComboboxId++);
     this.optionNodes = {};
+    this.scrollParent = null;
+    this.positionListenersAttached = false;
     
     this.onTriggerClick = this.onTriggerClick.bind(this);
     this.onTriggerKeyDown = this.onTriggerKeyDown.bind(this);
     this.onDocumentMouseDown = this.onDocumentMouseDown.bind(this);
+    this.updateDropdownPosition = this.updateDropdownPosition.bind(this);
   }
   
   componentDidMount() {
@@ -66,12 +73,22 @@ export class Combobox extends React.Component {
   
   componentWillUnmount() {
     document.removeEventListener("mousedown", this.onDocumentMouseDown, true);
+    this.detachPositionListeners();
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
   }
   
   componentDidUpdate(prevProps, prevState) {
     if (prevProps.value !== this.props.value && this.props.isSearchable) {
       this.setState({ inputValue: this.props.value || "" });
+    }
+
+    if (this.props.fixedDropdown) {
+      if (this.state.isOpen && !prevState.isOpen) {
+        this.attachPositionListeners();
+      } else if (!this.state.isOpen && prevState.isOpen) {
+        this.detachPositionListeners();
+      }
+      if (this.state.isOpen) this.updateDropdownPosition();
     }
 
     if (!this.state.isOpen) return;
@@ -105,6 +122,69 @@ export class Combobox extends React.Component {
         listbox.scrollTo({ top: listbox.scrollTop + (nodeRect.bottom - listboxRect.bottom), behavior: scrollBehavior });
       }
     }
+  }
+  
+  getScrollParent(el) {
+    for (let p = el && el.parentElement; p && p !== document.body; p = p.parentElement) {
+      let oy = getComputedStyle(p).overflowY;
+      if (oy === "auto" || oy === "scroll") return p;
+    }
+    return null;
+  }
+  
+  attachPositionListeners() {
+    if (this.positionListenersAttached) return;
+    this.scrollParent = this.getScrollParent(this.refs.container);
+    window.addEventListener("scroll", this.updateDropdownPosition, true);
+    window.addEventListener("resize", this.updateDropdownPosition);
+    this.positionListenersAttached = true;
+  }
+  
+  detachPositionListeners() {
+    if (!this.positionListenersAttached) return;
+    window.removeEventListener("scroll", this.updateDropdownPosition, true);
+    window.removeEventListener("resize", this.updateDropdownPosition);
+    this.positionListenersAttached = false;
+    this.scrollParent = null;
+  }
+  
+  updateDropdownPosition(e) {
+    if (!this.props.fixedDropdown || !this.state.isOpen) return;
+    if (e && e.type === "scroll" && this.refs.listbox && e.target === this.refs.listbox) return;
+    let container = this.refs.container;
+    if (!container) return;
+    let rect = container.getBoundingClientRect();
+    
+    let sp = this.scrollParent;
+    if (sp) {
+      let spRect = sp.getBoundingClientRect();
+      if (rect.bottom < spRect.top || rect.top > spRect.bottom) {
+        this.closeDropdown();
+        return;
+      }
+    }
+    
+    let gap = 2;
+    let spaceBelow = window.innerHeight - rect.bottom;
+    let openUp = spaceBelow < 260 && rect.top > spaceBelow;
+    let style = {
+      position: "fixed",
+      left: rect.left + "px",
+      width: this.props.dropdownWidth || rect.width + "px",
+      transform: "none",
+      margin: 0
+    };
+    if (openUp) {
+      style.top = "auto";
+      style.bottom = (window.innerHeight - rect.top + gap) + "px";
+    } else {
+      style.top = (rect.bottom + gap) + "px";
+      style.bottom = "auto";
+    }
+    
+    let prev = this.state.dropdownStyle;
+    if (prev && JSON.stringify(prev) === JSON.stringify(style)) return;
+    this.setState({ dropdownStyle: style });
   }
   
   onDocumentMouseDown(e) {
@@ -151,7 +231,7 @@ export class Combobox extends React.Component {
   
   closeDropdown() {
     let { onToggle } = this.props;
-    this.setState({ isOpen: false, highlightedIndex: -1 }, () => {
+    this.setState({ isOpen: false, highlightedIndex: -1, dropdownStyle: null }, () => {
       if (onToggle) onToggle(false);
     });
   }
@@ -268,13 +348,13 @@ export class Combobox extends React.Component {
   render() {
     let {
       options = [], value, onChange, mode, isSearchable,
-      width, height, dropdownHeight, dropdownWidth, className, style, textAlign,
+      width, height, dropdownHeight, dropdownWidth, className, style, textAlign, fixedDropdown,
       label, placeholder, ariaLabel, showLabel = true, showSecondaryText = false,
       disabled, hasError, errorMessage, showCheckmark = true,
       autoComplete = "nope", spellCheck = false, autoCorrect = "off"
     } = this.props;
     
-    let { isOpen, highlightedIndex } = this.state;
+    let { isOpen, highlightedIndex, dropdownStyle } = this.state;
     let listboxId = this.instanceId + "-listbox";
     let helpId = this.instanceId + "-help";
     let optionId = i => this.instanceId + "-option-" + i;
@@ -358,7 +438,10 @@ export class Combobox extends React.Component {
         "aria-multiselectable": this.isMulti(),
         style: Object.assign(
           { width: dropdownWidth || "100%", minWidth: "0", maxWidth: dropdownWidth ? "none" : undefined, left: "0", transform: "none" }, 
-          dropdownHeight ? { maxHeight: dropdownHeight, overflowY: "auto" } : {}
+          dropdownHeight ? { maxHeight: dropdownHeight, overflowY: "auto" } : {},
+          fixedDropdown
+            ? (dropdownStyle || { position: "fixed", visibility: "hidden" })
+            : {}
         )
       },
         h("ul", { className: "slds-listbox slds-listbox_vertical", role: "presentation" },

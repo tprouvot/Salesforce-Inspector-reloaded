@@ -25,7 +25,7 @@ class Model {
     this.metadataObjects = [];
     this.metadataTypeMap = {}; // Map of xmlName to metadata object with suffix
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
+    this.sortMetadataBy = (localStorage.getItem("sortMetadataBy") || "fullName").replace(/"/g, "");
     this.packageXml;
     this.metadataFilter = "";
     this.deployRequestId;

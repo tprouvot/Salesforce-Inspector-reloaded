@@ -16,6 +16,17 @@ export const test = base.extend({
       ],
     });
 
+    // Each test launches a brand new profile, so background.js's onInstalled
+    // "install" handler fires every time and opens a real welcome tab. Setting
+    // the skipWelcomePage flag below races that handler (it reads storage before
+    // our write lands), so close the tab deterministically whenever it appears
+    // instead of relying on the flag to win the race.
+    context.on("page", newPage => {
+      newPage.waitForURL(/tprouvot\.github\.io\/Salesforce-Inspector-reloaded\/welcome/, {timeout: 5000})
+        .then(() => newPage.close())
+        .catch(() => {});
+    });
+
     // Set flag to skip welcome page in tests
     // Wait for service worker to be ready, then set the flag
     let [background] = context.serviceWorkers();

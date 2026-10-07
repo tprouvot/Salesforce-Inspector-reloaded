@@ -1283,6 +1283,20 @@ class FieldRow extends TableRow {
     return GET_FIELD_USAGE_LABEL;
   }
 
+  fieldUsageSortKey() {
+    // Sort by the exact (unrounded) usage so fields that display the same
+    // rounded percentage are still ordered by their true populated ratio (#1401).
+    if (this.fieldUsageData !== null
+        && this.fieldUsageData !== "Error"
+        && this.fieldUsageDetails
+        && this.fieldUsageDetails.totalCount > 0) {
+      return (this.fieldUsageDetails.nonNullCount / this.fieldUsageDetails.totalCount) * 100;
+    }
+    // Fall back to the display value for all non-data states
+    // (required field = 100, "", "Loading...", "Error", "Get field usage").
+    return this.fieldUsage();
+  }
+
   fieldUsageTitle() {
     // If we don't have field describe info, we can't calculate usage
     if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address" || this.fieldDescribe.type === "location") {
@@ -1450,7 +1464,7 @@ class FieldRow extends TableRow {
       case "desc": return this.fieldDesc();
       case "value": return this.dataTypedValue;
       case "type": return this.fieldTypeDesc();
-      case "usage": return this.fieldUsage();
+      case "usage": return this.fieldUsageSortKey();
       default: return this.rowProperties()[col];
     }
   }

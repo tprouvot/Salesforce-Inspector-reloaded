@@ -92,10 +92,15 @@ let nextComboboxId = 0;
 export class Combobox extends React.Component {
   constructor(props) {
     super(props);
+    let initialInput = props.value || "";
+    if (props.isSearchable && props.options) {
+      let match = props.options.find(o => o.value === props.value);
+      if (match && match.label !== undefined) initialInput = match.label;
+    }
     this.state = { 
       isOpen: false, 
       highlightedIndex: -1,
-      inputValue: props.value || "",
+      inputValue: initialInput,
       dropdownStyle: null
     };
     this.debounceTimeout = null;
@@ -123,7 +128,8 @@ export class Combobox extends React.Component {
   
   componentDidUpdate(prevProps, prevState) {
     if (prevProps.value !== this.props.value && this.props.isSearchable) {
-      this.setState({ inputValue: this.props.value || "" });
+      let match = (this.props.options || []).find(o => o.value === this.props.value);
+      this.setState({ inputValue: match && match.label !== undefined ? match.label : (this.props.value || "") });
     }
 
     if (this.props.fixedDropdown) {
@@ -417,6 +423,8 @@ export class Combobox extends React.Component {
     }
 
     let chevronIcon = isOpen ? "chevronup" : "chevrondown";
+    let isValueAnOption = (options || []).some(o => (o.label !== undefined ? o.label : o.value) === this.state.inputValue);
+    let showClear = isSearchable && this.state.inputValue && !disabled && !isValueAnOption;
 
     let comboboxInner = h("div", {
         className: "slds-combobox_container" + (!label && hasError ? " slds-has-error" : ""),
@@ -471,11 +479,28 @@ export class Combobox extends React.Component {
           },
           ref: "triggerInput"
         }),
-        h("span", { className: "slds-icon_container slds-icon-utility-" + chevronIcon + " slds-current-color slds-input__icon slds-input__icon_right" },
-          h("svg", { className: "slds-icon slds-icon_xx-small" + (disabled ? " slds-icon-text-light" : ""), "aria-hidden": "true" },
-            h("use", { xlinkHref: "symbols.svg#" + chevronIcon })
+        showClear ? 
+          h("button", {
+            className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
+            title: "Clear",
+            onClick: (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              this.setState({ inputValue: "", highlightedIndex: -1 });
+              if (onChange) onChange("");
+              if (this.refs.triggerInput) this.refs.triggerInput.focus();
+              if (!this.state.isOpen) this.openDropdown();
+            }
+          },
+            h("svg", { className: "slds-button__icon slds-icon-text-light", "aria-hidden": "true" },
+              h("use", { xlinkHref: "symbols.svg#clear" })
+            )
           )
-        )
+        : h("span", { className: "slds-icon_container slds-icon-utility-" + chevronIcon + " slds-current-color slds-input__icon slds-input__icon_right" },
+            h("svg", { className: "slds-icon slds-icon_xx-small" + (disabled ? " slds-icon-text-light" : ""), "aria-hidden": "true" },
+              h("use", { xlinkHref: "symbols.svg#" + chevronIcon })
+            )
+          )
       ),
       isOpen ? h("div", {
         id: listboxId, 

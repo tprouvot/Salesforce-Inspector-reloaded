@@ -1298,7 +1298,7 @@ class App extends React.Component {
                                   h(Combobox, {
                                     id: "form-search-object",
                                     isSearchable: true,
-                                    dropdownWidth: "310px",
+                                    dropdownWidth: "calc(100% * 4/3)",
                                     showSecondaryText: true,
                                     options: model.sobjectList().map(s => ({ 
                                       value: s.name,            // API Name

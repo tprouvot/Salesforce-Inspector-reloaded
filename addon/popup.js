@@ -5084,22 +5084,12 @@ class Autocomplete extends React.PureComponent {
     let sel = this.refs.selectedItem;
     let marginTop = 5;
     if (
-      this.state.scrollToSelectedIndex != prevState.scrollToSelectedIndex
-      && sel
-      && sel.offsetParent
+      this.state.scrollToSelectedIndex !== prevState.scrollToSelectedIndex &&
+      this.refs.selectedItem
     ) {
-      if (sel.offsetTop + marginTop < sel.offsetParent.scrollTop) {
-        sel.offsetParent.scrollTop = sel.offsetTop + marginTop;
-      } else if (
-        sel.offsetTop + marginTop + sel.offsetHeight
-        > sel.offsetParent.scrollTop + sel.offsetParent.offsetHeight
-      ) {
-        sel.offsetParent.scrollTop
-          = sel.offsetTop
-          + marginTop
-          + sel.offsetHeight
-          - sel.offsetParent.offsetHeight;
-      }
+      this.refs.selectedItem.scrollIntoView({
+        block: "nearest",
+      });
     }
   }
   render() {

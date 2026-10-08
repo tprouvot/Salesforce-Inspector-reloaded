@@ -332,8 +332,9 @@ input.api-input {
   background-color: transparent;
 }
 
+.autocomplete-item:hover,
 .autocomplete-item.selected {
-  background-color: var(--sfir-light-gray);
+  background-color: var(--slds-g-color-brand-base-90);
 }
 
 @keyframes bg-load {

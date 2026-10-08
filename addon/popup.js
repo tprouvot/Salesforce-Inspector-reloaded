@@ -4895,13 +4895,18 @@ class Autocomplete extends React.PureComponent {
       itemHeight: 1, // The height of each autocomplete item. All items should have the same height. Measured on first render. 1 means not measured.
       resultsMouseIsDown: false, // Hide the autocomplete popup when the input field looses focus, except when clicking one of the autocomplete items.
     };
+    this.lastNav = "keyboard";
+    this.lastMouseX = null;
+    this.lastMouseY = null;
     this.onResultsMouseDown = this.onResultsMouseDown.bind(this);
     this.onResultsMouseUp = this.onResultsMouseUp.bind(this);
     this.onResultClick = this.onResultClick.bind(this);
     this.onResultMouseEnter = this.onResultMouseEnter.bind(this);
+    this.onResultMouseMove = this.onResultMouseMove.bind(this);
     this.onScroll = this.onScroll.bind(this);
   }
   handleInput() {
+    this.lastNav = "keyboard";
     this.setState({
       showResults: true,
       selectedIndex: 0,
@@ -5006,6 +5011,7 @@ class Autocomplete extends React.PureComponent {
     }
     if (selectionMove != 0) {
       e.preventDefault();
+      this.lastNav = "keyboard";
       if (!showResults) {
         this.setState({
           showResults: true,
@@ -5060,10 +5066,28 @@ class Autocomplete extends React.PureComponent {
     navigateWithExtensionCheck(e, url, navigationParams);
   }
   onResultMouseEnter(index) {
+    if (this.lastNav === "keyboard") {
+      return;
+    }
     this.setState({
       selectedIndex: index,
-      scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
     });
+  }
+
+  onResultMouseMove(e, index) {
+    // Ignore synthetic mousemove if coordinates have not changed
+    if (this.lastMouseX === e.clientX && this.lastMouseY === e.clientY) {
+      return;
+    }
+    this.lastMouseX = e.clientX;
+    this.lastMouseY = e.clientY;
+    this.lastNav = "mouse";
+
+    if (this.state.selectedIndex !== index) {
+      this.setState({
+        selectedIndex: index,
+      });
+    }
   }
   onScroll() {
     let scrollTopIndex = Math.floor(
@@ -5149,6 +5173,7 @@ class Autocomplete extends React.PureComponent {
                   (isSelected ? "selected selected-old" : ""),
                 onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () => this.onResultMouseEnter(absoluteIndex),
+                onMouseMove: (e) => this.onResultMouseMove(e, absoluteIndex),
               },
               h("a", {className: "slds-p-horizontal_small"}, element)
             );

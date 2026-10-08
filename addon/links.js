@@ -14,14 +14,17 @@ export let setupLinks = [
   //Administration > Users
   {label: "Permission Sets Groups", link: "/lightning/setup/PermSetGroups/home", section: "Administration > Users", prod: false},
   {label: "Permission Sets", link: "/lightning/setup/PermSets/home", section: "Administration > Users", prod: false},
+  {label: "Permission Sets (Enhanced)", link: "/lightning/setup/PermissionSetListView/home", section: "Administration > Users", prod: false},
   {label: "Profiles", link: "/lightning/setup/Profiles/home", section: "Administration > Users", prod: false},
   {label: "Profiles (Enhanced)", link: "/lightning/setup/EnhancedProfiles/home", section: "Administration > Users", prod: false},
   {label: "Public Groups", link: "/lightning/setup/PublicGroups/home", section: "Administration > Users", prod: false},
   {label: "Queues", link: "/lightning/setup/Queues/home", section: "Administration > Users", prod: false},
   {label: "Roles", link: "/lightning/setup/Roles/home", section: "Administration > Users", prod: false},
+  {label: "Roles (Enhanced)", link: "/lightning/setup/RolesListViewLightning/home", section: "Administration > Users", prod: false},
   {label: "User Access Policies", link: "/lightning/setup/UserAccessPolicies/home", section: "Administration > Users", prod: false},
   {label: "User Management Settings", link: "/lightning/setup/UserManagementSettings/home", section: "Administration > Users", prod: false},
   {label: "Users", link: "/lightning/setup/ManageUsers/home", section: "Administration > Users", prod: false},
+  {label: "Users (Enhanced)", link: "/lightning/setup/ManageUsersLightning/home", section: "Administration > Users", prod: false},
   //Administration > Data
   {label: "Big Objects", link: "/lightning/setup/BigObjects/home", section: "Administration > Data", prod: false},
   {label: "Data Export", link: "/lightning/setup/DataManagementExport/home", section: "Administration > Data", prod: false},
@@ -153,6 +156,7 @@ export let setupLinks = [
   {label: "Order Settings", link: "/lightning/setup/OrderSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
   {label: "Sales Processes", link: "/lightning/setup/OpportunityProcess/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
   {label: "Social Accounts and Contacts Settings", link: "/lightning/setup/SocialProfileOrgSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
+  {label: "Team Roles", link: "/lightning/setup/OpportunityTeamMemberRoles/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
   {label: "Update Reminders", link: "/lightning/setup/OpportunityUpdateReminders/home", section: "Platform Tools > Feature Settings > Sales", prod: false},
 
   //Platform Tools > Feature Settings > Sales > Account

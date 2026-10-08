@@ -4433,19 +4433,19 @@ class AllDataSelection extends React.PureComponent {
                     {
                       href: this.getObjectDocLink(
                         selectedValue.sobject,
-                        selectedValue.sobject.availableApis[1]
+                        buttons[1]
                       ),
                       target: linkTarget,
                     },
                     "Standard"
                   ),
-                  selectedValue.sobject.availableApis.length > 1
+                  buttons.length > 1
                     ? h(
                       "a",
                       {
                         href: this.getObjectDocLink(
                           selectedValue.sobject,
-                          selectedValue.sobject.availableApis[0]
+                          buttons[0]
                         ),
                         target: linkTarget,
                         className: "left-space",
@@ -4918,6 +4918,7 @@ class Autocomplete extends React.PureComponent {
         `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+WHERE+Type!='ListView'+LIMIT+${RECENT_ITEMS_RENDERED_COUNT}`
       )
       .then((res) => {
+        recentItems.length = 0;
         let itemsIds = new Set();
         res.records.forEach((recentItem) => {
           if (!itemsIds.has(recentItem.Id)) {
@@ -4970,8 +4971,10 @@ class Autocomplete extends React.PureComponent {
     this.setState({showResults: false});
   }
   handleKeyDown(e) {
-    let {matchingResults} = this.props;
+    let {matchingResults, recentItems} = this.props;
+    let autocompleteResults = recentItems.length > 0 ? recentItems : matchingResults;
     let {selectedIndex, showResults, scrollToSelectedIndex} = this.state;
+    
     if (e.key == "Enter") {
       if (!showResults) {
         this.setState({
@@ -4981,9 +4984,9 @@ class Autocomplete extends React.PureComponent {
         });
         return;
       }
-      if (selectedIndex < matchingResults.length) {
+      if (selectedIndex < autocompleteResults.length) {
         e.preventDefault();
-        let {value} = matchingResults[selectedIndex];
+        let {value} = autocompleteResults[selectedIndex];
         this.props.updateInput(value);
         this.setState({showResults: false, selectedIndex: 0});
       }
@@ -5012,16 +5015,16 @@ class Autocomplete extends React.PureComponent {
         return;
       }
       let index = selectedIndex + selectionMove;
-      let length = matchingResults.length;
+      let length = autocompleteResults.length;
       if (index < 0) {
-        index = length - 1;
+        index = 0;
       }
       if (index > length - 1) {
-        index = 0;
+        index = length - 1;
       }
       this.setState({
         selectedIndex: index,
-        scrollToSelectedIndex: scrollToSelectedIndex + 1,
+        scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1,
       });
     }
   }
@@ -5071,23 +5074,17 @@ class Autocomplete extends React.PureComponent {
     }
   }
   componentDidUpdate(prevProps, prevState) {
-    if (this.state.itemHeight == 1) {
-      let anItem = this.refs.scrollBox.querySelector(".autocomplete-item");
-      if (anItem) {
-        let itemHeight = anItem.offsetHeight;
-        if (itemHeight > 0) {
-          this.setState({itemHeight});
-        }
+    if (this.state.itemHeight === 1) {
+      let anItem = this.refs.scrollBox?.querySelector(".autocomplete-item");
+      if (anItem && anItem.offsetHeight > 0) {
+        this.setState({itemHeight: anItem.offsetHeight});
       }
-      return;
     }
-    let sel = this.refs.selectedItem;
-    let marginTop = 5;
     if (
       this.state.scrollToSelectedIndex !== prevState.scrollToSelectedIndex &&
-      this.refs.selectedItem
+      this.selectedItemEl
     ) {
-      this.refs.selectedItem.scrollIntoView({
+      this.selectedItemEl.scrollIntoView({
         block: "nearest",
       });
     }
@@ -5134,23 +5131,28 @@ class Autocomplete extends React.PureComponent {
         },
         autocompleteResults
           .slice(firstRenderedIndex, lastRenderedIndex + 1)
-          .map(({key, value, element}, index) =>
-            h(
+          .map(({key, value, element}, index) => {
+            const absoluteIndex = index + firstRenderedIndex;
+            const isSelected = selectedIndex === absoluteIndex;
+            const uniqueKey = (key || "result") + "-" + absoluteIndex;
+            return h(
               "div",
               {
-                key: key || "result-" + (firstRenderedIndex + index),
+                key: uniqueKey,
+                ref: (el) => {
+                  if (isSelected) {
+                    this.selectedItemEl = el;
+                  }
+                },
                 className:
-                  "slds-dropdown__item autocomplete-item "
-                  + (selectedIndex == index + firstRenderedIndex
-                    ? "selected"
-                    : ""),
+                  "slds-dropdown__item autocomplete-item " +
+                  (isSelected ? "selected selected-old" : ""),
                 onClick: (e) => this.onResultClick(e, value),
-                onMouseEnter: () =>
-                  this.onResultMouseEnter(index + firstRenderedIndex),
+                onMouseEnter: () => this.onResultMouseEnter(absoluteIndex),
               },
               h("a", {className: "slds-p-horizontal_small"}, element)
-            )
-          )
+            );
+          })
       )
     );
   }

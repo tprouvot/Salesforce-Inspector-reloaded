@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Popup` Fix keyboard selection visibility and scroll-into-view behavior in search dropdown, and resolve duplicate recent items fetching [issue #1338](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1338) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`
 

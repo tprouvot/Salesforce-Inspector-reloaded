@@ -1,0 +1,3641 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Thomas Prouvot">
+      
+      
+        <link rel="canonical" href="https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/">
+      
+      
+        <link rel="prev" href="../sobject-cache-management/">
+      
+      
+        <link rel="next" href="../articles/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/icon128.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>How-To - Salesforce Inspector reloaded</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-to" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Salesforce Inspector reloaded" class="md-header__button md-logo" aria-label="Salesforce Inspector reloaded" data-md-component="logo">
+      
+  <img src="../assets/images/icon128.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Salesforce Inspector reloaded
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              How-To
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../welcome/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../data-export/" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../articles/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Articles
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../troubleshooting/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Salesforce Inspector reloaded" class="md-nav__button md-logo" aria-label="Salesforce Inspector reloaded" data-md-component="logo">
+      
+  <img src="../assets/images/icon128.png" alt="logo">
+
+    </a>
+    Salesforce Inspector reloaded
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../welcome/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Welcome
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="#use-sf-inspector-with-a-connected-app" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure Connected App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Management
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data Management
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Import
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debugging
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Debugging
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logs-viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debug Logs Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Metadata
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dependencies-explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dependencies Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../download-metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Download Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../field-creator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Creator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flow-scanner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flow Scanner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../event-monitor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-statistics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Statistics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Org Limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sobject-cache-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SObject Cache Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-sf-inspector-with-a-connected-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Sf Inspector with a connected app
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Sf Inspector with a connected app">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-chrome-and-edge-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Chrome and Edge users
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-client-app-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Client App Creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#define-a-csv-separator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Define a CSV separator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-links-in-a-new-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open links in a new tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disable-metadata-search-from-shortcut-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disable metadata search from Shortcut tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compare-flow-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare Flow Versions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compare Flow Versions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-flow-compare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is Flow Compare?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-access-flow-compare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Access Flow Compare
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-flow-compare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Flow Compare
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mass-disable-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mass disable flows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#add-custom-links-to-shortcut-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add custom links to "Shortcut" tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-summary-view-of-permissionset-permissionsetgroups-from-shortcut-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-create-update-rest-callout-headers-to-prevent-execution-of-auto-assignment-rules-for-accounts-cases-or-leads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize Create / Update rest callout headers (to prevent execution of auto assignment rules for Accounts, Cases, or Leads)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-api-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update API Version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delete-all-apex-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delete All Apex Logs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-debug-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable debug logs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-debug-mode-for-lightning-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable Debug Mode (for Lightning Components)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-api-call-debug-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable API Call Debug Statistics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-extensions-favicon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize extension's favicon
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-sandbox-banner-color" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize sandbox banner color
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-extensions-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize extension's shortcuts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customize extension&#39;s shortcuts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#highlight-prod-with-a-top-border" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Highlight PROD with a top border
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-export-configuration-saved-query-etc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import / Export configuration (saved query etc.)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Import / Export configuration (saved query etc.)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-125-and-above" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With 1.25 and above
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hide-some-buttons-in-the-popup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hide some buttons in the popup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch-user-language-from-the-popup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switch user language from the popup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#default-popup-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Popup Tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-recently-viewed-records-in-popup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Show recently viewed records in popup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-cache-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Cache Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Cache Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cached-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cached Requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-use-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Use Caching?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-field-names-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Field Names Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sobjects-list-cache-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SObjects List Cache Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SObjects List Cache Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache Behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-sobjects-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring SObjects Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-clear-the-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Clear the Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-user-tab-search-filters-and-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize User Tab Search Filters and Fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customize User Tab Search Filters and Fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuring-search-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Search Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#applying-search-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Applying Search Filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-popup-height" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dynamic Popup Height
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generate-a-packagexml-from-a-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate a package.xml from a deployment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perform-a-field-usage-analysis-for-an-sobject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Perform a field usage analysis for an SObject
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Perform a field usage analysis for an SObject">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#important-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Important Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-agentforce-to-analyze-formula-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Agentforce to analyze formula fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Agentforce to analyze formula fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enabledisable-agentforce-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable/Disable Agentforce Helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-prompt-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize Prompt Template
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-analysis-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize Analysis Instructions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-tab-toggle-reset-password-button" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Tab Toggle Reset Password button
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Tab Toggle Reset Password button">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Articles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../privacy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../donate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Donate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-sf-inspector-with-a-connected-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Sf Inspector with a connected app
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Sf Inspector with a connected app">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-chrome-and-edge-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Chrome and Edge users
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-client-app-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Client App Creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#define-a-csv-separator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Define a CSV separator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-links-in-a-new-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open links in a new tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disable-metadata-search-from-shortcut-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disable metadata search from Shortcut tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compare-flow-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare Flow Versions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compare Flow Versions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-flow-compare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is Flow Compare?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-access-flow-compare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Access Flow Compare
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-flow-compare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Flow Compare
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mass-disable-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mass disable flows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#add-custom-links-to-shortcut-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add custom links to "Shortcut" tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-summary-view-of-permissionset-permissionsetgroups-from-shortcut-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-create-update-rest-callout-headers-to-prevent-execution-of-auto-assignment-rules-for-accounts-cases-or-leads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize Create / Update rest callout headers (to prevent execution of auto assignment rules for Accounts, Cases, or Leads)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#update-api-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update API Version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delete-all-apex-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delete All Apex Logs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-debug-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable debug logs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-debug-mode-for-lightning-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable Debug Mode (for Lightning Components)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-api-call-debug-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable API Call Debug Statistics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-extensions-favicon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize extension's favicon
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-sandbox-banner-color" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize sandbox banner color
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-extensions-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize extension's shortcuts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customize extension&#39;s shortcuts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#highlight-prod-with-a-top-border" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Highlight PROD with a top border
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-export-configuration-saved-query-etc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import / Export configuration (saved query etc.)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Import / Export configuration (saved query etc.)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-125-and-above" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With 1.25 and above
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hide-some-buttons-in-the-popup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hide some buttons in the popup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch-user-language-from-the-popup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switch user language from the popup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#default-popup-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Popup Tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-recently-viewed-records-in-popup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Show recently viewed records in popup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-cache-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Cache Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Cache Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cached-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cached Requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-use-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Use Caching?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-field-names-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Field Names Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sobjects-list-cache-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SObjects List Cache Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SObjects List Cache Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache Behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-sobjects-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring SObjects Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-clear-the-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Clear the Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customize-user-tab-search-filters-and-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize User Tab Search Filters and Fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customize User Tab Search Filters and Fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuring-search-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Search Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#applying-search-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Applying Search Filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-popup-height" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dynamic Popup Height
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generate-a-packagexml-from-a-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate a package.xml from a deployment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perform-a-field-usage-analysis-for-an-sobject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Perform a field usage analysis for an SObject
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Perform a field usage analysis for an SObject">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#important-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Important Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-agentforce-to-analyze-formula-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Agentforce to analyze formula fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Agentforce to analyze formula fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enabledisable-agentforce-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable/Disable Agentforce Helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-prompt-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize Prompt Template
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-analysis-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customize Analysis Instructions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-tab-toggle-reset-password-button" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Tab Toggle Reset Password button
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Tab Toggle Reset Password button">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href=".." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../data-export/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Features
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="how-to">How to<a class="headerlink" href="#how-to" title="Permanent link">&para;</a></h1>
+<h2 id="use-sf-inspector-with-a-connected-app">Use Sf Inspector with a connected app<a class="headerlink" href="#use-sf-inspector-with-a-connected-app" title="Permanent link">&para;</a></h2>
+<hr />
+<h3 id="for-chrome-and-edge-users">For Chrome and Edge users<a class="headerlink" href="#for-chrome-and-edge-users" title="Permanent link">&para;</a></h3>
+<p>If you enabled "API client whitelisting" (a.k.a "API Access Control") in your org, SF Inspector may not work anymore.</p>
+<p>To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.</p>
+<ol>
+<li>Open the extension and scroll down to the "Generate Access Token" button.</li>
+<li>You should see the "OAUTH_APP_BLOCKED" error which is normal at this stage.</li>
+<li>Go to "Connected Apps OAuth Usage" in setup and search for "Salesforce Inspector reloaded".</li>
+<li>Click "Install" and then confirm installation.</li>
+<li>Now configure the profiles or permissions sets which will have the right to use the extension.</li>
+<li>Go back to "Connected Apps OAuth Usage" and click "Unblock" next to "Salesforce Inspector reloaded"</li>
+<li>Once again, open the extension and scroll down to the "Generate Access Token" button</li>
+</ol>
+<p><img alt="2024-05-28_16-12-29 (1)" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1cb41271-ea61-4e25-9c68-2a50764c4cec" /></p>
+<p>This is it ! You can use the extension with the default connected app.</p>
+<p>From now when the token will be expired, this banner will show up and provide a link to re-generate the access token</p>
+<p><img width="274" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/856c3635-008b-4b91-8160-019d1d701ba9"></p>
+<blockquote>
+<p><strong>Warning</strong>
+Don't forget to grant access to the users by selecting the related profile(s) or permission set(s).</p>
+</blockquote>
+<p>If you are a Firefox user, or if you want to have full control over the connected app settings, you can also use your own external client app by following these instructions:</p>
+<h3 id="external-client-app-creation">External Client App Creation<a class="headerlink" href="#external-client-app-creation" title="Permanent link">&para;</a></h3>
+<p>The creation of Connected Apps is soon to be deprecated (planned for Spring 26'), so we will cover the creation of the new standard using an external Client App.</p>
+<ol>
+<li>Navigate to Setup | External Client App &gt; New External Client App.</li>
+<li>Fill in the required details:<ul>
+<li>External Client App Name</li>
+<li>Contact Email</li>
+<li>Check <code>Enable OAuth</code> under the API (Enable OAuth Settings) accordion.</li>
+<li>Set the Callback URL to <code>[browser]-extension://[extension-id]/data-export.html</code>, replacing [browser] with <code>chrome</code> or <code>moz</code> and [extension-id] with the extension ID found in the URL of any configuration page of the extension (e.g., by clicking <code>See All Data</code>).</li>
+</ul>
+</li>
+<li>
+<p>Configure the OAuth Scopes:</p>
+<ul>
+<li>Select <code>Manage user data via APIs (api)</code>.</li>
+<li>Select <code>Manage user data via Web browsers (web)</code>.</li>
+</ul>
+<p><img alt="External Connected App" src="./assets/images/how-to/external-client-app.png" width="849"></p>
+<blockquote>
+<p><strong>Warning</strong>
+If you don't select the <code>web</code> scope, you might not be able to use the Login As Incognito.
+4. Flow Enablement
+   * Check the <code>Enable Authorization Code and Credentials Flow</code> and then check <code>Require user credentials in the POST body for Authorization Code and Credentials Flow</code>
+5. Configure Security settings:
+   * <strong>IMPORTANT: Deselect</strong> (disable) <code>Require secret for Web Server Flow</code>.
+   * Select (enable) <code>Require Proof Key for Code Exchange (PKCE) extension for Supported Authorization Flows</code>.
+6. Get Consumer Key and save it in the Options page</p>
+</blockquote>
+<p><img alt="Option button" width="276" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/14cc8aac-5ffc-4747-9da1-ba892231ace1"></p>
+</li>
+<li>
+<p>Enter the consumer key</p>
+<p><img alt="Client Id" width="849" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5"></p>
+</li>
+<li>
+<p>Refresh page and generate new token</p>
+<p><img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66"></p>
+</li>
+</ol>
+<h2 id="migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded">Migrate saved queries from legacy extension to Salesforce Inspector Reloaded<a class="headerlink" href="#migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Open data export page on legacy extension
+   <img alt="Inspect legacy" src="../assets/images/how-to/inspect-legacy.png?raw=true" height="300"></li>
+<li>Get saved queries from <code>insextSavedQueryHistory</code> property
+   <img alt="Inspect legacy" src="../assets/images/how-to/query-history.png?raw=true" height="300"></li>
+<li>Open it in VS Code, you should have a JSON like this one:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">[</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"select Id from Contact limit 10"</span><span class="p">,</span><span class="w"> </span><span class="nt">"useToolingApi"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"select Id from Account limit 10"</span><span class="p">,</span><span class="w"> </span><span class="nt">"useToolingApi"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">]</span>
+</code></pre></div>
+<p>From there you have two options</p>
+<p>Import the queries by adding a label for each one with the label in query property suffixed by ":"
+   ie.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">[</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Contacts:select Id from Contact limit 10"</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">"useToolingApi"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Accounts:select Id from Account limit 10"</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">"useToolingApi"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">]</span>
+</code></pre></div>
+<p>Re-import this json in the new extension (with the same key <code>insextSavedQueryHistory</code>)</p>
+<h2 id="define-a-csv-separator">Define a CSV separator<a class="headerlink" href="#define-a-csv-separator" title="Permanent link">&para;</a></h2>
+<p>Add a new property <code>csvSeparator</code> containing the needed separator for CSV files</p>
+<p><img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300"></p>
+<h2 id="open-links-in-a-new-tab">Open links in a new tab<a class="headerlink" href="#open-links-in-a-new-tab" title="Permanent link">&para;</a></h2>
+<p>If you want to <em>always</em> open extension's links in a new tab, you can enable&gt; <strong>Warning</strong></p>
+<p><img width="925" alt="Open link in a new tab" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/7cd6c1fa-af55-4149-a2fb-73611c6f02f9"></p>
+<blockquote>
+<p><strong>Warning</strong>
+Enabling this option will prevent you to use <code>Lightning navigation</code> which allows faster navigation.</p>
+</blockquote>
+<ul>
+<li>Data <ins>E</ins>xport : e</li>
+<li>Data <ins>I</ins>mport : i</li>
+<li>Org <ins>L</ins>imits : l</li>
+<li><ins>D</ins>ownload Metadata : d</li>
+<li>E<ins>x</ins>plore API : x</li>
+<li>Event <ins>M</ins>onitor : m</li>
+<li><ins>F</ins>ield Creator : f</li>
+</ul>
+<h2 id="disable-metadata-search-from-shortcut-tab">Disable metadata search from Shortcut tab<a class="headerlink" href="#disable-metadata-search-from-shortcut-tab" title="Permanent link">&para;</a></h2>
+<p>By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts <em>AND</em> metadata (Flows, PermissionSets and Profiles).
+If you want to disable the search on the metadata, update related option:</p>
+<p><img width="892" alt="image" src="https://github.com/user-attachments/assets/2541fc22-9f1b-4cd1-90cd-d4615b313d96"></p>
+<h2 id="compare-flow-versions">Compare Flow Versions<a class="headerlink" href="#compare-flow-versions" title="Permanent link">&para;</a></h2>
+<p>Salesforce Inspector Reloaded provides quick access to Salesforce's Flow Compare feature, allowing you to visually compare different versions of a flow side-by-side in the Flow Builder.</p>
+<h3 id="what-is-flow-compare">What is Flow Compare?<a class="headerlink" href="#what-is-flow-compare" title="Permanent link">&para;</a></h3>
+<p>Flow Compare is a Salesforce feature (available from Winter '26) that enables you to:</p>
+<ul>
+<li>View two flow versions side-by-side</li>
+<li>Identify differences between versions visually</li>
+<li>Understand what changed between versions</li>
+<li>Review changes before deploying or activating a flow</li>
+</ul>
+<p>For more details, see the <a href="https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_mgmt_compare_versions.htm&amp;release=258&amp;type=5">official Salesforce documentation</a>.</p>
+<h3 id="how-to-access-flow-compare">How to Access Flow Compare<a class="headerlink" href="#how-to-access-flow-compare" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Open Flow Builder</li>
+<li>Open Salesforce Inspector Reloaded popup</li>
+<li>Look for the <strong>Flow Compare</strong> button (appears when viewing a flow version)</li>
+<li>Click the button to open Flow Builder with the compare view</li>
+</ol>
+<h3 id="using-flow-compare">Using Flow Compare<a class="headerlink" href="#using-flow-compare" title="Permanent link">&para;</a></h3>
+<p>Once Flow Builder opens:</p>
+<ol>
+<li>The current flow version is automatically loaded</li>
+<li>Use the version selector dropdown to choose a different version to compare against</li>
+<li>Flow Builder will display both versions side-by-side, highlighting differences</li>
+<li>Review changes, elements, and logic differences between the versions</li>
+</ol>
+<h2 id="mass-disable-flows">Mass disable flows<a class="headerlink" href="#mass-disable-flows" title="Permanent link">&para;</a></h2>
+<p>You can bulk deactivate flows using the Data Import feature with the Tooling API.</p>
+<ol>
+<li>Open <strong>Data Import</strong> (shortcut: <code>i</code>)</li>
+<li>Set <strong>API Type</strong> to <strong>Tooling</strong></li>
+<li>Set <strong>Object</strong> to <strong>FlowDefinition</strong></li>
+<li>Set <strong>Action</strong> to <strong>Update</strong></li>
+<li>Paste your data with two columns:</li>
+<li><strong>Id</strong> – the FlowDefinition Id (from a query like <code>SELECT Id, DeveloperName FROM FlowDefinition WHERE ActiveVersionId != null</code>)</li>
+<li><strong>Metadata.activeVersionNumber</strong> – set to <code>0</code> to deactivate</li>
+<li>Map the columns (use "Skip" for any unknown columns if needed)</li>
+<li>Click <strong>Run Update</strong></li>
+</ol>
+<h2 id="add-custom-links-to-shortcut-tab">Add custom links to "Shortcut" tab<a class="headerlink" href="#add-custom-links-to-shortcut-tab" title="Permanent link">&para;</a></h2>
+<p><img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" /></p>
+<p>You can add custom links to the "Shortcut" tab. These links will be stored in the <code>sfHost + "_orgLinks"</code> localStorage variable. The links are stored as a JSON array with the following properties:</p>
+<ul>
+<li><code>label</code>: The label of the link</li>
+<li><code>link</code>: The link to the page</li>
+<li><code>section</code>: The section where the link will be displayed</li>
+<li><code>isExternal</code>: A boolean indicating if the link is external (starts with 'http' or 'www')</li>
+</ul>
+<p>The links are displayed in a table format with the following features:</p>
+<ul>
+<li>Sortable columns (click on column headers to sort)</li>
+<li>Search functionality to filter links by label, link, or section</li>
+<li>Edit and delete buttons for each link</li>
+<li>Add button to create new links</li>
+</ul>
+<p>To add a new link:</p>
+<ol>
+<li>Click the "+" button at the bottom of the table</li>
+<li>Fill in the label, link, and section fields</li>
+<li>Click the check icon to save or the X icon to cancel</li>
+</ol>
+<p>To edit a link:</p>
+<ol>
+<li>Click the edit icon (pencil) next to the link</li>
+<li>Modify the fields</li>
+<li>Click the check icon to save or the X icon to cancel</li>
+</ol>
+<p>To delete a link:</p>
+<ol>
+<li>Click the delete icon (trash) next to the link</li>
+</ol>
+<p>To search links:</p>
+<ol>
+<li>Use the search box at the top of the table</li>
+<li>Type any text to filter links by label, link, or section</li>
+<li>The table updates in real-time as you type</li>
+</ol>
+<p>To sort links:</p>
+<ol>
+<li>Click on any column header to sort by that column</li>
+<li>Click again to reverse the sort order</li>
+<li>The current sort column is indicated by an up/down arrow icon</li>
+</ol>
+<p>The links are stored in the browser's localStorage, so they will persist between sessions. The links are specific to each org, so you can have different links for different orgs.</p>
+<p><img width="278" alt="Custom Link Search" src="https://github.com/user-attachments/assets/5ccd6778-4fb2-46d5-9b54-cd47cb03c7bb" /></p>
+<h2 id="enable-summary-view-of-permissionset-permissionsetgroups-from-shortcut-tab">Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab<a class="headerlink" href="#enable-summary-view-of-permissionset-permissionsetgroups-from-shortcut-tab" title="Permanent link">&para;</a></h2>
+<p>Since Winter 24, there is a beta functionality to view a summary of the PermissionSet / PermissionSetGroups</p>
+<p><img width="718" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/36448cd1-260e-49bd-9dfd-c61910f813f4"></p>
+<p>You can enable this view for the Shortcut search by enabling the option as shown below.</p>
+<p><img width="883" alt="Enable Summary" src="https://github.com/user-attachments/assets/4487d0a4-8ed0-4467-993a-17900bc79ce6"></p>
+<p>Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.</p>
+<h2 id="customize-create-update-rest-callout-headers-to-prevent-execution-of-auto-assignment-rules-for-accounts-cases-or-leads">Customize Create / Update rest callout headers (to prevent execution of auto assignment rules for Accounts, Cases, or Leads)<a class="headerlink" href="#customize-create-update-rest-callout-headers-to-prevent-execution-of-auto-assignment-rules-for-accounts-cases-or-leads" title="Permanent link">&para;</a></h2>
+<p><a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_autoassign.htm">Assignment Rule Header</a></p>
+<p>From the popup, click on "Options" button and select the API tab.</p>
+<p><img width="846" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/fba23a19-0b11-4275-b4d9-52e9e6ac1bd9"></p>
+<p>If you want to prevent auto assignment rules, set the <code>createUpdateRestCalloutHeaders</code> property to <code>{"Sforce-Auto-Assign" : false}</code></p>
+<h2 id="update-api-version">Update API Version<a class="headerlink" href="#update-api-version" title="Permanent link">&para;</a></h2>
+<p>Since the plugin's api version is only updated when all productions have been updated to the new release, you may want to use the latest version during preview windows.</p>
+<blockquote>
+<p>[!IMPORTANT]
+When you manually update the API version, it won't be overridden by extension future updates.</p>
+</blockquote>
+<p><img alt="2023-11-10_09-50-55 (1)" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d" /></p>
+<h2 id="delete-all-apex-logs">Delete All Apex Logs<a class="headerlink" href="#delete-all-apex-logs" title="Permanent link">&para;</a></h2>
+<p>Sometimes you need to purge the ApexLogs from you org, mostly when the maximum size limit is reached.
+You can now delete all apex logs with a simple click. From the popup, select 'Org' tab and click 'Delete All ApexLogs' button.</p>
+<p><img width="278" alt="Delete All Apex Logs" src="https://github.com/user-attachments/assets/7ba32e4d-1fdd-43e7-89cd-9c480c913211" /></p>
+<h2 id="enable-debug-logs">Enable debug logs<a class="headerlink" href="#enable-debug-logs" title="Permanent link">&para;</a></h2>
+<p>Sometimes you may want to enable logs for a particular user.
+From User tab, click the "Enable Log" button.</p>
+<p>By default, this will enable logs with level "SFDC_DevConsole" for 15 minutes.</p>
+<p><img width="279" alt="Enable Log button" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e87d2ed6-5c21-4e03-8fb1-16e3bc6121f3"></p>
+<p>You can update the debug level (configuration is per organization) and duration (for all organizations) on the Options page.</p>
+<p><img width="788" alt="DebugLog Options" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f7aa5680-742a-4581-ad29-770089d2b55e"></p>
+<blockquote>
+<p><strong>Warning</strong>
+Increasing the default duration may lead to a high volume of logs generated.</p>
+</blockquote>
+<h2 id="enable-debug-mode-for-lightning-components">Enable Debug Mode (for Lightning Components)<a class="headerlink" href="#enable-debug-mode-for-lightning-components" title="Permanent link">&para;</a></h2>
+<p>Enable debug mode to make it easier to debug JavaScript code from Lightning components.
+Warning: Salesforce is slower for users who have debug mode enabled.</p>
+<p><img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" /></p>
+<h2 id="enable-api-call-debug-statistics">Enable API Call Debug Statistics<a class="headerlink" href="#enable-api-call-debug-statistics" title="Permanent link">&para;</a></h2>
+<p>Sometimes we may want to know which queries are performed to the Salesforce backend (by type, method, endpoint ...)
+This can help to correlate logs in Salesforce and what is performed by Salesforce Inspector Reloaded extension</p>
+<h2 id="customize-extensions-favicon">Customize extension's favicon<a class="headerlink" href="#customize-extensions-favicon" title="Permanent link">&para;</a></h2>
+<p>From the option page, you can customize the default favicon by:</p>
+<ul>
+<li>a predefined color name among <a href="https://www.w3schools.com/tags/ref_colornames.asp">those values</a> or any HTML color code you want (ie <code>#FF8C00</code>).</li>
+<li>a custom favicon url (ie "<a href="https://stackoverflow.com/favicon.ico">https://stackoverflow.com/favicon.ico</a>")</li>
+</ul>
+<p>The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.</p>
+<p><img width="878" alt="image" src="https://github.com/user-attachments/assets/fdf24a37-2cab-402e-a101-4a20bc4e1ae4"></p>
+<p>Now if you want to populate all the orgs you visited with a custom favicon, you have two options:</p>
+<ul>
+<li>Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)</li>
+<li>Random: this will choose a random color among all the predefined colors</li>
+</ul>
+<p>Then you click on Populate All and that's it!
+Note: orgs with an existing customized favicon won't be affected.</p>
+<h2 id="customize-sandbox-banner-color">Customize sandbox banner color<a class="headerlink" href="#customize-sandbox-banner-color" title="Permanent link">&para;</a></h2>
+<p>From the option page, enable "Use favicon color on sandbox banner"
+<img width="772" alt="image" src="https://github.com/user-attachments/assets/28cb7f5f-01fd-48b9-a5da-f50f6cbb2f81"></p>
+<p><img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17"></p>
+<h2 id="customize-extensions-shortcuts">Customize extension's shortcuts<a class="headerlink" href="#customize-extensions-shortcuts" title="Permanent link">&para;</a></h2>
+<p>Navigate to your browser shortcut menu and choose dedicated shortcuts for the pages you want.</p>
+<ul>
+<li>Chrome: <a href="chrome://extensions/shortcut">chrome://extensions/shortcut</a></li>
+<li>Edge: <a href="edge://extensions/shortcuts">edge://extensions/shortcuts</a></li>
+</ul>
+<p><img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9"></p>
+<h3 id="default-shortcuts">Default shortcuts<a class="headerlink" href="#default-shortcuts" title="Permanent link">&para;</a></h3>
+<p>If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
+Example:</p>
+<ul>
+<li>Data <ins>E</ins>xport : e</li>
+<li>Data <ins>I</ins>mport : i</li>
+<li>Org <ins>L</ins>imits : l</li>
+<li><ins>D</ins>ownload Metadata : d</li>
+<li>E<ins>x</ins>plore API : x</li>
+</ul>
+<h2 id="highlight-prod-with-a-top-border">Highlight PROD with a top border<a class="headerlink" href="#highlight-prod-with-a-top-border" title="Permanent link">&para;</a></h2>
+<p>Production environment are critical, to avoid confusion with other orgs, you can enable an option which will add a 2px border on the top of the Salesforce UI and also in the extension's pages.</p>
+<p>Under <code>User Experience</code> tab, enable the option <code>Highlight PROD with a top border (color from favicon)</code>.</p>
+<p><img width="955" alt="highlight prod with a top border" src="https://github.com/user-attachments/assets/4ff26e23-08b2-447a-be8d-004488f2a3a1"></p>
+<h2 id="import-export-configuration-saved-query-etc">Import / Export configuration (saved query etc.)<a class="headerlink" href="#import-export-configuration-saved-query-etc" title="Permanent link">&para;</a></h2>
+<h3 id="with-125-and-above">With 1.25 and above<a class="headerlink" href="#with-125-and-above" title="Permanent link">&para;</a></h3>
+<p>To export and import your current configuration, go to the options page and click the corresponding icon in the header:</p>
+<p><img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753"></p>
+<h2 id="hide-some-buttons-in-the-popup">Hide some buttons in the popup<a class="headerlink" href="#hide-some-buttons-in-the-popup" title="Permanent link">&para;</a></h2>
+<p>Since the extension offers more features, the number of button is increasing.
+Some of the users may don't need some of those, to make the popup lighter some of the buttons can be hidden:</p>
+<p><img width="1024" alt="Hide Buttons" src="https://github.com/user-attachments/assets/50b4cb3c-7886-4b38-96a9-b5a6d93b69e6"></p>
+<h2 id="switch-user-language-from-the-popup">Switch user language from the popup<a class="headerlink" href="#switch-user-language-from-the-popup" title="Permanent link">&para;</a></h2>
+<p>From the User tab in the popup, click on the user language flag to display the available languages.</p>
+<p><img alt="2024-12-04_16-07-35 (1)" src="https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557" /></p>
+<h2 id="default-popup-tab">Default Popup Tab<a class="headerlink" href="#default-popup-tab" title="Permanent link">&para;</a></h2>
+<p>You can configure which tab should be selected by default when opening the popup. To do this:</p>
+<ol>
+<li>Open the options page</li>
+<li>Go to the "User Experience" tab</li>
+<li>Find the "Default Popup Tab" option</li>
+<li>Select your preferred tab:</li>
+<li>Object: Shows the SObject search and details</li>
+<li>Users: Shows the user search and details</li>
+<li>Shortcuts: Shows your configured shortcuts</li>
+<li>Org: Shows organization information</li>
+</ol>
+<p>The selected tab will be remembered and used as the default when opening the popup.</p>
+<h2 id="show-recently-viewed-records-in-popup">Show recently viewed records in popup<a class="headerlink" href="#show-recently-viewed-records-in-popup" title="Permanent link">&para;</a></h2>
+<p>When you focus the Object search field in the popup, the extension queries and displays your recently viewed records for quick access. This is <strong>enabled by default</strong>. The option allows you to disable it if you prefer not to query or display recently viewed records:</p>
+<ol>
+<li>Open the options page</li>
+<li>Go to the "User Experience" tab</li>
+<li>Find the "Show recently viewed records in popup" toggle</li>
+<li>Disable it to skip the query and only show search results as you type</li>
+</ol>
+<p>When disabled, no API call is made to the RecentlyViewed object, which can reduce API usage and improve popup responsiveness.</p>
+<h2 id="api-cache-configuration">API Cache Configuration<a class="headerlink" href="#api-cache-configuration" title="Permanent link">&para;</a></h2>
+<p>Salesforce Inspector Reloaded uses a caching system to reduce the number of API calls made to Salesforce, improving performance and reducing API usage. The extension caches API response data to optimize queries and avoid unnecessary API requests.</p>
+<p>All cache settings are configured in the <strong>Cache</strong> tab of the Options page:</p>
+<ol>
+<li>Open the extension and click the "Options" button</li>
+<li>Navigate to the "Cache" tab</li>
+</ol>
+<h3 id="cached-requests">Cached Requests<a class="headerlink" href="#cached-requests" title="Permanent link">&para;</a></h3>
+<p>The following API requests are cached:</p>
+<ul>
+<li>
+<p><strong>User Field Names</strong> (<code>/services/data/vXX.0/sobjects/User/describe</code>) - Caches field permission information to optimize user search queries and dynamically build SELECT clauses based on accessible fields</p>
+</li>
+<li>
+<p><strong>SObjects List</strong> - Caches the list of all SObjects (standard and custom objects, tooling objects) from the REST API and Tooling API</p>
+</li>
+</ul>
+<h3 id="why-use-caching">Why Use Caching?<a class="headerlink" href="#why-use-caching" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Reduced API Calls</strong>: Caching means the extension doesn't need to call the describe API every time you search for users or load the SObjects list</li>
+<li><strong>Better Performance</strong>: Faster user searches and popup loading since cached data is retrieved instantly</li>
+<li><strong>Optimized Queries</strong>: The extension builds queries dynamically based on cached field permissions</li>
+<li><strong>API Limit Preservation</strong>: Helps preserve your Salesforce API request limits by avoiding redundant API calls</li>
+</ul>
+<h3 id="user-field-names-cache">User Field Names Cache<a class="headerlink" href="#user-field-names-cache" title="Permanent link">&para;</a></h3>
+<p>Configure the duration (in hours) for caching User field names. Default: 168 hours (7 days). Use the "Clear Cache" button to immediately refresh cached data.</p>
+<h2 id="sobjects-list-cache-management">SObjects List Cache Management<a class="headerlink" href="#sobjects-list-cache-management" title="Permanent link">&para;</a></h2>
+<p>The SObjects list cache stores the list of all available objects in your org (Account, Contact, custom objects, Tooling API objects, etc.). This improves popup loading performance by avoiding API calls every time you open the extension or access the Objects tab.</p>
+<h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>When cache is enabled</strong>: The extension returns cached data immediately and optionally refreshes it in the background (see below)</li>
+<li><strong>When cache is disabled</strong>: A fresh fetch is performed each time the SObjects list is needed</li>
+<li><strong>Org-specific</strong>: Each Salesforce org has its own cache; switching orgs automatically uses the correct cache</li>
+</ul>
+<h3 id="cache-behavior">Cache Behavior<a class="headerlink" href="#cache-behavior" title="Permanent link">&para;</a></h3>
+<p>The behavior depends on two options:</p>
+<table>
+<thead>
+<tr>
+<th>Preload SObjects</th>
+<th>Cache Duration</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Enabled</strong> (default)</td>
+<td>Recommended: 8 hours</td>
+<td>SObjects list is loaded from cache before the popup opens. Refresh happens every N hours when the popup is opened.</td>
+</tr>
+<tr>
+<td><strong>Disabled</strong></td>
+<td>Recommended: 168 hours (7 days)</td>
+<td>SObjects list loads only when the Objects tab is accessed. Cached data is returned immediately; a background refresh updates the cache when the popup is opened.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note</strong>
+"Preload SObjects before popup opens" is in the <strong>API</strong> tab of Options. When enabled, the extension preloads the SObjects list for faster context detection (e.g., knowing which object you're viewing). When disabled, the list loads only when you open the Objects tab.</p>
+</blockquote>
+<h3 id="configuring-sobjects-cache">Configuring SObjects Cache<a class="headerlink" href="#configuring-sobjects-cache" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Open the extension and click the "Options" button</li>
+<li>Navigate to the "Cache" tab</li>
+<li>Find the "SObjects List Cache" section:</li>
+<li><strong>Enable/Disable</strong>: Toggle caching on or off (disabled by default)</li>
+<li><strong>Duration (hours)</strong>: How long cached data remains valid. Default: 8 hours. Minimum: 1 hour</li>
+<li><strong>Clear Cache</strong>: Click to immediately clear the cache and force a fresh fetch on next use</li>
+</ol>
+<h3 id="when-to-clear-the-cache">When to Clear the Cache<a class="headerlink" href="#when-to-clear-the-cache" title="Permanent link">&para;</a></h3>
+<p>Clear the SObjects List cache when:</p>
+<ul>
+<li>A newly created custom object doesn't appear in the extension's object search</li>
+<li>You've deployed new objects or made metadata changes</li>
+<li>You want to ensure you're seeing the latest object list</li>
+</ul>
+<blockquote>
+<p><strong>Note</strong>
+Cache entries expire automatically based on the configured duration. After expiration, the extension fetches fresh data on the next popup open or Objects tab access.</p>
+</blockquote>
+<h2 id="customize-user-tab-search-filters-and-fields">Customize User Tab Search Filters and Fields<a class="headerlink" href="#customize-user-tab-search-filters-and-fields" title="Permanent link">&para;</a></h2>
+<p>The User tab in the popup allows you to search for users across your Salesforce org. You can customize both the search fields used and apply filters to exclude certain types of users from the search results.</p>
+<p><img width="1386" alt="User Search Customization" src="https://github.com/user-attachments/assets/f325e7b8-5b2f-4ad2-80b4-63089c770eda" /></p>
+<h3 id="configuring-search-fields">Configuring Search Fields<a class="headerlink" href="#configuring-search-fields" title="Permanent link">&para;</a></h3>
+<p>By default, user searches look through Username, Email, Alias, and Name fields. You can customize which fields are searched by:</p>
+<ol>
+<li>Open the extension and click the "Options" button</li>
+<li>Navigate to the "User Experience" tab</li>
+<li>Find the "User Default Search Fields" section</li>
+<li>Check/uncheck the fields you want to include in searches:</li>
+<li><strong>Username</strong> - The user's unique username (default: enabled)</li>
+<li><strong>Email</strong> - The user's email address (default: enabled)</li>
+<li><strong>Alias</strong> - The user's alias (default: enabled)</li>
+<li><strong>Name</strong> - The user's full name (default: enabled)</li>
+<li><strong>Profile Name</strong> - Search by the user's profile name (default: disabled)</li>
+</ol>
+<p>The search placeholder text in the User tab will automatically update to reflect which fields are currently enabled for searching.</p>
+<h3 id="applying-search-filters">Applying Search Filters<a class="headerlink" href="#applying-search-filters" title="Permanent link">&para;</a></h3>
+<p>You can exclude certain types of users from appearing in search results.
+Because the IsPortalEnabled field does not exist in orgs where there is no portal, we made this option org specific.</p>
+<ol>
+<li>In the same "User Experience" tab in Options</li>
+<li>Find the "Exclude users from search" section</li>
+<li>Enable the filters you want to apply:</li>
+<li><strong>Exclude Portal users</strong> - Hides users who have portal access enabled</li>
+<li><strong>Exclude Inactive users</strong> - Hides users who are marked as inactive</li>
+</ol>
+<h3 id="dynamic-popup-height">Dynamic Popup Height<a class="headerlink" href="#dynamic-popup-height" title="Permanent link">&para;</a></h3>
+<p>You can leverage more window height in the popup, to reduce the scroll. To enable this feature, go to User Experience -&gt; Enable Dynamic Popup Height and check it.</p>
+<h2 id="generate-a-packagexml-from-a-deployment">Generate a package.xml from a deployment<a class="headerlink" href="#generate-a-packagexml-from-a-deployment" title="Permanent link">&para;</a></h2>
+<p>From a DeployRequest record, click on the <code>Generate package.xml</code> button to download the package.xml for this deployment.</p>
+<blockquote>
+<p>[!NOTE]
+If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.</p>
+</blockquote>
+<p><img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" /></p>
+<h2 id="perform-a-field-usage-analysis-for-an-sobject">Perform a field usage analysis for an SObject<a class="headerlink" href="#perform-a-field-usage-analysis-for-an-sobject" title="Permanent link">&para;</a></h2>
+<p>The field usage analysis feature helps you understand which fields in your Salesforce org are actually being used by calculating the percentage of records that have values for each field.</p>
+<h3 id="how-to-use">How to use<a class="headerlink" href="#how-to-use" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Navigate to an SObject</strong>: Select an SObject from the popup or navigate to any SObject page in Salesforce</li>
+<li><strong>Open Show All Data</strong>: Click the "Show all data" button to open the field inspection page</li>
+<li><strong>Calculate Field Usage</strong>: You have two options:</li>
+<li><strong>Individual field</strong>: Click on "Get field usage" link next to any field to calculate usage for that specific field only</li>
+<li><strong>All fields</strong>: Click on the refresh icon (🔄) in the "Usage (%)" column header to calculate usage for all fields at once</li>
+<li><strong>View Results</strong>:</li>
+<li>Hover over any percentage to see the detailed breakdown (e.g., "1,247 / 5,000 records (25%)")</li>
+<li>Required fields automatically show 100% usage</li>
+<li>Fields that can't be analyzed (like textarea or address fields) will be empty</li>
+<li><strong>Export Results</strong>: Use the table settings menu (gear icon) to copy the table or download as CSV</li>
+</ol>
+<h3 id="important-notes">Important Notes<a class="headerlink" href="#important-notes" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Warning</strong>
+Field usage analysis uses Salesforce API calls and counts against your API request limits. For large orgs, consider using this feature in a copy of production to avoid hitting API limits.</p>
+</blockquote>
+<ul>
+<li>The feature uses Composite API to efficiently batch multiple field queries</li>
+<li>Loading indicators show when calculations are in progress</li>
+<li>Results are cached during your session for better performance</li>
+<li>Required fields (nillable = false) automatically show 100% usage without making API calls</li>
+</ul>
+<h3 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h3>
+<p>This feature is particularly useful for:</p>
+<ul>
+<li>Data cleanup projects</li>
+<li>Field deprecation planning</li>
+<li>Org optimization initiatives</li>
+<li>Documentation and audit requirements</li>
+<li>Understanding field adoption across your organization</li>
+</ul>
+<p><img alt="Smart Field Usage demo" src="https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573" /></p>
+<h2 id="use-agentforce-to-analyze-formula-fields">Use Agentforce to analyze formula fields<a class="headerlink" href="#use-agentforce-to-analyze-formula-fields" title="Permanent link">&para;</a></h2>
+<p>The Agentforce Helper feature provides AI-powered analysis and explanations for formula fields, helping you understand complex formulas, identify issues, and get recommendations for improvements.</p>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Prerequisite</strong>
+Agentforce needs to be enabled.
+The prompt FormulaHelper needs to be deployed in the org.</p>
+<p><strong>Note</strong>
+The standard Salesforce 'Prompt Template User' permission is required to use this feature.</p>
+</blockquote>
+<h3 id="how-to-use_1">How to use<a class="headerlink" href="#how-to-use_1" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Navigate to an SObject</strong>: Select an SObject from the popup or navigate to any SObject page in Salesforce</li>
+<li><strong>Open Show All Data</strong>: Click the "Show all data" button to open the field inspection page</li>
+<li><strong>Access Agentforce Helper</strong>: For any calculated/formula field:</li>
+<li>Click the dropdown arrow (⋮) in the Actions column</li>
+<li>Select "Agentforce Helper" from the menu</li>
+<li><strong>Review the Analysis</strong>: The modal will display:</li>
+<li>Field metadata (name, type, formula expression)</li>
+<li>A customizable prompt with your instructions</li>
+<li>An "Analyze" button to generate the AI analysis</li>
+<li><strong>Customize Instructions</strong> (optional):</li>
+<li>Click "Edit" to modify the prompt instructions</li>
+<li>Add specific requirements or questions about the formula</li>
+<li>Click "Reset" to restore default instructions</li>
+<li><strong>View Results</strong>: After clicking "Analyze", Agentforce will provide:</li>
+<li>Plain language explanation of the formula</li>
+<li>Step-by-step logic breakdown</li>
+<li>Dependencies and referenced fields</li>
+<li>Edge cases and potential issues</li>
+<li>Best practices review and recommendations</li>
+<li>Example calculations with sample data</li>
+</ol>
+<h3 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h3>
+<h4 id="enabledisable-agentforce-helper">Enable/Disable Agentforce Helper<a class="headerlink" href="#enabledisable-agentforce-helper" title="Permanent link">&para;</a></h4>
+<p>You can control whether the Agentforce Helper link appears in the field actions menu:</p>
+<ol>
+<li>Open the extension and click the "Options" button</li>
+<li>Navigate to the "Show All" tab</li>
+<li>Find the "Enable Agentforce Helper for formula fields" toggle</li>
+<li>Enable or disable the feature as needed (enabled by default)</li>
+</ol>
+<blockquote>
+<p><strong>Note</strong>
+When disabled, the "Agentforce Helper" link will not appear in the field actions menu for formula fields.</p>
+</blockquote>
+<h4 id="customize-prompt-template">Customize Prompt Template<a class="headerlink" href="#customize-prompt-template" title="Permanent link">&para;</a></h4>
+<p>You can configure which AI prompt template is used for formula analysis:</p>
+<ol>
+<li>In the same "Show All" tab in Options</li>
+<li>Find the "Formula Helper Prompt Template Name" field</li>
+<li>Enter the developer name of your custom prompt template (default: "FormulaHelper")</li>
+</ol>
+<blockquote>
+<p><strong>Important</strong>
+The prompt template must exist in your Salesforce org as a GenAI Prompt Template and should be configured to accept two inputs: <code>Prompt</code> and <code>FieldMetadata</code>.</p>
+</blockquote>
+<h4 id="customize-analysis-instructions">Customize Analysis Instructions<a class="headerlink" href="#customize-analysis-instructions" title="Permanent link">&para;</a></h4>
+<p>For each formula field analysis, you can customize the instructions:</p>
+<ol>
+<li>Open the Agentforce Helper modal for any formula field</li>
+<li>Click the "Edit" button to modify the instructions</li>
+<li>Add or modify the analysis requirements</li>
+<li>Your custom instructions are saved per org and will be used for future analyses</li>
+<li>Click "Reset" at any time to restore the default instructions</li>
+</ol>
+<h3 id="use-cases_1">Use Cases<a class="headerlink" href="#use-cases_1" title="Permanent link">&para;</a></h3>
+<p>This feature is particularly useful for:</p>
+<ul>
+<li><strong>Understanding complex formulas</strong>: Get plain-language explanations of intricate formula logic</li>
+<li><strong>Formula reviews</strong>: Identify potential issues, edge cases, and best practice violations</li>
+<li><strong>Knowledge transfer</strong>: Document formula behavior for team members</li>
+<li><strong>Formula optimization</strong>: Get recommendations for improving formula efficiency</li>
+<li><strong>Troubleshooting</strong>: Understand why a formula might not be working as expected</li>
+<li><strong>Modification planning</strong>: Get guidance on how to safely modify existing formulas</li>
+</ul>
+<h2 id="user-tab-toggle-reset-password-button">User Tab Toggle Reset Password button<a class="headerlink" href="#user-tab-toggle-reset-password-button" title="Permanent link">&para;</a></h2>
+<p>This feature enables a <strong>Reset Password</strong> button on the <strong>User Tab</strong> page in Salesforce Inspector Reloaded. The button can be displayed <strong>on or off</strong> from the extension <strong>Options</strong> page.</p>
+<h3 id="how-it-works_1">How it works<a class="headerlink" href="#how-it-works_1" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Open <strong>Salesforce Inspector Reloaded</strong>.</li>
+<li>Navigate to the <strong>Options</strong> page.</li>
+<li>Locate the <strong>Enable Reset Password button on User Tab</strong> option.</li>
+<li>
+<p>Toggle the option:</p>
+</li>
+<li>
+<p><strong>On</strong> – the <strong>Reset Password</strong> button is displayed on the <strong>User Tab</strong>.</p>
+</li>
+<li><strong>Off</strong> – the <strong>Reset Password</strong> button is hidden.</li>
+</ol>
+<p><img width="2912" height="1230" alt="Rest Password option" src="https://github.com/user-attachments/assets/0de7deaa-5800-46ef-9af4-27cfed57efa7" /></p>
+<p>When enabled, the <strong>Reset Password</strong> button appears while inspecting a User record and allows you to reset the user’s password directly from the User Tab, without navigating to Salesforce Setup.</p>
+<p><img width="278" height="126" alt="Reset password success" src="https://github.com/user-attachments/assets/377ea58f-d230-4d19-905e-987dce47a802" /></p>
+<blockquote>
+<p><strong>Note:</strong> If the current session does not have sufficient permissions to access user information or perform a password reset, Salesforce returns an <strong>INSUFFICIENT_ACCESS</strong> error.</p>
+</blockquote>
+<p><img width="278" height="161" alt="Reset password error" src="https://github.com/user-attachments/assets/5814e9d5-f037-41af-8f84-1997ab539292" /></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      &copy; 2025 <a href="https://github.com/tprouvot" target="_blank" rel="noopener">Thomas Prouvot</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/tprouvot" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M202.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M496 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/thomasprouvot/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.instant", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js"></script>
+      
+        <script src="../javascripts/mermaid-config.js"></script>
+      
+    
+  </body>
+</html>

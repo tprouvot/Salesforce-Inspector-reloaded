@@ -27,6 +27,7 @@ class Model {
     this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
     this.packageXml;
     this.metadataFilter = "";
+    this.metadataFilterAnnouncement = "";
     this.deployRequestId;
     this.allSelected = false;
     this.orgName = "";
@@ -856,6 +857,12 @@ class App extends React.Component {
           });
         }
       });
+
+      let visibleCount = model.metadataObjects.filter(metadataObject => !metadataObject.hidden).length;
+      model.metadataFilterAnnouncement = !model.metadataFilter ? ""
+        : visibleCount === 0 ? "No metadata types found"
+        : visibleCount + " metadata type" + (visibleCount === 1 ? "" : "s") + " found";
+
       model.didUpdate();
     }
   }
@@ -864,6 +871,7 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.metadataFilter = "";
+    model.metadataFilterAnnouncement = "";
     model.metadataObjects = model.metadataObjects.map(metadataObject => ({
       ...metadataObject,
       hidden: false
@@ -875,6 +883,17 @@ class App extends React.Component {
     let {model} = this.props;
     this.setState({showToast: false, toastMessage: ""});
     model.didUpdate();
+  }
+  getToastAnnouncement() {
+    if (!this.state.showToast) {
+      return "";
+    }
+    let {toastTitle, toastMessage} = this.state;
+    if (typeof toastMessage === "string") {
+      return toastTitle + ": " + toastMessage;
+    }
+    let {linkText, post} = toastMessage || {};
+    return toastTitle + ": " + (linkText || "") + (post || "");
   }
   getLanguageForMetadata(metadataType) {
     if (!metadataType) return "markup";
@@ -980,6 +999,7 @@ class App extends React.Component {
     document.title = model.title();
     return (
       h("div", {},
+        h("div", {className: "slds-assistive-text", role: "alert", "aria-live": "assertive", "aria-atomic": "true"}, this.getToastAnnouncement()),
         this.state.showToast
         && h(Toast, {
           variant: this.state.toastVariant,
@@ -1043,6 +1063,7 @@ class App extends React.Component {
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
+            h("span", {className: "slds-assistive-text"}, "Select what to download below, and then click the Retrieve Metadata button. If downloading fails, try unchecking some of the boxes."),
             h("div", {className: "filter-box"},
               h("svg", {className: "filter-icon"},
                 h("use", {xlinkHref: "symbols.svg#search"})
@@ -1054,6 +1075,7 @@ class App extends React.Component {
                 )
               )
             ),
+            h("div", {className: "slds-assistive-text", role: "status", "aria-live": "polite", "aria-atomic": "true"}, model.metadataFilterAnnouncement),
             h("label", {className: "slds-checkbox_toggle max-width-small"},
               h("input", {type: "checkbox", checked: model.allSelected, onChange: this.onSelectAllChange}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -1504,6 +1526,10 @@ class ObjectSelector extends React.Component {
                   "aria-label": child.isFolder
                     ? child.fullName + ", press Enter to " + (child.expanded ? "collapse" : "open") + " the list of " + child.fullName + " items"
                     : child.fullName,
+                  // Leaf rows have no expand/collapse action of their own; the checkbox is the only
+                  // real control, so the button is pulled out of the tab order instead of being a
+                  // second (confusingly nested) stop for the same row.
+                  tabIndex: child.isFolder ? 0 : -1,
                   className: "slds-button slds-button_reset slds-accordion__summary-action"
                 },
                 child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},

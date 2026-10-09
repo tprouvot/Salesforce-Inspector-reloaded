@@ -1,0 +1,31 @@
+name: Check linked issues
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  issues: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-linked-issues:
+    name: Check linked issues
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify the pull request is linked to an issue
+        uses: nearform-actions/github-action-check-linked-issues@v1
+        with:
+          exclude-branches: "dependabot/**, renovate/**"
+          custom-body-comment: |
+            This pull request is not linked to an issue.
+
+            Please add a closing keyword in the description, for example `Fixes #123` or `Closes #123`. Linking from the sidebar alone is not enough for this check.
+
+            See the [contribution guidelines](https://github.com/tprouvot/Salesforce-Inspector-reloaded#contributions): open or use an existing issue, and discuss the approach with a maintainer before requesting a review.
+
+            If this change does not need an issue, a maintainer can add the `no-issue` label to skip this check.

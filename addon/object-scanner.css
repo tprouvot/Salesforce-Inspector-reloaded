@@ -1,0 +1,148 @@
+.sfir-object-scanner-page {
+  height: calc(100vh - 4rem);
+}
+
+.sfir-object-scanner-main {
+  min-height: 0;
+}
+
+.sfir-object-scanner-picker {
+  flex: 0 0 22rem;
+  min-width: 16rem;
+  max-width: 28rem;
+  min-height: 0;
+}
+
+.sfir-object-scanner-picker > .slds-card {
+  min-height: 0;
+}
+
+.sfir-object-scanner-picker-body {
+  min-height: 0;
+}
+
+.sfir-object-scanner-picker-list {
+  min-height: 0;
+}
+
+.sfir-object-scanner-results-tabs {
+  min-height: 0;
+}
+
+/* Higher specificity than .slds-show (display:block) is required so the active tab panel stays a flex column. */
+.sfir-object-scanner-results-tabs > .slds-tabs_default__content {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.sfir-object-scanner-table-wrap {
+  min-height: 0;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: none;
+  width: auto;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker > .slds-card {
+  flex: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.sfir-object-scanner-picker-collapsed .sfir-object-scanner-picker .slds-card__header {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sfir-object-scanner-columns-open .sfir-object-scanner-results,
+.sfir-object-scanner-columns-open .sfir-object-scanner-main {
+  overflow: visible;
+}
+
+.sfir-object-scanner-summary-card {
+  min-width: 7rem;
+}
+
+.sfir-object-scanner-summary-card .slds-button {
+  height: 100%;
+}
+
+.sfir-object-scanner-summary-selected {
+  box-shadow: inset 0 0 0 2px var(--slds-g-color-brand-base-50);
+}
+
+.sfir-object-scanner-severity-warning {
+  color: #dd7a01;
+}
+
+.sfir-object-scanner-severity-info {
+  color: var(--slds-g-color-brand-base-50);
+}
+
+.sfir-object-scanner-progress {
+  min-width: 12rem;
+}
+
+.sfir-object-scanner-toasts {
+  position: fixed;
+  top: 4.75rem;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.sfir-object-scanner-toasts .slds-notify_container {
+  position: static;
+  width: auto;
+  pointer-events: auto;
+}
+
+.sfir-object-scanner-columns-popover {
+  right: 0;
+  top: calc(100% + 0.75rem);
+  z-index: 20;
+  min-width: 14rem;
+  max-height: 24rem;
+}
+
+.sfir-object-scanner-columns-popover .slds-form-element__legend {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.sfir-object-scanner-columns-popover .slds-checkbox {
+  display: block;
+}
+
+.sfir-object-scanner-columns-popover .slds-checkbox + .slds-checkbox {
+  margin-top: 0.25rem;
+}
+
+.sfir-object-scanner-columns-popover .slds-checkbox__label {
+  display: flex;
+  align-items: center;
+}
+
+.sfir-object-scanner-columns-popover .slds-form-element__label {
+  margin-bottom: 0;
+  padding-left: 0.5rem;
+}
+
+.sfir-object-scanner-help-text {
+  max-width: 20rem;
+  white-space: pre-wrap;
+}

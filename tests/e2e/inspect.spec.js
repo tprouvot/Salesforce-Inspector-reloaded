@@ -2,7 +2,8 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  createModelExposureSetup
+  createModelExposureSetup,
+  fulfillSuccess
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -166,6 +167,108 @@ test.describe("Inspect", () => {
         }
       }
     }
+  });
+
+  test("Sort Field Usage by exact ratio, not rounded display value", async ({page, extensionId}) => {
+    test.skip(!TEST_CONSTANTS.mockEnabled, "Requires mocked field usage composite responses");
+
+    // Two custom fields whose exact usage (12.4% and 12.3%) both round to the same
+    // displayed "12%", but must still sort by their true populated ratio (issue #1401).
+    const TOTAL_RECORDS = 1000;
+    const HIGH_USAGE_COUNT = 124; // 12.4%, displays as "12"
+    const LOW_USAGE_COUNT = 123; // 12.3%, displays as "12"
+
+    // Override the Account describe/count/composite calls just for this test so we
+    // control exactly which fields exist and what their usage counts are.
+    await page.route("**/*", async route => {
+      const request = route.request();
+      const url = request.url();
+      const method = request.method();
+
+      // Describe Account with two nillable fields dedicated to this usage test
+      if (method === "GET" && url.includes("/sobjects/Account/describe") && !url.includes("layouts")) {
+        await fulfillSuccess(route, {
+          name: "Account",
+          label: "Account",
+          keyPrefix: "001",
+          createable: true,
+          updateable: true,
+          deletable: true,
+          fields: [
+            {name: "Id", label: "Account ID", type: "id", createable: false, updateable: false, nillable: false, referenceTo: []},
+            {name: "Name", label: "Account Name", type: "string", length: 255, createable: true, updateable: true, nillable: false, nameField: true, referenceTo: []},
+            {name: "FieldHighUsage__c", label: "Field High Usage", type: "string", length: 255, custom: true, createable: true, updateable: true, nillable: true, referenceTo: []},
+            {name: "FieldLowUsage__c", label: "Field Low Usage", type: "string", length: 255, custom: true, createable: true, updateable: true, nillable: true, referenceTo: []}
+          ],
+          childRelationships: [],
+          urls: {
+            sobject: `/services/data/v${apiVersion}/sobjects/Account`,
+            rowTemplate: `/services/data/v${apiVersion}/sobjects/Account/{ID}`,
+            layouts: `/services/data/v${apiVersion}/sobjects/Account/describe/layouts`
+          }
+        });
+        return;
+      }
+
+      // Total record count used as the denominator for every field's usage ratio
+      if (method === "GET" && url.includes("/query") && url.includes("q=")) {
+        const qValue = decodeURIComponent((url.split("q=")[1] || "").split("&")[0]).toLowerCase();
+        if (qValue.includes("count()") && qValue.includes("from account") && !qValue.includes("where")) {
+          await fulfillSuccess(route, {totalSize: TOTAL_RECORDS, done: true, records: []});
+          return;
+        }
+      }
+
+      // Bulk field-usage composite request: assign known non-null counts per field
+      if (method === "POST" && url.includes("/composite")) {
+        const body = request.postDataJSON();
+        if (body && Array.isArray(body.compositeRequest)
+            && body.compositeRequest.some(req => req.referenceId === "fieldUsage_FieldHighUsage__c" || req.referenceId === "fieldUsage_FieldLowUsage__c")) {
+          await fulfillSuccess(route, {
+            compositeResponse: body.compositeRequest.map(req => ({
+              referenceId: req.referenceId,
+              httpStatusCode: 200,
+              body: {
+                totalSize: req.referenceId === "fieldUsage_FieldHighUsage__c" ? HIGH_USAGE_COUNT : LOW_USAGE_COUNT,
+                done: true,
+                records: []
+              }
+            }))
+          });
+          return;
+        }
+      }
+
+      await route.fallback();
+    });
+
+    await initInspectPage(page, extensionId);
+
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
+    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
+
+    await page.waitForSelector("text=Usage (%)", {timeout: 1000});
+    const usageHeader = page.locator("th:has-text('Usage (%)')");
+
+    // Calculate usage for all fields
+    await usageHeader.locator("button").click();
+
+    const highRow = page.locator("tr", {has: page.locator("td.field-name", {hasText: /^FieldHighUsage__c$/})});
+    const lowRow = page.locator("tr", {has: page.locator("td.field-name", {hasText: /^FieldLowUsage__c$/})});
+
+    // Both fields display the same rounded percentage ...
+    await expect(highRow.locator("td.field-usage")).toHaveText("12", {timeout: 3000});
+    await expect(lowRow.locator("td.field-usage")).toHaveText("12", {timeout: 3000});
+
+    // ... but ascending sort must still rank the lower exact ratio (12.3%) first
+    await usageHeader.click({position: {x: 5, y: 5}});
+    let fieldOrder = await page.locator("td.field-name").allTextContents();
+    expect(fieldOrder.indexOf("FieldLowUsage__c")).toBeLessThan(fieldOrder.indexOf("FieldHighUsage__c"));
+
+    // Descending sort must reverse that exact order
+    await usageHeader.click({position: {x: 5, y: 5}});
+    fieldOrder = await page.locator("td.field-name").allTextContents();
+    expect(fieldOrder.indexOf("FieldHighUsage__c")).toBeLessThan(fieldOrder.indexOf("FieldLowUsage__c"));
   });
 
   test("Enter Edit Mode - Update", async ({page, extensionId}) => {

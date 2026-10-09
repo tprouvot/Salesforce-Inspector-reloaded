@@ -131,8 +131,9 @@ class App extends React.PureComponent {
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
-      fieldCreatorHref: "field-creator.html?" + hostArg,
+      fieldManagerHref: "field-manager.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
+      objectScannerHref: "object-scanner.html?" + hostArg,
       apiStatisticsHref: "api-statistics.html?" + hostArg,
       latestNotesViewed:
         localStorage.getItem("latestReleaseNotesVersionViewed")
@@ -181,17 +182,22 @@ class App extends React.PureComponent {
     });
   }
   onContextUrlMessage(e) {
-    if (e.source == parent && e.data.insextUpdateRecordId) {
-      let {locationHref} = e.data;
-      this.setState({
-        isInSetup: locationHref.includes("/lightning/setup/"),
-        contextUrl: locationHref,
-        isPopupExpanded: true, // Popup is expanded when we receive this message
-      });
+    if (e.source == parent && e.data) {
+      if (e.data.insextUpdateRecordId) {
+        let {locationHref} = e.data;
+        this.setState({
+          isInSetup: locationHref.includes("/lightning/setup/"),
+          contextUrl: locationHref,
+          isPopupExpanded: true, // Popup is expanded when we receive this message
+        });
+      }
+
+      if ("isFieldsPresent" in e.data) {
+        this.setState({
+          isFieldsPresent: e.data.isFieldsPresent,
+        });
+      }
     }
-    this.setState({
-      isFieldsPresent: e.data.isFieldsPresent,
-    });
   }
   async getListViewQuery(sobjectName, filterName) {
     if (localStorage.getItem("enableListViewExport") !== "true" || !sobjectName || !filterName) {
@@ -274,7 +280,7 @@ class App extends React.PureComponent {
       e: ["click", "dataExportBtn"],
       i: ["click", "dataImportBtn"],
       l: ["click", "limitsBtn"],
-      t: ["click", "fieldCreatorBtn"],
+      g: ["click", "fieldManagerBtn"],
       d: ["click", "metaRetrieveBtn"],
       x: ["click", "apiExploreBtn"],
       h: ["click", "homeBtn"],
@@ -388,8 +394,9 @@ class App extends React.PureComponent {
       exportHref,
       importHref,
       eventMonitorHref,
-      fieldCreatorHref,
+      fieldManagerHref,
       limitsHref,
+      objectScannerHref,
       apiStatisticsHref,
       isFieldsPresent,
       latestNotesViewed,
@@ -561,12 +568,12 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
-                  ref: "fieldCreatorBtn",
-                  href: fieldCreatorHref,
+                  ref: "fieldManagerBtn",
+                  href: fieldManagerHref,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
                 },
-                h("span", {}, "Field Crea", h("u", {}, "t"), "or")
+                h("span", {}, "Field Mana", h("u", {}, "g"), "er")
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
@@ -666,7 +673,26 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Event ", h("u", {}, "M"), "onitor")
               )
-            )
+            ),
+            isOptionEnabled("object-scanner", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                  "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "objectScannerBtn",
+                    href: objectScannerHref,
+                    target: linkTarget,
+                    className: "page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "Object Sc", h("u", {}, "a"), "nner")
+                )
+              )
+              : null
           ),
           h(
             "div",
@@ -1031,7 +1057,7 @@ class AllDataBox extends React.PureComponent {
 
   /**
    * Check if sobjects should be loaded
-   * Only load in popup/button context (when inInspector is false), not when embedded in data-export, field-creator, etc.
+   * Only load in popup/button context (when inInspector is false), not when embedded in data-export, field-manager, etc.
    * @returns {boolean} True if Objects tab is active and popup is expanded, or if preload option is enabled and popup is not yet expanded
    */
   shouldLoadSobjects() {
@@ -1831,14 +1857,11 @@ class AllDataBoxSObject extends React.PureComponent {
   getBestMatch(query) {
     let {sobjectsList} = this.props;
     // Find the best match based on the record id or object name from the page URL.
-    if (!query) {
-      return null;
-    }
-    if (!sobjectsList) {
+    if (!query || !sobjectsList) {
       return null;
     }
     let sobject = sobjectsList.find(
-      (sobject) => sobject.name.toLowerCase() == query.toLowerCase()
+      (sobject) => (sobject.name || "").toLowerCase() == query.toLowerCase()
     );
     let queryKeyPrefix = query.substring(0, 3);
     if (!sobject) {
@@ -1874,33 +1897,39 @@ class AllDataBoxSObject extends React.PureComponent {
     let res = sobjectsList
       .filter(
         (sobject) =>
-          sobject.name.toLowerCase().includes(query.toLowerCase())
-          || sobject.label.toLowerCase().includes(query.toLowerCase())
+          (sobject.name || "").toLowerCase().includes(query.toLowerCase())
+          || (sobject.label || "").toLowerCase().includes(query.toLowerCase())
           || sobject.keyPrefix == queryKeyPrefix
       )
-      .map((sobject) => ({
-        recordId: null,
-        sobject,
-        // TO-DO: merge with the sortRank function in data-export
-        relevance:
-          (sobject.keyPrefix == queryKeyPrefix
-            ? 2
-            : sobject.name.toLowerCase() == query.toLowerCase()
-              ? 3
-              : sobject.label.toLowerCase() == query.toLowerCase()
-                ? 4
-                : sobject.name.toLowerCase().startsWith(query.toLowerCase())
-                  ? 5
-                  : sobject.label.toLowerCase().startsWith(query.toLowerCase())
-                    ? 6
-                    : sobject.name.toLowerCase().includes("__" + query.toLowerCase())
-                      ? 7
-                      : sobject.name.toLowerCase().includes("_" + query.toLowerCase())
-                        ? 8
-                        : sobject.label.toLowerCase().includes(" " + query.toLowerCase())
-                          ? 9
-                          : 10) + (sobject.availableApis.length == 0 ? 20 : 0),
-      }));
+      .map((sobject) => {
+        let sName = (sobject.name || "").toLowerCase();
+        let sLabel = (sobject.label || "").toLowerCase();
+        let q = query.toLowerCase();
+
+        return {
+          recordId: null,
+          sobject,
+          // TO-DO: merge with the sortRank function in data-export
+          relevance:
+            (sobject.keyPrefix == queryKeyPrefix
+              ? 2
+              : sName == q
+                ? 3
+                : sLabel == q
+                  ? 4
+                  : sName.startsWith(q)
+                    ? 5
+                    : sLabel.startsWith(q)
+                      ? 6
+                      : sName.includes("__" + q)
+                        ? 7
+                        : sName.includes("_" + q)
+                          ? 8
+                          : sLabel.includes(" " + q)
+                            ? 9
+                            : 10) + (sobject.availableApis.length == 0 ? 20 : 0),
+        };
+      });
     query = query || contextRecordId || "";
     queryKeyPrefix = query.substring(0, 3);
     if (query.match(/^([a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/)) {
@@ -1914,7 +1943,7 @@ class AllDataBoxSObject extends React.PureComponent {
     res.sort(
       (a, b) =>
         a.relevance - b.relevance
-        || a.sobject.name.localeCompare(b.sobject.name)
+        || (a.sobject.name || "").localeCompare(b.sobject.name || "")
     );
     return res;
   }
@@ -1950,6 +1979,7 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   resultRender(matches, userQuery) {
+    let qLower = (userQuery || "").toLowerCase();
     return matches.map((value, index) => {
       const itemKey = value.recordId + "#" + value.sobject.name + "#" + index;
       return {
@@ -1961,10 +1991,8 @@ class AllDataBoxSObject extends React.PureComponent {
             {className: "dropdown-item slds-wrap", key: "main-" + itemKey},
             value.recordId
               || h(MarkSubstring, {
-                text: value.sobject.name,
-                start: value.sobject.name
-                  .toLowerCase()
-                  .indexOf(userQuery.toLowerCase()),
+                text: value.sobject.name || "",
+                start: (value.sobject.name || "").toLowerCase().indexOf(qLower),
                 length: userQuery.length,
               }),
             value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
@@ -1980,10 +2008,8 @@ class AllDataBoxSObject extends React.PureComponent {
             }),
             " • ",
             h(MarkSubstring, {
-              text: value.sobject.label,
-              start: value.sobject.label
-                .toLowerCase()
-                .indexOf(userQuery.toLowerCase()),
+              text: value.sobject.label || "",
+              start: (value.sobject.label || "").toLowerCase().indexOf(qLower),
               length: userQuery.length,
             })
           ),
@@ -2792,14 +2818,17 @@ class AllDataBoxOrg extends React.PureComponent {
 
   getNextMajorRelease(maintenances) {
     if (maintenances) {
-      let event = maintenances.find((event) =>
-        event.name.endsWith("Major Release")
+      let event = maintenances.find((e) =>
+        e && e.name && e.name.endsWith("Major Release")
       );
-      return (
-        event.name.replace(" Major Release", "")
-        + " on "
-        + new Date(event.plannedStartTime).toDateString()
-      );
+
+      if (event) {
+        return (
+          event.name.replace(" Major Release", "")
+          + " on "
+          + new Date(event.plannedStartTime).toDateString()
+        );
+      }
     }
     return null;
   }
@@ -3040,9 +3069,11 @@ class AllDataBoxOrg extends React.PureComponent {
                 h(
                   "td",
                   {},
-                  this.getNextMajorRelease(
-                    this.state.instanceStatus?.Maintenances
-                  )
+                  this.state.instanceStatus
+                    ? this.getNextMajorRelease(
+                      this.state.instanceStatus.Maintenances
+                    ) || "None scheduled"
+                    : ""
                 )
               )
             )
@@ -3151,6 +3182,18 @@ class UserDetails extends React.PureComponent {
       }
       let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
 
+      // Resolve the debug level to use before checking for an existing trace flag,
+      // so a missing configured level always falls back to the same "sfir" level
+      // (otherwise repeated clicks would keep creating duplicate trace flags).
+      let debugLog = await this.getDebugLog(debugLogDebugLevel);
+      let debugLevelId;
+      if (debugLog && debugLog.size > 0) {
+        debugLevelId = debugLog.records[0].Id;
+      } else {
+        debugLevelId = await this.getOrCreateSfirDebugLevel();
+        debugLogDebugLevel = "sfir";
+      }
+
       let traceFlags = await this.getTraceFlags(
         user.Id,
         DTnow,
@@ -3164,22 +3207,12 @@ class UserDetails extends React.PureComponent {
         await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
         //Else create new trace flag
       } else {
-        let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-        if (debugLog && debugLog.size > 0) {
-          await this.insertTraceFlag(
-            user.Id,
-            debugLog.records[0].Id,
-            DTnow,
-            debugTimeInMs
-          );
-        } else {
-          throw new Error(
-            'Debug Level with developerName = "'
-              + debugLogDebugLevel
-              + '" not found'
-          );
-        }
+        await this.insertTraceFlag(
+          user.Id,
+          debugLevelId,
+          DTnow,
+          debugTimeInMs
+        );
       }
       // Update button state to show it's enabled
       this.setState({
@@ -3300,6 +3333,40 @@ class UserDetails extends React.PureComponent {
     }
   }
 
+  async getOrCreateSfirDebugLevel() {
+    const sfirDebugLevelName = "sfir";
+    let debugLog = await this.getDebugLog(sfirDebugLevelName);
+    if (debugLog && debugLog.size > 0) {
+      return debugLog.records[0].Id;
+    }
+    let createdDebugLevel = await this.createDebugLevel(sfirDebugLevelName);
+    return createdDebugLevel.id;
+  }
+
+  createDebugLevel(developerName) {
+    try {
+      let newDebugLevel = {
+        DeveloperName: developerName,
+        MasterLabel: developerName,
+        ApexCode: "FINEST",
+        ApexProfiling: "FINEST",
+        Callout: "FINEST",
+        Database: "FINEST",
+        System: "FINEST",
+        Validation: "FINEST",
+        Visualforce: "FINEST",
+        Workflow: "FINEST",
+      };
+      return sfConn.rest(
+        "/services/data/v" + apiVersion + "/tooling/sobjects/debuglevel",
+        {method: "POST", body: newDebugLevel}
+      );
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
   insertTraceFlag(userId, debugLogId, DTnow, debugTimeInMs) {
     try {
       let newTraceFlag = {
@@ -3346,8 +3413,7 @@ class UserDetails extends React.PureComponent {
     let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
     //No API to determine if user is allowed to login as given user. See https://salesforce.stackexchange.com/questions/224342/query-can-i-login-as-for-users
-    const isFrozen = !!user?.UserLogins?.records?.[0]?.IsFrozen;
-    if (!user || user.Id == currentUserId || !user.IsActive || isFrozen) {
+    if (!user || user.Id == currentUserId || !user.IsActive) {
       return false;
     }
     return true;
@@ -3357,14 +3423,14 @@ class UserDetails extends React.PureComponent {
     return user.IsActive && user.NetworkId;
   }
 
-  getLoginAsLink(userId) {
-    let {sfHost, contextOrgId, contextPath} = this.props;
+  // Relative servlet.su path — used for the plain LoginAs link and as redirect_uri
+  // for the Single Access call in loginAsInIncognito.
+  getLoginAsPath(userId) {
+    let {contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
     const targetUrl = contextPath || "/";
     return (
-      "https://"
-      + sfHost
-      + "/servlet/servlet.su"
+      "/servlet/servlet.su"
       + "?oid="
       + encodeURIComponent(contextOrgId)
       + "&suorgadminid="
@@ -3376,7 +3442,35 @@ class UserDetails extends React.PureComponent {
     );
   }
 
-  loginAsInIncognito(userId) {
+  getLoginAsLink(userId) {
+    let {sfHost} = this.props;
+    return "https://" + sfHost + this.getLoginAsPath(userId);
+  }
+
+  async loginAsInIncognito(userId) {
+    // Reusing the live session id to bootstrap a second browser context gets flagged
+    // as a hijack and kills the main tab's session. Use Salesforce's Single Access
+    // UI Bridge API instead - it mints a separate one-time frontdoor URL without
+    // touching the live session.
+    // suppressSessionError: a 401/403 here is an expected "this org/session doesn't
+    // support Single Access" signal, not a real expired-session event - don't let it
+    // pop the global "Access Token Expired" toast banner on the main tab.
+    try {
+      const redirectUri = this.getLoginAsPath(userId).replace(/^\//, "");
+      const singleAccess = await sfConn.rest(
+        "/services/oauth2/singleaccess?redirect_uri=" + encodeURIComponent(redirectUri),
+        {method: "GET", suppressSessionError: true}
+      );
+      if (singleAccess && singleAccess.frontdoor_uri) {
+        console.log("[LoginAs Incognito] Single Access UI Bridge succeeded, using frontdoor_uri");
+        this.openUrlInIncognito(singleAccess.frontdoor_uri);
+        return;
+      }
+      console.warn("[LoginAs Incognito] Single Access UI Bridge returned no frontdoor_uri, falling back to frontdoor.jsp with session id", singleAccess);
+    } catch (e) {
+      console.warn(`[LoginAs Incognito] Single Access UI Bridge request failed (${e.name || "Error"}: ${e.message}), falling back to frontdoor.jsp with session id`, e);
+    }
+    // Fallback if Single Access isn't available for this org/token
     const targetUrl
       = "https://"
       + this.sfHost
@@ -5122,13 +5216,19 @@ function getRecordId(href) {
   }
 
   // Lightning Experience
-  const lightningHostnames = [
-    ".lightning.force.com",
-    ".lightning.force.mil",
-    ".lightning.crmforce.mil",
-    ".lightning.force.com.mcas.ms",
+  // Match on the "lightning" label being present anywhere in the hostname rather than
+  // an exact suffix, since some domains insert extra labels between "lightning" and the
+  // base domain.
+  const lightningBaseDomains = [
+    ".force.com",
+    ".force.mil",
+    ".crmforce.mil",
+    ".force.com.mcas.ms",
   ];
-  if (lightningHostnames.some((hostname) => url.hostname.endsWith(hostname))) {
+  if (
+    url.hostname.includes(".lightning.")
+    && lightningBaseDomains.some((domain) => url.hostname.endsWith(domain))
+  ) {
     let match;
     if (url.pathname == "/one/one.app") {
       match = url.hash.match(/\/sObject\/([a-zA-Z0-9]+)(?:\/|$)/);

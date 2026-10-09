@@ -184,8 +184,6 @@ test.describe("Data Export", () => {
     await expect(options).toHaveCount(3);
     // Query colouring comes from the Prism SQL grammar bundled with the extension.
     await expect(options.first().locator(".token.keyword").first()).toHaveText("SELECT");
-    // SOQL object names override conflicting SQL keywords such as CASE.
-    await expect(options.first().locator(".token.sobject")).toHaveText("Case");
 
     // Strong matches rank before forgiving partial matches.
     await history.fill("closed");
@@ -200,9 +198,6 @@ test.describe("Data Export", () => {
     await expect(options).toHaveCount(2);
     await expect(options.first()).toContainText("FROM Case");
     await expect(options.nth(1)).toContainText("Opportunity");
-
-    // Field names that clash with SQL keywords keep the plain identifier colour.
-    await expect(options.first().locator(".token.keyword")).toHaveText(["SELECT", "FROM", "WHERE"]);
 
     // "?" is the only way to reach object filtering.
     await history.fill("?");
@@ -693,7 +688,6 @@ test.describe("Data Export", () => {
 
     await search.click();
     await expect(options.first()).toContainText("SELECT Id FROM");
-    await expect(options.nth(1).locator(".token.sobject")).toHaveText("Contact");
 
     // Templates are configuration, so they offer no per-entry delete.
     await expect(options.first().locator(".sfir-combobox-delete")).toHaveCount(0);

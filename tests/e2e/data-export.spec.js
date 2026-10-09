@@ -230,8 +230,11 @@ test.describe("Data Export", () => {
         {query: "SELECT Id, (SELECT Id FROM Contacts) FROM Account", useToolingApi: false},
         // "from office" sits inside a string literal and must not count.
         {query: "SELECT Id FROM Case WHERE Subject = 'mail from office'", useToolingApi: false},
-        // SOSL names its objects after RETURNING instead of FROM.
-        {query: "FIND {Acme} IN ALL FIELDS RETURNING Lead(Id), Opportunity(Id)", useToolingApi: false}
+        // SOSL names its objects after RETURNING instead of FROM; a function inside
+        // the field list is not an object.
+        {query: "FIND {Acme} IN ALL FIELDS RETURNING Lead(Id), Opportunity(Id, toLabel(StageName))", useToolingApi: false},
+        // A function after a comma must not hide the FROM object that follows it.
+        {query: "SELECT Name, COUNT(Id) FROM Campaign GROUP BY Name", useToolingApi: false}
       ]));
     });
 
@@ -242,7 +245,7 @@ test.describe("Data Export", () => {
     const options = page.locator("#query-search-listbox [role='option']");
 
     await history.fill("?");
-    await expect(options).toHaveText(["account", "case", "lead", "opportunity"]);
+    await expect(options).toHaveText(["account", "campaign", "case", "lead", "opportunity"]);
 
     // Selecting a SOSL object still finds the query that returns it.
     await history.fill("?opportunity ");
@@ -395,7 +398,9 @@ test.describe("Data Export", () => {
     await context.addInitScript(() => {
       window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
         {query: "Open Cases:SELECT Id, Subject FROM Case", useToolingApi: false},
-        {query: "SELECT Id FROM Case WHERE CreatedDate > 2026-01-01T00:00:00Z", useToolingApi: false}
+        {query: "SELECT Id FROM Case WHERE CreatedDate > 2026-01-01T00:00:00Z", useToolingApi: false},
+        // A label may start with a query keyword.
+        {query: "Find duplicates:SELECT Id FROM Contact", useToolingApi: false}
       ]));
     });
 
@@ -407,7 +412,8 @@ test.describe("Data Export", () => {
     const options = page.locator("#query-search-listbox [role='option']");
 
     await saved.click();
-    await expect(options).toHaveCount(2);
+    await expect(options).toHaveCount(3);
+    await expect(options.filter({hasText: "FROM Contact"}).locator(".slds-badge")).toHaveText("Find duplicates");
 
     // "label:query" is split, and the label shown as a badge.
     await saved.fill("open");
@@ -708,10 +714,51 @@ test.describe("Data Export", () => {
 
     // The editor shares the dropdown grammar: objects get their own token and
     // field names that clash with SQL keywords stay plain.
-    await page.locator("textarea#query").fill("SELECT Id, Status FROM Case ORDER BY Type");
+    const query = page.locator("textarea#query");
+    await query.fill("SELECT Id, Status FROM Case ORDER BY Type");
     const highlight = page.locator(".query-highlight");
     await expect(highlight.locator(".token.sobject")).toHaveText("Case");
     await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "FROM", "ORDER BY"]);
+
+    // Metadata is a field outside WITH METADATA, and a SOQL function after "), " is
+    // not a further object the way it is in SOSL RETURNING.
+    await query.fill("SELECT Metadata, toLabel(Status), convertCurrency(Amount) FROM Opportunity");
+    await expect(highlight.locator(".token.sobject")).toHaveText(["Opportunity"]);
+    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "toLabel", "convertCurrency", "FROM"]);
+  });
+
+  test("Keyboard Never Acts On A Hidden List", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id FROM Account", useToolingApi: false},
+        {query: "SELECT Id FROM Contact", useToolingApi: false}
+      ]));
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const listbox = page.locator("#query-search-listbox");
+    const query = page.locator("textarea#query");
+    await query.fill("SENTINEL");
+
+    // With the list closed, ArrowUp only opens it, so Enter and Delete have nothing to act on.
+    await history.click();
+    await history.press("Escape");
+    await expect(listbox).toHaveCount(0);
+    await history.press("ArrowUp");
+    await expect(listbox).toBeVisible();
+    await expect(listbox.locator("[aria-selected='true']")).toHaveCount(0);
+    await history.press("Delete");
+    await history.press("Enter");
+    await expect(listbox.locator("[role='option']")).toHaveCount(2);
+    await expect(query).toHaveValue("SENTINEL");
+
+    // Tab moves focus away and closes the list instead of leaving it over the editor.
+    await history.press("Tab");
+    await expect(listbox).toHaveCount(0);
+    await expect(query).toHaveValue("SENTINEL");
   });
 
   test("Result Column Filter Stays Open", async ({page, extensionId}) => {

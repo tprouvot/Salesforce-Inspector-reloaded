@@ -1855,22 +1855,29 @@ class App extends React.Component {
       this._closeQueryDropdown();
       return;
     }
-    if (e.key === "ArrowDown" && !isQueryDropdownOpen) {
-      e.preventDefault();
-      this._openQueryDropdown();
+    // A closed list must never act on an entry the user cannot see.
+    if (!isQueryDropdownOpen) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        this._openQueryDropdown();
+      }
       return;
     }
     const count = entries.length;
-    if (!count) return;
-    if (e.key === "Enter" || e.key === "Tab") {
-      // If Tab is pressed and no item is selected, let native tab behavior happen (move focus)
-      if (queryActiveIndex === -1) {
-        if (e.key === "Enter") e.preventDefault(); // Prevent Enter from submitting if nothing selected
-        return;
+    if (e.key === "Tab") {
+      // Tab keeps moving focus, so it accepts the highlighted entry and closes the list.
+      if (queryActiveIndex >= 0 && count) {
+        this.applyQueryEntry(entries[Math.min(queryActiveIndex, count - 1)], isObjectSuggest, source);
       }
-      if (e.key === "Enter") e.preventDefault(); // Only prevent Enter default when selecting
-      // For Tab, we intentionally do NOT prevent default so focus moves to next element
-      this.applyQueryEntry(entries[Math.min(queryActiveIndex, count - 1)], isObjectSuggest, source);
+      this._closeQueryDropdown();
+      return;
+    }
+    if (!count) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (queryActiveIndex >= 0) {
+        this.applyQueryEntry(entries[Math.min(queryActiveIndex, count - 1)], isObjectSuggest, source);
+      }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       this.setState({queryActiveIndex: (queryActiveIndex + 1) % count});
@@ -1989,7 +1996,7 @@ class App extends React.Component {
     const source = this.activeQuerySource();
     const searchValue = model.querySearchValue || "";
     const {entries, isObjectSuggest} = dropdownEntries(source.entries, searchValue);
-    const label = QUERY_SOURCES.find(s => s.id === source.id).label;
+    const label = QUERY_SOURCES.find(option => option.id === source.id).label;
 
     return h("fieldset", {className: "slds-form-element sfir-query-section"},
       h("legend", {className: "slds-assistive-text"}, "Queries"),

@@ -3,15 +3,18 @@ import {queryGrammar} from "./soql-grammar.js";
 
 let h = React.createElement;
 
-// Parentheses track subquery depth; the other branches name an object.
-const OBJECT_SOURCE = /\(|\)|\bfrom\s+([a-zA-Z0-9_]+)|\breturning\s+([a-zA-Z0-9_]+)|,\s*([a-zA-Z0-9_]+)\s*\(/gi;
+// Parentheses track subquery depth; the other branches name an object. The last one
+// only looks ahead for "(" so that parenthesis is still counted.
+const OBJECT_SOURCE = /\(|\)|\bfrom\s+([a-zA-Z0-9_]+)|\breturning\s+([a-zA-Z0-9_]+)|,\s*([a-zA-Z0-9_]+)(?=\s*\()/gi;
 const STRING_LITERAL = /'(?:[^'\\]|\\.)*'/g;
 // The query forms data-export can run: SOQL, SOSL and GraphQL.
 const LEADING_QUERY = /^\s*(select\b|find\b|\{)/i;
+const QUERY_PUNCTUATION = /['{]/;
 
-// Saved queries are stored as "label:query". A prefix only counts as a label when it
-// is not itself a query and what follows is, so colons inside a query (datetime
-// literals, SOSL braces) never split it.
+// Saved queries are stored as "label:query". The prefix is a label when what follows
+// is a query, unless the prefix is the start of a query whose own string literal or
+// braces hold the colon ("SELECT ... 'a", "FIND {a"). So datetime literals, SOSL braces
+// and GraphQL arguments never split a query, while labels like "Find duplicates" do.
 export function splitSavedQuery(text) {
   const source = text || "";
   const colon = source.indexOf(":");
@@ -20,7 +23,7 @@ export function splitSavedQuery(text) {
   }
   const label = source.slice(0, colon);
   const query = source.slice(colon + 1);
-  if (LEADING_QUERY.test(label) || !LEADING_QUERY.test(query)) {
+  if (!LEADING_QUERY.test(query) || (LEADING_QUERY.test(label) && QUERY_PUNCTUATION.test(label))) {
     return {label: null, query: source};
   }
   return {label, query};
@@ -43,7 +46,7 @@ function extractObjectNames(query) {
       names.add(match[1].toLowerCase());
     } else if (match[2]) {
       names.add(match[2].toLowerCase());
-    } else if (match[3] && isSosl) {
+    } else if (match[3] && isSosl && depth === 0) {
       // A further SOSL object, as in "RETURNING Account(Id), Contact(Id)".
       names.add(match[3].toLowerCase());
     }

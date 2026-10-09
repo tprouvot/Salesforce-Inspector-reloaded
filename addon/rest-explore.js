@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
 
 function createRestQueryHistory(storageKey, max) {
   const isSaved = storageKey === "restSavedQueryHistory";
@@ -422,6 +422,7 @@ class App extends React.Component {
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
     this.onToggleHeadersEditor = this.onToggleHeadersEditor.bind(this);
     this.onUpdateHeaders = this.onUpdateHeaders.bind(this);
+    this.highlightGuard = createChangeGuard();
   }
   onSelectEntry(e, list) {
     let {model} = this.props;
@@ -586,10 +587,8 @@ class App extends React.Component {
   componentDidUpdate() {
     this.recalculateSize();
     // Only run Prism when a new query result arrived - skip when just typing in endpoint/body.
-    const counter = this.props.model?.responseCounter ?? 0;
-    if (counter !== this._lastHighlightedCounter && this.props.model?.apiResponse && window.Prism) {
-      window.Prism.highlightAll();
-      this._lastHighlightedCounter = counter;
+    if (this.props.model?.apiResponse && window.Prism) {
+      this.highlightGuard(this.props.model.responseCounter, () => window.Prism.highlightAll());
     }
   }
   canSendRequest() {

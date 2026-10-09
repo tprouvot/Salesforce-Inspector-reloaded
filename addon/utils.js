@@ -29,6 +29,8 @@ export class Constants {
   static ENABLE_RECENTLY_VIEWED_RECORDS = "enableRecentlyViewedRecords";
   static QA_INTERNAL_MODE = "qaInternalMode";
   static USER_SEARCH_EXCLUSIONS_KEY = "_userSearchExclusions";
+  // Custom Shortcuts shared across every org (not prefixed by sfHost)
+  static GLOBAL_LINKS_KEY = "globalLinks";
   /** Shared definition for "Exclude users from search (org specific)" */
   static USER_SEARCH_EXCLUSIONS_CHECKBOXES = [
     {label: " Exclude Portal users", name: "portal", stateKey: "excludePortalUsersFromSearch"},
@@ -504,6 +506,30 @@ export function createSpinForMethod(context) {
   };
 }
 
+/**
+ * Creates a guard that skips re-running expensive, idempotent work (e.g. Prism syntax highlighting)
+ * when the relevant content has not changed since the last call.
+ * Needed because React lifecycle methods like componentDidUpdate run on every state change,
+ * not just the ones that affect the highlighted content.
+ * @param {*|Array} signature A value (string, number, object/array reference...) describing the current content.
+ * Pass an array to compare multiple independent values at once (e.g. [model.apiResponse, model.selectedTextView]).
+ * @param {Function} fn Called only when signature differs from the previous call's signature.
+ * @returns {Function} A function to call with (signature, fn) on every render/update.
+ */
+export function createChangeGuard() {
+  let lastSignature;
+  return function(signature, fn) {
+    let changed = Array.isArray(signature)
+      ? !Array.isArray(lastSignature) || signature.length !== lastSignature.length || signature.some((value, i) => value !== lastSignature[i])
+      : signature !== lastSignature;
+    if (!changed) {
+      return;
+    }
+    lastSignature = signature;
+    fn();
+  };
+}
+
 // OAuth utilities
 export function getBrowserType() {
   return navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
@@ -928,7 +954,7 @@ export class DataCache {
         await browser.storage.local.remove(keysToRemove);
       }
     } catch (e) {
-      console.error(`Error clearing cache for ${storageKey}:`, e);
+      console.error("Error clearing cache for %s:", storageKey, e);
     }
   }
 

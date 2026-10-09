@@ -9,7 +9,7 @@
 export const TEST_CONSTANTS = {
   mockHost: "mock-host.salesforce.com",
   mockToken: "mock-access-token",
-  apiVersion: "66.0",
+  apiVersion: "67.0",
   accountRecordId: "001000000000001AAA",
   accountRecordName: "Test Account 1",
   testUserSearchTerm: "Integration User",

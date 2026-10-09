@@ -773,3 +773,7 @@
 .flag.flag-lb {
   background-position: -176px -77px;
 }
+/* Regional flags not part of the generated sprite */
+.flag.flag-basque {
+  background: url("images/flag-basque.png") no-repeat;
+}

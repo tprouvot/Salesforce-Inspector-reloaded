@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, createChangeGuard, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -279,6 +279,7 @@ class App extends React.Component {
     this.onConfirmRemoveSaved = this.onConfirmRemoveSaved.bind(this);
     this.onConfirmClearSaved = this.onConfirmClearSaved.bind(this);
     this.disableGenerate = this.disableGenerate.bind(this);
+    this.highlightGuard = createChangeGuard();
     this.getEventChannels();
     this.state = {peLimits: []};
   }
@@ -297,7 +298,7 @@ class App extends React.Component {
       } else if (channelType == "platformEvent") {
         query = "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE isCustomizable = TRUE AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
       } else if (channelType == "customChannel"){
-        query = "SELECT FullName, MasterLabel FROM PlatformEventChannel ORDER BY DeveloperName";
+        query = "SELECT DeveloperName, MasterLabel, NamespacePrefix FROM PlatformEventChannel ORDER BY DeveloperName";
       } else if (channelType == "changeEvent") {
         // Add "All" option first
         channels.push({
@@ -311,7 +312,8 @@ class App extends React.Component {
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
         .then(result => {
           result.records.forEach((channel) => {
-            let name = channel.QualifiedApiName || channel.FullName || channel.SelectedEntity || channel.EntityName;
+            let name = channel.QualifiedApiName || channel.SelectedEntity || channel.EntityName
+              || (channel.DeveloperName && ((channel.NamespacePrefix ? channel.NamespacePrefix + "__" : "") + channel.DeveloperName + "__chn"));
             channels.push({
               name,
               label: channel.SelectedEntity ? channel.SelectedEntity.replace(/([A-Z])/g, " $1").replace(/__?/g, "__c") : channel.Label || channel.MasterLabel || channel.EntityName + " (" + name + ")"
@@ -884,6 +886,14 @@ class App extends React.Component {
     }
   }
 
+  componentDidUpdate() {
+    let {model} = this.props;
+    // Only re-run Prism when the event list actually changed, not on every unrelated render (e.g. selecting an event).
+    if (window.Prism) {
+      this.highlightGuard([model.events, model.events.length], () => window.Prism.highlightAll());
+    }
+  }
+
   render() {
     let {model} = this.props;
     let {peLimits} = this.state;
@@ -1146,13 +1156,7 @@ class App extends React.Component {
             },
             JSON.stringify(eventWithoutHidden, null, 4)
             );
-          },
-          setTimeout(() => {
-            if (window.Prism) {
-              window.Prism.highlightAll();
-            }
-          }, 0)
-          )
+          })
         )
       )
       )

@@ -6,7 +6,8 @@ import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {SldsCombobox} from "./components/SldsCombobox.js";
 import Toast from "./components/Toast.js";
-import {dropdownEntries, queryGrammar, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
+import {dropdownEntries, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
+import {queryGrammar} from "./soql-grammar.js";
 
 // Where the query in the editor can come from. Mutually exclusive, so the picker is
 // a radio button group and only the selected source's list and actions are shown.
@@ -1670,7 +1671,7 @@ class App extends React.Component {
     queryInput.classList.remove("query-plain");
     // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
     this.highlightGuard(code, () => {
-      queryHighlightCode.innerHTML = window.Prism.highlight(code, queryGrammar(window.Prism, code), "sql");
+      queryHighlightCode.innerHTML = window.Prism.highlight(code, queryGrammar(code), "sql");
     });
   }
 

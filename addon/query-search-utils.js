@@ -1,4 +1,6 @@
 /* global React */
+import {queryGrammar} from "./soql-grammar.js";
+
 let h = React.createElement;
 
 // Parentheses track subquery depth; the other branches name an object.
@@ -168,35 +170,12 @@ function renderPrismToken(token, ranges, position, key) {
   return h("span", {key, className}, content);
 }
 
-// Prism ships a SQL keyword list, which colours ordinary field names such as
-// Status, Type and Language as syntax. These are the SOQL and SOSL reserved words;
-// anything unlisted renders as a plain identifier rather than the wrong colour.
-// Shared by the query editor and the Queries dropdown so both colour a query alike.
-const SOQL_KEYWORDS = /\b(?:SELECT|FROM|WHERE|WITH|DATA CATEGORY|GROUP BY|ROLLUP|CUBE|HAVING|ORDER BY|ASC|DESC|NULLS (?:FIRST|LAST)|LIMIT|OFFSET|FOR (?:VIEW|REFERENCE|UPDATE)|UPDATE (?:TRACKING|VIEWSTAT)|TYPEOF|WHEN|THEN|ELSE|END|AND|OR|NOT|LIKE|IN|INCLUDES|EXCLUDES|ALL ROWS|USING SCOPE|FIND|RETURNING|(?:ALL|NAME|EMAIL|PHONE|SIDEBAR) FIELDS|FIELDS|SNIPPET|HIGHLIGHT|NETWORK|METADATA|DIVISION|LISTVIEW|COUNT(?:_DISTINCT)?|SUM|AVG|MIN|MAX|GROUPING|FORMAT|TOLABEL|CONVERTCURRENCY|CONVERTTIMEZONE)\b/i;
-
-export function queryGrammar(prism, query) {
-  if (!prism.languages.soql) {
-    prism.languages.soql = prism.languages.extend("sql", {keyword: SOQL_KEYWORDS});
-    prism.languages.insertBefore("soql", "keyword", {
-      "sobject": [
-        {pattern: /(\bfrom\s+)[a-zA-Z_][a-zA-Z0-9_]*/i, lookbehind: true},
-        {pattern: /(\breturning\s+)[a-zA-Z_][a-zA-Z0-9_]*/i, lookbehind: true},
-        // A further SOSL object, as in "RETURNING Account(Id), Contact(Id)".
-        {pattern: /(\)\s*,\s*)[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/, lookbehind: true}
-      ]
-    });
-  }
-  return /^(select|find)\b/i.test(query.trim()) ? prism.languages.soql : prism.languages.sql;
-}
-
 // Prism owns syntax colouring; search matches are marked inside its text tokens.
 function renderQuery(query, terms) {
-  const prism = window.Prism;
   const ranges = matchRanges(query, terms);
   const position = {offset: 0};
-  const content = prism?.languages.sql
-    ? prism.tokenize(query, queryGrammar(prism, query)).map((token, index) => renderPrismToken(token, ranges, position, `token-${index}`))
-    : renderTextRanges(query, ranges, position, "query");
+  const content = window.Prism.tokenize(query, queryGrammar(query))
+    .map((token, index) => renderPrismToken(token, ranges, position, `token-${index}`));
   return h("code", {className: "language-sql sfir-query-text", title: query}, content);
 }
 

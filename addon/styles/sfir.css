@@ -217,6 +217,17 @@ a.download-salesforce {
   max-height: 400px;
 }
 
+/* Improve text selection visibility on highlighted rows */
+::-moz-selection {
+  color: var(--slds-g-color-neutral-base-95);
+  background: var(--slds-g-color-brand-base-40);
+}
+
+::selection {
+  color: var(--slds-g-color-neutral-base-95);
+  background: var(--slds-g-color-brand-base-40);
+}
+
 /* Center datalist dropdown arrow in Object/External ID inputs (data-import) */
 #form-search-object::-webkit-calendar-picker-indicator,
 #form-external-id::-webkit-calendar-picker-indicator {

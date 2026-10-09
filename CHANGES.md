@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Fix autocomplete replacing only the text before the caret when picking a suggestion inside a word, which left the rest of the word behind [issue #1407](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1407) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
 - `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`

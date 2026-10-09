@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory, SearchFocusManager} from "./utils.js";
 
 function createRestQueryHistory(storageKey, max) {
   const isSaved = storageKey === "restSavedQueryHistory";
@@ -561,6 +561,11 @@ class App extends React.Component {
       }
     });
 
+    this.searchFocusManager = new SearchFocusManager(() => {
+      return this.refs.endpoint;
+    });
+    this.searchFocusManager.register();
+
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
 
@@ -583,6 +588,11 @@ class App extends React.Component {
     }
     addEventListener("resize", resize);
     resize();
+  }
+  componentWillUnmount() {
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
   componentDidUpdate() {
     this.recalculateSize();

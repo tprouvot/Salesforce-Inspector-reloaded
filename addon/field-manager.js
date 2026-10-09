@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
 import Toast from "./components/Toast.js";
 import ConfirmModal from "./components/ConfirmModal.js";
-import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants, applyProductionStyling, copyToClipboard} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants, applyProductionStyling, copyToClipboard, SearchFocusManager, isVisibleElement} from "./utils.js";
 
 let h = React.createElement;
 
@@ -345,6 +345,7 @@ class ProfilesModal extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
               h("input", {
+                id: "permission_search",
                 type: "text",
                 placeholder: "Search profiles and permission sets...",
                 value: this.state.searchTerm,
@@ -1249,10 +1250,23 @@ class App extends React.Component {
       }
     };
     window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+
+    // Target the specific IDs, prioritizing the modal if it's visible
+    this.searchFocusManager = new SearchFocusManager(() => {
+      const inputs = [
+        document.getElementById('permission_search'),
+        document.getElementById('object_select')
+      ];
+      return inputs.find(isVisibleElement);
+    });
+    this.searchFocusManager.register();
   }
 
   componentWillUnmount() {
     window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
 
   handleObjectSearch = (e) => {

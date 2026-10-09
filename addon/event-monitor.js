@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, createChangeGuard, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, createChangeGuard, copyToClipboard, applyProductionStyling, StorageHistory, SearchFocusManager} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -282,6 +282,18 @@ class App extends React.Component {
     this.highlightGuard = createChangeGuard();
     this.getEventChannels();
     this.state = {peLimits: []};
+  }
+
+  componentDidMount() {
+    this.searchFocusManager = new SearchFocusManager(() => {
+      return this.refs.eventFilter;
+    });
+    this.searchFocusManager.register();
+  }
+  componentWillUnmount() {
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
 
   async retrievePlatformEvent(channelType, sfHost){

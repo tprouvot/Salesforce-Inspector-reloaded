@@ -4,6 +4,18 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {SldsCombobox} from "./components/SldsCombobox.js";
+import Toast from "./components/Toast.js";
+import {dropdownEntries, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
+import {queryGrammar} from "./soql-grammar.js";
+
+// Where the query in the editor can come from. Mutually exclusive, so the picker is
+// a radio button group and only the selected source's list and actions are shown.
+const QUERY_SOURCES = [
+  {id: "history", label: "History"},
+  {id: "saved", label: "Saved"},
+  {id: "templates", label: "Templates"}
+];
 
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
@@ -13,7 +25,7 @@ const MAX_HIGHLIGHT_LENGTH = 100000;
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
-    isValidEntry: (e) => typeof e === "object",
+    isValidEntry: (e) => typeof e === "object" && e !== null && typeof e.query === "string" && e.query.length > 0,
     matchAdd: (e, ent) => e.query === ent.query && e.useToolingApi === ent.useToolingApi,
     matchRemove: (e, ent) => e.query === ent.query && e.useToolingApi === ent.useToolingApi,
     sortComparator: isSaved ? (a, b) => (a.query > b.query ? 1 : b.query > a.query ? -1 : 0) : null,
@@ -59,8 +71,10 @@ class Model {
     let savedNb = localStorage.getItem("numberOfQueriesSaved");
     this.savedHistory = createQueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
+    this.querySearchValue = "";
+    this.toast = null;
+    this.toastTimeout = null;
     this.expandAutocomplete = false;
-    this.expandSavedOptions = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
     this.performancePoints = [];
@@ -164,9 +178,6 @@ class Model {
   toggleExpand() {
     this.expandAutocomplete = !this.expandAutocomplete;
   }
-  toggleSavedOptions() {
-    this.expandSavedOptions = !this.expandSavedOptions;
-  }
   showDescribeUrl() {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
@@ -231,19 +242,13 @@ class Model {
   }
   clearHistory() {
     this.queryHistory.clear();
+    this.querySearchValue = "";
   }
   selectSavedEntry() {
-    let delimiter = ":";
     if (this.selectedSavedEntry != null) {
-      let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter) && (this.selectedSavedEntry.query.toLowerCase().indexOf(":select") >= 0 || this.selectedSavedEntry.query.toLowerCase().indexOf(":find") >= 0)) {
-        let query = this.selectedSavedEntry.query.split(delimiter);
-        this.queryName = query[0];
-        queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
-      } else {
-        queryStr = this.selectedSavedEntry.query;
-      }
-      this.queryInput.value = queryStr;
+      const {label, query} = splitSavedQuery(this.selectedSavedEntry.query);
+      this.queryName = label ?? "";
+      this.queryInput.value = query;
       this.queryTooling = this.selectedSavedEntry.useToolingApi;
       this.queryAutocompleteHandler();
       this.selectedSavedEntry = null;
@@ -251,12 +256,44 @@ class Model {
   }
   clearSavedHistory() {
     this.savedHistory.clear();
+    this.querySearchValue = "";
+  }
+  showToast(variant, title, message) {
+    clearTimeout(this.toastTimeout);
+    this.toast = {variant, title, message};
+    this.didUpdate();
+    this.toastTimeout = setTimeout(() => {
+      this.toast = null;
+      this.toastTimeout = null;
+      this.didUpdate();
+    }, 2000);
+  }
+  closeToast() {
+    clearTimeout(this.toastTimeout);
+    this.toastTimeout = null;
+    this.toast = null;
+    this.didUpdate();
   }
   addToHistory() {
-    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    if (!this.queryInput?.value.trim()) {
+      return false;
+    }
+    const entry = {query: this.getQueryToSave(), useToolingApi: this.queryTooling};
+    this.savedHistory.add(entry);
+    const wasSaved = this.savedHistory.list.some(
+      saved => saved.query === entry.query && saved.useToolingApi === entry.useToolingApi
+    );
+    if (!wasSaved) {
+      return false;
+    }
+    this.queryName = "";
+    return true;
   }
-  removeFromHistory() {
-    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+  deleteHistoryEntry(entry) {
+    this.queryHistory.remove(entry);
+  }
+  deleteSavedEntry(entry) {
+    this.savedHistory.remove(entry);
   }
   getQueryToSave() {
     return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
@@ -853,6 +890,12 @@ class Model {
     vm.initPerf();
     let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
+
+    // Save query to history immediately when export is initiated
+    if (query.trim()) {
+      vm.queryHistory.add({query, useToolingApi: vm.queryTooling});
+    }
+
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -900,7 +943,6 @@ class Model {
           vm.didUpdate();
           return pr;
         }
-        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
           vm.isWorking = false;
           vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
@@ -1006,6 +1048,12 @@ class Model {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
 
+    // Save query to history immediately when query plan is initiated
+    const query = vm.queryInput.value.trim();
+    if (query) {
+      vm.queryHistory.add({query, useToolingApi: vm.queryTooling});
+    }
+
     vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
       exportedData.addToTable(res.plans);
       vm.exportStatus = "";
@@ -1055,21 +1103,21 @@ class Model {
     localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
   }
 
-  addQueryTab() {
+  addQueryTab(previousTab = this.queryTabs[this.activeTabIndex]) {
     const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
     this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
-    this.activeTabIndex = this.queryTabs.length - 1;
-    this.setActiveTab(this.activeTabIndex);
+    this.setActiveTab(this.queryTabs.length - 1, previousTab);
     this.saveQueryTabs();
   }
 
   removeQueryTab(index) {
     if (this.queryTabs.length > 1) {
+      const previousTab = this.queryTabs[this.activeTabIndex];
       this.queryTabs.splice(index, 1);
       if (this.activeTabIndex >= index) {
         this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
       }
-      this.setActiveTab(this.activeTabIndex);
+      this.setActiveTab(this.activeTabIndex, previousTab);
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1077,10 +1125,11 @@ class Model {
 
   removeOtherQueryTabs(index) {
     if (this.queryTabs.length > 1) {
+      const previousTab = this.queryTabs[this.activeTabIndex];
       const tabToKeep = this.queryTabs[index];
       this.queryTabs = [tabToKeep];
       this.activeTabIndex = 0;
-      this.setActiveTab(this.activeTabIndex);
+      this.setActiveTab(this.activeTabIndex, previousTab);
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1088,23 +1137,28 @@ class Model {
 
   removeRightQueryTabs(index) {
     if (this.queryTabs.length > index + 1) {
+      const previousTab = this.queryTabs[this.activeTabIndex];
       this.queryTabs.splice(index + 1);
       if (this.activeTabIndex > index) {
         this.activeTabIndex = index;
       }
-      this.setActiveTab(this.activeTabIndex);
+      this.setActiveTab(this.activeTabIndex, previousTab);
       this.saveQueryTabs();
       this.didUpdate();
     }
   }
 
   removeAllQueryTabs() {
+    const previousTab = this.queryTabs[this.activeTabIndex];
     this.queryTabs = [];
-    this.addQueryTab();
+    this.addQueryTab(previousTab);
   }
 
-  setActiveTab(index) {
+  setActiveTab(index, previousTab = this.queryTabs[this.activeTabIndex]) {
     this.activeTabIndex = index;
+    if (this.queryTabs[index] !== previousTab) {
+      this.queryName = "";
+    }
     // Update the query input value to match the current tab's query
     if (this.queryInput) {
       this.queryInput.value = this.queryTabs[index].query;
@@ -1355,17 +1409,12 @@ class App extends React.Component {
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
-    this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
-    this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
-    this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
-    this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
     this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
-    this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
     this.onGenerateSoql = this.onGenerateSoql.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
@@ -1407,7 +1456,10 @@ class App extends React.Component {
       editingTabName: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
-      contextMenu: null
+      contextMenu: null,
+      querySource: "history",
+      isQueryDropdownOpen: false,
+      queryActiveIndex: -1
     };
   }
   onQueryAllChange(e) {
@@ -1429,18 +1481,6 @@ class App extends React.Component {
     model.updatedExportedData();
     model.didUpdate();
   }
-  onSelectHistoryEntry(e) {
-    let {model} = this.props;
-    model.selectedHistoryEntry = JSON.parse(e.target.value);
-    model.selectHistoryEntry();
-    model.didUpdate();
-  }
-  onSelectQueryTemplate(e) {
-    let {model} = this.props;
-    model.selectedQueryTemplate = e.target.value;
-    model.selectQueryTemplate();
-    model.didUpdate();
-  }
   onClearHistory(e) {
     e.preventDefault();
     let r = confirm("Are you sure you want to clear the query history?");
@@ -1448,39 +1488,30 @@ class App extends React.Component {
       let {model} = this.props;
       model.clearHistory();
       model.didUpdate();
+      this.focusQuerySource();
     }
-  }
-  onSelectSavedEntry(e) {
-    let {model} = this.props;
-    model.selectedSavedEntry = JSON.parse(e.target.value);
-    model.selectSavedEntry();
-    model.didUpdate();
   }
   onAddToHistory(e) {
     e.preventDefault();
     let {model} = this.props;
-    model.addToHistory();
-    model.didUpdate();
-  }
-  onRemoveFromHistory(e) {
-    e.preventDefault();
-    let r = confirm("Are you sure you want to remove this saved query?");
-    let {model} = this.props;
-    if (r == true) {
-      model.removeFromHistory();
+    if (model.addToHistory()) {
+      model.showToast("success", "Saved", "Query saved successfully.");
     }
-    model.toggleSavedOptions();
-    model.didUpdate();
   }
   onClearSavedHistory(e) {
     e.preventDefault();
     let r = confirm("Are you sure you want to remove all saved queries?");
-    let {model} = this.props;
     if (r == true) {
+      let {model} = this.props;
       model.clearSavedHistory();
+      model.didUpdate();
+      this.focusQuerySource();
     }
-    model.toggleSavedOptions();
-    model.didUpdate();
+  }
+  focusQuerySource() {
+    // Clearing disables the button that held focus. Move focus to the selected source
+    // after React has rendered the empty state instead of dropping it on <body>.
+    setTimeout(() => document.getElementById("sfir-query-source-" + this.state.querySource)?.focus(), 0);
   }
   onToggleHelp(e) {
     e.preventDefault();
@@ -1498,12 +1529,6 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.toggleExpand();
-    model.didUpdate();
-  }
-  onToggleSavedOptions(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.toggleSavedOptions();
     model.didUpdate();
   }
   onExport() {
@@ -1646,7 +1671,7 @@ class App extends React.Component {
     queryInput.classList.remove("query-plain");
     // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
     this.highlightGuard(code, () => {
-      queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+      queryHighlightCode.innerHTML = window.Prism.highlight(code, queryGrammar(code), "sql");
     });
   }
 
@@ -1746,6 +1771,136 @@ class App extends React.Component {
     this.setState({contextMenu: null});
   }
 
+  _openQueryDropdown() {
+    this.setState({isQueryDropdownOpen: true, queryActiveIndex: -1});
+  }
+
+  _closeQueryDropdown() {
+    this.setState({isQueryDropdownOpen: false, queryActiveIndex: -1});
+  }
+
+  onDeleteHistoryEntry(entry) {
+    let {model} = this.props;
+    model.deleteHistoryEntry(entry);
+    this.setState({queryActiveIndex: -1});
+    model.didUpdate();
+  }
+
+  onDeleteSavedEntry(entry) {
+    if (!confirm("Are you sure you want to remove this saved query?")) {
+      return;
+    }
+    let {model} = this.props;
+    model.deleteSavedEntry(entry);
+    this.setState({queryActiveIndex: -1});
+    model.didUpdate();
+  }
+
+  // The three places a query can come from. Only one list shows at a time, so the
+  // search box, the dropdown and the actions beside it all follow the selected source.
+  activeQuerySource() {
+    let {model} = this.props;
+    if (this.state.querySource === "saved") {
+      return {
+        id: "saved",
+        entries: model.savedHistory.list,
+        renderItem: (entry, searchValue) => renderQueryItem({...splitSavedQuery(entry.query), useToolingApi: entry.useToolingApi}, searchValue),
+        select: (entry) => { model.selectedSavedEntry = entry; model.selectSavedEntry(); },
+        remove: (entry) => this.onDeleteSavedEntry(entry),
+        clear: this.onClearSavedHistory,
+        clearLabel: "Clear Saved Queries",
+        clearAriaLabel: "Clear list of saved queries"
+      };
+    }
+    if (this.state.querySource === "templates") {
+      return {
+        id: "templates",
+        entries: model.queryTemplates.map(query => ({query})),
+        renderItem: (entry, searchValue) => renderQueryItem({query: entry.query}, searchValue),
+        select: (entry) => { model.selectedQueryTemplate = entry.query; model.selectQueryTemplate(); },
+        remove: null,
+        clear: null,
+        clearLabel: "Clear list",
+        clearAriaLabel: "Clear list"
+      };
+    }
+    return {
+      id: "history",
+      entries: model.queryHistory.list,
+      renderItem: (entry, searchValue) => renderQueryItem({query: entry.query, useToolingApi: entry.useToolingApi}, searchValue),
+      select: (entry) => { model.selectedHistoryEntry = entry; model.selectHistoryEntry(); },
+      remove: (entry) => this.onDeleteHistoryEntry(entry),
+      clear: this.onClearHistory,
+      clearLabel: "Clear Query History",
+      clearAriaLabel: "Clear list of query history"
+    };
+  }
+
+  onQuerySourceChange(source) {
+    let {model} = this.props;
+    model.querySearchValue = "";
+    this.setState({querySource: source, isQueryDropdownOpen: false, queryActiveIndex: -1});
+    model.didUpdate();
+  }
+  onQuerySearchInput(e) {
+    let {model} = this.props;
+    model.querySearchValue = e.target.value;
+    this.setState({queryActiveIndex: -1, isQueryDropdownOpen: true});
+    model.didUpdate();
+  }
+  onQueryKeyDown(e, entries, isObjectSuggest, source) {
+    const {queryActiveIndex, isQueryDropdownOpen} = this.state;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      this._closeQueryDropdown();
+      return;
+    }
+    // A closed list must never act on an entry the user cannot see.
+    if (!isQueryDropdownOpen) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        this._openQueryDropdown();
+      }
+      return;
+    }
+    const count = entries.length;
+    if (e.key === "Tab") {
+      // Tab keeps moving focus, so it accepts the highlighted entry and closes the list.
+      if (queryActiveIndex >= 0 && count) {
+        this.applyQueryEntry(entries[Math.min(queryActiveIndex, count - 1)], isObjectSuggest, source);
+      }
+      this._closeQueryDropdown();
+      return;
+    }
+    if (!count) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (queryActiveIndex >= 0) {
+        this.applyQueryEntry(entries[Math.min(queryActiveIndex, count - 1)], isObjectSuggest, source);
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.setState({queryActiveIndex: (queryActiveIndex + 1) % count});
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.setState({queryActiveIndex: queryActiveIndex < 0 ? count - 1 : (queryActiveIndex - 1 + count) % count});
+    } else if (e.key === "Delete" && !isObjectSuggest && queryActiveIndex >= 0 && source.remove) {
+      e.preventDefault();
+      source.remove(entries[queryActiveIndex]);
+    }
+  }
+  // An object suggestion completes into the search box, anything else loads the query.
+  applyQueryEntry(entry, isObjectSuggest, source) {
+    let {model} = this.props;
+    if (isObjectSuggest) {
+      model.querySearchValue = `?${entry} `;
+      this.setState({queryActiveIndex: 0});
+    } else {
+      source.select(entry);
+      this._closeQueryDropdown();
+    }
+    model.didUpdate();
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
@@ -1835,6 +1990,83 @@ class App extends React.Component {
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
 
+  renderQuerySection() {
+    let {model} = this.props;
+    const {isQueryDropdownOpen, queryActiveIndex} = this.state;
+    const source = this.activeQuerySource();
+    const searchValue = model.querySearchValue || "";
+    const {entries, isObjectSuggest} = dropdownEntries(source.entries, searchValue);
+    const label = QUERY_SOURCES.find(option => option.id === source.id).label;
+
+    return h("fieldset", {className: "slds-form-element sfir-query-section"},
+      h("legend", {className: "slds-assistive-text"}, "Queries"),
+      h("div", {className: "slds-form-element__control sfir-query-section__control"},
+        h("div", {className: "sfir-query-section__browse"},
+          h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query source"},
+            QUERY_SOURCES.map(({id, label: sourceLabel}) =>
+              h("span", {key: id, className: "slds-button slds-radio_button"},
+                h("input", {
+                  type: "radio",
+                  name: "sfir-query-source",
+                  id: "sfir-query-source-" + id,
+                  checked: source.id === id,
+                  onChange: () => this.onQuerySourceChange(id)
+                }),
+                h("label", {className: "slds-radio_button__label", htmlFor: "sfir-query-source-" + id},
+                  h("span", {className: "slds-radio_faux"}, sourceLabel)
+                )
+              )
+            )
+          ),
+          h(SldsCombobox, {
+            id: "query-search",
+            className: "sfir-query-search",
+            // Naming the source keeps it visible once the placeholder is replaced by typing.
+            placeholder: "Search " + label.toLowerCase(),
+            "aria-label": "Search " + label.toLowerCase(),
+            value: searchValue,
+            entries,
+            isOpen: isQueryDropdownOpen,
+            activeIndex: queryActiveIndex,
+            onInput: this.onQuerySearchInput.bind(this),
+            onFocus: () => this._openQueryDropdown(),
+            onClick: () => this._openQueryDropdown(),
+            onKeyDown: (e) => this.onQueryKeyDown(e, entries, isObjectSuggest, source),
+            onSelect: (entry) => this.applyQueryEntry(entry, isObjectSuggest, source),
+            onClose: () => this._closeQueryDropdown(),
+            onDelete: !isObjectSuggest && source.remove ? source.remove : null,
+            renderItem: (entry) => (isObjectSuggest
+              ? h("span", {className: "slds-truncate", title: entry}, renderHighlightedText(entry, searchValue.slice(1)))
+              : source.renderItem(entry, searchValue))
+          }),
+          h("button", {
+            type: "button",
+            className: "slds-button slds-button_neutral sfir-query-clear",
+            title: source.clearLabel,
+            "aria-label": source.clearAriaLabel,
+            disabled: !source.clear || source.entries.length === 0,
+            onClick: source.clear
+          }, "Clear list")
+        ),
+        this.renderQuerySave()
+      )
+    );
+  }
+
+  // Saving acts on the editor, not the selected source, so these controls stay put
+  // while the source changes.
+  renderQuerySave() {
+    let {model} = this.props;
+    // Every query textarea mutation calls didUpdate(), keeping this DOM read current.
+    const isQueryEmpty = !model.queryInput?.value.trim();
+
+    return h("div", {className: "sfir-query-section__save"},
+      h("label", {className: "sfir-query-save-label", htmlFor: "sfir-query-label"}, "Save as"),
+      h("input", {id: "sfir-query-label", className: "slds-input sfir-query-label", placeholder: "Optional label", type: "text", value: model.queryName, onInput: this.onSetQueryName}),
+      h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history", disabled: isQueryEmpty}, "Save Query")
+    );
+  }
+
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
@@ -1883,6 +2115,12 @@ class App extends React.Component {
         ...model.userInfoModel.getProps(),
         utilityItems
       }),
+      model.toast && h(Toast, {
+        variant: model.toast.variant,
+        title: model.toast.title,
+        message: model.toast.message,
+        onClose: () => model.closeToast()
+      }),
 
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-around_medium"},
@@ -1891,38 +2129,6 @@ class App extends React.Component {
             ),
             h("div", {className: "query-controls"},
               h("h3", {className: "slds-text-heading_small slds-m-bottom_xx-small slds-m-left_xxx-small"}, "Export Query"),
-              h("div", {className: "query-history-controls"},
-                h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "query-history", title: "Check documentation to customize templates"},
-                  h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-                  model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
-                ),
-                h("div", {className: "slds-button-group"},
-                  h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                    h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-                    model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-                  ),
-                  h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
-                ),
-                h("div", {className: "slds-button-group slds-m-left_small"},
-                  h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                    h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
-                    model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-                  ),
-                  h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
-                  h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-                  h("button", {className: model.expandSavedOptions ? "slds-button slds-button_neutral toggle contract" : "slds-button slds-button_neutral toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
-                ),
-                h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click " + (model.expandSavedOptions ? "slds-is-open" : "slds-is-closed")},
-                  h("div", {className: "slds-dropdown slds-dropdown_right"},
-                    h("div", {className: "slds-dropdown__item"},
-                      h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
-                    ),
-                    h("div", {className: "slds-dropdown__item"},
-                      h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-                    )
-                  )
-                ),
-              ),
               h("div", {className: "slds-grid slds-grid_align-spread"},
                 h("div", {className: "slds-col slds-size_7-of-12"},
                   h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_x-large"},
@@ -1961,6 +2167,9 @@ class App extends React.Component {
                       h("span", {className: "slds-checkbox_off"}, "Disabled")
                     )
                   )),
+              ),
+              h("div", {className: "query-history-controls"},
+                this.renderQuerySection()
               ),
             ),
             h("div", {

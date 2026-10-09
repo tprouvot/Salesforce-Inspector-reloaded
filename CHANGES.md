@@ -3,6 +3,13 @@
 ## Version 2.1
 
 - `Accessibility` Add keyboard shortcuts (`/` or customizable `Ctrl/Cmd+Shift+F`) to focus search and filter inputs [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
+- `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
+- Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`
+
+- `Field Manager` Rename `Field Creator` to `Field Manager`, rework the UI with SLDS, and add the ability to retrieve, view and edit existing custom fields' Label, Description and Help Text - including previously unsupported types such as Lookup, Master-Detail, Roll-Up Summary and Auto Number [discussion #1361](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1361)
+- `Show All Data` Fix "Get field usage" displaying as Error for location type fields [issue #1386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1386) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain
 - `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing
 - `Show All Data` Improve selected text visibility on highlighted rows [issue #1097](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1097) (contribution by [James C](https://github.com/Exotic209093))
 - `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by Prem Kumar)

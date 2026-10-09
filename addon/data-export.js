@@ -789,6 +789,15 @@ class Model {
     } else {
       // Autocomplete field names and functions
       if (ctrlSpace) {
+        // A comma-separated field list is never valid in a WHERE or HAVING clause. Closed strings and (sub)queries are ignored, so only the clause of the innermost open subquery counts.
+        let clauseText = query.substring(0, selStart).replace(/'(?:[^'\\]|\\.)*'/g, "''");
+        while (/\([^()]*\)/.test(clauseText)) {
+          clauseText = clauseText.replace(/\([^()]*\)/g, "");
+        }
+        let clauses = clauseText.split(/\(\s*select\b/i).pop().match(/\b(?:where|having|group\s+by|order\s+by|limit)\b/gi);
+        if (clauses && /^(?:where|having)$/i.test(clauses[clauses.length - 1])) {
+          return;
+        }
         let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
         let ar = contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)

@@ -351,12 +351,26 @@ class Model {
         window.open(link, "_blank");
       } else {
         vm.queryInput.focus();
-        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
+        // A suggestion replaces the whole word around the caret (up to tokenEnd)
+        let replaceEnd = tokenEnd;
+        // Handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after the replaced text
         let indexFrom = query.toLowerCase().indexOf("from");
-        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
+        if (suffix.trim() == "," && (query.substring(replaceEnd + 1, indexFrom).trim().length == 0 || query.substring(replaceEnd).trim().startsWith(",") || query.substring(replaceEnd).trim().toLowerCase().startsWith("from"))) {
           suffix = "";
         }
-        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        // Don't duplicate a closing quote, "." or "(" that already follows the word and that the inserted text ends with
+        if (/['.(]/.test(query.charAt(replaceEnd)) && (value + suffix).trimEnd().endsWith(query[replaceEnd])) {
+          replaceEnd++;
+        }
+        // Replace an existing space instead of adding a second one
+        if (suffix.endsWith(" ") && query[replaceEnd] == " ") {
+          replaceEnd++;
+        }
+        // Suggestions like FIELDS(ALL) already include their arguments, so replace the existing ones too
+        if (value.endsWith(")")) {
+          replaceEnd += query.substring(replaceEnd).match(/^(\([^)]*\))?/)[0].length;
+        }
+        vm.queryInput.setRangeText(value + suffix, selStart, replaceEnd, "end");
         //add query suffix if needed
         if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
           vm.queryInput.value += " LIMIT 200";
@@ -368,10 +382,19 @@ class Model {
     };
 
     // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
-    let searchTerm = selStart != selEnd
+    let hasSelection = selStart != selEnd;
+    let searchTerm = hasSelection
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
+
+    // Where the word under the caret ends. Picking a field suggestion replaces the whole word, not just the part before the caret.
+    // When the caret is before the first character of a word (searchTerm is empty), or text is selected, nothing after the caret is replaced:
+    // the user may want to insert a new field in front of the existing one.
+    let tokenEnd = selEnd;
+    if (!hasSelection && searchTerm.length > 0) {
+      tokenEnd += query.substring(selEnd).match(/^[a-zA-Z0-9_]*/)[0].length;
+    }
 
     function sortRank({value, title}) {
       let i = 0;
@@ -554,6 +577,11 @@ class Model {
       fieldName = query.substring(0, fieldEnd).match(/[a-zA-Z0-9_]*$/)[0];
       contextEnd = fieldEnd - fieldName.length;
       selStart -= isFieldValue[1].length;
+      // A value can contain more than word characters (e.g. "-", ":", "."), so it ends at the next quote, whitespace, comma or ")".
+      // As for field names, nothing is extended when the caret is before the first character of the value (selStart is its start, including an opening quote).
+      if (!hasSelection && selEnd > selStart) {
+        tokenEnd = selEnd + query.substring(selEnd).match(/^[^'\s,)]*/)[0].length;
+      }
     }
 
     /*
@@ -797,7 +825,9 @@ class Model {
           .toArray();
         if (ar.length > 0) {
           vm.queryInput.focus();
-          vm.queryInput.setRangeText(ar.join(", ") + (isAfterFrom ? " " : ""), selStart - contextPath.length, selEnd, "end");
+          // When the caret is directly before a word, separate the inserted fields from it with a comma
+          let separator = isAfterFrom ? " " : /\w/.test(query.charAt(tokenEnd)) ? ", " : "";
+          vm.queryInput.setRangeText(ar.join(", ") + separator, selStart - contextPath.length, tokenEnd, "end");
           vm.updateCurrentTabQuery(vm.queryInput.value);
         }
         vm.queryAutocompleteHandler();

@@ -165,6 +165,14 @@ textarea[hidden] {
   overflow-wrap: anywhere;
 }
 
+.sfir-query-combobox-dropdown .token.sobject,
+.query-highlight .token.sobject {
+  color: light-dark(
+    var(--slds-g-color-palette-purple-40),
+    var(--slds-g-color-palette-purple-60)
+  );
+}
+
 .sfir-query-combobox-dropdown .sfir-search-match {
   background-color: light-dark(
     var(--slds-g-color-palette-yellow-90),

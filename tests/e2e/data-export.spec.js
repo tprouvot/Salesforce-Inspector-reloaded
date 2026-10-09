@@ -184,6 +184,8 @@ test.describe("Data Export", () => {
     await expect(options).toHaveCount(3);
     // Query colouring comes from the Prism SQL grammar bundled with the extension.
     await expect(options.first().locator(".token.keyword").first()).toHaveText("SELECT");
+    // SOQL object names override conflicting SQL keywords such as CASE.
+    await expect(options.first().locator(".token.sobject")).toHaveText("Case");
 
     // Strong matches rank before forgiving partial matches.
     await history.fill("closed");
@@ -198,6 +200,9 @@ test.describe("Data Export", () => {
     await expect(options).toHaveCount(2);
     await expect(options.first()).toContainText("FROM Case");
     await expect(options.nth(1)).toContainText("Opportunity");
+
+    // Field names that clash with SQL keywords keep the plain identifier colour.
+    await expect(options.first().locator(".token.keyword")).toHaveText(["SELECT", "FROM", "WHERE"]);
 
     // "?" is the only way to reach object filtering.
     await history.fill("?");
@@ -688,12 +693,25 @@ test.describe("Data Export", () => {
 
     await search.click();
     await expect(options.first()).toContainText("SELECT Id FROM");
+    await expect(options.nth(1).locator(".token.sobject")).toHaveText("Contact");
 
     // Templates are configuration, so they offer no per-entry delete.
     await expect(options.first().locator(".sfir-combobox-delete")).toHaveCount(0);
 
     await options.first().click();
     await expect(page.locator("textarea#query")).toHaveValue("SELECT Id FROM ");
+  });
+
+  test("Query Editor Uses SOQL Colouring", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    // The editor shares the dropdown grammar: objects get their own token and
+    // field names that clash with SQL keywords stay plain.
+    await page.locator("textarea#query").fill("SELECT Id, Status FROM Case ORDER BY Type");
+    const highlight = page.locator(".query-highlight");
+    await expect(highlight.locator(".token.sobject")).toHaveText("Case");
+    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "FROM", "ORDER BY"]);
   });
 
   test("Result Column Filter Stays Open", async ({page, extensionId}) => {

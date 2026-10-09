@@ -4,19 +4,22 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile, BulkJobStore, BULK_STATE, BULK_MAX_UPLOAD_BYTES, isBulkJobTerminal, utf8ByteLength} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
   {value: "Tooling", label: "Tooling"},
-  {value: "Metadata", label: "Metadata"}
+  {value: "Metadata", label: "Metadata"},
+  {value: "Bulk", label: "Bulk API 2.0"}
 ];
 
 const allActions = [
-  {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"]},
-  {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"]},
-  {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"]},
-  {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"]},
+  {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "insert"},
+  {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "update"},
+  {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "upsert"},
+  {value: "upsertUpdateOnly", label: "Upsert (Update Only)", supportedApis: ["Enterprise"]},
+  {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling", "Bulk"], bulkOperation: "delete"},
+  {value: "hardDelete", label: "Hard Delete", supportedApis: ["Bulk"], bulkOperation: "hardDelete"},
   {value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"]},
   {value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"]},
   {value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"]}
@@ -28,7 +31,9 @@ const headersTemplates = [
   '{"DuplicateRuleHeader": {"allowSave": true}}'
 ];
 
-class Model {
+export class Model {
+  static BULK_POLL_INTERVAL_MS = 5000;
+  static BULK_POLL_MAX_FAILURES = 5; // Stop polling after consecutive failures
 
   constructor(sfHost, args) {
     this.sfHost = sfHost;
@@ -47,11 +52,21 @@ class Model {
     this.importType = "Account";
     this.externalId = "Id";
     this.batchSize = localStorage.getItem("defaultBatchSize") ? localStorage.getItem("defaultBatchSize") : "200";
+    this.batchSizeBeforeUpdateOnly = null;
     this.batchConcurrency = localStorage.getItem("defaultThreadSize") ? localStorage.getItem("defaultThreadSize") : "6";
     this.confirmPopup = null;
     this.activeBatches = 0;
     this.isProcessingQueue = false;
     this.importState = null;
+    this.isBulkImportWorking = false; // Separate flag so bulk jobs don't block other API types in the UI
+    this.bulkJobStore = new BulkJobStore(`${this.sfHost}_bulkImportJob`, {historyMax: this.bulkJobHistoryMax()});
+    this.bulkJob = this.bulkJobStore.get();
+    this.bulkPollTimer = null;
+    this.bulkPollFailures = 0;
+    // Held in memory; too large for localStorage, so multi-chunk uploads cannot survive reloads
+    this.bulkPendingChunks = null;
+    this.bulkMessage = null;
+    this.bulkError = null;
     this.greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
     this.showStatus = {
       Queued: true,
@@ -92,6 +107,12 @@ class Model {
       this.skipAllUnknownFields();
       console.log(this.importData);
     }
+
+    this.resumeBulkImport();
+  }
+
+  isBulk() {
+    return this.apiType === "Bulk";
   }
 
   // set available actions based on api type, and set the first one as the default
@@ -173,9 +194,10 @@ class Model {
       if (importOptions.get("action") == "create") this.importAction = "create";
       if (importOptions.get("action") == "update") this.importAction = "update";
       if (importOptions.get("action") == "upsert") this.importAction = "upsert";
+      if (importOptions.get("action") == "upsertUpdateOnly") this.importAction = "upsertUpdateOnly";
       if (importOptions.get("action") == "delete") this.importAction = "delete";
       if (importOptions.get("object")) this.importType = importOptions.get("object");
-      if (importOptions.get("externalId") && this.importAction == "upsert") this.externalId = importOptions.get("externalId");
+      if (importOptions.get("externalId") && (this.importAction == "upsert" || this.importAction == "upsertUpdateOnly")) this.externalId = importOptions.get("externalId");
       if (importOptions.get("batchSize")) this.batchSize = importOptions.get("batchSize");
       if (importOptions.get("threads")) this.batchConcurrency = importOptions.get("threads");
     }
@@ -190,15 +212,17 @@ class Model {
     this.updateResult(null); // Two updates, the first clears state from the scrolltable
     this.updateResult({header, data});
 
-    //automatically select the SObject if possible
+    // automatically select the SObject if possible
     let sobj = this.getSObject(data);
     if (sobj) {
-      //We avoid overwriting the Tooling option in case it was already set
-      this.apiType = sobj.endsWith("__mdt") ? "Metadata" : this.apiType === "Tooling" ? "Tooling" : "Enterprise";
+      // We avoid overwriting the Tooling or Bulk option in case it was already set
+      this.apiType = sobj.endsWith("__mdt") ? "Metadata"
+        : this.apiType === "Tooling" || this.apiType === "Bulk" ? this.apiType
+        : "Enterprise";
       this.updateAvailableActions();
       this.importType = sobj;
     }
-    //automatically select update if header contains id
+    // automatically select update if header contains id
     if (this.hasIdColumn(header) && !this.importActionSelected && this.apiType != "Metadata") {
       this.importAction = "update";
       this.importActionName = "Update";
@@ -248,7 +272,7 @@ class Model {
     importOptions.set("apiType", this.apiType);
     importOptions.set("action", this.importAction);
     importOptions.set("object", this.importType);
-    if (this.importAction == "upsert") importOptions.set("externalId", this.externalId);
+    if (this.importAction == "upsert" || this.importAction == "upsertUpdateOnly") importOptions.set("externalId", this.externalId);
     importOptions.set("batchSize", this.batchSize);
     importOptions.set("threads", this.batchConcurrency);
     copyToClipboard(importOptions.toString());
@@ -281,7 +305,18 @@ class Model {
     // We should try to allow imports to succeed even if our validation logic does not exactly match the one in Salesforce.
     // We only hard-fail on errors that prevent us from building the API request.
     // When possible, we submit the request with errors and let Salesforce give a descriptive message in the response.
-    return !this.importData.importTable || !this.importData.importTable.header.every(col => col.columnIgnore() || col.columnValid()) || this.getRequiredMissingFields().length > 0;
+    return !this.importData.importTable || !this.importData.importTable.header.every(col => col.columnIgnore() || col.columnValid()) || this.getRequiredMissingFields().length > 0 || !!this.upsertUpdateOnlyApiVersionError();
+  }
+
+  // updateOnly=true needs API v61.0+; apiVersion is user-configurable, so check it at runtime.
+  upsertUpdateOnlyApiVersionError() {
+    if (this.importAction != "upsertUpdateOnly") {
+      return "";
+    }
+    if (!(parseFloat(apiVersion) >= UPDATE_ONLY_MIN_API_VERSION)) {
+      return `Requires API version ${UPDATE_ONLY_MIN_API_VERSION}.0 or later (currently v${apiVersion}). Update the API version in Options.`;
+    }
+    return "";
   }
 
   isWorking() {
@@ -297,7 +332,7 @@ class Model {
     // Use cached sobjects list from utils (like popup.js) to avoid redundant API call
     if (this.sobjectsList && this.sobjectsList.length > 0) {
       if (this.apiType == "Metadata") {
-        return this.sobjectsList.filter(sobject => sobject.name.endsWith("__mdt"));
+        return this.sobjectsList.filter(sobject => sobject.name?.endsWith("__mdt"));
       }
       const useToolingApi = this.apiType == "Tooling";
       const requiredApi = useToolingApi ? "toolingApi" : "regularApi";
@@ -315,7 +350,7 @@ class Model {
 
     if (this.apiType == "Metadata") {
       return globalDescribe.sobjects
-        .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
+        .filter(sobjectDescribe => sobjectDescribe.name?.endsWith("__mdt"));
     } else {
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
@@ -347,7 +382,7 @@ class Model {
     return Array.from(function* () {
       let importAction = self.importAction;
 
-      if (importAction == "delete" || importAction == "undelete") {
+      if (importAction == "delete" || importAction == "undelete" || importAction == "hardDelete") {
         yield "Id";
       } else if (importAction == "deleteMetadata") {
         yield "DeveloperName";
@@ -395,7 +430,7 @@ class Model {
     if (this.sobjectListLoading()) {
       return "";
     }
-    if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
+    if (!this.sobjectList().some(s => s.name?.toLowerCase() == importType.toLowerCase())) {
       return "Unknown object";
     }
     return "";
@@ -412,7 +447,7 @@ class Model {
   idFieldName() {
     if (this.importAction == "create") {
       return "";
-    } else if (this.importAction == "upsert") {
+    } else if (this.importAction == "upsert" || this.importAction == "upsertUpdateOnly") {
       return this.externalId;
     } else if (this.apiType == "Metadata") {
       return "DeveloperName";
@@ -431,13 +466,24 @@ class Model {
   }
 
   batchSizeError() {
+    if (this.isBulk()) {
+      // Bulk chunks by file size, not row count.
+      return "";
+    }
     if (!(+this.batchSize > 0)) { // This also handles NaN
       return "Must be a positive number";
+    }
+    if (this.importAction == "upsertUpdateOnly" && +this.batchSize > COMPOSITE_BATCH_LIMIT) {
+      return `Note: capped at ${COMPOSITE_BATCH_LIMIT} per API call for Upsert (Update Only), regardless of this setting`;
     }
     return "";
   }
 
   batchConcurrencyError() {
+    if (this.isBulk()) {
+      // Salesforce parallelises a bulk job internally; there is nothing to thread.
+      return "";
+    }
     if (!(+this.batchConcurrency > 0)) { // This also handles NaN
       return "Must be a positive number";
     }
@@ -515,6 +561,12 @@ class Model {
   confirmPopupYes() {
     this.confirmPopup = null;
 
+    if (this.isBulk()) {
+      // Bulk does not write per-row status back into the pasted table
+      this.runBulkImport();
+      return;
+    }
+
     let {header, data} = this.importData.importTable;
 
     let statusColumnIndex = header.findIndex(c => c.columnValue.toLowerCase() == "__status");
@@ -591,7 +643,8 @@ class Model {
     let actionVerb = this.getActionVerb(this.importAction);
     this.confirmPopup = {
       text: importedRecords + " records will be " + actionVerb + "."
-        + (skippedRecords > 0 ? " " + skippedRecords + " records will be skipped because they have __Status Succeeded or Failed." : "")
+        + (skippedRecords > 0 ? " " + skippedRecords + " records will be skipped because they have __Status Succeeded or Failed." : ""),
+      note: this.isBulk() ? "Bulk API 2.0 provides results as downloadable CSV files rather than writing status back into the table below." : null
     };
   }
 
@@ -603,8 +656,12 @@ class Model {
         return "updated";
       case "upsert":
         return "upserted";
+      case "upsertUpdateOnly":
+        return "updated";
       case "delete":
         return "deleted";
+      case "hardDelete":
+        return "hard deleted";
       case "undelete":
         return "undeleted";
       default:
@@ -627,6 +684,372 @@ class Model {
     }
     this.updateResult(this.importData.importTable);
     this.executeBatch();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bulk API 2.0 ingest
+  // Creates a job, uploads CSV, and polls. Results are not reconciled back to
+  // the pasted table since Bulk API does not guarantee output row order.
+  // ---------------------------------------------------------------------------
+
+  // Pins API version to the job record to prevent 409 errors on reload.
+  bulkIngestEndpoint(suffix = "", version = apiVersion) {
+    return `/services/data/v${version}/jobs/ingest${suffix}`;
+  }
+
+  // Disables cache-busting since Bulk API strictly rejects undefined parameters.
+  bulkRest(url, options = {}, rawResponse) {
+    return sfConn.rest(url, {...options, useCache: false}, rawResponse);
+  }
+
+  bulkOperation() {
+    const action = allActions.find(a => a.value === this.importAction);
+    return action && action.bulkOperation;
+  }
+
+  // Re-attach to a job left behind by a previous page load or session
+  resumeBulkImport() {
+    const job = this.bulkJobStore.get();
+    if (!job) {
+      return;
+    }
+    this.bulkJob = job;
+    if (!isBulkJobTerminal(job.state)) {
+      this.isBulkImportWorking = true;
+      this.startBulkPolling();
+    }
+  }
+
+  startBulkPolling() {
+    this.stopBulkPolling();
+    this.bulkPollFailures = 0;
+    this.bulkPollTimer = setInterval(() => this.pollBulkJob(), Model.BULK_POLL_INTERVAL_MS);
+    this.pollBulkJob();
+  }
+
+  // Manually re-check a job whose polling stopped
+  refreshBulkStatus() {
+    if (!this.bulkJob || isBulkJobTerminal(this.bulkJob.state)) {
+      return;
+    }
+    this.bulkError = null;
+    this.bulkMessage = null;
+    this.isBulkImportWorking = true;
+    this.isBulkImportWorking = true;
+    this.startBulkPolling();
+  }
+
+  bulkJobHistoryMax() {
+    const configured = parseInt(localStorage.getItem("numberOfBulkImportJobsInHistory"), 10);
+    return (configured > 0 ? configured : 10) + 1;
+  }
+
+  stopBulkPolling() {
+    if (this.bulkPollTimer) {
+      clearInterval(this.bulkPollTimer);
+      this.bulkPollTimer = null;
+    }
+  }
+
+  // Sync cross-tab bulk job updates
+  syncBulkJobFromStorage() {
+    const job = this.bulkJobStore.get();
+    this.bulkJob = job;
+    if (!job || isBulkJobTerminal(job.state)) {
+      this.isBulkImportWorking = false;
+      this.stopBulkPolling();
+    } else if (!this.bulkPollTimer) {
+      this.isBulkImportWorking = true;
+      this.startBulkPolling();
+    }
+  }
+
+  // Serializes queued rows into CSV payloads. Splits payloads to stay under 
+  // Salesforce's ~100 MB raw CSV per-job limit. Ignores columns starting with "_".
+  buildBulkCsvChunks() {
+    const header = this.importData.importTable.header;
+    const columnIndexes = header.map((column, index) => index).filter(index => !header[index].columnIgnore());
+    const headerLine = csvSerializeRow(columnIndexes.map(index => header[index].columnValue), ",");
+    const headerBytes = utf8ByteLength(headerLine) + 2;
+    const rows = this.importData.taggedRows.filter(row => row.status === "Queued");
+
+    const chunks = [];
+    let lines = [headerLine];
+    let bytes = headerBytes;
+    for (const {cells} of rows) {
+      const line = csvSerializeRow(columnIndexes.map(index => cells[index]), ",");
+      const lineBytes = utf8ByteLength(line) + 2;
+      if (lines.length > 1 && bytes + lineBytes > BULK_MAX_UPLOAD_BYTES) {
+        chunks.push(lines.join("\r\n"));
+        lines = [headerLine];
+        bytes = headerBytes;
+      }
+      lines.push(line);
+      bytes += lineBytes;
+    }
+    if (lines.length > 1) {
+      chunks.push(lines.join("\r\n"));
+    }
+    return {chunks, recordCount: rows.length, columnCount: columnIndexes.length};
+  }
+
+  runBulkImport() {
+    // Enforce one active bulk import at a time globally
+    if (this.bulkJob && !isBulkJobTerminal(this.bulkJob.state)) {
+      this.bulkMessage = "A bulk import is already running - wait for it to finish or cancel it first.";
+      return;
+    }
+    const operation = this.bulkOperation();
+    if (!operation) {
+      this.bulkError = `"${this.importActionName}" is not supported by Bulk API 2.0.`;
+      return;
+    }
+    const {chunks, recordCount} = this.buildBulkCsvChunks();
+    if (chunks.length === 0) {
+      this.bulkMessage = "No queued rows to import.";
+      return;
+    }
+
+    // Held in memory; multi-chunk uploads cannot survive reloads if interrupted
+    this.bulkPendingChunks = chunks;
+    this.bulkMessage = null;
+    this.bulkError = null;
+    this.isBulkImportWorking = true;
+    this.bulkJob = {
+      jobId: null,
+      currentJobId: null,
+      jobIds: [],
+      chunkIndex: 0,
+      chunkCount: chunks.length,
+      operation,
+      object: this.importType,
+      action: this.importAction,
+      actionName: this.importActionName,
+      state: BULK_STATE.OPEN,
+      apiVersion,
+      submittedAt: new Date().toISOString(),
+      completedAt: null,
+      totalRecords: recordCount,
+      recordsProcessed: 0,
+      recordsFailed: 0,
+      // Keyed by chunk ID to prevent double-counting on overlapping cross-tab polls
+      chunkResults: {},
+      errorMessage: null
+    };
+    this.submitBulkChunk(0);
+  }
+
+  // Create a job for one chunk, upload it, and close the upload
+  submitBulkChunk(chunkIndex) {
+    const csv = this.bulkPendingChunks && this.bulkPendingChunks[chunkIndex];
+    if (csv == null) {
+      this.finishBulkImport(BULK_STATE.FAILED, `The page was reloaded before chunk ${chunkIndex + 1} of ${this.bulkJob.chunkCount} was submitted. Re-run the import for the rows that were not processed.`);
+      return;
+    }
+    const body = {
+      object: this.bulkJob.object,
+      operation: this.bulkJob.operation,
+      contentType: "CSV",
+      columnDelimiter: "COMMA",
+      lineEnding: "CRLF"
+    };
+    if (this.bulkJob.operation === "upsert") {
+      body.externalIdFieldName = this.externalId;
+    }
+
+    this.spinFor(this.bulkRest(this.bulkIngestEndpoint(), {method: "POST", body})
+      .then(created => this.bulkRest(this.bulkIngestEndpoint(`/${created.id}/batches`), {
+        method: "PUT",
+        body: csv,
+        bodyType: "raw",
+        headers: {"Content-Type": "text/csv"}
+      }).then(() => this.bulkRest(this.bulkIngestEndpoint(`/${created.id}`), {
+        method: "PATCH",
+        body: {state: BULK_STATE.UPLOAD_COMPLETE}
+      })).then(() => {
+        const jobIds = [...this.bulkJob.jobIds, created.id];
+        this.bulkJob = this.bulkJobStore.set({
+          ...this.bulkJob,
+          jobId: this.bulkJob.jobId || created.id,
+          currentJobId: created.id,
+          jobIds,
+          chunkIndex,
+          state: BULK_STATE.UPLOAD_COMPLETE
+        });
+        this.startBulkPolling();
+        this.didUpdate();
+      }).catch(error => {
+        // Abort the job if upload fails to avoid orphaned Open jobs against org limits
+        console.error(error);
+        this.bulkRest(this.bulkIngestEndpoint(`/${created.id}`), {method: "PATCH", body: {state: BULK_STATE.ABORTED}, logErrors: false}).catch(() => {});
+        throw error;
+      }))
+      .catch(error => {
+        console.error(error);
+        this.finishBulkImport(BULK_STATE.FAILED, "Could not submit bulk job: " + error.message);
+        this.didUpdate();
+      }));
+  }
+
+  pollBulkJob() {
+    const job = this.bulkJob;
+    if (!job || !job.currentJobId) {
+      this.stopBulkPolling();
+      return;
+    }
+    this.bulkRest(this.bulkIngestEndpoint(`/${job.currentJobId}`, job.apiVersion)).then(res => {
+      this.bulkPollFailures = 0;
+      const processed = +res.numberRecordsProcessed || 0;
+      const failed = +res.numberRecordsFailed || 0;
+      if (!isBulkJobTerminal(res.state)) {
+        this.bulkJob = this.bulkJobStore.set({...job, state: res.state, errorMessage: res.errorMessage || null});
+        this.didUpdate();
+        return;
+      }
+
+      this.stopBulkPolling();
+      // Key counts by job ID to overwrite (not add) on overlapping poll ticks
+      const chunkResults = {...(job.chunkResults || {}), [job.currentJobId]: {processed, failed}};
+      const recordsProcessed = Object.values(chunkResults).reduce((sum, r) => sum + r.processed, 0);
+      const recordsFailed = Object.values(chunkResults).reduce((sum, r) => sum + r.failed, 0);
+      const moreChunks = job.chunkIndex + 1 < job.chunkCount;
+
+      if (res.state === BULK_STATE.JOB_COMPLETE && moreChunks) {
+        this.bulkJob = this.bulkJobStore.set({...job, chunkResults, recordsProcessed, recordsFailed, state: BULK_STATE.IN_PROGRESS});
+        this.submitBulkChunk(job.chunkIndex + 1);
+        this.didUpdate();
+        return;
+      }
+
+      this.bulkJob = this.bulkJobStore.set({
+        ...job,
+        state: res.state,
+        chunkResults,
+        recordsProcessed,
+        recordsFailed,
+        // Surface Salesforce-provided error messages (e.g., if aborted by an admin)
+        errorMessage: res.errorMessage || (moreChunks ? `Stopped after chunk ${job.chunkIndex + 1} of ${job.chunkCount}. The remaining rows were not submitted.` : null),
+        completedAt: new Date().toISOString()
+      });
+      this.isBulkImportWorking = false;
+      this.bulkPendingChunks = null;
+      this.didUpdate();
+    }).catch(error => {
+      console.error(error);
+      this.bulkPollFailures++;
+      this.bulkError = "Could not read bulk job status: " + error.message;
+      // Tolerate transient network blips up to the failure limit
+      if (this.bulkPollFailures >= Model.BULK_POLL_MAX_FAILURES) {
+        this.stopBulkPolling();
+        this.isBulkImportWorking = false;
+        this.bulkMessage = "Stopped checking this job after repeated errors. It is still running in Salesforce - use Refresh status to check again.";
+      }
+      this.didUpdate();
+    });
+  }
+
+  finishBulkImport(state, errorMessage) {
+    this.stopBulkPolling();
+    this.isBulkImportWorking = false;
+    this.bulkPendingChunks = null;
+    if (this.bulkJob) {
+      this.bulkJob = this.bulkJob.jobId
+        ? this.bulkJobStore.set({...this.bulkJob, state, errorMessage, completedAt: new Date().toISOString()})
+        : {...this.bulkJob, state, errorMessage, completedAt: new Date().toISOString()};
+    }
+  }
+
+  abortBulkJob() {
+    const job = this.bulkJob;
+    if (!job || !job.currentJobId || isBulkJobTerminal(job.state)) {
+      return;
+    }
+    this.spinFor(this.bulkRest(this.bulkIngestEndpoint(`/${job.currentJobId}`, job.apiVersion), {
+      method: "PATCH",
+      body: {state: BULK_STATE.ABORTED}
+    }).then(() => {
+      this.finishBulkImport(BULK_STATE.ABORTED, null);
+      this.didUpdate();
+    }).catch(error => {
+      console.error(error);
+      this.bulkError = "Could not abort bulk job: " + error.message;
+      this.didUpdate();
+    }));
+  }
+
+  // Downloads and concatenates chunk CSVs for "successfulResults" or "failedResults"
+  downloadBulkResults(kind, job = this.bulkJob) {
+    if (!job || !job.jobIds || job.jobIds.length === 0) {
+      return;
+    }
+    this.bulkMessage = null;
+    this.bulkError = null;
+    const fetchOne = async (jobId) => {
+      const xhr = await this.bulkRest(this.bulkIngestEndpoint(`/${jobId}/${kind}/`, job.apiVersion), {
+        headers: {Accept: "text/csv"},
+        responseType: "text"
+      }, true);
+      if (xhr.status === 404) {
+        const err = new Error("Results are no longer available for this job.");
+        err.name = "BulkResultsExpired";
+        throw err;
+      }
+      if (xhr.status < 200 || xhr.status >= 400) {
+        throw new Error(`HTTP ${xhr.status} ${xhr.statusText} while downloading results`);
+      }
+      return xhr.response || "";
+    };
+
+    this.spinFor(Promise.all(job.jobIds.map(fetchOne)).then(pages => {
+      const csv = pages
+        .filter(page => page.trim() !== "")
+        .map((page, i) => (i === 0 ? page : stripCsvHeaderRow(page)))
+        .map((page, i, all) => (i === all.length - 1 || page.endsWith("\n") ? page : page + "\n"))
+        .join("");
+      if (csv.trim() === "") {
+        this.bulkMessage = kind === "failedResults" ? "No failed records to download." : "No successful records to download.";
+        this.didUpdate();
+        return;
+      }
+      const suffix = kind === "failedResults" ? "failed" : "succeeded";
+      downloadCsvFile(csv, `${job.object}-bulk-${suffix}-${new Date().toISOString().slice(0, 10)}.csv`);
+      this.didUpdate();
+    }).catch(error => {
+      console.error(error);
+      if (error.name === "BulkResultsExpired") {
+        // Salesforce deleted the job results (expired)
+        this.bulkJobStore.forget(job.jobId);
+        this.bulkJob = this.bulkJobStore.get();
+        this.bulkMessage = "Results are no longer available for that job - Salesforce keeps them for 7 days.";
+      } else {
+        this.bulkError = "Could not download bulk results: " + error.message;
+      }
+      this.didUpdate();
+    }));
+  }
+
+  dismissBulkJob() {
+    this.stopBulkPolling();
+    this.bulkJobStore.clear();
+    this.bulkJob = null;
+    this.bulkMessage = null;
+    this.bulkError = null;
+    this.bulkPendingChunks = null;
+    this.isBulkImportWorking = false;
+  }
+
+  bulkElapsed() {
+    const job = this.bulkJob;
+    if (!job) {
+      return "";
+    }
+    const from = Date.parse(job.submittedAt);
+    if (isNaN(from)) {
+      return "";
+    }
+    const to = job.completedAt ? Date.parse(job.completedAt) : Date.now();
+    const seconds = Math.max(0, Math.round((to - from) / 1000));
+    return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   }
 
   updateResult(importTable) {
@@ -767,6 +1190,8 @@ class Model {
     if (!(batchSize > 0)) { // This also handles NaN
       return;
     }
+    // Composite calls (used by Upsert (Update Only)) cap at 25 subrequests, regardless of batchSize.
+    batchSize = effectiveBatchSize(this.importAction, batchSize);
 
     let batchConcurrency = +this.batchConcurrency;
     if (!(batchConcurrency > 0)) { // This also handles NaN
@@ -782,6 +1207,7 @@ class Model {
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let batchRows = [];
     let importArgs = {};
+    let compositeSubrequests = []; // used only by importAction == "upsertUpdateOnly"
     if (importAction == "upsert") {
       importArgs.externalIDFieldName = idFieldName;
     }
@@ -792,7 +1218,7 @@ class Model {
       importArgs["met:fullNames"] = [];
     } else if (importAction == "upsertMetadata") {
       importArgs["met:metadata"] = [];
-    } else {
+    } else if (importAction != "upsertUpdateOnly") {
       importArgs.sObjects = [];
     }
 
@@ -859,6 +1285,15 @@ class Model {
         }
 
         importArgs["met:metadata"].push(sobject);
+      } else if (importAction == "upsertUpdateOnly") {
+        // updateOnly=true only exists on REST, so this goes through Composite, not SOAP.
+        let referenceId = "row" + (batchRows.length - 1);
+        let fields = buildUpdateOnlyFields(header, row, inputIdColumnIndex);
+        compositeSubrequests.push({
+          referenceId,
+          row,
+          subrequest: buildUpdateOnlySubrequest(apiVersion, sobjectType, idFieldName, row[inputIdColumnIndex], fields, referenceId)
+        });
       } else {
         let sobject = {};
         sobject["$xsi:type"] = sobjectType;
@@ -912,6 +1347,51 @@ class Model {
     // unless batches are slower than timeoutDelay.
     setTimeout(this.executeBatch.bind(this), 2500);
 
+    let onBatchSettled = () => {
+      this.activeBatches--;
+      this.updateResult(this.importData.importTable);
+      this.executeBatch();
+    };
+
+    if (importAction == "upsertUpdateOnly") {
+      let body = {allOrNone: false, compositeRequest: compositeSubrequests.map(r => r.subrequest)};
+      this.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body}).then(res => {
+        let subresponseByReferenceId = new Map((res.compositeResponse || []).map(r => [r.referenceId, r]));
+        for (let {referenceId, row} of compositeSubrequests) {
+          let subresponse = subresponseByReferenceId.get(referenceId);
+          let parsed = subresponse
+            ? parseUpdateOnlySubresponse(subresponse)
+            : {success: false, id: "", errorText: "No response received for this record"};
+          row[statusColumnIndex] = parsed.success ? "Succeeded" : "Failed";
+          row[actionColumnIndex] = parsed.success ? "Updated" : "";
+          row[resultIdColumnIndex] = parsed.id;
+          row[errorColumnIndex] = parsed.errorText;
+        }
+        this.consecutiveFailures = 0;
+      }, err => {
+        // Same split the SOAP path makes below: a real HTTP error response fails just this batch;
+        // anything else (not connected at all) stops the import.
+        if (!["SalesforceRestError", "Unauthorized", "Forbidden"].includes(err.name)) {
+          throw err;
+        }
+        let errorText = err.message;
+        for (let row of batchRows) {
+          row[statusColumnIndex] = "Failed";
+          row[resultIdColumnIndex] = "";
+          row[actionColumnIndex] = "";
+          row[errorColumnIndex] = errorText;
+        }
+        this.consecutiveFailures++;
+        if (this.consecutiveFailures >= 3) {
+          this.isProcessingQueue = false;
+        }
+      }).then(onBatchSettled).catch(error => {
+        console.error("Unexpected exception", error);
+        this.isProcessingQueue = false;
+      }));
+      return;
+    }
+
     let wsdl = sfConn.wsdl(apiVersion, this.apiType);
     let headers = this.customHeaders?.length > 0 ? {headers: JSON.parse(this.customHeaders)} : {};
 
@@ -963,11 +1443,7 @@ class Model {
       if (this.consecutiveFailures >= 3) {
         this.isProcessingQueue = false;
       }
-    }).then(() => {
-      this.activeBatches--;
-      this.updateResult(this.importData.importTable);
-      this.executeBatch();
-    }).catch(error => {
+    }).then(onBatchSettled).catch(error => {
       console.error("Unexpected exception", error);
       this.isProcessingQueue = false;
     }));
@@ -975,13 +1451,26 @@ class Model {
 
 }
 
+function csvSerializeRow(row, separator) {
+  return row.map(text => "\"" + ("" + (text == null ? "" : text)).split("\"").join("\"\"") + "\"").join(separator);
+}
+
 function csvSerialize(table, separator) {
-  return table.map(row => row.map(text => "\"" + ("" + (text == null ? "" : text)).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n");
+  return table.map(row => csvSerializeRow(row, separator)).join("\r\n");
+}
+
+/**
+ * Removes the header row from result CSVs for concatenation. 
+ * Safe to cut at the first newline since field names never contain them.
+ */
+function stripCsvHeaderRow(csv) {
+  const firstBreak = csv.indexOf("\n");
+  return firstBreak === -1 ? "" : csv.slice(firstBreak + 1);
 }
 
 let h = React.createElement;
 
-class App extends React.Component {
+export class App extends React.Component {
   constructor(props) {
     super(props);
     this.onApiTypeChange = this.onApiTypeChange.bind(this);
@@ -1004,12 +1493,27 @@ class App extends React.Component {
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
+    this.onAbortBulkJob = this.onAbortBulkJob.bind(this);
+    this.onDownloadBulkSucceeded = this.onDownloadBulkSucceeded.bind(this);
+    this.onDownloadBulkFailed = this.onDownloadBulkFailed.bind(this);
+    this.onDismissBulkJob = this.onDismissBulkJob.bind(this);
+    this.onRefreshBulkStatus = this.onRefreshBulkStatus.bind(this);
+    this.onToggleBulkHistory = this.onToggleBulkHistory.bind(this);
+    this.onToggleBulkPanel = this.onToggleBulkPanel.bind(this);
     this.unloadListener = null;
-    this.state = {templateValueIndex: -1};
+    this.state = {
+      templateValueIndex: -1,
+      // null means "follow the selected API type"; a boolean is an explicit
+      // choice by the user, which holds until the API type changes again.
+      bulkPanelOpen: null,
+      showBulkHistory: false
+    };
   }
   onApiTypeChange(e) {
     let {model} = this.props;
     model.apiType = e.target.value;
+    // Reset the panel override so it goes back to following the API type.
+    this.setState({bulkPanelOpen: null});
     model.updateAvailableActions();
     model.importAction = model.availableActions[0].value;
     model.importActionName = allActions.find(action => action.value == model.importAction).label;
@@ -1023,6 +1527,15 @@ class App extends React.Component {
     model.importActionSelected = true;
     if (model.importAction === "undelete"){
       this.onImportUndelete(model);
+    }
+    if (model.importAction === "upsertUpdateOnly") {
+      if (+model.batchSize > COMPOSITE_BATCH_LIMIT) {
+        model.batchSizeBeforeUpdateOnly = model.batchSize;
+        model.batchSize = "" + COMPOSITE_BATCH_LIMIT;
+      }
+    } else if (model.batchSizeBeforeUpdateOnly != null) {
+      model.batchSize = model.batchSizeBeforeUpdateOnly;
+      model.batchSizeBeforeUpdateOnly = null;
     }
     model.didUpdate();
   }
@@ -1046,6 +1559,7 @@ class App extends React.Component {
   onBatchSizeChange(e) {
     let {model} = this.props;
     model.batchSize = e.target.value;
+    model.batchSizeBeforeUpdateOnly = null;
     model.executeBatch();
     model.didUpdate();
   }
@@ -1139,6 +1653,41 @@ class App extends React.Component {
     model.confirmPopupYes();
     model.didUpdate();
   }
+  onAbortBulkJob() {
+    let {model} = this.props;
+    model.abortBulkJob();
+    model.didUpdate();
+  }
+  onDownloadBulkSucceeded(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.downloadBulkResults("successfulResults");
+    model.didUpdate();
+  }
+  onDownloadBulkFailed(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.downloadBulkResults("failedResults");
+    model.didUpdate();
+  }
+  onDismissBulkJob() {
+    let {model} = this.props;
+    model.dismissBulkJob();
+    model.didUpdate();
+  }
+  onRefreshBulkStatus() {
+    let {model} = this.props;
+    model.refreshBulkStatus();
+    model.didUpdate();
+  }
+  onToggleBulkHistory() {
+    this.setState({showBulkHistory: !this.state.showBulkHistory});
+  }
+  onToggleBulkPanel() {
+    let {model} = this.props;
+    const open = this.state.bulkPanelOpen === null ? model.isBulk() : this.state.bulkPanelOpen;
+    this.setState({bulkPanelOpen: !open});
+  }
   onConfirmPopupNoClick(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -1174,9 +1723,20 @@ class App extends React.Component {
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
     model.updateImportTableResult();
+
+    // Sync cross-tab bulk job updates immediately (bypasses poll timer)
+    this.removeBulkStorageListener = model.bulkJobStore.onExternalChange(() => {
+      model.syncBulkJobFromStorage();
+      model.didUpdate();
+    });
   }
   componentWillUnmount() {
+    let {model} = this.props;
     window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+    if (this.removeBulkStorageListener) {
+      this.removeBulkStorageListener();
+    }
+    model.stopBulkPolling();
   }
   componentDidUpdate() {
     let {model} = this.props;
@@ -1198,6 +1758,157 @@ class App extends React.Component {
       removeEventListener("beforeunload", this.unloadListener);
     }
   }
+  /**
+   * Page-level bulk job status panel. Renders outside per-tab content.
+   * Auto-expands when Bulk API is selected, otherwise collapses to a single line.
+   */
+  renderBulkPanel(model) {
+    const job = model.bulkJob;
+    if (!job) {
+      return null;
+    }
+    const complete = job.state === BULK_STATE.JOB_COMPLETE;
+    const failed = job.state === BULK_STATE.FAILED || job.state === BULK_STATE.ABORTED;
+    const theme = complete ? (job.recordsFailed > 0 ? "warning" : "success") : failed ? "error" : "warning";
+    const open = this.state.bulkPanelOpen === null ? model.isBulk() : this.state.bulkPanelOpen;
+    const succeeded = Math.max(0, (job.recordsProcessed || 0) - (job.recordsFailed || 0));
+
+    // Always reachable to allow clearing stuck or externally aborted jobs
+    const dismissButton = h("button", {
+      key: "dismiss",
+      type: "button",
+      className: "slds-button slds-button_neutral",
+      onClick: this.onDismissBulkJob,
+      title: complete || failed
+        ? "Stop tracking this job. Does not delete it in Salesforce"
+        : "Stop tracking this job here. It keeps running in Salesforce"
+    }, "Dismiss");
+
+    const titleBar = h("div", {className: "slds-grid slds-grid_vertical-align-center"},
+      h("span", {className: "slds-text-title slds-m-right_x-small"}, `Bulk API 2.0 ${job.actionName || job.operation}`),
+      h("span", {className: `slds-badge slds-theme_${theme}`}, job.state),
+      h("span", {className: "slds-text-body_small slds-text-color_weak slds-m-left_x-small"}, job.object),
+      job.chunkCount > 1 ? h("span", {className: "slds-badge slds-m-left_x-small"}, `Job ${job.chunkIndex + 1} of ${job.chunkCount}`) : null
+    );
+
+    if (!open) {
+      return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
+        h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+          titleBar,
+          h("div", {className: "slds-button-group"},
+            h("button", {key: "toggle", type: "button", className: "slds-button slds-button_neutral", onClick: this.onToggleBulkPanel, title: "Show the full job status"}, "Show details"),
+            dismissButton
+          )
+        )
+      );
+    }
+
+    const historyMax = model.bulkJobHistoryMax() - 1;
+    const history = model.bulkJobStore.history.list.filter(e => e.jobId !== job.jobId).slice(0, historyMax);
+    const field = (label, value) => h("div", {key: label, className: "slds-col slds-size_1-of-2 slds-large-size_1-of-6 slds-p-right_small slds-p-bottom_xx-small"},
+      h("dt", {className: "slds-text-title slds-truncate"}, label),
+      h("dd", {className: "slds-text-body_small slds-truncate", title: String(value)}, value)
+    );
+
+    return h("div", {key: "bulk-panel", className: "slds-box slds-box_x-small slds-m-horizontal_medium slds-m-top_small slds-m-bottom_small slds-theme_default"},
+      h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small"},
+        titleBar,
+        h("div", {className: "slds-button-group"},
+          h("button", {
+            key: "download-succeeded",
+            type: "button",
+            className: "slds-button slds-button_brand",
+            disabled: !(complete || failed) || succeeded === 0,
+            onClick: this.onDownloadBulkSucceeded,
+            title: !(complete || failed) ? "Available once the job completes" : (succeeded === 0 ? "No successful records to download" : "Download the successful records as a CSV file")
+          }, (complete || failed) ? `Download Succeeded (${succeeded.toLocaleString()})` : "Download Succeeded"),
+          h("button", {
+            key: "download-failed",
+            type: "button",
+            className: "slds-button slds-button_neutral",
+            disabled: !(complete || failed) || (job.recordsFailed || 0) === 0,
+            onClick: this.onDownloadBulkFailed,
+            title: !(complete || failed) ? "Available once the job completes" : ((job.recordsFailed || 0) === 0 ? "No failed records to download" : "Download the failed records, with their errors, as a CSV file")
+          }, (complete || failed) ? `Download Failed (${(job.recordsFailed || 0).toLocaleString()})` : "Download Failed"),
+          h("button", {
+            key: "refresh",
+            key: "refresh",
+            type: "button",
+            className: "slds-button slds-button_neutral",
+            hidden: complete || failed,
+            onClick: this.onRefreshBulkStatus,
+            title: "Check this job's status now"
+          }, "Refresh status"),
+          h("button", {
+            key: "abort",
+            key: "abort",
+            type: "button",
+            className: "slds-button slds-button_destructive",
+            hidden: complete || failed,
+            onClick: this.onAbortBulkJob,
+            title: "Ask Salesforce to cancel this job"
+          }, "Abort"),
+          h("button", {
+            key: "toggle",
+            key: "toggle",
+            type: "button",
+            className: "slds-button slds-button_neutral",
+            onClick: this.onToggleBulkPanel,
+            title: "Collapse this panel to a single line"
+          }, "Hide details"),
+          dismissButton
+        )
+      ),
+      h("dl", {className: "slds-grid slds-wrap"},
+        field("Job ID", job.currentJobId || job.jobId || "-"),
+        field("Submitted", new Date(job.submittedAt).toLocaleString()),
+        field("Elapsed", model.bulkElapsed()),
+        field("Uploaded", (job.totalRecords || 0).toLocaleString()),
+        field("Processed", (job.recordsProcessed || 0).toLocaleString()),
+        field("Failed", (job.recordsFailed || 0).toLocaleString())
+      ),
+      job.errorMessage ? h("div", {className: "slds-text-color_error slds-text-body_small slds-m-top_x-small"}, job.errorMessage) : null,
+      model.bulkError ? h("div", {className: "slds-text-color_error slds-text-body_small slds-m-top_x-small"}, model.bulkError) : null,
+      model.bulkMessage ? h("div", {className: "slds-text-color_weak slds-text-body_small slds-m-top_x-small"}, model.bulkMessage) : null,
+      complete ? h("p", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, "Per-row status is not written back into the table below in Bulk mode. Download the failed records to see individual errors.") : null,
+      h("div", {className: "slds-m-top_x-small"},
+        h("button", {
+          type: "button",
+          className: "slds-button slds-button_neutral slds-button_stretch-none",
+          onClick: this.onToggleBulkHistory
+        }, this.state.showBulkHistory ? "Hide past bulk jobs" : `Show past bulk jobs (${history.length})`)
+      ),
+      !this.state.showBulkHistory ? null : history.length === 0
+        ? h("p", {className: "slds-text-body_small slds-text-color_weak slds-m-top_xx-small"}, "No other bulk imports from the last 7 days.")
+        : h("ul", {className: "slds-has-dividers_bottom-space slds-m-top_xx-small"},
+          history.map(entry => h("li", {key: entry.jobId, className: "slds-item slds-text-body_small"},
+            h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+              h("div", {className: "slds-truncate"},
+                h("span", {className: "slds-text-title"}, entry.jobId),
+                " \u00b7 ",
+                h("span", {}, `${entry.actionName || entry.operation} ${entry.object}`),
+                " \u00b7 ",
+                h("span", {}, new Date(entry.submittedAt).toLocaleString()),
+                " \u00b7 ",
+                h("span", {}, entry.state)
+              ),
+              [BULK_STATE.JOB_COMPLETE, BULK_STATE.FAILED, BULK_STATE.ABORTED].includes(entry.state)
+                ? h("div", {className: "slds-no-flex"},
+                  Math.max(0, (entry.recordsProcessed || 0) - (entry.recordsFailed || 0)) > 0
+                    ? h("a", {href: "#", onClick: e => { e.preventDefault(); model.downloadBulkResults("successfulResults", entry); model.didUpdate(); }}, "Succeeded")
+                    : h("span", {className: "slds-text-color_weak", title: "No successful records", style: { cursor: "default" }}, "Succeeded"),
+                  h("span", {className: "slds-m-horizontal_xx-small"}, "/"),
+                  (entry.recordsFailed || 0) > 0
+                    ? h("a", {href: "#", onClick: e => { e.preventDefault(); model.downloadBulkResults("failedResults", entry); model.didUpdate(); }}, "Failed")
+                    : h("span", {className: "slds-text-color_weak", title: "No failed records", style: { cursor: "default" }}, "Failed")
+                )
+                : null
+            )
+          ))
+        )
+    );
+  }
+
   render() {
     let {model} = this.props;
 
@@ -1261,7 +1972,8 @@ class App extends React.Component {
                                 h("select", {className: "slds-select", id: "form-import-action", value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking()},
                                   ...model.availableActions.map((action, index) => h("option", {key: index, value: action.value}, action.label))
                                 )
-                              )
+                              ),
+                              h("div", {id: "error-import-action", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.upsertUpdateOnlyApiVersionError()}, model.upsertUpdateOnlyApiVersionError())
                             )
                           )
                         ),
@@ -1287,7 +1999,7 @@ class App extends React.Component {
                             ),
                           )
                         ),
-                        h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small", hidden: model.importAction != "upsert"},
+                        h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small", hidden: model.importAction != "upsert" && model.importAction != "upsertUpdateOnly"},
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"}, "External ID"),
                             h("div", {className: "slds-form-element__control"},
@@ -1309,18 +2021,18 @@ class App extends React.Component {
                         ),
                         h("div", {className: "slds-size_1-of-4 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-batch-size"}, "Batch size"),
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-batch-size", title: model.isBulk() ? "Not used by Bulk API 2.0, which chunks by file size rather than row count" : ""}, "Batch size"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange}),
+                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, disabled: model.isBulk()}),
                               h("div", {id: "error-batch-size", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchSizeError()}, model.batchSizeError())
                             )
                           )
                         ),
                         h("div", {className: "slds-size_1-of-4 slds-p-horizontal_x-small"},
                           h("div", {className: "slds-form-element"},
-                            h("span", {className: "slds-form-element__label", htmlFor: "form-threads"}, "Threads"),
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-threads", title: model.isBulk() ? "Not used by Bulk API 2.0, which parallelises server-side after a single upload" : ""}, "Threads"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange}),
+                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, disabled: model.isBulk()}),
                               h("div", {id: "error-threads", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
                             )
                           )
@@ -1361,7 +2073,7 @@ class App extends React.Component {
         h("div", {className: "slds-card slds-m-horizontal_medium slds-p-around_small"},
           h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
             h("div", {className: "slds-col"},
-              h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
+              h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.isBulkImportWorking || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
               h("div", {className: "slds-button-group"},
@@ -1404,13 +2116,16 @@ class App extends React.Component {
                 )
               ),
               h("li", {}, "Select your input format"),
-              h("li", {}, "Select an action (insert, update, upsert or delete)"),
+              h("li", {}, "Select an action (insert, update, upsert, upsert (update only), delete, hard delete or undelete). Hard delete and undelete are not available for every API type."),
               h("li", {}, "Enter the API name of the object to import"),
               h("li", {}, "Press the Run button")
             ),
-            h("p", {className: "slds-m-bottom_x-small"}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+            h("p", {className: "slds-m-bottom_x-small"}, "For large data volumes, pick the Bulk API 2.0 API type. The rows are uploaded as a single CSV and Salesforce processes them asynchronously, so Batch size and Threads do not apply."),
+            h("p", {className: "slds-m-bottom_x-small"}, "Bulk mode reports results as downloadable \"Succeeded\" and \"Failed\" CSV files rather than writing __Status back into the table, because Bulk API 2.0 does not guarantee that its result files preserve input order. It also treats an empty cell as \"leave this field unchanged\", whereas the other API types write a null. To clear a field in Bulk mode, put #N/A in the cell."),
+            h("p", {className: "slds-m-bottom_x-small"}, "\"Upsert (Update Only)\" updates the matching record and never inserts; no match means an error for that record. Max 25 records per API call.")
           )
         ),
+        this.renderBulkPanel(model),
         h(
           "div",
           {
@@ -1470,6 +2185,7 @@ class App extends React.Component {
                   ),
                   h("br", {}),
                   h("p", {className: "slds-text-heading_medium"}, model.confirmPopup.text),
+                  model.confirmPopup.note ? h("p", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, model.confirmPopup.note) : null,
                 ),
                 h(
                   "div",
@@ -1600,4 +2316,80 @@ function setNestedValue(obj, path, value) {
     throw new Error(`Invalid field path "${path}"`);
   }
   cur[lastKey] = value;
+}
+
+// Neither SOAP upsert() nor the REST sObject Collections upsert endpoint can refuse to insert.
+// Only the single-record External ID PATCH resource honors updateOnly=true (API v61.0+), and it
+// only batches via Composite, which caps at 25 subrequests/call - hence everything below.
+const COMPOSITE_BATCH_LIMIT = 25;
+const UPDATE_ONLY_MIN_API_VERSION = 61;
+
+function effectiveBatchSize(importAction, requestedBatchSize) {
+  if (importAction != "upsertUpdateOnly") {
+    return requestedBatchSize;
+  }
+  return Math.min(requestedBatchSize, COMPOSITE_BATCH_LIMIT);
+}
+
+// Empty cells null the field directly (REST has no fieldsToNull list); an empty relationship
+// column nulls the underlying lookup field, never the relationship name.
+function buildUpdateOnlyFields(header, row, inputIdColumnIndex) {
+  let fields = {};
+  for (let c = 0; c < row.length; c++) {
+    if (header[c][0] == "_") {
+      continue;
+    }
+    let columnName = header[c].split(":");
+    let [fieldName] = columnName;
+    let isId = c === inputIdColumnIndex || fieldName.toLowerCase() === "id";
+    if (isId) {
+      continue; // the External ID value goes in the URL, never in the body
+    }
+    if (row[c].trim() == "") {
+      let nullTarget = columnName.length == 1
+        ? (fieldName.includes(".") ? fieldName.split(".")[0] : fieldName)
+        : (/__r$/.test(fieldName) ? fieldName.replace(/__r$/, "__c") : fieldName + "Id");
+      fields[nullTarget] = null;
+    } else if (columnName.length == 1) {
+      fields[fieldName] = row[c];
+    } else {
+      let [relFieldName, /* referencedSobject */, subFieldName] = columnName;
+      fields[relFieldName] = {[subFieldName]: row[c]};
+    }
+  }
+  return fields;
+}
+
+function buildUpdateOnlySubrequest(apiVersion, sobjectType, externalIdFieldName, externalIdValue, fields, referenceId) {
+  let url = "/services/data/v" + apiVersion + "/sobjects/"
+    + encodeURIComponent(sobjectType) + "/"
+    + encodeURIComponent(externalIdFieldName) + "/"
+    + encodeURIComponent(externalIdValue)
+    + "?updateOnly=true";
+  return {method: "PATCH", url, referenceId, body: fields};
+}
+
+// Body can be an array of {errorCode, message, fields}, a single one of those, or something else
+// entirely (e.g. the matched-records list on a 300) - fall back to a readable dump either way.
+function formatUpdateOnlyErrors(body, httpStatusCode) {
+  let errors = Array.isArray(body) ? body : (body ? [body] : []);
+  if (errors.length == 0) {
+    return "HTTP " + httpStatusCode;
+  }
+  return errors.map(err => {
+    if (err && typeof err == "object" && (err.errorCode || err.message)) {
+      let fields = Array.isArray(err.fields) && err.fields.length ? " [" + err.fields.join(", ") + "]" : "";
+      return (err.errorCode || ("HTTP " + httpStatusCode)) + ": " + (err.message || "Unknown error") + fields;
+    }
+    return "HTTP " + httpStatusCode + ": " + JSON.stringify(err);
+  }).join(", ");
+}
+
+function parseUpdateOnlySubresponse(subresponse) {
+  let httpStatusCode = subresponse.httpStatusCode;
+  if (httpStatusCode >= 200 && httpStatusCode < 300) {
+    let body = subresponse.body || {};
+    return {success: true, id: body.id || "", errorText: ""};
+  }
+  return {success: false, id: "", errorText: formatUpdateOnlyErrors(subresponse.body, httpStatusCode)};
 }

@@ -575,6 +575,16 @@ svg.button-icon {
   -webkit-mask-image: url(images/quotation_marks.svg);
 }
 
+.keyword .sfir-autocomplete-icon {
+  -webkit-mask-image: url(images/link.svg);
+  background-color: #9050e9;
+}
+
+.operator .sfir-autocomplete-icon {
+  -webkit-mask-image: url(images/advanced_function.svg);
+  background-color: #0070d2;
+}
+
 .null .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/steps.svg);
 }

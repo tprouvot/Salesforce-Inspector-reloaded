@@ -127,6 +127,53 @@ test.describe("Data Export", () => {
     await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account");
   });
 
+  test("Caret Autocomplete Popup With Keyboard", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    const popup = page.locator(".caret-popup");
+    await queryInput.fill("");
+    await queryInput.focus();
+
+    // 1. Object name: typing opens the popup at the caret, Enter inserts the highlighted suggestion
+    await queryInput.pressSequentially("SELECT Id FROM Acc");
+    await expect(popup).toBeVisible();
+    await expect(popup.locator(".caret-popup-item.active")).toContainText("Account");
+    await expect(queryInput).toHaveAttribute("aria-expanded", "true");
+    await queryInput.press("Enter");
+    await expect(queryInput).toHaveValue("SELECT Id FROM Account ");
+    // No word is being typed after the inserted suggestion, so the popup closes and Enter is a plain newline again
+    await expect(popup).toBeHidden();
+
+    // 2. Field name: arrow keys move the highlight, Tab inserts it
+    await queryInput.fill("SELECT Id FROM Account");
+    await page.evaluate(() => {
+      const el = document.querySelector("textarea#query");
+      el.setSelectionRange("SELECT Id".length, "SELECT Id".length);
+    });
+    await queryInput.pressSequentially(", Nam");
+    await expect(popup).toBeVisible();
+    const items = popup.locator(".caret-popup-item");
+    const first = await items.nth(0).locator(".caret-popup-value").textContent();
+    if (await items.count() > 1) {
+      await queryInput.press("ArrowDown");
+      await expect(items.nth(1)).toHaveClass(/active/);
+      await queryInput.press("ArrowUp");
+    }
+    await expect(items.nth(0)).toHaveClass(/active/);
+    await queryInput.press("Tab");
+    await expect(queryInput).toHaveValue(`SELECT Id, ${first} FROM Account`);
+    await expect(queryInput).toBeFocused();
+
+    // 3. Escape closes the popup without changing the query
+    await queryInput.pressSequentially(", Ty");
+    await expect(popup).toBeVisible();
+    await queryInput.press("Escape");
+    await expect(popup).toBeHidden();
+    await expect(queryInput).toHaveValue(`SELECT Id, ${first}, Ty FROM Account`);
+  });
+
   test("Copy as CSV", async ({page, context, extensionId}) => {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);

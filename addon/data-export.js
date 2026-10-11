@@ -10,6 +10,50 @@ import {PageHeader} from "./components/PageHeader.js";
 // so we fall back to plain (uncolored) text instead of colorizing on every keystroke.
 const MAX_HIGHLIGHT_LENGTH = 100000;
 
+// Rendering thousands of popup rows (e.g. all sobjects after FROM) is slow and nobody scrolls that far; keep typing to narrow it down.
+const CARET_POPUP_MAX_RESULTS = 100;
+const CARET_POPUP_WIDTH = 360;
+
+// Textareas do not expose caret pixel coordinates, so measure them by laying out the text up to the caret
+// in a hidden "mirror" div with the same styles, and reading the position of a marker span placed at the caret.
+// Returns coordinates relative to the textarea's border box, ignoring its scroll offset.
+const CARET_MIRROR_PROPERTIES = [
+  "boxSizing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+  "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "borderStyle",
+  "fontStyle", "fontVariant", "fontWeight", "fontStretch", "fontSize", "lineHeight", "fontFamily",
+  "textAlign", "textTransform", "textIndent", "letterSpacing", "wordSpacing", "tabSize",
+  "whiteSpace", "wordWrap", "wordBreak", "overflowWrap"
+];
+function getCaretCoordinates(textarea, position) {
+  let style = getComputedStyle(textarea);
+  let mirror = document.createElement("div");
+  for (let prop of CARET_MIRROR_PROPERTIES) {
+    mirror.style[prop] = style[prop];
+  }
+  let borderLeft = parseFloat(style.borderLeftWidth) || 0;
+  let borderRight = parseFloat(style.borderRightWidth) || 0;
+  let borderTop = parseFloat(style.borderTopWidth) || 0;
+  Object.assign(mirror.style, {
+    position: "absolute",
+    visibility: "hidden",
+    overflow: "hidden",
+    top: "0",
+    left: "-9999px",
+    // clientWidth excludes the scrollbar, so lines wrap exactly as they do in the textarea
+    width: (textarea.clientWidth + borderLeft + borderRight) + "px",
+    boxSizing: "border-box"
+  });
+  mirror.textContent = textarea.value.substring(0, position);
+  let marker = document.createElement("span");
+  marker.textContent = textarea.value.substring(position) || ".";
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  let lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4;
+  let coords = {top: marker.offsetTop + borderTop, left: marker.offsetLeft + borderLeft, height: lineHeight};
+  mirror.remove();
+  return coords;
+}
+
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
@@ -69,6 +113,12 @@ class Model {
     this.totalTime = 0;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
+    // Caret popup: suggestions shown at the cursor while typing, navigable with the keyboard.
+    this.autocompleteSearchTerm = "";
+    this.autocompleteTokenStart = 0;
+    this.caretPopupIndex = 0;
+    this.caretPopupDismissed = true; // Only opened by typing (or Ctrl+Space), so plain caret navigation keeps arrow keys
+    this.caretPopupForced = false;
     this.exportProgress = {};
     this.queryName = "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
@@ -264,6 +314,40 @@ class Model {
   autocompleteReload() {
     this.describeInfo.reloadAll();
   }
+  caretPopupResults() {
+    return this.autocompleteResults.results.slice(0, CARET_POPUP_MAX_RESULTS);
+  }
+  isCaretPopupVisible() {
+    if (this.caretPopupDismissed || !this.queryInput || this.caretPopupResults().length == 0) {
+      return false;
+    }
+    // Show while typing a word, right after "Relationship." or when explicitly requested with Ctrl+Space.
+    // Never on an empty token otherwise, so Enter still inserts a newline after e.g. "FROM Account ".
+    return this.caretPopupForced
+      || this.autocompleteSearchTerm.length > 0
+      || this.queryInput.value.charAt(this.autocompleteTokenStart - 1) == ".";
+  }
+  dismissCaretPopup() {
+    this.caretPopupDismissed = true;
+    this.caretPopupForced = false;
+  }
+  openCaretPopup({forced = false} = {}) {
+    this.caretPopupDismissed = false;
+    this.caretPopupForced = forced;
+  }
+  moveCaretPopupSelection(delta) {
+    let count = this.caretPopupResults().length;
+    this.caretPopupIndex = (this.caretPopupIndex + delta + count) % count;
+  }
+  selectCaretPopupResult(index = this.caretPopupIndex) {
+    let result = this.caretPopupResults()[index];
+    if (!result) {
+      return;
+    }
+    // Keep the popup open so that e.g. picking "Owner." immediately suggests the Owner fields.
+    this.openCaretPopup();
+    this.autocompleteClick(result);
+  }
   canCopy() {
     return this.exportedData != null && this.exportedData.table.length > 0;
   }
@@ -340,6 +424,7 @@ class Model {
       return;
     }
     vm.autocompleteState = newAutocompleteState;
+    vm.caretPopupIndex = 0;
 
     // Cancel any async operation since its results will no longer be relevant.
     if (vm.autocompleteProgress.abort) {
@@ -372,6 +457,8 @@ class Model {
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
+    vm.autocompleteSearchTerm = searchTerm;
+    vm.autocompleteTokenStart = selStart;
 
     function sortRank({value, title}) {
       let i = 0;
@@ -1617,8 +1704,78 @@ class App extends React.Component {
   onQueryInput(e) {
     let {model} = this.props;
     model.updateCurrentTabQuery(e.target.value);
+    model.openCaretPopup();
     model.queryAutocompleteHandler();
     model.didUpdate();
+  }
+
+  // Returns true when the key was consumed by the caret suggestions popup.
+  handleCaretPopupKey(e) {
+    let {model} = this.props;
+    if (!model.isCaretPopupVisible()) {
+      return false;
+    }
+    if (e.altKey || e.ctrlKey || e.metaKey) {
+      // Leave modifier shortcuts (e.g. Ctrl+Enter to run the export) alone, but close the popup on them.
+      if (e.key == "Enter") {
+        model.dismissCaretPopup();
+      }
+      return false;
+    }
+    switch (e.key) {
+      case "ArrowDown":
+        model.moveCaretPopupSelection(1);
+        return true;
+      case "ArrowUp":
+        model.moveCaretPopupSelection(-1);
+        return true;
+      case "Enter":
+      case "Tab":
+        if (e.shiftKey) {
+          return false;
+        }
+        model.selectCaretPopupResult();
+        return true;
+      case "Escape":
+        model.dismissCaretPopup();
+        return true;
+      case "ArrowLeft":
+      case "ArrowRight":
+      case "Home":
+      case "End":
+      case "PageUp":
+      case "PageDown":
+        // Moving the caret away from the word being typed closes the popup instead of following the caret around.
+        model.dismissCaretPopup();
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  // Positions the popup just below the start of the word being completed, inside the .query-editor box.
+  caretPopupPosition() {
+    let {model} = this.props;
+    let queryInput = this.refs.query;
+    let caret = getCaretCoordinates(queryInput, model.autocompleteTokenStart);
+    let top = queryInput.offsetTop + caret.top - queryInput.scrollTop + caret.height;
+    let left = queryInput.offsetLeft + caret.left - queryInput.scrollLeft;
+    left = Math.max(0, Math.min(left, queryInput.offsetLeft + queryInput.offsetWidth - CARET_POPUP_WIDTH));
+    return {top: top + "px", left: left + "px", width: CARET_POPUP_WIDTH + "px"};
+  }
+
+  // Keeps the keyboard-selected popup item in view when moving past the visible rows.
+  scrollCaretPopupSelectionIntoView() {
+    let list = this.refs.caretPopup;
+    let active = list && list.querySelector(".caret-popup-item.active");
+    if (!active) {
+      return;
+    }
+    if (active.offsetTop < list.scrollTop) {
+      list.scrollTop = active.offsetTop;
+    } else if (active.offsetTop + active.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = active.offsetTop + active.offsetHeight - list.clientHeight;
+    }
   }
 
   // Re-highlights the query text. Called after every render since many model
@@ -1760,6 +1917,20 @@ class App extends React.Component {
     queryInput.addEventListener("scroll", () => {
       this.refs.queryHighlight.scrollTop = queryInput.scrollTop;
       this.refs.queryHighlight.scrollLeft = queryInput.scrollLeft;
+      // Re-render so the caret popup moves with the text
+      if (model.isCaretPopupVisible()) {
+        model.didUpdate();
+      }
+    });
+    queryInput.addEventListener("blur", () => {
+      if (model.isCaretPopupVisible()) {
+        model.dismissCaretPopup();
+        model.didUpdate();
+      }
+    });
+    queryInput.addEventListener("mousedown", () => {
+      // Clicking elsewhere in the text moves the caret away from the word being completed
+      model.dismissCaretPopup();
     });
 
     function queryAutocompleteEvent() {
@@ -1778,12 +1949,18 @@ class App extends React.Component {
     queryInput.addEventListener("keydown", e => {
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
+        model.openCaretPopup({forced: true});
         model.queryAutocompleteHandler({ctrlSpace: true});
+        model.didUpdate();
+      } else if (this.handleCaretPopupKey(e)) {
+        e.preventDefault();
+        e.stopPropagation();
         model.didUpdate();
       }
     });
     addEventListener("message", e => {
       if (e.data.command === "open-export-autocomplete") {
+        model.openCaretPopup({forced: true});
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       } else if (e.data.command === "open-export-execute"){
@@ -1826,6 +2003,7 @@ class App extends React.Component {
   componentDidUpdate() {
     this.recalculateSize();
     this.updateQueryHighlight();
+    this.scrollCaretPopupSelectionIntoView();
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
@@ -1838,6 +2016,8 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
+    // The textarea ref only exists after the first render, so the popup can only be positioned from then on.
+    const caretPopupVisible = !!this.refs.query && model.isCaretPopupVisible();
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
@@ -2031,8 +2211,44 @@ class App extends React.Component {
                 ref: "query",
                 spellCheck: false,
                 style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-                onChange: this.onQueryInput
-              })
+                onChange: this.onQueryInput,
+                role: "combobox",
+                "aria-autocomplete": "list",
+                "aria-haspopup": "listbox",
+                "aria-controls": "caret-popup",
+                "aria-expanded": caretPopupVisible,
+                "aria-activedescendant": caretPopupVisible ? "caret-popup-item-" + model.caretPopupIndex : undefined
+              }),
+              caretPopupVisible && h("ul", {
+                id: "caret-popup",
+                ref: "caretPopup",
+                className: "caret-popup",
+                role: "listbox",
+                "aria-label": model.autocompleteResults.title,
+                style: this.caretPopupPosition(),
+                // Keep focus (and the caret) in the textarea when clicking an item
+                onMouseDown: e => e.preventDefault()
+              },
+              model.caretPopupResults().map((r, index) =>
+                h("li", {
+                  key: r.value,
+                  id: "caret-popup-item-" + index,
+                  role: "option",
+                  "aria-selected": index == model.caretPopupIndex,
+                  className: "caret-popup-item" + (index == model.caretPopupIndex ? " active" : ""),
+                  title: r.title,
+                  onMouseEnter: () => { model.caretPopupIndex = index; model.didUpdate(); },
+                  onClick: () => { model.selectCaretPopupResult(index); model.didUpdate(); }
+                },
+                h("span", {className: "slds-pill__icon_container " + r.autocompleteType + " " + r.dataType},
+                  h("span", {className: "sfir-autocomplete-icon"})
+                ),
+                h("span", {className: "caret-popup-value"}, r.value),
+                r.title && r.title != r.value ? h("span", {className: "caret-popup-title"}, r.title) : null
+                )
+              ),
+              h("li", {className: "caret-popup-hint", role: "presentation"}, "↑↓ to navigate · Enter/Tab to insert · Esc to close")
+              )
             ),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},

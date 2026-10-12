@@ -319,8 +319,13 @@ export class Combobox extends React.Component {
   
   onTriggerKeyDown(e) {
     if (this.props.disabled) return;
-    let { onCancel, isSearchable } = this.props;
+    let { onCancel, isSearchable, onKeyDown } = this.props;
     let visibleOptions = this.getVisibleOptions();
+
+    if (onKeyDown) {
+      onKeyDown(e);
+      if (e.defaultPrevented) return;
+    }
     
     switch (e.key) {
       case "ArrowDown":
@@ -471,6 +476,7 @@ export class Combobox extends React.Component {
           autoCorrect: autoCorrect,
           value: this.displayText(),
           onClick: this.onTriggerClick,
+          onBlur: this.props.onBlur,
           onKeyDown: this.onTriggerKeyDown,
           style: { 
             cursor: disabled ? "not-allowed" : (isSearchable ? "text" : "pointer"),

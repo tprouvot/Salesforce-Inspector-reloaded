@@ -77,7 +77,7 @@ textarea[hidden] {
   white-space: pre-wrap;
   word-wrap: normal;
   tab-size: 4;
-  overflow-y: auto;
+  overflow-y: scroll;
 }
 
 .query-editor #query {

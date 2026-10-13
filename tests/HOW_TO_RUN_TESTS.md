@@ -290,7 +290,7 @@ The real-org workflow will:
 | `options.spec.js` | Tests the Options page | User object, API access |
 | `data-export.spec.js` | Tests data export features | Account object, SOQL queries |
 | `data-import.spec.js` | Tests data import features | Inspector_Test__c object |
-| `field-creator.spec.js` | Tests field creation | Custom objects, Tooling API |
+| `field-manager.spec.js` | Tests field creation and editing | Custom objects, Tooling API |
 | `flow-scanner.spec.js` | Tests Flow Scanner | Flow metadata, Flow API |
 | `metadata-retrieve.spec.js` | Tests metadata retrieval | Metadata API access |
 | `rest-explore.spec.js` | Tests REST API explorer | API access |

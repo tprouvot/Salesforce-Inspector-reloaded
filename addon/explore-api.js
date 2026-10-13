@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {createSpinForMethod, getUserInfo, getLinkTarget} from "./utils.js";
+import {createSpinForMethod, createChangeGuard, getUserInfo, getLinkTarget} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 /* global initButton */
 
@@ -253,10 +253,16 @@ function csvSerialize(table, separator) {
 let h = React.createElement;
 
 class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.highlightGuard = createChangeGuard();
+  }
 
   componentDidUpdate() {
+    let {model} = this.props;
+    // Only re-run Prism when the displayed response or selected view actually changed, not on every unrelated render.
     if (window.Prism) {
-      window.Prism.highlightAll();
+      this.highlightGuard([model.apiResponse, model.selectedTextView], () => window.Prism.highlightAll());
     }
   }
 

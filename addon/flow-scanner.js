@@ -1120,7 +1120,7 @@ function calculateVersionCountStyle(totalVersions) {
   return style;
 }
 
-function FlowInfoSection(props) {
+export function FlowInfoSection(props) {
   const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick, sfHost, flowId} = props;
 
   if (!flow) {
@@ -1240,10 +1240,8 @@ function FlowInfoSection(props) {
               role: "button",
               tabIndex: "0",
               "aria-label": "Click to toggle description visibility",
-              dangerouslySetInnerHTML: {
-                __html: (flow.xmlData?.description || "No description provided").replace(/\n/g, "<br>")
-              }
-            })
+              style: { whiteSpace: "pre-wrap" }
+            }, flow.xmlData?.description || "No description provided")
           )
         )
       )
@@ -2370,7 +2368,7 @@ const SEVERITY_ICONS = {
 
 // Initialize the application only when this is the main entry point
 // Check if we're on the flow-scanner page by looking for required URL parameters
-{
+if (typeof window !== "undefined" && typeof location !== "undefined" && typeof document !== "undefined" && document.getElementById("root")) {
   const urlParams = new URLSearchParams(window.location.search);
   const flowDefId = urlParams.get("flowDefId");
   const flowId = urlParams.get("flowId");

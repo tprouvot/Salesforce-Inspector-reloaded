@@ -61,6 +61,7 @@ test.describe("REST Explore", () => {
   });
 
   test("CRUD Flow (POST, PATCH, GET, DELETE)", async ({page, extensionId}) => {
+    page.on("dialog", dialog => dialog.accept());
     await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
     // Wait for app load
     await page.waitForSelector("select.slds-select", {timeout: 1000});
@@ -119,5 +120,32 @@ test.describe("REST Explore", () => {
     await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/Inspector_Test__c/" + id, 1000);
 
     await expect(statusBadge).toContainText("Status: 204");
+  });
+
+  test("User Confirmation Required for State-Altering Requests", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
+    await page.waitForSelector("select.slds-select", {timeout: 1000});
+
+    const methodSelect = page.locator('select.slds-select:has(option[value="GET"])');
+    const endpointInput = page.locator('input[placeholder*="/services/data/v"]');
+    const sendBtn = page.locator('button:has-text("Send")');
+
+    await methodSelect.selectOption("POST");
+    await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Account/`);
+    await page.locator("textarea.slds-textarea").fill('{ "Name": "Test Account" }');
+
+    let dialogMessage = "";
+    let dialogTriggered = false;
+    page.once("dialog", async dialog => {
+      dialogTriggered = true;
+      dialogMessage = dialog.message();
+      await dialog.dismiss(); // Dismiss to cancel execution
+    });
+
+    await sendBtn.click();
+    expect(dialogTriggered).toBe(true);
+    expect(dialogMessage).toContain("POST");
+    // Verify response is not rendered because request was canceled
+    await expect(page.locator("code.language-json")).not.toBeVisible();
   });
 });

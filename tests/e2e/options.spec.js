@@ -648,6 +648,13 @@ test.describe("Options", () => {
 
       await page.waitForSelector("button[title='Export Options']", {timeout: 1000});
 
+      // Seed storage with token and verifier to ensure SEC-04 filtering is active
+      await page.evaluate(() => {
+        localStorage.setItem("test.my.salesforce.com_access_token", "SECRET_OAUTH_TOKEN");
+        localStorage.setItem("test.my.salesforce.com_code_verifier", "SECRET_PKCE_VERIFIER");
+        localStorage.setItem("test.my.salesforce.com_sid", "SECRET_SID");
+      });
+
       // Set up download listener
       const downloadPromise = page.waitForEvent("download");
 
@@ -659,6 +666,17 @@ test.describe("Options", () => {
 
       // Verify download filename
       expect(download.suggestedFilename()).toBe("reloadedConfiguration.json");
+
+      // Read downloaded JSON and verify SEC-04 token exclusion
+      const stream = await download.createReadStream();
+      const chunks = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk);
+      }
+      const exportedJson = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+      expect(exportedJson["test.my.salesforce.com_access_token"]).toBeUndefined();
+      expect(exportedJson["test.my.salesforce.com_code_verifier"]).toBeUndefined();
+      expect(exportedJson["test.my.salesforce.com_sid"]).toBeUndefined();
     });
 
     test("Import Options", async ({page, extensionId}) => {

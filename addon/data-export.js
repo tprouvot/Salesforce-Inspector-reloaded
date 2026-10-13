@@ -5,6 +5,11 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 
+export function neutralizeSpreadsheetFormula(value) {
+  const text = String(value ?? "");
+  return /^[=+\-@\t\r]/.test(text) ? "'" + text : text;
+}
+
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
 // so we fall back to plain (uncolored) text instead of colorizing on every keystroke.
@@ -1250,13 +1255,15 @@ function RecordTable(vm) {
     }
   }
   function cellToString(cell) {
+    let str;
     if (cell == null) {
-      return "";
+      str = "";
     } else if (typeof cell == "object" && cell.attributes && cell.attributes.type) {
-      return "[" + cell.attributes.type + "]";
+      str = "[" + cell.attributes.type + "]";
     } else {
-      return "" + cell;
+      str = "" + cell;
     }
+    return neutralizeSpreadsheetFormula(str);
   }
 
   let isVisible = (row, filter) => {
@@ -2224,7 +2231,7 @@ class App extends React.Component {
   }
 }
 
-{
+if (typeof location !== "undefined" && typeof document !== "undefined" && document.getElementById("root")) {
 
   let args = new URLSearchParams(location.search);
   let sfHost = args.get("host");
@@ -2232,7 +2239,9 @@ class App extends React.Component {
   if (!sfHost && hash) {
     sfHost = decodeURIComponent(hash.get("instance_url")).replace(/^https?:\/\//i, "");
   }
-  initButton(sfHost, true);
+  if (typeof initButton === "function") {
+    initButton(sfHost, true);
+  }
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");

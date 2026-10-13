@@ -5,6 +5,11 @@ import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
 
+if (window.top !== window.self) {
+  document.documentElement.style.display = "none";
+  throw new Error("REST Explorer cannot be embedded in frames.");
+}
+
 function createRestQueryHistory(storageKey, max) {
   const isSaved = storageKey === "restSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
@@ -504,10 +509,21 @@ class App extends React.Component {
     model.toggleSavedOptions();
     model.didUpdate();
   }
-  onSend() {
+  confirmAndSend() {
     let {model} = this.props;
+    const method = model.request.method?.toUpperCase();
+    const isStateAltering = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+    if (isStateAltering) {
+      const confirmed = window.confirm(`Are you sure you want to execute this ${method} request to ${model.request.endpoint}?`);
+      if (!confirmed) {
+        return;
+      }
+    }
     model.doSend();
     model.didUpdate();
+  }
+  onSend() {
+    this.confirmAndSend();
   }
   onCopyAsJson() {
     let {model} = this.props;
@@ -556,8 +572,7 @@ class App extends React.Component {
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
-        model.doSend();
-        model.didUpdate();
+        this.confirmAndSend();
       }
     });
 

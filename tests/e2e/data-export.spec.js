@@ -161,4 +161,30 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
+  test("Formula Neutralization in Data Exports (SEC-02)", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const results = await page.evaluate(async () => {
+      const module = await import("./data-export.js");
+      return {
+        calc: module.neutralizeSpreadsheetFormula("=cmd|' /C calc'!A0"),
+        minus: module.neutralizeSpreadsheetFormula("-5+2"),
+        plus: module.neutralizeSpreadsheetFormula("+1234"),
+        at: module.neutralizeSpreadsheetFormula("@SUM(A1:A10)"),
+        tab: module.neutralizeSpreadsheetFormula("\tTAB"),
+        cr: module.neutralizeSpreadsheetFormula("\rCR"),
+        standard: module.neutralizeSpreadsheetFormula("Account 123")
+      };
+    });
+
+    expect(results.calc).toBe("'=cmd|' /C calc'!A0");
+    expect(results.minus).toBe("'-5+2");
+    expect(results.plus).toBe("'+1234");
+    expect(results.at).toBe("'@SUM(A1:A10)");
+    expect(results.tab).toBe("'\tTAB");
+    expect(results.cr).toBe("'\rCR");
+    expect(results.standard).toBe("Account 123");
+  });
+
 });

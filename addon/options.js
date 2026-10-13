@@ -2149,6 +2149,32 @@ class ScannerRulesEditor extends React.Component {
   }
 }
 
+export const SECRET_SUFFIXES = [
+  Constants.ACCESS_TOKEN,
+  Constants.CODE_VERIFIER,
+  "_access_token",
+  "_sid"
+];
+
+export function isSecretKey(key) {
+  if (!key) return false;
+  return SECRET_SUFFIXES.some(suffix => suffix && key.endsWith(suffix));
+}
+
+export function filterExportData(storageData, filterKeys = null) {
+  const result = {};
+  for (const [key, value] of Object.entries(storageData || {})) {
+    if (!key || isSecretKey(key)) {
+      continue;
+    }
+    if (filterKeys && !filterKeys.some(filter => key.startsWith(filter))) {
+      continue;
+    }
+    result[key] = value;
+  }
+  return result;
+}
+
 let h = React.createElement;
 
 class App extends React.Component {
@@ -2164,23 +2190,8 @@ class App extends React.Component {
   }
 
   exportOptions(filterKeys = null) {
-    let localStorageData;
-    let filename = "reloadedConfiguration.json";
-
-    if (filterKeys) {
-      // Filter only the specified keys
-      localStorageData = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && filterKeys.some(filter => key.startsWith(filter))) {
-          localStorageData[key] = localStorage.getItem(key);
-        }
-      }
-      filename = `${filterKeys[0]}.json`;
-    } else {
-      // Export all localStorage
-      localStorageData = {...localStorage};
-    }
+    let localStorageData = filterExportData({...localStorage}, filterKeys);
+    let filename = filterKeys ? `${filterKeys[0]}.json` : "reloadedConfiguration.json";
 
     const jsonData = JSON.stringify(localStorageData, null, 2);
     const blob = new Blob([jsonData], {type: "application/json"});
@@ -2220,6 +2231,9 @@ class App extends React.Component {
         const importedData = JSON.parse(event.target.result);
 
         for (const [key, value] of Object.entries(importedData)) {
+          if (isSecretKey(key)) {
+            continue;
+          }
           if (filterKeys && Array.isArray(filterKeys)) {
             // Only import keys that match the filter
             if (filterKeys.some(filter => key.startsWith(filter))) {
@@ -2331,11 +2345,13 @@ class App extends React.Component {
   }
 }
 
-{
+if (typeof location !== "undefined" && typeof document !== "undefined" && document.getElementById("root")) {
 
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
-  initButton(sfHost, true);
+  if (typeof initButton === "function") {
+    initButton(sfHost, true);
+  }
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");

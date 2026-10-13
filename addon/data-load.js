@@ -1,7 +1,7 @@
 import {sfConn, apiVersion} from "./inspector.js";
 import {isRecordId} from "./utils.js";
 
-const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
+const greyOutSkippedColumns = typeof localStorage !== "undefined" && typeof window !== "undefined" && localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
 export function Enumerable(iterable) {
   this[Symbol.iterator] = iterable[Symbol.iterator].bind(iterable);

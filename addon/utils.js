@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 // Browser polyfill for cross-browser compatibility
 if (typeof browser === "undefined") {
   // eslint-disable-next-line no-var
-  var browser = chrome;
+  var browser = typeof chrome !== "undefined" ? chrome : undefined;
 }
 
 export class Constants {

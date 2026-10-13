@@ -70,21 +70,7 @@
   },
   "web_accessible_resources": [
     "popup.html",
-    "data-export.html",
-    "data-import.html",
-    "inspect.html",
-    "metadata-retrieve.html",
-    "metadata-retrieve-legacy.html",
-    "explore-api.html",
-    "rest-explore.html",
-    "limits.html",
-    "api-statistics.html",
-    "inject.js",
-    "field-manager.html",
-    "options.html",
-    "event-monitor.html",
-    "flow-scanner.html",
-    "object-scanner.html"
+    "inject.js"
   ],
   "incognito": "spanning",
   "manifest_version": 2

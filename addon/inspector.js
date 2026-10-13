@@ -2,7 +2,7 @@ import {getRedirectUri, getClientId, isSettingEnabled, Constants} from "./utils.
 import {apiStatistics} from "./api-statistics.js";
 
 export let defaultApiVersion = "67.0";
-export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
+export let apiVersion = (typeof localStorage !== "undefined" && localStorage.getItem("apiVersion") != null) ? localStorage.getItem("apiVersion") : defaultApiVersion;
 
 export let sessionError;
 const clientId = "Salesforce Inspector Reloaded";

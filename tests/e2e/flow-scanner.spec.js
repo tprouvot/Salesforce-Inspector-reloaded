@@ -301,4 +301,59 @@ test.describe("Flow Scanner", () => {
       await page.waitForTimeout(1000);
     }
   });
+
+  test("Flow Description Plain-Text Rendering and XSS Sanitization (SEC-03)", async ({page, extensionId}) => {
+    await initFlowScannerPage(page, extensionId, mockHost);
+    await page.waitForSelector(".flow-info-section", {timeout: 10000});
+
+    const isSanitized = await page.evaluate(async () => {
+      const module = await import("./flow-scanner.js");
+      const maliciousPayload = '<strong id="sir-test">test</strong>';
+      const flow = {
+        label: "XSS Test Flow",
+        apiName: "XSS_Test",
+        status: "Active",
+        displayStatus: "Active",
+        xmlData: { description: maliciousPayload }
+      };
+
+      const tree = module.FlowInfoSection({
+        flow,
+        elements: [],
+        onPurgeVersions: () => {},
+        onToggleDescription: () => {},
+        handleMouseDown: () => {},
+        shouldIgnoreClick: () => false,
+        sfHost: "test.my.salesforce.com",
+        flowId: "301000000000000AAA"
+      });
+
+      // Find flow-description element
+      function findDesc(node) {
+        if (!node || typeof node !== "object") return null;
+        if (node.props?.className && node.props.className.split(/\s+/).includes("flow-description")) {
+          return node;
+        }
+        const children = Array.isArray(node.children) ? node.children : [node.children];
+        for (const child of children) {
+          const found = findDesc(child);
+          if (found) return found;
+        }
+        return null;
+      }
+
+      const desc = findDesc(tree);
+      return {
+        found: desc !== null,
+        hasDangerouslySetInnerHTML: desc?.props?.dangerouslySetInnerHTML !== undefined,
+        childrenIsLiteralString: typeof desc?.children === "string" && desc?.children === maliciousPayload,
+        whiteSpaceIsPreWrap: desc?.props?.style?.whiteSpace === "pre-wrap"
+      };
+    });
+
+    expect(isSanitized.found).toBe(true);
+    expect(isSanitized.hasDangerouslySetInnerHTML).toBe(false);
+    expect(isSanitized.childrenIsLiteralString).toBe(true);
+    expect(isSanitized.whiteSpaceIsPreWrap).toBe(true);
+  });
 });

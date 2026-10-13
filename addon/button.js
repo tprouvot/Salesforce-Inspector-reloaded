@@ -232,7 +232,8 @@ function initButton(sfHost, inInspector) {
           popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }
         const hideIframes = getKeyFromStorage("iframe", "popupHideInEmbeddedPages", "true") === "true";
-        if (window !== window.top && !hideIframes) {
+        const isDeploymentPage = location.href.includes("monitorDeploymentsDetails") || location.href.includes("asyncId=0Af");
+        if (window !== window.top && (!hideIframes || isDeploymentPage)) {
           rootEl.style.display = "";
         }
         setRootCSSProperties(rootEl, btn);

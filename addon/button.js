@@ -4,10 +4,19 @@
 // studioBody: Exoperience Builder
 // flowContainer: Flow Debugger
 const visualForceDomains = ["visualforce.com", "vf.force.com"];
+let currentSfHost;
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.message === "getSfHostForShortcut" && currentSfHost) {
+    sendResponse(currentSfHost);
+  }
+});
+
 if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
     if (sfHost) {
+      currentSfHost = sfHost;
       initButton(sfHost, false);
       let script = document.createElement("script");
       script.src = chrome.runtime.getURL("inject.js");

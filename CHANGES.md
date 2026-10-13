@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Replace the Query History, Saved Queries and Templates dropdowns with one searchable Queries section: pick History, Saved or Templates, filter by text or by object with `?`, delete individual entries with the Delete key or the trash icon, resize the list vertically, and see saved query labels and Tooling API badges. Queries are added to history as soon as Run Export or Query Plan starts, saving a query shows a confirmation, and queries in the list and in the query editor are coloured with SOQL keywords and object names [issue #525](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/525) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
 - `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`

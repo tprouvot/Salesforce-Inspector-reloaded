@@ -537,7 +537,7 @@ class Model {
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
 
     // In clause on picklist field
-    let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
+    let isInWithValues = query.substring(0, selStart).match(/\s+in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|'|)('?[^'\s]*)$/i);
     let inValuesUtilized = "";
     if (isInWithValues){
       if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote

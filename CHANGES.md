@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Dependencies Explorer` Fix broken Salesforce setup links for Object Manager metadata records [issue #1278](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1278) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
 - `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`
@@ -25,7 +26,7 @@
 - `Metadata` Add 'Run Relevant Tests' option to metadata deploy Test Level picklist [feature 1286](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1286)
 - `Popup` Fix language flag icons for Catalan and Basque on the Users tab [issue #1196](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1196)
 - `Custom Shortcuts` Add "Global" toggle to share a shortcut across all orgs instead of keeping it specific to the current org [feature 191](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/191)
-- `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
+- `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist))
 - `Popup` Add search prefixes to speed up Shortcut tab queries: `/` for setup links only, `!` for metadata, and typed filters (`!flow`, `!profile`, `!class`, `!perm`) [feature 1265](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1265)
 - `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))

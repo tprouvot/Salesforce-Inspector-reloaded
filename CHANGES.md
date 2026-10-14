@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Background` Fix cross-tab/cross-org command execution: the background script tracked the active Salesforce org in a single global variable, so keyboard shortcuts and tool launches (e.g. `Data Import`, `REST Explorer`) could resolve the host of a different, previously-focused tab instead of the tab the user actually acted on when multiple orgs were open concurrently (sandbox and production). Org host is now tracked per-tab [issue #1417 section 3.5](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1417)
 - `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
 - `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`

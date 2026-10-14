@@ -21,6 +21,7 @@ jobs:
         uses: nearform-actions/github-action-check-linked-issues@v1
         with:
           exclude-branches: "dependabot/**, renovate/**"
+          exclude-labels: "no-issue, partial-fix"
           custom-body-comment: |
             This pull request is not linked to an issue.
 
@@ -29,3 +30,5 @@ jobs:
             See the [contribution guidelines](https://github.com/tprouvot/Salesforce-Inspector-reloaded#contributions): open or use an existing issue, and discuss the approach with a maintainer before requesting a review.
 
             If this change does not need an issue, a maintainer can add the `no-issue` label to skip this check.
+
+            If this change only addresses part of a tracked issue and should not auto-close it on merge (so a closing keyword would be wrong), reference the issue without a closing keyword (e.g. `Related to #123`) and ask a maintainer to add the `partial-fix` label to skip this check.

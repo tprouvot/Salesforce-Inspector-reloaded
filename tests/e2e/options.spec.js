@@ -668,7 +668,7 @@ test.describe("Options", () => {
 
       // Create test options JSON
       const testOptions = {
-        "scrollOnFlowBuilder": "true",
+        "openLinksInNewTab": "true",
         "popupDarkTheme": "false"
       };
 

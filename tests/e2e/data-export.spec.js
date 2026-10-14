@@ -127,6 +127,111 @@ test.describe("Data Export", () => {
     await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account");
   });
 
+  test("Caret Autocomplete Popup With Keyboard", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    const popup = page.locator(".caret-popup");
+    await queryInput.fill("");
+    await queryInput.focus();
+
+    // 1. Object name: typing opens the popup at the caret, Enter inserts the highlighted suggestion
+    await queryInput.pressSequentially("SELECT Id FROM Acc");
+    await expect(popup).toBeVisible();
+    await expect(popup.locator(".caret-popup-item.active")).toContainText("Account");
+    await expect(queryInput).toHaveAttribute("aria-expanded", "true");
+    await queryInput.press("Enter");
+    await expect(queryInput).toHaveValue("SELECT Id FROM Account ");
+    // No word is being typed after the inserted suggestion, so the popup closes and Enter is a plain newline again
+    await expect(popup).toBeHidden();
+
+    // 2. Field name: arrow keys move the highlight, Tab inserts it
+    await queryInput.fill("SELECT Id FROM Account");
+    await page.evaluate(() => {
+      const el = document.querySelector("textarea#query");
+      el.setSelectionRange("SELECT Id".length, "SELECT Id".length);
+    });
+    await queryInput.pressSequentially(", Nam");
+    await expect(popup).toBeVisible();
+    const items = popup.locator(".caret-popup-item");
+    const first = await items.nth(0).locator(".caret-popup-value").textContent();
+    if (await items.count() > 1) {
+      await queryInput.press("ArrowDown");
+      await expect(items.nth(1)).toHaveClass(/active/);
+      await queryInput.press("ArrowUp");
+    }
+    await expect(items.nth(0)).toHaveClass(/active/);
+    await queryInput.press("Tab");
+    await expect(queryInput).toHaveValue(`SELECT Id, ${first} FROM Account`);
+    await expect(queryInput).toBeFocused();
+
+    // 3. Escape closes the popup without changing the query
+    await queryInput.pressSequentially(", Ty");
+    await expect(popup).toBeVisible();
+    await queryInput.press("Escape");
+    await expect(popup).toBeHidden();
+    await expect(queryInput).toHaveValue(`SELECT Id, ${first}, Ty FROM Account`);
+  });
+
+  test("Caret Autocomplete Keywords And Operators", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    const popup = page.locator(".caret-popup");
+    const values = popup.locator(".caret-popup-value");
+    await queryInput.fill("");
+    await queryInput.focus();
+
+    // 1. After the object name: clause keywords, in SOQL clause order
+    await queryInput.pressSequentially("SELECT Id FROM Account ");
+    await expect(popup).toBeHidden(); // Enter must still insert a newline here
+    await queryInput.pressSequentially("w");
+    await expect(popup.locator(".caret-popup-item.active")).toContainText("WHERE");
+    await expect(values).toHaveText(["WHERE", "WITH"]);
+    await queryInput.press("Enter");
+    await expect(queryInput).toHaveValue("SELECT Id FROM Account WHERE ");
+
+    // 2. Field name, then the operators applicable to its type open without typing
+    await queryInput.pressSequentially("Ty");
+    await expect(popup.locator(".caret-popup-item.active")).toContainText("Type");
+    await queryInput.press("Enter");
+    await expect(queryInput).toHaveValue("SELECT Id FROM Account WHERE Type ");
+    await expect(popup).toBeVisible();
+    await expect(page.locator(".autocomplete-header")).toContainText("Type (picklist) operator suggestions");
+    await expect(values).toContainText(["=", "!=", "LIKE '%%'", "IN ()", "NOT IN ()", "= null", "!= null"]);
+    await expect(values.filter({hasText: "INCLUDES"})).toHaveCount(0); // multi-select picklists only
+
+    // 3. Operator, then the picklist values open without typing
+    await queryInput.press("Enter");
+    await expect(queryInput).toHaveValue("SELECT Id FROM Account WHERE Type = ");
+    await expect(popup).toBeVisible();
+    await expect(values.first()).toHaveText(/^'.+'$/);
+    await queryInput.press("Enter");
+    await expect(queryInput).toHaveValue(/^SELECT Id FROM Account WHERE Type = '[^']+' $/);
+
+    // 4. After a complete condition: logical operators first, then the clauses that may follow WHERE
+    await queryInput.pressSequentially("o");
+    await expect(values).toHaveText(["OR", "ORDER BY", "OFFSET"]);
+    await queryInput.press("Escape");
+    await queryInput.press("Backspace");
+    await queryInput.pressSequentially("a");
+    await expect(values).toHaveText(["AND"]);
+    await queryInput.press("Tab");
+    await expect(queryInput).toHaveValue(/ AND $/);
+
+    // 5. String field: no "= null" (not nillable), LIKE puts the caret between the % signs
+    await queryInput.pressSequentially("Name ");
+    await expect(page.locator(".autocomplete-header")).toContainText("Name (string) operator suggestions");
+    await expect(values.filter({hasText: "null"})).toHaveCount(0);
+    await queryInput.pressSequentially("l");
+    await expect(values).toHaveText(["LIKE '%%'"]);
+    await queryInput.press("Enter");
+    await queryInput.pressSequentially("Acme");
+    await expect(queryInput).toHaveValue(/ AND Name LIKE '%Acme%'$/);
+  });
+
   test("Copy as CSV", async ({page, context, extensionId}) => {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);

@@ -2,6 +2,8 @@
 
 ## Version 2.1
 
+- `Data Export` Show autocomplete suggestions (objects, fields, relationships, values) in a popup at the cursor while typing the query: use ↑/↓ to pick a suggestion, Enter or Tab to insert it and Esc to close, without leaving the keyboard
+- `Data Export` Autocomplete now also suggests SOQL keywords and operators where the grammar allows them: clauses after the object (`WHERE`, `ORDER BY`, `LIMIT`...), comparison operators that apply to the field type after a field name (`LIKE '%%'` only for text, `INCLUDES`/`EXCLUDES` only for multi-select picklists, `= null` only for nillable fields), `AND`/`OR` after a condition, `NOT`, `ASC`/`DESC`/`NULLS FIRST`/`NULLS LAST`, `USING SCOPE` scopes and `WITH` options
 - `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
 - `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`

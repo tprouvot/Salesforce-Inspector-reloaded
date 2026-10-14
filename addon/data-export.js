@@ -10,6 +10,248 @@ import {PageHeader} from "./components/PageHeader.js";
 // so we fall back to plain (uncolored) text instead of colorizing on every keystroke.
 const MAX_HIGHLIGHT_LENGTH = 100000;
 
+// Rendering thousands of popup rows (e.g. all sobjects after FROM) is slow and nobody scrolls that far; keep typing to narrow it down.
+const CARET_POPUP_MAX_RESULTS = 100;
+const CARET_POPUP_WIDTH = 360;
+
+// Textareas do not expose caret pixel coordinates, so measure them by laying out the text up to the caret
+// in a hidden "mirror" div with the same styles, and reading the position of a marker span placed at the caret.
+// Returns coordinates relative to the textarea's border box, ignoring its scroll offset.
+const CARET_MIRROR_PROPERTIES = [
+  "boxSizing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+  "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "borderStyle",
+  "fontStyle", "fontVariant", "fontWeight", "fontStretch", "fontSize", "lineHeight", "fontFamily",
+  "textAlign", "textTransform", "textIndent", "letterSpacing", "wordSpacing", "tabSize",
+  "whiteSpace", "wordWrap", "wordBreak", "overflowWrap"
+];
+function getCaretCoordinates(textarea, position) {
+  let style = getComputedStyle(textarea);
+  let mirror = document.createElement("div");
+  for (let prop of CARET_MIRROR_PROPERTIES) {
+    mirror.style[prop] = style[prop];
+  }
+  let borderLeft = parseFloat(style.borderLeftWidth) || 0;
+  let borderRight = parseFloat(style.borderRightWidth) || 0;
+  let borderTop = parseFloat(style.borderTopWidth) || 0;
+  Object.assign(mirror.style, {
+    position: "absolute",
+    visibility: "hidden",
+    overflow: "hidden",
+    top: "0",
+    left: "-9999px",
+    // clientWidth excludes the scrollbar, so lines wrap exactly as they do in the textarea
+    width: (textarea.clientWidth + borderLeft + borderRight) + "px",
+    boxSizing: "border-box"
+  });
+  mirror.textContent = textarea.value.substring(0, position);
+  let marker = document.createElement("span");
+  marker.textContent = textarea.value.substring(position) || ".";
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  let lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4;
+  let coords = {top: marker.offsetTop + borderTop, left: marker.offsetLeft + borderLeft, height: lineHeight};
+  mirror.remove();
+  return coords;
+}
+
+/*
+ * SOQL grammar used for keyword and operator suggestions, from the SOQL reference:
+ * https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
+ * Clauses must appear in this order after FROM; "order" lets us only suggest clauses that may follow the current one.
+ */
+const SOQL_CLAUSES = [
+  {value: "USING SCOPE", order: 1, title: "Limit the results to a filter scope, such as Mine or Team"},
+  {value: "WHERE", order: 2, title: "Filter the records returned by conditions"},
+  {value: "WITH", order: 3, title: "Filter by data category or enforce security (SECURITY_ENFORCED, USER_MODE)"},
+  {value: "GROUP BY", order: 4, title: "Group the rows, for example to aggregate them"},
+  {value: "HAVING", order: 5, title: "Filter the groups returned by GROUP BY", requiresGroupBy: true},
+  {value: "ORDER BY", order: 6, title: "Sort the results"},
+  {value: "LIMIT", order: 7, title: "Maximum number of rows to return"},
+  {value: "OFFSET", order: 8, title: "Number of rows to skip"},
+  {value: "FOR VIEW", order: 9, title: "Update the LastViewedDate of the returned records"},
+  {value: "FOR REFERENCE", order: 9, title: "Update the LastReferencedDate of the returned records"},
+  {value: "UPDATE TRACKING", order: 10, title: "Track keywords used in Salesforce Knowledge article searches"},
+  {value: "UPDATE VIEWSTAT", order: 10, title: "Update the view statistics of the returned Knowledge articles"},
+  {value: "FOR UPDATE", order: 11, title: "Lock the returned records (Apex only)"}
+];
+const SOQL_CLAUSE_ORDER = new Map([["select", -1], ["from", 0], ...SOQL_CLAUSES.map(c => [c.value.toLowerCase(), c.order])]);
+const SOQL_CLAUSE_REGEX = /\b(select|from|using\s+scope|where|with|group\s+by|having|order\s+by|limit|offset|for\s+view|for\s+reference|for\s+update|update\s+tracking|update\s+viewstat)\b/gi;
+const SOQL_LOGICAL_OPERATORS = [
+  {value: "AND", title: "True if both conditions are true"},
+  {value: "OR", title: "True if either condition is true"}
+];
+const SOQL_NOT = {value: "NOT", title: "True if the condition is false. Use parentheses when mixing with AND/OR"};
+const SOQL_ORDER_BY_OPTIONS = [
+  {value: "ASC", title: "Ascending order (default)"},
+  {value: "DESC", title: "Descending order"},
+  {value: "NULLS FIRST", title: "Null values at the beginning (default)"},
+  {value: "NULLS LAST", title: "Null values at the end"}
+];
+const SOQL_WITH_OPTIONS = [
+  {value: "DATA CATEGORY", title: "Filter articles by data category"},
+  {value: "USER_MODE", title: "Apex: enforce the running user's field, object and sharing permissions"},
+  {value: "SYSTEM_MODE", title: "Apex: run in system mode"},
+  {value: "SECURITY_ENFORCED", title: "Apex: enforce field and object permissions (USER_MODE is preferred)"},
+  {value: "RecordVisibilityContext", title: "Filter by record visibility"}
+];
+// https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_using_scope.htm
+const SOQL_SCOPES = [
+  {value: "everything", title: "All records"},
+  {value: "mine", title: "Records owned by the running user"},
+  {value: "mine_and_my_groups", title: "Records assigned to the running user and their queues (ProcessInstanceWorkItem)"},
+  {value: "delegated", title: "Records delegated to another user for action"},
+  {value: "team", title: "Records assigned to a team, such as an Account team"},
+  {value: "my_territory", title: "Records in the running user's territory"},
+  {value: "my_team_territory", title: "Records in the territory of the running user's team"},
+  {value: "scopingRule", title: "Records matching the active scoping rule"}
+];
+
+// Comparison operators. "types" restricts an operator to describe field types, per the comparison operators reference:
+// https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_comparisonoperators.htm
+// cursorOffset places the caret inside the inserted text, e.g. between the % of LIKE '%%'.
+const SOQL_TEXT_TYPES = ["string", "picklist", "combobox", "email", "phone", "url", "textarea", "encryptedstring"];
+const SOQL_ORDERED_TYPES = [...SOQL_TEXT_TYPES, "int", "long", "double", "currency", "percent", "date", "datetime", "time", "id", "reference"];
+const SOQL_COMPARISON_OPERATORS = [
+  {value: "=", title: "Equals", excludeTypes: []},
+  {value: "!=", title: "Not equals", excludeTypes: []},
+  {value: "<", title: "Less than", types: SOQL_ORDERED_TYPES},
+  {value: "<=", title: "Less or equal", types: SOQL_ORDERED_TYPES},
+  {value: ">", title: "Greater than", types: SOQL_ORDERED_TYPES},
+  {value: ">=", title: "Greater or equal", types: SOQL_ORDERED_TYPES},
+  {value: "LIKE '%%'", title: "Text match: % is any characters, _ is one character", types: SOQL_TEXT_TYPES, suffix: "", cursorOffset: 2},
+  {value: "IN ()", title: "Equals any value in the list or subquery", excludeTypes: ["boolean", "multipicklist"], suffix: "", cursorOffset: 1},
+  {value: "NOT IN ()", title: "Equals none of the values in the list or subquery", excludeTypes: ["boolean", "multipicklist"], suffix: "", cursorOffset: 1},
+  {value: "INCLUDES ()", title: "Multi-select picklist contains any of the values", types: ["multipicklist"], suffix: "", cursorOffset: 1},
+  {value: "EXCLUDES ()", title: "Multi-select picklist contains none of the values", types: ["multipicklist"], suffix: "", cursorOffset: 1}
+];
+
+function soqlOperatorsForField(field) {
+  let operators = SOQL_COMPARISON_OPERATORS.filter(op => op.types ? op.types.includes(field.type) : !op.excludeTypes.includes(field.type));
+  if (field.nillable) {
+    operators.push({value: "= null", title: "Field is empty"}, {value: "!= null", title: "Field is not empty"});
+  }
+  return operators;
+}
+
+/*
+ * Works out where in a SOQL statement the text before the caret ends, ignoring string literals and closed parentheses,
+ * so we can suggest the keywords and operators that are valid there.
+ * Returns {clause, clauseOrder, segment, inString}, where segment is the text of the current (sub)query since its SELECT.
+ */
+function analyzeSoqlContext(textBefore) {
+  // Collapse string literals and balanced parentheses, so their content (e.g. 'where', subqueries, IN lists) can't be mistaken for keywords
+  let text = textBefore.replace(/'(?:[^'\\]|\\.)*'/g, "''");
+  let inString = (text.match(/'/g) || []).length % 2 == 1;
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/\([^()]*\)/g, "§");
+  } while (text != previous);
+  text = text.replace(/§/g, "()");
+  // Any "(" left is unclosed: when it opens a subquery, the context is that subquery
+  let segment = text;
+  for (let i = text.lastIndexOf("("); i >= 0; i = text.lastIndexOf("(", i - 1)) {
+    if (/^\s*select\b/i.test(text.substring(i + 1))) {
+      segment = text.substring(i + 1);
+      break;
+    }
+  }
+  let clause = null;
+  let clauseIndex = -1;
+  for (let match of segment.matchAll(SOQL_CLAUSE_REGEX)) {
+    clause = match[1].toLowerCase().replace(/\s+/g, " ");
+    clauseIndex = match.index;
+  }
+  return {
+    clause,
+    clauseOrder: clause ? SOQL_CLAUSE_ORDER.get(clause) : -1,
+    segment,
+    // Text since the current clause keyword, e.g. "WHERE Name = '' AND "
+    clauseText: clauseIndex >= 0 ? segment.substring(clauseIndex) : segment,
+    inString
+  };
+}
+
+// Clauses that may follow the current one, e.g. after WHERE: WITH, GROUP BY, ORDER BY, LIMIT...
+function soqlNextClauses({clauseOrder, segment}) {
+  return SOQL_CLAUSES.filter(c => c.order > clauseOrder && (!c.requiresGroupBy || /\bgroup\s+by\b/i.test(segment)));
+}
+
+/*
+ * Decides what kind of suggestion fits the caret position, given the result of analyzeSoqlContext. Returns one of:
+ * {kind: "keywords", keywords}  e.g. WHERE/ORDER BY after "FROM Account ", AND/OR after "Name = 'x' "
+ * {kind: "operator"}            after a field name in a condition, e.g. "WHERE Name " (operators depend on the field type)
+ * {kind: "aggregateOperator"}   after an aggregate in HAVING, e.g. "HAVING COUNT(Id) "
+ * {kind: "conditionStart"}      at the start of a condition, e.g. "WHERE " or "AND " (field names, plus NOT)
+ * null                          anywhere else, to keep the existing field name suggestions
+ */
+function soqlSuggestionKind(context) {
+  let {clause, clauseText} = context;
+  let next = soqlNextClauses(context);
+  let keywords = list => ({kind: "keywords", keywords: list});
+  switch (clause) {
+    case "from":
+      return /^from\s+[\w.]+\s+$/i.test(clauseText) ? keywords(next) : null;
+    case "using scope":
+      if (/^using\s+scope\s+$/i.test(clauseText)) {
+        return keywords(SOQL_SCOPES);
+      }
+      return /^using\s+scope\s+\w+\s+$/i.test(clauseText) ? keywords(next) : null;
+    case "where":
+    case "having": {
+      if (clause == "having" && /\b(?:count|count_distinct|sum|avg|min|max)\s*\(\)\s+$/i.test(clauseText)) {
+        return {kind: "aggregateOperator"};
+      }
+      // A complete condition: operator followed by a value (strings were collapsed to '' and lists/groups to ())
+      let afterValue = /(?:[=<>]|\b(?:like|in|includes|excludes))\s*(?:''|\(\)|[\w.:+-]+)\s+$/i.test(clauseText);
+      let afterGroup = /(?:^(?:where|having)|\b(?:and|or|not)|\()\s*\(\)\s+$/i.test(clauseText);
+      if (afterValue || afterGroup) {
+        // Inside an unclosed group "(... OR ..." only AND/OR are valid, not the following clauses
+        let unclosedGroup = /\((?!\))/.test(clauseText);
+        return keywords([...SOQL_LOGICAL_OPERATORS, ...(unclosedGroup ? [] : next)]);
+      }
+      if (/(?:^(?:where|having)|\b(?:and|or|not)|\()\s*$/i.test(clauseText)) {
+        return {kind: "conditionStart"};
+      }
+      let fieldBeforeCaret = /(?:^(?:where|having)|\b(?:and|or|not)|\()\s*([\w.]+)\s+$/i.exec(clauseText);
+      if (fieldBeforeCaret && !/^(?:and|or|not)$/i.test(fieldBeforeCaret[1])) {
+        return {kind: "operator"};
+      }
+      return null;
+    }
+    case "with":
+      if (/^with\s+$/i.test(clauseText)) {
+        return keywords(SOQL_WITH_OPTIONS);
+      }
+      return /^with\s+(?:security_enforced|user_mode|system_mode)\s+$/i.test(clauseText) ? keywords(next) : null;
+    case "group by":
+      return /^group\s+by\s+[\s\S]*[\w)]\s+$/i.test(clauseText) ? keywords(next) : null;
+    case "order by": {
+      if (!/^order\s+by\s+[\s\S]*[\w)]\s+$/i.test(clauseText)) {
+        return null;
+      }
+      let lastWord = (/(\w+)\s+$/.exec(clauseText) || [])[1]?.toLowerCase();
+      if (lastWord == "nulls") {
+        return keywords([{value: "FIRST", title: "Null values at the beginning"}, {value: "LAST", title: "Null values at the end"}]);
+      }
+      let options = lastWord == "asc" || lastWord == "desc" ? SOQL_ORDER_BY_OPTIONS.slice(2)
+        : lastWord == "first" || lastWord == "last" ? []
+        : SOQL_ORDER_BY_OPTIONS;
+      return keywords([...options, ...next]);
+    }
+    case "limit":
+    case "offset":
+      return /^(?:limit|offset)\s+\d+\s+$/i.test(clauseText) ? keywords(next) : null;
+    case "for view":
+    case "for reference":
+    case "update tracking":
+    case "update viewstat":
+      return /\s$/.test(clauseText) ? keywords(next) : null;
+    default:
+      return null;
+  }
+}
+
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
@@ -69,6 +311,12 @@ class Model {
     this.totalTime = 0;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
+    // Caret popup: suggestions shown at the cursor while typing, navigable with the keyboard.
+    this.autocompleteSearchTerm = "";
+    this.autocompleteTokenStart = 0;
+    this.caretPopupIndex = 0;
+    this.caretPopupDismissed = true; // Only opened by typing (or Ctrl+Space), so plain caret navigation keeps arrow keys
+    this.caretPopupForced = false;
     this.exportProgress = {};
     this.queryName = "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
@@ -264,6 +512,42 @@ class Model {
   autocompleteReload() {
     this.describeInfo.reloadAll();
   }
+  caretPopupResults() {
+    return this.autocompleteResults.results.slice(0, CARET_POPUP_MAX_RESULTS);
+  }
+  isCaretPopupVisible() {
+    if (this.caretPopupDismissed || !this.queryInput || this.caretPopupResults().length == 0) {
+      return false;
+    }
+    // Show while typing a word, right after "Relationship." or when explicitly requested with Ctrl+Space.
+    // Also on an empty token where only one kind of token is valid (operators after "WHERE Name ", values after "Type = ").
+    // Never on an empty token otherwise, so Enter still inserts a newline after e.g. "FROM Account ".
+    return this.caretPopupForced
+      || this.autocompleteResults.showOnEmptyTerm
+      || this.autocompleteSearchTerm.length > 0
+      || this.queryInput.value.charAt(this.autocompleteTokenStart - 1) == ".";
+  }
+  dismissCaretPopup() {
+    this.caretPopupDismissed = true;
+    this.caretPopupForced = false;
+  }
+  openCaretPopup({forced = false} = {}) {
+    this.caretPopupDismissed = false;
+    this.caretPopupForced = forced;
+  }
+  moveCaretPopupSelection(delta) {
+    let count = this.caretPopupResults().length;
+    this.caretPopupIndex = (this.caretPopupIndex + delta + count) % count;
+  }
+  selectCaretPopupResult(index = this.caretPopupIndex) {
+    let result = this.caretPopupResults()[index];
+    if (!result) {
+      return;
+    }
+    // Keep the popup open so that e.g. picking "Owner." immediately suggests the Owner fields.
+    this.openCaretPopup();
+    this.autocompleteClick(result);
+  }
   canCopy() {
     return this.exportedData != null && this.exportedData.table.length > 0;
   }
@@ -340,13 +624,14 @@ class Model {
       return;
     }
     vm.autocompleteState = newAutocompleteState;
+    vm.caretPopupIndex = 0;
 
     // Cancel any async operation since its results will no longer be relevant.
     if (vm.autocompleteProgress.abort) {
       vm.autocompleteProgress.abort();
     }
 
-    vm.autocompleteClick = ({value, suffix, link}) => {
+    vm.autocompleteClick = ({value, suffix, link, cursorOffset}) => {
       if (link){
         window.open(link, "_blank");
       } else {
@@ -357,6 +642,10 @@ class Model {
           suffix = "";
         }
         vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        if (cursorOffset) {
+          let caret = vm.queryInput.selectionEnd - cursorOffset;
+          vm.queryInput.setSelectionRange(caret, caret);
+        }
         //add query suffix if needed
         if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
           vm.queryInput.value += " LIMIT 200";
@@ -372,6 +661,8 @@ class Model {
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
+    vm.autocompleteSearchTerm = searchTerm;
+    vm.autocompleteTokenStart = selStart;
 
     function sortRank({value, title}) {
       let i = 0;
@@ -407,6 +698,13 @@ class Model {
     }
     function resultsSort(a, b) {
       return sortRank(a) - sortRank(b) || a.rank - b.rank || a.value.localeCompare(b.value);
+    }
+    // Keywords and operators keep their natural order (clause order, AND before OR...) via rank
+    function keywordResults(keywords, autocompleteType = "keyword") {
+      return keywords
+        .filter(k => k.value.toLowerCase().startsWith(searchTerm.toLowerCase()))
+        .map((k, index) => ({value: k.value, title: k.title, suffix: k.suffix ?? " ", cursorOffset: k.cursorOffset, rank: index, autocompleteType, dataType: ""}))
+        .sort(resultsSort);
     }
 
     // If we are just after the "from" keyword, autocomplete the sobject name
@@ -467,10 +765,15 @@ class Model {
         isAfterFrom = false;
       } else {
         let title = findKeywordMatch || graphKeywordMatch ? "" : "\"from\" keyword not found";
+        // After the selected fields, e.g. "SELECT Id, Name F", suggest the FROM keyword
+        let fromResults = !findKeywordMatch && !graphKeywordMatch && /^\s*select\s[\s\S]*[\w)*]\s+$/i.test(query.substring(0, selStart))
+          && !analyzeSoqlContext(query.substring(0, selStart)).inString
+          ? keywordResults([{value: "FROM", title: "The object to query"}])
+          : [];
         vm.autocompleteResults = {
           sobjectName: "",
-          title,
-          results: []
+          title: fromResults.length > 0 ? "Keyword suggestions:" : title,
+          results: fromResults
         };
         return;
       }
@@ -556,6 +859,36 @@ class Model {
       selStart -= isFieldValue[1].length;
     }
 
+    // Keywords (WHERE, ORDER BY, AND, OR, ASC...) and comparison operators, where the SOQL grammar allows them
+    let suggestionKind = null;
+    if (!isFieldValue) {
+      let soqlContext = analyzeSoqlContext(query.substring(0, selStart));
+      suggestionKind = soqlContext.inString ? null : soqlSuggestionKind(soqlContext);
+    }
+    if (suggestionKind?.kind == "keywords") {
+      vm.autocompleteResults = {
+        sobjectName,
+        title: "Keyword suggestions:",
+        results: keywordResults(suggestionKind.keywords)
+      };
+      return;
+    }
+    if (suggestionKind?.kind == "aggregateOperator") {
+      vm.autocompleteResults = {
+        sobjectName,
+        title: "Operator suggestions:",
+        results: keywordResults(soqlOperatorsForField({type: "double", nillable: false}).filter(op => !op.value.includes("IN")), "operator"),
+        showOnEmptyTerm: true
+      };
+      return;
+    }
+    if (suggestionKind?.kind == "operator") {
+      // Resolve the field before the caret like for field values, e.g. "Account.Owner.Name " -> field "Name", context "Account.Owner."
+      let fieldMatch = /([a-zA-Z0-9_.]+)(\s+)$/.exec(query.substring(0, selStart));
+      fieldName = fieldMatch[1].split(".").pop();
+      contextEnd = selStart - fieldMatch[2].length - fieldName.length;
+    }
+
     /*
     contextSobjectDescribes is a set of describe results for the relevant context sobjects.
     Example: "select Subject, Who.Name from Task"
@@ -627,6 +960,25 @@ class Model {
         results: []
       };
       return;
+    }
+
+    if (suggestionKind?.kind == "operator") {
+      // Autocomplete comparison operators that apply to the type of the field before the caret
+      let field = contextSobjectDescribes
+        .flatMap(sobjectDescribe => sobjectDescribe.fields)
+        .find(field => field.name.toLowerCase() == fieldName.toLowerCase());
+      if (field) {
+        vm.autocompleteResults = {
+          sobjectName,
+          title: field.filterable === false
+            ? field.name + " (" + field.type + ") cannot be filtered"
+            : field.name + " (" + field.type + ") operator suggestions:",
+          results: field.filterable === false ? [] : keywordResults(soqlOperatorsForField(field), "operator"),
+          // Right after a field name, an operator is the only valid next token, so show the popup without typing
+          showOnEmptyTerm: true
+        };
+        return;
+      }
     }
 
     if (isFieldValue) {
@@ -783,7 +1135,9 @@ class Model {
       vm.autocompleteResults = {
         sobjectName,
         title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load suggestions):" : " values:"),
-        results: ar
+        results: ar,
+        // After "Type = " a value is expected, so show e.g. the picklist values without typing
+        showOnEmptyTerm: true
       };
       return;
     } else {
@@ -826,6 +1180,8 @@ class Model {
                 }
               })
           )
+          // At the start of a condition ("WHERE ", "AND "...), the logical NOT is valid too
+          .concat(suggestionKind?.kind == "conditionStart" ? keywordResults([SOQL_NOT]).map(r => ({...r, rank: 3})) : [])
           .toArray()
           .sort(resultsSort)
       };
@@ -1617,8 +1973,78 @@ class App extends React.Component {
   onQueryInput(e) {
     let {model} = this.props;
     model.updateCurrentTabQuery(e.target.value);
+    model.openCaretPopup();
     model.queryAutocompleteHandler();
     model.didUpdate();
+  }
+
+  // Returns true when the key was consumed by the caret suggestions popup.
+  handleCaretPopupKey(e) {
+    let {model} = this.props;
+    if (!model.isCaretPopupVisible()) {
+      return false;
+    }
+    if (e.altKey || e.ctrlKey || e.metaKey) {
+      // Leave modifier shortcuts (e.g. Ctrl+Enter to run the export) alone, but close the popup on them.
+      if (e.key == "Enter") {
+        model.dismissCaretPopup();
+      }
+      return false;
+    }
+    switch (e.key) {
+      case "ArrowDown":
+        model.moveCaretPopupSelection(1);
+        return true;
+      case "ArrowUp":
+        model.moveCaretPopupSelection(-1);
+        return true;
+      case "Enter":
+      case "Tab":
+        if (e.shiftKey) {
+          return false;
+        }
+        model.selectCaretPopupResult();
+        return true;
+      case "Escape":
+        model.dismissCaretPopup();
+        return true;
+      case "ArrowLeft":
+      case "ArrowRight":
+      case "Home":
+      case "End":
+      case "PageUp":
+      case "PageDown":
+        // Moving the caret away from the word being typed closes the popup instead of following the caret around.
+        model.dismissCaretPopup();
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  // Positions the popup just below the start of the word being completed, inside the .query-editor box.
+  caretPopupPosition() {
+    let {model} = this.props;
+    let queryInput = this.refs.query;
+    let caret = getCaretCoordinates(queryInput, model.autocompleteTokenStart);
+    let top = queryInput.offsetTop + caret.top - queryInput.scrollTop + caret.height;
+    let left = queryInput.offsetLeft + caret.left - queryInput.scrollLeft;
+    left = Math.max(0, Math.min(left, queryInput.offsetLeft + queryInput.offsetWidth - CARET_POPUP_WIDTH));
+    return {top: top + "px", left: left + "px", width: CARET_POPUP_WIDTH + "px"};
+  }
+
+  // Keeps the keyboard-selected popup item in view when moving past the visible rows.
+  scrollCaretPopupSelectionIntoView() {
+    let list = this.refs.caretPopup;
+    let active = list && list.querySelector(".caret-popup-item.active");
+    if (!active) {
+      return;
+    }
+    if (active.offsetTop < list.scrollTop) {
+      list.scrollTop = active.offsetTop;
+    } else if (active.offsetTop + active.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = active.offsetTop + active.offsetHeight - list.clientHeight;
+    }
   }
 
   // Re-highlights the query text. Called after every render since many model
@@ -1760,6 +2186,20 @@ class App extends React.Component {
     queryInput.addEventListener("scroll", () => {
       this.refs.queryHighlight.scrollTop = queryInput.scrollTop;
       this.refs.queryHighlight.scrollLeft = queryInput.scrollLeft;
+      // Re-render so the caret popup moves with the text
+      if (model.isCaretPopupVisible()) {
+        model.didUpdate();
+      }
+    });
+    queryInput.addEventListener("blur", () => {
+      if (model.isCaretPopupVisible()) {
+        model.dismissCaretPopup();
+        model.didUpdate();
+      }
+    });
+    queryInput.addEventListener("mousedown", () => {
+      // Clicking elsewhere in the text moves the caret away from the word being completed
+      model.dismissCaretPopup();
     });
 
     function queryAutocompleteEvent() {
@@ -1778,12 +2218,18 @@ class App extends React.Component {
     queryInput.addEventListener("keydown", e => {
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
+        model.openCaretPopup({forced: true});
         model.queryAutocompleteHandler({ctrlSpace: true});
+        model.didUpdate();
+      } else if (this.handleCaretPopupKey(e)) {
+        e.preventDefault();
+        e.stopPropagation();
         model.didUpdate();
       }
     });
     addEventListener("message", e => {
       if (e.data.command === "open-export-autocomplete") {
+        model.openCaretPopup({forced: true});
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       } else if (e.data.command === "open-export-execute"){
@@ -1826,6 +2272,7 @@ class App extends React.Component {
   componentDidUpdate() {
     this.recalculateSize();
     this.updateQueryHighlight();
+    this.scrollCaretPopupSelectionIntoView();
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
@@ -1838,6 +2285,8 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
+    // The textarea ref only exists after the first render, so the popup can only be positioned from then on.
+    const caretPopupVisible = !!this.refs.query && model.isCaretPopupVisible();
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
@@ -2031,8 +2480,44 @@ class App extends React.Component {
                 ref: "query",
                 spellCheck: false,
                 style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-                onChange: this.onQueryInput
-              })
+                onChange: this.onQueryInput,
+                role: "combobox",
+                "aria-autocomplete": "list",
+                "aria-haspopup": "listbox",
+                "aria-controls": "caret-popup",
+                "aria-expanded": caretPopupVisible,
+                "aria-activedescendant": caretPopupVisible ? "caret-popup-item-" + model.caretPopupIndex : undefined
+              }),
+              caretPopupVisible && h("ul", {
+                id: "caret-popup",
+                ref: "caretPopup",
+                className: "caret-popup",
+                role: "listbox",
+                "aria-label": model.autocompleteResults.title,
+                style: this.caretPopupPosition(),
+                // Keep focus (and the caret) in the textarea when clicking an item
+                onMouseDown: e => e.preventDefault()
+              },
+              model.caretPopupResults().map((r, index) =>
+                h("li", {
+                  key: r.value,
+                  id: "caret-popup-item-" + index,
+                  role: "option",
+                  "aria-selected": index == model.caretPopupIndex,
+                  className: "caret-popup-item" + (index == model.caretPopupIndex ? " active" : ""),
+                  title: r.title,
+                  onMouseEnter: () => { model.caretPopupIndex = index; model.didUpdate(); },
+                  onClick: () => { model.selectCaretPopupResult(index); model.didUpdate(); }
+                },
+                h("span", {className: "slds-pill__icon_container " + r.autocompleteType + " " + r.dataType},
+                  h("span", {className: "sfir-autocomplete-icon"})
+                ),
+                h("span", {className: "caret-popup-value"}, r.value),
+                r.title && r.title != r.value ? h("span", {className: "caret-popup-title"}, r.title) : null
+                )
+              ),
+              h("li", {className: "caret-popup-hint", role: "presentation"}, "↑↓ to navigate · Enter/Tab to insert · Esc to close")
+              )
             ),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},

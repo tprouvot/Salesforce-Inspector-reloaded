@@ -136,6 +136,59 @@ textarea[hidden] {
   overflow: visible;
 }
 
+/* Suggestions popup anchored at the caret in the query editor (positioned from data-export.js) */
+.query-editor .caret-popup {
+  position: absolute;
+  z-index: 10;
+  max-height: 16rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #c9c9c9;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  font-size: 0.8125rem;
+}
+
+.caret-popup-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.caret-popup-item.active {
+  background-color: #e5f2fd;
+  box-shadow: inset 2px 0 0 #0176d3;
+}
+
+.caret-popup-value {
+  font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+  color: #181818;
+}
+
+.caret-popup-title {
+  margin-left: auto;
+  padding-left: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #5c5c5c;
+}
+
+.caret-popup-hint {
+  position: sticky;
+  bottom: -0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-top: 1px solid #e5e5e5;
+  background: #f3f3f3;
+  color: #5c5c5c;
+  font-size: 0.75rem;
+}
+
 #result-area {
   flex: 1 1 0;
   margin-bottom: 12px;
@@ -520,6 +573,16 @@ svg.button-icon {
 
 .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/quotation_marks.svg);
+}
+
+.keyword .sfir-autocomplete-icon {
+  -webkit-mask-image: url(images/link.svg);
+  background-color: #9050e9;
+}
+
+.operator .sfir-autocomplete-icon {
+  -webkit-mask-image: url(images/advanced_function.svg);
+  background-color: #0070d2;
 }
 
 .null .sfir-autocomplete-icon {

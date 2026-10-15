@@ -1,7 +1,8 @@
 import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
-  injectSessionData
+  injectSessionData,
+  selectComboboxOption
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -236,11 +237,11 @@ test.describe("Metadata Retrieve", () => {
     await page.waitForSelector("label:has-text('Test Level')", {timeout: 1000});
 
     // Change test level
-    const testLevelSelect = page.locator("select.slds-select");
-    await testLevelSelect.selectOption("RunLocalTests");
+    const testLevelSelect = page.locator("#sfir-test-level");
+    await selectComboboxOption(page, testLevelSelect, "RunLocalTests");
 
     // Verify test level is changed
-    await expect(testLevelSelect).toHaveValue("RunLocalTests");
+    await expect(testLevelSelect).toHaveAttribute("data-value", "RunLocalTests");
   });
 
   test("Retrieve Metadata Button Disabled When Nothing Selected", async ({page, extensionId}) => {

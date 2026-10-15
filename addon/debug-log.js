@@ -5,6 +5,7 @@ import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import AgentforceModal from "./components/AgentforceModal.js";
 import Toast from "./components/Toast.js";
+import {Combobox} from "./components/Combobox.js";
 
 const h = React.createElement;
 
@@ -1222,86 +1223,37 @@ function deriveActionFromBody(text) {
   return null;
 }
 
-// Generic SLDS Picklist (combobox) component
-class SldsPicklist extends React.Component {
-  constructor(props){
-    super(props);
-    this.state = {open: false};
-    this.toggle = this.toggle.bind(this);
-    this.onSelect = this.onSelect.bind(this);
-  }
-  toggle(e){
-    e && e.preventDefault();
-    this.setState({open: !this.state.open});
-  }
-  onSelect(value){
-    const {onChange} = this.props;
-    this.setState({open: false}, () => onChange && onChange(value));
-  }
-  render(){
-    const {label, value, options = [], placeholder = "Select"} = this.props;
-    const selected = options.find(o => o.value === value);
-    const display = selected ? selected.label : placeholder;
-    const comboClass = `slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-combobox-picklist ${this.state.open ? "slds-is-open" : ""}`;
-    return h("div", {className: "slds-form-element"},
-      label ? h("label", {className: "slds-form-element__label"}, label) : null,
-      h("div", {className: "slds-form-element__control"},
-        h("div", {className: "slds-combobox_container"},
-          h("div", {className: comboClass, role: "combobox", "aria-expanded": this.state.open, "aria-haspopup": "listbox"},
-            h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_left slds-input-has-icon_right", role: "none"},
-              // Left user icon
-              h("span", {className: "slds-icon_container slds-input__icon slds-input__icon_left"},
-                h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
-                  h("use", {xlinkHref: "symbols.svg#user"})
-                )
-              ),
-              h("input", {className: "slds-input slds-combobox__input", value: display, readOnly: true, role: "textbox", "aria-controls": "user-picklist", onClick: this.toggle}),
-              h("span", {className: "slds-icon_container slds-input__icon slds-input__icon_right"},
-                h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
-                  h("use", {xlinkHref: "symbols.svg#down"})
-                )
-              )
-            ),
-            h("div", {className: "slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid", role: "listbox", id: "user-picklist"},
-              h("ul", {className: "slds-listbox slds-listbox_vertical slds-dropdown__list", role: "presentation"},
-                ...options.map(opt => h("li", {key: opt.value, role: "presentation", className: "slds-listbox__item"},
-                  h("div", {className: "slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta", role: "option", onClick: () => this.onSelect(opt.value)},
-                    h("span", {className: "slds-media__figure slds-listbox__option-icon"},
-                      h("span", {className: "slds-icon_container"},
-                        h("svg", {className: "slds-icon slds-icon_small slds-icon-text-default", "aria-hidden": "true"},
-                          h("use", {xlinkHref: "symbols.svg#user"})
-                        )
-                      )
-                    ),
-                    h("span", {className: "slds-media__body"},
-                      h("span", {className: "slds-listbox__option-text slds-truncate", title: opt.label}, opt.label)
-                    )
-                  )
-                ))
-              )
-            )
-          )
-        )
-      )
-    );
-  }
-}
-
 function Filters({model}) {
   const onUserPick = (val) => {
-    model.filters.userId = val;
-    model.fetchLogs(true);
+    if (val === "") {
+      model.filters.userId = "";
+      model.fetchLogs(true);
+    } else if (model.userOptions.some(u => u.id === val)) {
+      model.filters.userId = val;
+      model.fetchLogs(true);
+    }
   };
   const onStartChange = (e) => { model.filters.start = e.target.value; model.didUpdate(); };
   const onEndChange = (e) => { model.filters.end = e.target.value; model.didUpdate(); };
   const apply = (e) => { e.preventDefault(); model.fetchLogs(true); };
   const reset = (e) => { e.preventDefault(); model.filters = {userId: "", start: "", end: ""}; model.fetchLogs(true); };
 
-  const userOptions = [{value: "", label: "All users"}, ...model.userOptions.map(u => ({value: u.id, label: model.getUserDisplayName(u.id)}))];
+  const userOptions = model.userOptions.map(u => ({
+    value: u.id, 
+    label: model.getUserDisplayName(u.id)
+  }));
 
   return h("form", {className: "slds-grid slds-gutters slds-m-bottom_small slds-m-top_xx-large slds-size_xx-large", onSubmit: apply},
     h("div", {className: "slds-col slds-size_1-of-3"},
-      h(SldsPicklist, {label: "Filter by User", value: model.filters.userId, options: userOptions, onChange: onUserPick})
+      h(Combobox, {
+        id: "filter-user-combobox",
+        label: "Filter by User",
+        value: model.filters.userId,
+        options: userOptions,
+        onChange: onUserPick,
+        isSearchable: true,
+        placeholder: "All Users"
+      })
     ),
     h("div", {className: "slds-col slds-size_1-of-3"},
       h("label", {className: "slds-form-element__label"}, "From"),
@@ -1405,21 +1357,15 @@ function LogsTable({model, hideButtonsOption}) {
               )
             ),
             h("div", {className: "slds-col slds-grow-none"},
-              h("div", {className: "slds-form-element"},
-                h("label", {className: "slds-form-element__label", htmlFor: "sfir-page-size"}, "Page size"),
-                h("div", {className: "slds-form-element__control"},
-                  h("div", {className: "slds-select_container"},
-                    h("select", {
-                      id: "sfir-page-size",
-                      className: "slds-select",
-                      value: String(model.pageSize),
-                      onChange: (e) => model.setPageSize(e.target.value)
-                    },
-                    ...model.allowedPageSizes.map(v => h("option", {key: v, value: String(v)}, String(v)))
-                    )
-                  )
-                )
-              )
+              h(Combobox, {
+                id: "sfir-page-size",
+                label: "Page size",
+                value: String(model.pageSize),
+                options: model.allowedPageSizes.map(v => ({label: String(v), value: String(v)})),
+                onChange: (val) => model.setPageSize(val),
+                width: "80px",
+                textAlign: "center"
+              })
             )
           )
         ),
@@ -1824,22 +1770,14 @@ function PreviewModal({model, hideButtonsOption}) {
   // Filter template row
   h("div", {className: "slds-grid slds-gutters slds-m-bottom_x-small"},
     h("div", {className: "slds-col"},
-      h("div", {className: "slds-form-element"},
-        h("label", {className: "slds-form-element__label", htmlFor: "sfir-log-filter-template"}, "Filter Template"),
-        h("div", {className: "slds-form-element__control"},
-          h("div", {className: "slds-select_container"},
-            h("select", {
-              id: "sfir-log-filter-template",
-              className: "slds-select",
-              value: model.previewFilterInput,
-              onChange: (e) => model.applyPreviewFilter(e.target.value),
-              disabled: isLoading
-            },
-            ...model.filterTemplates.map(t => h("option", {key: t.value, value: t.value}, t.label))
-            )
-          )
-        )
-      )
+      h(Combobox, {
+        id: "sfir-log-filter-template",
+        label: "Filter Template",
+        value: model.previewFilterInput,
+        options: model.filterTemplates,
+        disabled: isLoading,
+        onChange: (val) => model.applyPreviewFilter(val)
+      })
     ),
     h("div", {className: "slds-col"},
       h("div", {className: "slds-form-element"},

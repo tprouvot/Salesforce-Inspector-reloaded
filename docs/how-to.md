@@ -184,6 +184,10 @@ Once Flow Builder opens:
 3. Flow Builder will display both versions side-by-side, highlighting differences
 4. Review changes, elements, and logic differences between the versions
 
+## Troubleshoot object access in Data Import
+
+Data Import checks the current user's selected API describe instead of the shared popup cache. If an object is unavailable, read-only, or metadata cannot be loaded, the Object field reports the corresponding condition. See [Data Import troubleshooting](data-import.md#troubleshoot-objects-that-work-only-for-administrators) for permission checks and API diagnostics.
+
 ## Mass disable flows
 
 You can bulk deactivate flows using the Data Import feature with the Tooling API.

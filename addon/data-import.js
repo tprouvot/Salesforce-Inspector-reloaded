@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, applyProductionStyling, downloadCsvFile} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -70,11 +70,6 @@ class Model {
     this.spinFor = createSpinForMethod(this);
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
-    this.sobjectsList = null;
-    getSobjectsList(sfHost).then((sobjectsList) => {
-      this.sobjectsList = sobjectsList;
-      this.didUpdate();
-    });
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -294,20 +289,8 @@ class Model {
 
   sobjectList() {
     const hardcodedObjectsPrefix = ["01Z", "00O"];//Dashboard and Report can be deleted
-    // Use cached sobjects list from utils (like popup.js) to avoid redundant API call
-    if (this.sobjectsList && this.sobjectsList.length > 0) {
-      if (this.apiType == "Metadata") {
-        return this.sobjectsList.filter(sobject => sobject.name.endsWith("__mdt"));
-      }
-      const useToolingApi = this.apiType == "Tooling";
-      const requiredApi = useToolingApi ? "toolingApi" : "regularApi";
-
-      return this.sobjectsList.filter(
-        sobject => (sobject.availableApis || []).includes(requiredApi)
-          && (sobject.createable || sobject.deletable || sobject.updateable || hardcodedObjectsPrefix.includes(sobject.keyPrefix))
-      );
-    }
-    // Fallback to DescribeInfo when cache not yet loaded or disabled
+    // Import permissions must come from the current session and selected API.
+    // The shared popup cache is scoped by host and merges CRUD hints across APIs.
     let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
     if (!globalDescribe) {
       return [];
@@ -318,18 +301,8 @@ class Model {
         .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
     } else {
       return globalDescribe.sobjects
-        .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
+        .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || sobjectDescribe.undeletable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
     }
-  }
-
-  // True while neither the cached sobjects list nor the DescribeInfo fallback has data yet,
-  // e.g. right after a page reload before the async fetches resolve.
-  sobjectListLoading() {
-    if (this.sobjectsList && this.sobjectsList.length > 0) {
-      return false;
-    }
-    let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
-    return !globalDescribe;
   }
 
   idLookupList() {
@@ -392,11 +365,19 @@ class Model {
 
   importTypeError() {
     let importType = this.importType;
-    if (this.sobjectListLoading()) {
+    let {globalStatus, globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
+    if (globalStatus == "loadfailed") {
+      return "Unable to load objects. Check API access and reload the page.";
+    }
+    if (!globalDescribe) {
       return "";
     }
+    // Validate existence against the full describe, not the writable suggestions.
+    if (!globalDescribe.sobjects.some(s => s.name.toLowerCase() == importType.toLowerCase())) {
+      return "Unknown object or unavailable to this user in the selected API";
+    }
     if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
-      return "Unknown object";
+      return "Object is not writable for this user in the selected API. Check object permissions.";
     }
     return "";
   }
@@ -1161,22 +1142,11 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
 
-    this.onSobjectsListRefreshed = (e) => {
-      if (e.detail?.sfHost === model.sfHost) {
-        model.sobjectsList = e.detail.sobjectsList;
-        model.didUpdate();
-      }
-    };
-    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
-
     addEventListener("resize", () => { this.scrollTable.viewportChange(); });
 
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
     model.updateImportTableResult();
-  }
-  componentWillUnmount() {
-    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
   componentDidUpdate() {
     let {model} = this.props;

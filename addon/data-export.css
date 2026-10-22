@@ -396,7 +396,8 @@ button[hidden],
 button,
 .button {
   border: 1px solid #dddbda;
-  height: 32px;
+  height: auto;
+  min-height: 32px;
   display: inline-block;
   text-decoration: none;
   background-color: white;
@@ -408,6 +409,12 @@ button,
   line-height: 32px;
   border-radius: 0.25rem;
   white-space: nowrap;
+}
+
+.slds-button {
+  --slds-s-button-spacing-block: 4px;
+  line-height: 1.3;
+  min-height: 32px;
 }
 
 .button-margin {

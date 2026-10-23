@@ -14,6 +14,7 @@
  * @param {Function} [props.onCancel] - Called when Escape is pressed
  * @param {Function} [props.onToggle] - Called with true/false when the dropdown opens/closes
  * @param {boolean} [props.isSearchable] - Allows free-text typing and filters options by value, label, title and secondaryText
+ * @param {boolean} [props.isLoading] - Indicates if the options are currently fetching
  * @param {boolean} [props.clearOnSelect] - Clears the input after an option is picked (searchable mode)
  * @param {string} [props.width] - Width of the root element
  * @param {string} [props.height] - Height of the root element and input
@@ -97,8 +98,8 @@ export class Combobox extends React.Component {
       let match = props.options.find(o => o.value === props.value);
       if (match && match.label !== undefined) initialInput = match.label;
     }
-    this.state = { 
-      isOpen: false, 
+    this.state = {
+      isOpen: false,
       highlightedIndex: -1,
       inputValue: initialInput,
       dropdownStyle: null
@@ -108,24 +109,24 @@ export class Combobox extends React.Component {
     this.optionNodes = {};
     this.scrollParent = null;
     this.positionListenersAttached = false;
-    
+   
     this.onTriggerClick = this.onTriggerClick.bind(this);
     this.onTriggerKeyDown = this.onTriggerKeyDown.bind(this);
     this.onDocumentMouseDown = this.onDocumentMouseDown.bind(this);
     this.updateDropdownPosition = this.updateDropdownPosition.bind(this);
   }
-  
+ 
   componentDidMount() {
     document.addEventListener("mousedown", this.onDocumentMouseDown, true);
     if (this.props.autoFocus && this.refs.triggerInput) this.refs.triggerInput.focus();
   }
-  
+ 
   componentWillUnmount() {
     document.removeEventListener("mousedown", this.onDocumentMouseDown, true);
     this.detachPositionListeners();
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
   }
-  
+ 
   componentDidUpdate(prevProps, prevState) {
     if (prevProps.value !== this.props.value && this.props.isSearchable) {
       let match = (this.props.options || []).find(o => o.value === this.props.value);
@@ -142,30 +143,30 @@ export class Combobox extends React.Component {
     }
 
     if (!this.state.isOpen) return;
-    
+   
     let visibleOptions = this.getVisibleOptions();
     let maxIndex = visibleOptions.length - 1;
-    
+   
     if (this.state.highlightedIndex > maxIndex) {
       this.setState({ highlightedIndex: maxIndex });
       return;
     }
-    
+   
     let isOpening = !prevState.isOpen;
     if (this.state.highlightedIndex !== prevState.highlightedIndex || isOpening) {
       this.scrollHighlightedIntoView(isOpening);
     }
   }
-  
+ 
   scrollHighlightedIntoView(isInstant) {
     let node = this.optionNodes[this.state.highlightedIndex];
     let listbox = this.refs.listbox;
-    
+   
     if (node && listbox) {
       let listboxRect = listbox.getBoundingClientRect();
       let nodeRect = node.getBoundingClientRect();
       let scrollBehavior = isInstant ? "auto" : "smooth";
-      
+     
       if (nodeRect.top < listboxRect.top) {
         listbox.scrollTo({ top: listbox.scrollTop - (listboxRect.top - nodeRect.top), behavior: scrollBehavior });
       } else if (nodeRect.bottom > listboxRect.bottom) {
@@ -173,7 +174,7 @@ export class Combobox extends React.Component {
       }
     }
   }
-  
+ 
   getScrollParent(el) {
     for (let p = el && el.parentElement; p && p !== document.body; p = p.parentElement) {
       let oy = getComputedStyle(p).overflowY;
@@ -181,7 +182,7 @@ export class Combobox extends React.Component {
     }
     return null;
   }
-  
+ 
   attachPositionListeners() {
     if (this.positionListenersAttached) return;
     this.scrollParent = this.getScrollParent(this.refs.container);
@@ -189,7 +190,7 @@ export class Combobox extends React.Component {
     window.addEventListener("resize", this.updateDropdownPosition);
     this.positionListenersAttached = true;
   }
-  
+ 
   detachPositionListeners() {
     if (!this.positionListenersAttached) return;
     window.removeEventListener("scroll", this.updateDropdownPosition, true);
@@ -197,14 +198,14 @@ export class Combobox extends React.Component {
     this.positionListenersAttached = false;
     this.scrollParent = null;
   }
-  
+ 
   updateDropdownPosition(e) {
     if (!this.props.fixedDropdown || !this.state.isOpen) return;
     if (e && e.type === "scroll" && this.refs.listbox && e.target === this.refs.listbox) return;
     let container = this.refs.container;
     if (!container) return;
     let rect = container.getBoundingClientRect();
-    
+   
     let sp = this.scrollParent;
     if (sp) {
       let spRect = sp.getBoundingClientRect();
@@ -213,7 +214,7 @@ export class Combobox extends React.Component {
         return;
       }
     }
-    
+   
     let gap = 2;
     let spaceBelow = window.innerHeight - rect.bottom;
     let openUp = spaceBelow < 260 && rect.top > spaceBelow;
@@ -231,70 +232,70 @@ export class Combobox extends React.Component {
       style.top = (rect.bottom + gap) + "px";
       style.bottom = "auto";
     }
-    
+   
     let prev = this.state.dropdownStyle;
     if (prev && JSON.stringify(prev) === JSON.stringify(style)) return;
     this.setState({ dropdownStyle: style });
   }
-  
+ 
   onDocumentMouseDown(e) {
     if (this.state.isOpen && this.refs.container && !this.refs.container.contains(e.target)) {
       this.closeDropdown();
     }
   }
-  
+ 
   isMulti() { return this.props.mode === "multi"; }
-  
+ 
   selectedValues() {
     let { value } = this.props;
     if (this.isMulti()) return value ? value.split(";").filter(v => v !== "") : [];
     return value == null ? [] : [value];
   }
-  
+ 
   isSelected(option) { return this.selectedValues().includes(option.value); }
-  
+ 
   getVisibleOptions() {
     let { options = [], isSearchable } = this.props;
     let val = isSearchable ? this.state.inputValue : this.props.value;
     if (!isSearchable || !val) return options;
-    
+   
     let lowerVal = val.toLowerCase();
-    return options.filter(o => 
-      (o.label && o.label.toLowerCase().includes(lowerVal)) || 
+    return options.filter(o =>
+      (o.label && o.label.toLowerCase().includes(lowerVal)) ||
       (o.value && o.value.toLowerCase().includes(lowerVal)) ||
       (o.title && o.title.toLowerCase().includes(lowerVal)) ||
       (o.secondaryText && o.secondaryText.toLowerCase().includes(lowerVal))
     );
   }
-  
+ 
   openDropdown() {
     if (this.props.disabled) return;
     let { onToggle } = this.props;
     let visibleOptions = this.getVisibleOptions();
     let selected = this.selectedValues();
-    
+   
     let initialIndex = visibleOptions.findIndex(o => selected.includes(o.value));
     this.setState({ isOpen: true, highlightedIndex: initialIndex >= 0 ? initialIndex : 0 }, () => {
       if (onToggle) onToggle(true);
     });
   }
-  
+ 
   closeDropdown() {
     let { onToggle } = this.props;
     this.setState({ isOpen: false, highlightedIndex: -1, dropdownStyle: null }, () => {
       if (onToggle) onToggle(false);
     });
   }
-  
+ 
   onTriggerClick() {
     if (this.props.disabled) return;
     this.state.isOpen ? this.closeDropdown() : this.openDropdown();
   }
-  
+ 
   selectOption(option) {
     if (!option || this.props.disabled) return;
     if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
-    
+   
     if (this.isMulti()) {
       let selected = this.selectedValues();
       let newSelected = selected.includes(option.value)
@@ -310,13 +311,13 @@ export class Combobox extends React.Component {
       if (this.refs.triggerInput && !this.props.clearOnSelect) this.refs.triggerInput.focus();
     }
   }
-  
+ 
   moveHighlight(delta, maxLen) {
     if (maxLen === 0) return;
     let next = Math.max(0, Math.min(this.state.highlightedIndex + delta, maxLen - 1));
     this.setState({ highlightedIndex: next });
   }
-  
+ 
   onTriggerKeyDown(e) {
     if (this.props.disabled) return;
     let { onCancel, isSearchable, onKeyDown } = this.props;
@@ -326,7 +327,7 @@ export class Combobox extends React.Component {
       onKeyDown(e);
       if (e.defaultPrevented) return;
     }
-    
+   
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
@@ -359,7 +360,7 @@ export class Combobox extends React.Component {
           e.preventDefault();
           let char = e.key.toLowerCase();
           let startIndex = this.state.highlightedIndex + 1;
-          
+         
           const findMatch = (start, end) => {
             for (let i = start; i < end; i++) {
               let labelText = (visibleOptions[i].label || "").toString().toLowerCase();
@@ -368,7 +369,7 @@ export class Combobox extends React.Component {
             }
             return -1;
           };
-          
+         
           let matchIndex = findMatch(startIndex, visibleOptions.length);
           if (matchIndex === -1) matchIndex = findMatch(0, startIndex);
           if (matchIndex !== -1) this.setState({ highlightedIndex: matchIndex, isOpen: true });
@@ -376,7 +377,7 @@ export class Combobox extends React.Component {
         break;
     }
   }
-  
+ 
   displayText() {
     let { value, placeholder, options = [], isSearchable } = this.props;
     if (isSearchable) return this.state.inputValue;
@@ -389,7 +390,7 @@ export class Combobox extends React.Component {
     if (selectedOption) return selectedOption.label !== undefined ? selectedOption.label : value;
     return value === "" ? (placeholder || "") : value;
   }
-  
+ 
   selectedOptionLabel() {
     let { options = [] } = this.props;
     let selected = this.selectedValues();
@@ -399,21 +400,21 @@ export class Combobox extends React.Component {
       return o ? (o.title || o.label || v) : v;
     }).join(", ");
   }
-  
+ 
   render() {
     let {
-      options = [], value, onChange, mode, isSearchable,
+      options = [], value, onChange, mode, isSearchable, isLoading,
       width, height, dropdownHeight, dropdownWidth, className, style, textAlign, fixedDropdown,
       id, name, label, placeholder, ariaLabel, showLabel = true, showSecondaryText = false,
       disabled, hasError, errorMessage, showCheckmark = true,
       autoComplete = "nope", spellCheck = false, autoCorrect = "off"
     } = this.props;
-    
+   
     let { isOpen, highlightedIndex, dropdownStyle } = this.state;
     let listboxId = this.instanceId + "-listbox";
     let helpId = this.instanceId + "-help";
     let optionId = i => this.instanceId + "-option-" + i;
-    
+   
     let visibleOptions = this.getVisibleOptions();
     let inputTitle = this.selectedOptionLabel() || undefined;
 
@@ -428,8 +429,9 @@ export class Combobox extends React.Component {
     }
 
     let chevronIcon = isOpen ? "chevronup" : "chevrondown";
-    let isValueAnOption = (options || []).some(o => (o.label !== undefined ? o.label : o.value) === this.state.inputValue);
-    let showClear = isSearchable && this.state.inputValue && !disabled && !isValueAnOption;
+    let inputLower = (this.state.inputValue || "").toLowerCase();
+    let isValueAnOption = (options || []).some(o => (o.label !== undefined ? String(o.label) : String(o.value)).toLowerCase() === inputLower);
+    let showClear = isSearchable && this.state.inputValue && !disabled && !isLoading && !isValueAnOption;
 
     let comboboxInner = h("div", {
         className: "slds-combobox_container" + (!label && hasError ? " slds-has-error" : ""),
@@ -443,7 +445,7 @@ export class Combobox extends React.Component {
         role: "combobox"
       },
       h("div", {
-        className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", 
+        className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right",
         role: "none",
         style: height ? { height } : {}
       },
@@ -478,14 +480,14 @@ export class Combobox extends React.Component {
           onClick: this.onTriggerClick,
           onBlur: this.props.onBlur,
           onKeyDown: this.onTriggerKeyDown,
-          style: { 
+          style: {
             cursor: disabled ? "not-allowed" : (isSearchable ? "text" : "pointer"),
             ...(height ? { height: height, minHeight: height } : {}),
             ...(textAlign ? { textAlign } : {})
           },
           ref: "triggerInput"
         }),
-        showClear ? 
+        showClear ?
           h("button", {
             className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
             title: "Clear",
@@ -509,13 +511,13 @@ export class Combobox extends React.Component {
           )
       ),
       isOpen ? h("div", {
-        id: listboxId, 
+        id: listboxId,
         ref: "listbox",
-        className: "slds-dropdown slds-dropdown_fluid slds-dropdown_length-5 slds-dropdown_left sfir-combobox-dropdown", 
-        role: "listbox", 
+        className: "slds-dropdown slds-dropdown_fluid slds-dropdown_length-5 slds-dropdown_left sfir-combobox-dropdown",
+        role: "listbox",
         "aria-multiselectable": this.isMulti(),
         style: Object.assign(
-          { width: dropdownWidth || "100%", minWidth: "0", maxWidth: dropdownWidth ? "none" : undefined, left: "0", transform: "none" }, 
+          { width: dropdownWidth || "100%", minWidth: "0", maxWidth: dropdownWidth ? "none" : undefined, left: "0", transform: "none" },
           dropdownHeight ? { maxHeight: dropdownHeight, overflowY: "auto" } : {},
           fixedDropdown
             ? (dropdownStyle || { position: "fixed", visibility: "hidden" })
@@ -525,12 +527,12 @@ export class Combobox extends React.Component {
         h("ul", { className: "slds-listbox slds-listbox_vertical", role: "presentation" },
           visibleOptions.length === 0
             ? h("li", { className: "slds-listbox__item", role: "presentation" },
-                h("div", { className: "slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-empty" }, "No available options")
+                h("div", { className: "slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-empty" }, isLoading ? "Loading..." : "No available options")
               )
             : visibleOptions.map((option, i) => {
                 let primaryText = (option.label !== undefined && option.label !== "") ? option.label : option.value;
                 let displayHint = showSecondaryText && option.secondaryText;
-                
+               
                 return h("li", { className: "slds-listbox__item", role: "presentation", key: option.value },
                   h("div", {
                     id: optionId(i),

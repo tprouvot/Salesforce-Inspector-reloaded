@@ -455,7 +455,7 @@ class Model {
     try {
       JSON.parse(this.customHeaders);
     } catch (e) {
-      return "Invalid JSON";
+      return "Invalid header: " + e.message;
     }
     return "";
   }

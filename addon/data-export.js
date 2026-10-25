@@ -83,6 +83,7 @@ class Model {
     this.exportStatus = "Ready";
     this.exportError = null;
     this.exportedData = null;
+    this.isQueryPlanShown = false; // Lets the plan table render in Bulk mode, where the results table is otherwise hidden
     let historyNb = localStorage.getItem("numberOfQueriesInHistory");
     this.queryHistory = createQueryHistory("insextQueryHistory", historyNb ? historyNb : 100);
     this.selectedHistoryEntry = null;
@@ -148,6 +149,10 @@ class Model {
   isBulk() {
     return this.queryApiMode === API_MODE.BULK;
   }
+  // True when the results table has nothing to show (Bulk mode, unless a query plan is displayed)
+  isResultTableHidden() {
+    return this.isBulk() && !this.isQueryPlanShown;
+  }
   isBulkJobRunning() {
     return this.isBulkWorking || (this.bulkJob && !isBulkJobTerminal(this.bulkJob.state));
   }
@@ -198,6 +203,7 @@ class Model {
       return;
     }
     this.queryApiMode = mode;
+    this.isQueryPlanShown = false;
     if (!this.supportsQueryAll()) {
       this.queryAll = false;
       this.updateCurrentTabProperty("queryAll", false);
@@ -1164,6 +1170,7 @@ class Model {
     this.queryInput.value = query;
     this.bulkMessage = null;
     this.bulkPreview = null;
+    this.isQueryPlanShown = false;
     if (this.isBulk()) {
       this.exportError = null;
       this.exportStatus = "Submitting bulk job...";
@@ -1216,6 +1223,9 @@ class Model {
     }
     this.bulkRest(this.bulkJobEndpoint(job)).then(res => {
       this.bulkPollFailures = 0;
+      if (this.isBulk()) {
+        this.exportError = null;
+      }
       const terminal = isBulkJobTerminal(res.state);
       this.bulkJob = this.bulkJobStore.set({
         ...job,
@@ -1384,7 +1394,11 @@ class Model {
 
     vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
       exportedData.addToTable(res.plans);
-      vm.exportStatus = "";
+      if (!vm.isBulk()) {
+        vm.exportStatus = "";
+      }
+      vm.exportError = null; // A previous error would otherwise keep the plan hidden
+      vm.isQueryPlanShown = true;
       vm.performancePoints = [];
       vm.exportedData = exportedData;
       vm.updatedExportedData();
@@ -2698,23 +2712,23 @@ class App extends React.Component {
             h("div", {className: "result-bar"},
               h("h3", {className: "slds-text-heading_small"}, "Export Result"),
               h("div", {className: "slds-button-group slds-m-left_small"},
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isResultTableHidden(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isResultTableHidden(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isResultTableHidden(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isResultTableHidden(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
                   h("svg", {className: "slds-button__icon"},
                     h("use", {xlinkHref: "symbols.svg#download"})
                   )
                 ),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isBulk(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy() || model.isResultTableHidden(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
                   h("svg", {className: `slds-button__icon ${model.prefHideRelations ? "" : "disabled"}`},
                     h("use", {xlinkHref: "symbols.svg#hide"})
                   )
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
-                  ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete() || model.isBulk(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+                  ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete() || model.isResultTableHidden(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
               ),
-              model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError && !model.isBulk() ? h("div", {className: "slds-form-element"},
+              model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError && !model.isResultTableHidden() ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
                   h("input", {
                     className: "slds-input slds-button slds-m-around_none",
@@ -2769,11 +2783,11 @@ class App extends React.Component {
             }),
             h("div", {
               className: "slds-text-body_small slds-text-color_weak slds-p-around_medium",
-              hidden: !model.isBulk() || model.exportError != null
+              hidden: !model.isResultTableHidden() || model.exportError != null
             }, "Bulk API 2.0 downloads the result as a CSV file rather than rendering it here. Use the panel above to track the job."),
             h("div", {
               ref: "scroller",
-              hidden: model.exportError != null || model.isBulk(),
+              hidden: model.exportError != null || model.isResultTableHidden(),
               style: {flex: "1 1 0", minHeight: 0, maxHeight: "100%", overflowY: "auto"}
             }
             )

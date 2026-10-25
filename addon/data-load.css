@@ -103,3 +103,11 @@
 button[hidden] {
   display: none;
 }
+
+.slds-textarea[disabled] {
+  resize: none;
+}
+
+.slds-textarea[disabled]::placeholder {
+  color: var(--slds-s-input-color-disabled, var(--slds-g-color-on-surface-1));
+}

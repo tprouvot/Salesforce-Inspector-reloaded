@@ -161,4 +161,21 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
+  test("Pinned Query Tabs Persist Across Reloads", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    await page.locator(".query-tab").first().getByRole("button", {name: "Unpin query tab"}).click();
+    await page.locator(".add-tab-button").click();
+    await page.locator("textarea#query").fill("SELECT Id FROM Contact");
+    await page.locator(".query-tab").nth(1).getByRole("button", {name: "Pin query tab"}).click();
+    await expect.poll(async () => page.evaluate(host => localStorage.getItem(`${host}_queryTabs`), mockHost)).toContain("Contact");
+
+    await page.reload();
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+    await expect(page.locator(".query-tab")).toHaveCount(1);
+    await expect(page.locator("textarea#query")).toHaveValue("SELECT Id FROM Contact");
+    await expect(page.locator(".query-tab").first().getByRole("button", {name: "Unpin query tab"})).toBeVisible();
+  });
+
 });

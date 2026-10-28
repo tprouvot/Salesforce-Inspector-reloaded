@@ -126,137 +126,6 @@ export class StorageHistory {
 }
 
 /**
- * Mapping of standard Salesforce objects to their name fields.
- * Objects with "Name" field are not included (assumed default).
- * Objects with null have no nameField property (e.g., Event, Task use Subject).
- * Objects with a string value have a different nameField than "Name".
- *
- * This list helps optimize queries by avoiding unnecessary describe API calls.
- */
-export const STANDARD_OBJECT_NAME_FIELDS = {
-  // Objects with non-standard name fields or no name field
-  "AccountContactRelation": null,
-  "AccountContactRole": null,
-  "AccountPartner": null,
-  "CampaignMember": null,
-  "CampaignMemberStatus": null,
-  "Case": "CaseNumber",
-  "CaseContactRole": null,
-  "CaseMilestone": null,
-  "CaseSolution": null,
-  "CaseStatus": "ApiName",
-  "ChangeRequest": "ChangeRequestNumber",
-  "ContentAsset": "DeveloperName",
-  "ContentBody": null,
-  "ContentDistributionView": null,
-  "ContentDocument": "Title",
-  "ContentDocumentLink": null,
-  "ContentDocumentSubscription": null,
-  "ContentFolderItem": null,
-  "ContentFolderLink": null,
-  "ContentFolderMember": null,
-  "ContentNote": "Title",
-  "ContentNotification": null,
-  "ContentTagSubscription": null,
-  "ContentTaxonomyRelatedTerm": null,
-  "ContentTaxonomyTermRelatedTerm": null,
-  "ContentUserSubscription": null,
-  "ContentVersion": "Title",
-  "ContentVersionComment": null,
-  "ContentVersionRating": null,
-  "ContentWorkspaceDoc": null,
-  "ContentWorkspaceMember": null,
-  "ContentWorkspaceSubscription": null,
-  "Contract": "ContractNumber",
-  "ContractContactRole": null,
-  "ContractGroupPlanAttribute": "AttributeName",
-  "ContractGrpPlanGrpClsAttr": "AttributeName",
-  "ContractLineItem": "LineItemNumber",
-  "ContractStatus": "ApiName",
-  "ContractType": "DeveloperName",
-  "ContractTypeConfig": null,
-  "Event": "Subject",
-  "Expense": "ExpenseNumber",
-  "ExpenseReport": "ExpenseReportNumber",
-  "ExpenseReportEntry": "ExpenseReportEntryNumber",
-  "GroupMember": null,
-  "LeadStatus": "ApiName",
-  "Note": "Title",
-  "OpportunityCompetitor": null,
-  "OpportunityContactRole": null,
-  "OpportunityHistory": null,
-  "OpportunityLineItemSchedule": null,
-  "OpportunityPartner": null,
-  "OpportunityRelatedDeleteLog": "DeleteLog",
-  "OpportunityStage": "ApiName",
-  "Order": "OrderNumber",
-  "OrderItem": "OrderItemNumber",
-  "OrderStatus": "ApiName",
-  "Partner": null,
-  "PartnerRole": "ApiName",
-  "ProductEntitlementTemplate": null,
-  "ProductItem": "ProductItemNumber",
-  "ProductItemTransaction": "ProductItemTransactionNumber",
-  "ProductRequest": "ProductRequestNumber",
-  "ProductRequestLineItem": "ProductRequestLineItemNumber",
-  "ProductRequired": "ProductRequiredNumber",
-  "ProductServiceCampaign": "ProductServiceCampaignName",
-  "ProductServiceCampaignItem": "ProductServiceCampaignItemNumber",
-  "ProductServiceCampaignItemStatus": "ApiName",
-  "ProductServiceCampaignStatus": "ApiName",
-  "ProductTransfer": "ProductTransferNumber",
-  "ProductWarrantyTerm": "ProductWarrantyTermNumber",
-  "QuoteLineItem": "LineNumber",
-  "ReturnOrder": "ReturnOrderNumber",
-  "ReturnOrderLineItem": "ReturnOrderLineItemNumber",
-  "ServiceAppointment": "AppointmentNumber",
-  "ServiceAppointmentCapacityUsage": "ServiceAppointmentCapacityUsageAutonumber",
-  "ServiceAppointmentStatus": "ApiName",
-  "ServiceCrewMember": "ServiceCrewMemberNumber",
-  "ServiceReport": "ServiceReportNumber",
-  "ServiceReportLayout": "MasterLabel",
-  "ServiceResourceCapacity": "CapacityNumber",
-  "ServiceResourceSkill": "SkillNumber",
-  "ServiceTerritoryLocation": "ServiceTerritoryLocationNumber",
-  "ServiceTerritoryMember": "MemberNumber",
-  "Shift": "ShiftNumber",
-  "ShiftStatus": "ApiName",
-  "Shipment": "ShipmentNumber",
-  "ShipmentItem": "ShipmentItemNumber",
-  "Skill": "MasterLabel",
-  "SkillRequirement": "SkillNumber",
-  "SkillType": "MasterLabel",
-  "Solution": "SolutionName",
-  "SolutionStatus": "ApiName",
-  "Task": "Subject",
-  "TaskPriority": "ApiName",
-  "TaskRelation": null,
-  "TaskStatus": "ApiName",
-  "TaskWhoRelation": null,
-  "TimeSheet": "TimeSheetNumber",
-  "TimeSheetEntry": "TimeSheetEntryNumber",
-  "TimeSlot": "TimeSlotNumber",
-  "TimelineObjectDefinition": "DeveloperName",
-  "Vote": null,
-  "WarrantyTerm": "WarrantyTermName",
-  "WorkAccess": null,
-  "WorkBadge": null,
-  "WorkCapacityAvailability": "WorkCapacityAvailNumber",
-  "WorkCapacityLimit": "WorkCapacityLimitNumber",
-  "WorkCapacityUsage": "WorkCapacityUsageNumber",
-  "WorkOrder": "WorkOrderNumber",
-  "WorkOrderLineItem": "LineItemNumber",
-  "WorkOrderLineItemStatus": "ApiName",
-  "WorkOrderStatus": "ApiName",
-  "WorkPlanSelectionRule": "WorkPlanSelectionRuleNumber",
-  "WorkPlanTemplateEntry": "WorkPlanTemplateEntryNumber",
-  "WorkStepStatus": "ApiName",
-  "WorkThanks": null,
-  // Custom metadata types ending with __mdt use "DeveloperName"
-  "CustomMetadataType": "DeveloperName", // For __mdt objects
-};
-
-/**
  * Determines if the org should be treated as production (for styling/warnings).
  * Returns false for sandbox, trial orgs, and Developer Edition orgs.
  * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com")
@@ -530,36 +399,6 @@ export function createChangeGuard() {
   };
 }
 
-/**
- * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
- * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
- * Salesforce GraphQL examples. SOQL and SOSL never start with either.
- * @param {string} query
- * @returns {boolean}
- */
-export function isGraphqlQuery(query) {
-  return /^(?:\{|query\b)/.test(query.trimStart());
-}
-
-/**
- * Picks the Prism language for a Data Export query: SELECT is SOQL and FIND is SOSL
- * (both from lib/prism/prism-sf.js), GraphQL as detected by isGraphqlQuery (lib/prism/prism.js),
- * the same rule Data Export uses to send it to the GraphQL endpoint. Anything else
- * keeps plain SQL.
- * @param {string} query
- * @returns {"soql"|"sosl"|"graphql"|"sql"}
- */
-export function queryLanguage(query) {
-  const start = query.trimStart();
-  if (/^select\b/i.test(start)) {
-    return "soql";
-  }
-  if (/^find\b/i.test(start)) {
-    return "sosl";
-  }
-  return isGraphqlQuery(start) ? "graphql" : "sql";
-}
-
 // OAuth utilities
 export function getBrowserType() {
   return navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
@@ -650,29 +489,6 @@ export function downloadCsvFile(csvContent, filename) {
   downloadAnchor.download = filename;
   downloadAnchor.href = window.URL.createObjectURL(blob);
   downloadAnchor.click();
-}
-
-/**
- * Get the name field for a Salesforce object.
- * Checks the standard objects mapping first, then returns null to indicate
- * that the describe API should be used to determine the name field.
- *
- * @param {string} sobjectName - The API name of the Salesforce object
- * @returns {string|null|undefined} The name field API name, null if no name field exists, or undefined if not in the mapping
- */
-export function getStandardObjectNameField(sobjectName) {
-  // Check direct mapping first
-  if (sobjectName in STANDARD_OBJECT_NAME_FIELDS) {
-    return STANDARD_OBJECT_NAME_FIELDS[sobjectName];
-  }
-
-  // Check for custom metadata types (end with __mdt)
-  if (sobjectName.endsWith("__mdt")) {
-    return "DeveloperName";
-  }
-
-  // Not in the mapping - return N/A to indicate describe API should be used
-  return "N/A";
 }
 
 /**

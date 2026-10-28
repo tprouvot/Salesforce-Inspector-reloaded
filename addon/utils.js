@@ -531,8 +531,19 @@ export function createChangeGuard() {
 }
 
 /**
+ * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
+ * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
+ * Salesforce GraphQL examples. SOQL and SOSL never start with either.
+ * @param {string} query
+ * @returns {boolean}
+ */
+export function isGraphqlQuery(query) {
+  return /^(?:\{|query\b)/.test(query.trimStart());
+}
+
+/**
  * Picks the Prism language for a Data Export query: SELECT is SOQL and FIND is SOSL
- * (both from lib/prism/prism-sf.js), a leading "{" is GraphQL (lib/prism/prism.js),
+ * (both from lib/prism/prism-sf.js), GraphQL as detected by isGraphqlQuery (lib/prism/prism.js),
  * the same rule Data Export uses to send it to the GraphQL endpoint. Anything else
  * keeps plain SQL.
  * @param {string} query
@@ -546,7 +557,7 @@ export function queryLanguage(query) {
   if (/^find\b/i.test(start)) {
     return "sosl";
   }
-  return start.startsWith("{") ? "graphql" : "sql";
+  return isGraphqlQuery(start) ? "graphql" : "sql";
 }
 
 // OAuth utilities

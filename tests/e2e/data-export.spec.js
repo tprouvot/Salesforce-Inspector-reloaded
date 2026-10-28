@@ -164,13 +164,20 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
-  test("Query Editor Uses SOQL, SOSL and GraphQL Colouring", async ({page, extensionId}) => {
+  test("Query Editor Uses SOQL, SOSL and GraphQL Colouring", async ({page, context, extensionId}) => {
+    // The editor opens on the latest history entry, so this checks the colouring on load,
+    // before anything is typed.
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id, Status FROM Case ORDER BY Type", useToolingApi: false}
+      ]));
+    });
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
     // Objects get their own token and field names that clash with SQL keywords stay plain.
     const query = page.locator("textarea#query");
-    await query.fill("SELECT Id, Status FROM Case ORDER BY Type");
+    await expect(query).toHaveValue("SELECT Id, Status FROM Case ORDER BY Type");
     const highlight = page.locator(".query-highlight");
     await expect(highlight.locator(".token.sobject")).toHaveText("Case");
     await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "FROM", "ORDER BY"]);
@@ -767,6 +774,28 @@ test.describe("Data Export", () => {
     await history.press("Tab");
     await expect(listbox).toHaveCount(0);
     await expect(query).toHaveValue("SENTINEL");
+  });
+
+  test("GraphQL Queries Use The GraphQL Grammar", async ({page, context, extensionId}) => {
+    const graphql = "{ uiapi { query { Contact(first: 10, orderBy: { Name: { order: ASC } }) { edges { node { Id } } } } } }";
+    await context.addInitScript(query => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([{query, useToolingApi: false}]));
+    }, graphql);
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    // GraphQL arguments such as first and order are not SQL keywords, in the list or in the
+    // editor, which opens on this history entry.
+    await expect(page.locator("textarea#query")).toHaveValue(graphql);
+    const editor = page.locator(".query-highlight");
+    await expect(editor.locator(".token.keyword")).toHaveText(["query"]);
+    await expect(editor.locator(".token.attr-name")).toHaveText(["first", "orderBy", "Name", "order"]);
+
+    await page.getByRole("combobox", {name: "Search history"}).click();
+    const option = page.locator("#query-search-listbox [role='option']").first();
+    await expect(option.locator(".token.keyword")).toHaveText(["query"]);
+    await expect(option.locator(".token.attr-name")).toHaveText(["first", "orderBy", "Name", "order"]);
   });
 
   test("Result Column Filter Stays Open", async ({page, extensionId}) => {

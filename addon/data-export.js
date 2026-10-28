@@ -4,6 +4,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {queryGrammar} from "./soql-grammar.js";
 
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
@@ -1646,7 +1647,7 @@ class App extends React.Component {
     queryInput.classList.remove("query-plain");
     // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
     this.highlightGuard(code, () => {
-      queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+      queryHighlightCode.innerHTML = window.Prism.highlight(code, queryGrammar(code), "sql");
     });
   }
 

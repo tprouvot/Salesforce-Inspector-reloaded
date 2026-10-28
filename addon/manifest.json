@@ -74,6 +74,7 @@
         "popup.html",
         "data-export.html",
         "data-import.html",
+        "data-editor.html",
         "inspect.html",
         "metadata-retrieve.html",
         "metadata-retrieve-legacy.html",

@@ -275,7 +275,7 @@ textarea[hidden] {
   overflow: visible;
 }
 
-/* Object names after FROM and RETURNING, from the SOQL grammar in soql-grammar.js. */
+/* Object names after FROM and RETURNING, from lib/prism/prism-soql.js. */
 .query-highlight .token.sobject,
 .sfir-query-combobox-dropdown .token.sobject {
   color: light-dark(

@@ -1,10 +1,9 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory, queryLanguage} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {queryGrammar} from "./soql-grammar.js";
 import {SldsCombobox} from "./components/SldsCombobox.js";
 import Toast from "./components/Toast.js";
 import {dropdownEntries, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
@@ -1671,7 +1670,8 @@ class App extends React.Component {
     queryInput.classList.remove("query-plain");
     // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
     this.highlightGuard(code, () => {
-      queryHighlightCode.innerHTML = window.Prism.highlight(code, queryGrammar(code), "sql");
+      const language = queryLanguage(code);
+      queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages[language], language);
     });
   }
 

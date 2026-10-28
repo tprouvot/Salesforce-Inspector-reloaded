@@ -1,5 +1,5 @@
 /* global React */
-import {queryGrammar} from "./soql-grammar.js";
+import {queryLanguage} from "./utils.js";
 
 let h = React.createElement;
 
@@ -177,7 +177,7 @@ function renderPrismToken(token, ranges, position, key) {
 function renderQuery(query, terms) {
   const ranges = matchRanges(query, terms);
   const position = {offset: 0};
-  const content = window.Prism.tokenize(query, queryGrammar(query))
+  const content = window.Prism.tokenize(query, window.Prism.languages[queryLanguage(query)])
     .map((token, index) => renderPrismToken(token, ranges, position, `token-${index}`));
   return h("code", {className: "language-sql sfir-query-text", title: query}, content);
 }

@@ -530,6 +530,21 @@ export function createChangeGuard() {
   };
 }
 
+/**
+ * Picks the Prism language for a Data Export query, from those registered by
+ * lib/prism/prism-soql.js: SELECT is SOQL and FIND is SOSL, anything else such as
+ * GraphQL keeps plain SQL.
+ * @param {string} query
+ * @returns {"soql"|"sosl"|"sql"}
+ */
+export function queryLanguage(query) {
+  const start = query.trimStart();
+  if (/^select\b/i.test(start)) {
+    return "soql";
+  }
+  return /^find\b/i.test(start) ? "sosl" : "sql";
+}
+
 // OAuth utilities
 export function getBrowserType() {
   return navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";

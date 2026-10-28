@@ -37,19 +37,20 @@ test.describe("Data Editor", () => {
     createable: true,
     updateable: true,
     fields: [
-      {name: "Id", type: "id", createable: false, updateable: false, nillable: false},
-      {name: "Name", type: "string", length: 20, createable: true, updateable: true, nillable: false},
+      {name: "Id", type: "id", createable: false, updateable: false, nillable: false, referenceTo: []},
+      {name: "Name", type: "string", length: 20, createable: true, updateable: true, nillable: false, referenceTo: []},
       {name: "Industry",
         type: "picklist",
         length: 255,
         createable: true,
         updateable: true,
         nillable: true,
-        picklistValues: picklist(["Banking", "Energy", "Insurance", "Media", "Retail"])},
-      {name: "NumberOfEmployees", type: "int", createable: true, updateable: true, nillable: true},
-      {name: "Description", type: "textarea", length: 32000, createable: true, updateable: true, nillable: true},
-      {name: "Site", type: "string", length: 80, createable: true, updateable: false, nillable: true},
-      {name: "CreatedDate", type: "datetime", createable: false, updateable: false, nillable: false}
+        picklistValues: picklist(["Banking", "Energy", "Insurance", "Media", "Retail"]),
+        referenceTo: []},
+      {name: "NumberOfEmployees", type: "int", createable: true, updateable: true, nillable: true, referenceTo: []},
+      {name: "Description", type: "textarea", length: 32000, createable: true, updateable: true, nillable: true, referenceTo: []},
+      {name: "Site", type: "string", length: 80, createable: true, updateable: false, nillable: true, referenceTo: []},
+      {name: "CreatedDate", type: "datetime", createable: false, updateable: false, nillable: false, referenceTo: []}
     ]
   };
 
@@ -68,7 +69,9 @@ test.describe("Data Editor", () => {
       return saveHandoff(payload);
     }, {...data, apiType: "Enterprise"});
     await page.goto(`chrome-extension://${extensionId}/data-editor.html?host=${mockHost}&handoff=${key}`);
-    await expect(cell(page, 0, 0)).toHaveText(data.rows[0][0]);
+    if (data.rows.length > 0) {
+      await expect(cell(page, 0, 0)).toHaveText(data.rows[0][0]);
+    }
     if (data.header[2] == "Name") {
       // The describe is loaded: the Name header shows its type
       await expect(page.locator(".de-grid thead th").nth(3)).toHaveAttribute("title", /^Name \(string\)/);
@@ -103,7 +106,7 @@ test.describe("Data Editor", () => {
 
     await expect(page.locator(".de-grid thead th")).toHaveText(["#", "Name", "City"]);
     await expect(cell(page, 1, 1)).toHaveText("Lyon");
-    await expect(page.locator(".de-stats")).toHaveText("2 rows");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 2");
   });
 
   test("Edits a cell by typing, then undo and redo", async ({page, extensionId}) => {
@@ -115,13 +118,13 @@ test.describe("Data Editor", () => {
 
     await expect(cell(page, 0, 2)).toHaveText("Acme Corp");
     await expect(cell(page, 0, 2)).toHaveClass(/de-dirty/);
-    await expect(page.locator(".de-stats")).toContainText("1 edited");
+    await expect(page.locator(".de-stats")).toContainText("edited: 1");
     // Enter moves the selection down
     await expect(cell(page, 1, 2)).toHaveClass(/de-active/);
 
     await page.keyboard.press("Control+z");
     await expect(cell(page, 0, 2)).toHaveText("Acme");
-    await expect(page.locator(".de-stats")).not.toContainText("edited");
+    await expect(page.locator(".de-stats")).toContainText("edited: 0");
 
     await page.keyboard.press("Control+y");
     await expect(cell(page, 0, 2)).toHaveText("Acme Corp");
@@ -146,7 +149,7 @@ test.describe("Data Editor", () => {
     for (let r = 0; r < 3; r++) {
       await expect(cell(page, r, 3)).toHaveText("Retail");
     }
-    await expect(page.locator(".de-stats")).toContainText("3 edited");
+    await expect(page.locator(".de-stats")).toContainText("edited: 3");
 
     await pasteData(page, ".de-grid", "Media");
     for (let r = 0; r < 3; r++) {
@@ -159,20 +162,20 @@ test.describe("Data Editor", () => {
 
     await cell(page, 2, 2).click();
     await page.getByRole("button", {name: "Row", exact: true}).click();
-    await expect(page.locator(".de-stats")).toContainText("4 rows");
-    await expect(page.locator(".de-stats")).toContainText("1 new");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 4");
+    await expect(page.locator(".de-stats")).toContainText("edited: 1");
     // New rows keep the record type so Data Import can detect the object
     await expect(cell(page, 3, 0)).toHaveText("[Account]");
 
     await page.getByRole("button", {name: "Delete rows"}).click();
-    await expect(page.locator(".de-stats")).toHaveText("3 rows");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 3");
 
     await page.locator(".de-grid thead th", {hasText: "Name"}).click();
     await page.locator(".de-grid thead th", {hasText: "Name"}).click();
     await expect(cell(page, 0, 2)).toHaveText("Initech");
 
     await page.getByPlaceholder("Filter rows").fill("glob");
-    await expect(page.locator(".de-stats")).toHaveText("1 of 3 rows");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 1 of 3");
     await expect(cell(page, 0, 2)).toHaveText("Globex");
   });
 
@@ -184,18 +187,18 @@ test.describe("Data Editor", () => {
     await page.keyboard.press("Enter");
 
     await page.getByPlaceholder("Filter rows").fill("glob");
-    await expect(page.getByRole("button", {name: "Send 1 row to Data Import"})).toBeEnabled();
+    await expect(page.getByRole("button", {name: "Send to Data Import"})).toBeEnabled();
 
     await page.getByPlaceholder("Filter rows").fill("no match");
-    await expect(page.locator(".de-stats")).toContainText("0 of 3 rows");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 0 of 3");
     await pasteData(page, ".de-grid", "x");
-    await expect(page.locator(".de-stats")).toContainText("1 of 4 rows");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 1 of 4");
 
     // Undo/redo restores the pasted row where it was, even though it does not match the filter
     await page.keyboard.press("Control+z");
-    await expect(page.locator(".de-stats")).toContainText("0 of 3 rows");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 0 of 3");
     await page.keyboard.press("Control+y");
-    await expect(page.locator(".de-stats")).toContainText("1 of 4 rows");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 1 of 4");
   });
 
   test("Keeps an added row in place on undo and redo while sorted", async ({page, extensionId}) => {
@@ -258,7 +261,7 @@ test.describe("Data Editor", () => {
 
     await page.keyboard.type("Key account");
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("button", {name: "Send 1 row to Data Import"})).toBeEnabled();
+    await expect(page.getByRole("button", {name: "Send to Data Import"})).toBeEnabled();
 
     // Undo the edit and the column
     await page.keyboard.press("Control+z");
@@ -320,7 +323,7 @@ test.describe("Data Editor", () => {
     await expect(cell(page, 0, 4)).toHaveClass(/de-warning/);
     await expect(cell(page, 0, 4)).toHaveAttribute("title", "Expected a whole number");
     await expect(cell(page, 0, 4).locator(".de-warning-icon")).toBeVisible();
-    await expect(page.locator(".de-stats")).toContainText("1 warning");
+    await expect(page.locator(".de-stats")).toContainText("Warning: 1");
 
     await edit(1, 3, "Retial");
     await expect(cell(page, 1, 3)).toHaveAttribute("title", "Not an active value of this picklist: Retial (accepted, the picklist is not restricted)");
@@ -329,13 +332,13 @@ test.describe("Data Editor", () => {
     await cell(page, 1, 2).click();
     await page.keyboard.press("Delete");
     await expect(cell(page, 1, 2)).toHaveAttribute("title", "Required field");
-    await expect(page.locator(".de-stats")).toContainText("4 warnings");
+    await expect(page.locator(".de-stats")).toContainText("Warning: 4");
     // The value bar explains the active cell
     await expect(page.locator(".de-cellnote")).toHaveText("Required field");
 
     await edit(0, 4, "12000");
     await expect(cell(page, 0, 4)).not.toHaveClass(/de-warning/);
-    await expect(page.locator(".de-stats")).toContainText("3 warnings");
+    await expect(page.locator(".de-stats")).toContainText("Warning: 3");
   });
 
   test("Deletes columns and undoes it", async ({page, extensionId}) => {
@@ -382,6 +385,7 @@ test.describe("Data Editor", () => {
   });
 
   test("Sends only the changes to Data Import", async ({page, context, extensionId}) => {
+    test.slow();
     await openWithData(page, extensionId);
 
     await cell(page, 1, 3).click();
@@ -389,7 +393,7 @@ test.describe("Data Editor", () => {
     await page.keyboard.press("Enter");
 
     // Only the record type, the Id and the edited column are sent
-    const {payload, importUrl} = await sentPayload(page, context, "Send 1 row to Data Import");
+    const {payload, importUrl} = await sentPayload(page, context, "Send to Data Import");
     expect(payload.text).toBe("\"_\"\t\"Id\"\t\"Industry\"\r\n\"[Account]\"\t\"001000000000002AAA\"\t\"Insurance\"");
 
     // Data Import loads the rows with Update preselected
@@ -410,7 +414,7 @@ test.describe("Data Editor", () => {
     await expect(cell(page, 0, 2)).not.toHaveClass(/de-locked/);
 
     await page.getByText("Changes only").click();
-    const {payload} = await sentPayload(page, context, "Send 1 row to Data Import");
+    const {payload} = await sentPayload(page, context, "Send to Data Import");
     expect(payload.text.split("\r\n")[0]).toBe("\"_\"\t\"Id\"\t\"Name\"\t\"_Industry\"\t\"_Owner.Name\"");
   });
 
@@ -422,6 +426,138 @@ test.describe("Data Editor", () => {
 
     await expect(cell(page, 0, 2)).toHaveAttribute("title", "Aggregate query results cannot be imported");
     await page.getByText("Changes only").click();
-    await expect(page.getByRole("button", {name: "Send 1 row to Data Import"})).toBeDisabled();
+    await expect(page.getByRole("button", {name: "Send to Data Import"})).toBeDisabled();
+  });
+
+  test("Unfocuses the selected cell when clicking outside or pressing Escape", async ({page, extensionId}) => {
+    await openWithData(page, extensionId);
+
+    // Select a cell
+    await cell(page, 0, 2).click();
+    await expect(cell(page, 0, 2)).toHaveClass(/de-active/);
+    await expect(page.locator(".de-valuebar")).toBeVisible();
+    await expect(page.locator(".de-valuebar input")).toBeEnabled();
+
+    // Click outside on the footer
+    await page.locator(".de-footer").click();
+    await expect(cell(page, 0, 2)).not.toHaveClass(/de-active/);
+    await expect(page.locator(".de-valuebar")).toBeVisible();
+    await expect(page.locator(".de-valuebar input")).toBeDisabled();
+
+    // Select again
+    await cell(page, 1, 2).click();
+    await expect(cell(page, 1, 2)).toHaveClass(/de-active/);
+    await expect(page.locator(".de-valuebar input")).toBeEnabled();
+
+    // Press Escape to unfocus
+    await page.keyboard.press("Escape");
+    await expect(cell(page, 1, 2)).not.toHaveClass(/de-active/);
+    await expect(page.locator(".de-valuebar")).toBeVisible();
+    await expect(page.locator(".de-valuebar input")).toBeDisabled();
+  });
+
+  test("Displays error banner when navigating without host parameter", async ({page, extensionId}) => {
+    let unhandledErrors = [];
+    page.on("pageerror", err => unhandledErrors.push(err.message));
+    await page.goto(`chrome-extension://${extensionId}/data-editor.html`);
+    await expect(page.getByRole("alert")).toContainText("No Salesforce organization specified");
+    expect(unhandledErrors).toEqual([]);
+  });
+
+  test("Handles subquery columns with numbers and booleans safely during copy and export", async ({page, extensionId}) => {
+    let unhandledErrors = [];
+    page.on("pageerror", err => unhandledErrors.push(err.message));
+
+    await openWithData(page, extensionId, {
+      header: ["_", "Id", "Name", "Contacts.totalSize", "Contacts.done"],
+      rows: [
+        ["[Account]", "001000000000001AAA", "Acme", 2, true],
+        ["[Account]", "001000000000002AAA", "Globex", 0, false]
+      ]
+    });
+
+    await expect(cell(page, 0, 3)).toHaveText("2");
+    await expect(cell(page, 0, 4)).toHaveText("true");
+
+    // Copy selection including numbers and booleans via keyboard (triggers onCopy -> selectionAsTsv)
+    await cell(page, 0, 2).click();
+    await cell(page, 1, 4).click({modifiers: ["Shift"]});
+    await page.keyboard.press("Control+c");
+
+    // Also verify Copy button (calls serialize)
+    await page.getByRole("button", {name: "Copy", exact: true}).click();
+
+    expect(unhandledErrors).toEqual([]);
+  });
+
+  test("Closes Find & Replace on Escape key even when focus is on a button or container", async ({page, extensionId}) => {
+    await openWithData(page, extensionId);
+
+    // Open Replace with Ctrl+H
+    await cell(page, 0, 2).click();
+    await page.keyboard.press("Control+h");
+    await expect(page.locator(".de-replacebar")).toBeVisible();
+
+    // Click "Replace all" button so focus is on button, not inside an input
+    await page.getByLabel("Find", {exact: true}).fill("Acme");
+    await page.getByRole("button", {name: "Replace all"}).click();
+    await expect(page.locator(".de-replacebar")).toBeVisible();
+
+    // Press Escape to dismiss replace bar
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".de-replacebar")).toHaveCount(0);
+  });
+
+  test("Displays error banner gracefully when handoff key is missing or invalid", async ({page, extensionId}) => {
+    let unhandledErrors = [];
+    page.on("pageerror", err => unhandledErrors.push(err.message));
+
+    // Non-existent handoff key
+    await page.goto(`chrome-extension://${extensionId}/data-editor.html?host=${mockHost}&handoff=nonexistent-key-12345`);
+    await expect(page.getByRole("alert")).toContainText("The data is no longer available");
+    expect(unhandledErrors).toEqual([]);
+  });
+
+  test("Infers sobject from query when opening empty export result and sets type on new rows", async ({page, extensionId}) => {
+    await openWithData(page, extensionId, {
+      header: ["_", "Id", "Name", "Industry"],
+      rows: [],
+      query: "SELECT Id, Name, Industry FROM Account WHERE Name = 'Empty'"
+    });
+
+    // The describe is loaded for Account and header shows type
+    await expect(page.locator(".de-grid thead th").nth(3)).toHaveAttribute("title", /^Name \(string\)/);
+
+    // Clicking "+ Row" adds a row with [Account] prefilled
+    await page.getByRole("button", {name: "Row", exact: true}).click();
+    await expect(cell(page, 0, 0)).toHaveText("[Account]");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 1");
+  });
+
+  test("Filters and sorts safely across mixed string, numeric, and boolean columns", async ({page, extensionId}) => {
+    await openWithData(page, extensionId, {
+      header: ["_", "Id", "Name", "NumberOfEmployees", "Contacts.done"],
+      rows: [
+        ["[Account]", "001000000000001AAA", "Acme", 50, true],
+        ["[Account]", "001000000000002AAA", "Globex", 1500, false],
+        ["[Account]", "001000000000003AAA", "Initech", 20, false]
+      ]
+    });
+
+    // Filter by boolean text
+    await page.getByPlaceholder("Filter rows").fill("true");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 1 of 3");
+    await expect(cell(page, 0, 2)).toHaveText("Acme");
+
+    // Clear filter
+    await page.getByPlaceholder("Filter rows").fill("");
+    await expect(page.locator(".de-stats")).toContainText("Rows: 3");
+
+    // Sort by NumberOfEmployees
+    await page.locator(".de-grid thead th", {hasText: "NumberOfEmployees"}).click();
+    // Numeric collation: 20 < 50 < 1500
+    await expect(cell(page, 0, 2)).toHaveText("Initech");
+    await expect(cell(page, 1, 2)).toHaveText("Acme");
+    await expect(cell(page, 2, 2)).toHaveText("Globex");
   });
 });

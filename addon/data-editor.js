@@ -26,7 +26,7 @@ const TIME = "([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d(\\.\\d+)?)?";
 
 // Validates edited value against the field describe
 function fieldWarning(field, value) {
-  let v = value.trim();
+  let v = (value == null ? "" : String(value)).trim();
   if (v == "") return field.nillable ? "" : "Required field";
   let picklist = () => (field.picklistValues || []).filter(p => p.active).map(p => p.value);
   switch (field.type) {
@@ -57,19 +57,22 @@ function fieldWarning(field, value) {
         : "Not an active value of this picklist: " + unknown.join(", ") + (field.restrictedPicklist ? "" : " (accepted, the picklist is not restricted)");
     }
   }
-  return field.length && value.length > field.length ? "Too long: " + value.length + " characters, max " + field.length : "";
+  let str = value == null ? "" : String(value);
+  return field.length && str.length > field.length ? "Too long: " + str.length + " characters, max " + field.length : "";
 }
 
 function estimateWidth(name, rows, c) {
-  let len = name.length;
+  let len = (name || "").length;
   for (let r = 0; r < rows.length && r < 200; r++) {
-    len = Math.max(len, (rows[r][c] || "").length);
+    let cell = rows[r]?.[c];
+    let str = cell == null ? "" : String(cell);
+    len = Math.max(len, str.length);
   }
   return Math.max(60, Math.min(320, (len * 7) + 20));
 }
 
 function quoteCell(value) {
-  return "\"" + value.split("\"").join("\"\"") + "\"";
+  return "\"" + (value ?? "").toString().split("\"").join("\"\"") + "\"";
 }
 
 function serialize(header, rows, separator) {
@@ -77,18 +80,23 @@ function serialize(header, rows, separator) {
 }
 
 class Model {
-  constructor(sfHost) {
-    this.sfHost = sfHost;
-    this.sfLink = "https://" + sfHost;
-    this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
+  constructor(sfHost, {skipUserInfo = false} = {}) {
+    this.sfHost = sfHost || "";
+    this.sfLink = sfHost ? "https://" + sfHost : "";
+    this.orgName = sfHost ? (sfHost.split(".")[0]?.toUpperCase() || "") : "";
     this.spinnerCount = 0;
     this.reactCallback = null;
     this.spinFor = createSpinForMethod(this);
-    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
-    applyProductionStyling(sfHost);
+    this.userInfoModel = skipUserInfo
+      ? {getProps: () => ({userInitials: "?", userFullName: "", userName: ""})}
+      : new UserInfoModel(this.spinFor.bind(this));
+    if (sfHost) applyProductionStyling(sfHost);
 
     this.columns = [];
-    this.describeInfo = new DescribeInfo(this.spinFor, () => this.applyDescribe());
+    this.describeInfo = new DescribeInfo(this.spinFor, () => {
+      this.applyDescribe();
+      this.didUpdate();
+    });
     this.fields = null;
     this.readOnlyReason = "";
     this.displayColumns = new Set();
@@ -123,6 +131,10 @@ class Model {
     let typeColumn = header.indexOf("_");
     let typeCell = typeColumn >= 0 && rows[0] ? rows[0][typeColumn] : "";
     this.sobject = /^\[\w+\]$/.test(typeCell) ? typeCell.slice(1, -1) : "";
+    if (!this.sobject && query) {
+      let fromMatch = query.match(/\bfrom\s+(\w+)/i);
+      if (fromMatch) this.sobject = fromMatch[1];
+    }
     this.apiType = apiType || "Enterprise";
     // toLabel(), FORMAT() and convertCurrency() in the SELECT clause return display values (column named after the alias or the field)
     let selectClause = (query || "").split(/\bfrom\b/i)[0];
@@ -130,7 +142,7 @@ class Model {
     this.displayColumns = new Set(Array.from(selectClause.matchAll(displayFunctions), m => (m[2] || m[1]).toLowerCase()));
     this.columns = header.map((name, c) => ({name, width: estimateWidth(name, rows, c)}));
     this.rows = rows.map(cells => {
-      let padded = header.map((_, c) => cells[c] ?? "");
+      let padded = header.map((_, c) => cells[c] == null ? "" : String(cells[c]));
       return {cells: padded, orig: padded.slice()};
     });
     this.changesOnly = changesOnly;
@@ -189,16 +201,16 @@ class Model {
 
   refreshView() {
     let filter = this.filter.trim().toLowerCase();
-    let view = filter ? this.rows.filter(row => row.cells.some(v => v.toLowerCase().includes(filter))) : this.rows.slice();
+    let view = filter ? this.rows.filter(row => row.cells.some(v => (v == null ? "" : String(v)).toLowerCase().includes(filter))) : this.rows.slice();
     if (this.sort) {
       let {col, dir} = this.sort;
       view.sort((a, b) => {
         let x = a.cells[col];
         let y = b.cells[col];
         if (x === y) return 0;
-        if (x === "") return 1;
-        if (y === "") return -1;
-        return dir * collator.compare(x, y);
+        if (x == null || x === "") return 1;
+        if (y == null || y === "") return -1;
+        return dir * collator.compare(String(x), String(y));
       });
     }
     this.view = view;
@@ -414,7 +426,8 @@ class Model {
     for (let r = range.r1; r <= range.r2; r++) {
       for (let c = range.c1; c <= range.c2; c++) {
         let row = this.view[r];
-        edits.push({row, c, value: row.cells[c].replace(pattern, () => replacement)});
+        let cellVal = row.cells[c] == null ? "" : String(row.cells[c]);
+        edits.push({row, c, value: cellVal.replace(pattern, () => replacement)});
       }
     }
     return this.setCells(edits);
@@ -441,8 +454,9 @@ class Model {
   clampSelection() {
     if (this.sort && this.sort.col >= this.columns.length) this.sort = null;
     let sel = this.sel;
-    if (sel && Math.max(sel.ar, sel.fr) < this.view.length && Math.max(sel.ac, sel.fc) < this.columns.length) return;
-    let {fr, fc} = sel || {fr: 0, fc: 0};
+    if (!sel) return;
+    if (Math.max(sel.ar, sel.fr) < this.view.length && Math.max(sel.ac, sel.fc) < this.columns.length) return;
+    let {fr, fc} = sel;
     this.sel = null;
     this.select(fr, fc, false);
   }
@@ -503,7 +517,10 @@ class Model {
     let {r1, r2, c1, c2} = this.selRange();
     let lines = [];
     for (let r = r1; r <= r2; r++) {
-      lines.push(this.view[r].cells.slice(c1, c2 + 1).map(v => (/[\t\n\r"]/.test(v) ? quoteCell(v) : v)).join("\t"));
+      lines.push(this.view[r].cells.slice(c1, c2 + 1).map(v => {
+        let str = (v ?? "").toString();
+        return /[\t\n\r"]/.test(str) ? quoteCell(str) : str;
+      }).join("\t"));
     }
     return lines.join("\r\n");
   }
@@ -781,7 +798,11 @@ class Grid extends React.Component {
       model.clearSelection();
       model.didUpdate();
     } else if (key == "Escape") {
-      model.select(fr, fc, false);
+      if (model.sel && (model.sel.ar != model.sel.fr || model.sel.ac != model.sel.fc)) {
+        model.select(fr, fc, false);
+      } else {
+        model.sel = null;
+      }
       model.didUpdate();
     } else if (key.length == 1 && !ctrl && !e.altKey) {
       e.preventDefault();
@@ -859,7 +880,7 @@ class Grid extends React.Component {
         })
       );
     }
-    let value = editingHere ? model.editing.value : row.cells[c];
+    let value = editingHere ? model.editing.value : (row.cells[c] == null ? "" : String(row.cells[c]));
     let title = warning || (locked && col.reason) || (value.length > 30 ? value : null);
     return h("td", {key: c, "data-r": r, "data-c": c, className, title},
       warning ? h("svg", {className: "de-warning-icon", "aria-label": warning}, h("use", {xlinkHref: "symbols.svg#warning"})) : null,
@@ -963,6 +984,7 @@ class App extends React.Component {
     this.onPaste = this.onPaste.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onBeforeUnload = this.onBeforeUnload.bind(this);
+    this.onDocumentMouseDown = this.onDocumentMouseDown.bind(this);
   }
 
   componentDidMount() {
@@ -970,6 +992,7 @@ class App extends React.Component {
     document.addEventListener("cut", this.onCopy);
     document.addEventListener("paste", this.onPaste);
     document.addEventListener("keydown", this.onKeyDown);
+    document.addEventListener("mousedown", this.onDocumentMouseDown);
     window.addEventListener("beforeunload", this.onBeforeUnload);
   }
 
@@ -978,13 +1001,31 @@ class App extends React.Component {
     document.removeEventListener("cut", this.onCopy);
     document.removeEventListener("paste", this.onPaste);
     document.removeEventListener("keydown", this.onKeyDown);
+    document.removeEventListener("mousedown", this.onDocumentMouseDown);
     window.removeEventListener("beforeunload", this.onBeforeUnload);
+  }
+
+  onDocumentMouseDown(e) {
+    let {model} = this.props;
+    if (!model.sel) return;
+    if (e.target.closest("td[data-r]")) return;
+    if (e.target.closest(".de-toolbar, .de-valuebar, .de-replacebar, th, button, input, select, textarea, a, .slds-button")) return;
+    if (this.grid?.scroller && e.target == this.grid.scroller) {
+      let el = this.grid.scroller;
+      if (e.offsetX > el.clientWidth || e.offsetY > el.clientHeight) return;
+    }
+    if (model.editing) model.commitEdit();
+    model.sel = null;
+    model.didUpdate();
   }
 
   onKeyDown(e) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() == "h" && this.props.model.hasData) {
       e.preventDefault();
       this.toggleReplace(true);
+    } else if (e.key == "Escape" && this.state.replace) {
+      e.preventDefault();
+      this.toggleReplace(false);
     }
   }
 
@@ -1068,9 +1109,7 @@ class App extends React.Component {
 
   renderToolbar() {
     let {model} = this.props;
-    let {changedRows, newRows, warnings} = model.stats();
     let sendCount = model.rowsToSend().length;
-    let filtered = model.view.length != model.rows.length;
     return h("div", {className: "de-toolbar"},
       h("div", {className: "slds-button-group", role: "group"},
         this.iconButton("undo", "Undo (Ctrl+Z)", () => this.act(() => model.undo()), model.undoStack.length == 0),
@@ -1096,11 +1135,6 @@ class App extends React.Component {
           })
         )
       ),
-      h("span", {className: "de-stats"},
-        model.view.length.toLocaleString() + (filtered ? " of " + model.rows.length.toLocaleString() : "") + " rows",
-        changedRows + newRows > 0 ? h("strong", null, " · " + (changedRows ? changedRows + " edited" : "") + (changedRows && newRows ? ", " : "") + (newRows ? newRows + " new" : "")) : null,
-        warnings > 0 ? h("strong", {className: "de-stats-warning", title: "Edited values that do not match the field type. Point at the warning icons for details."}, " · " + warnings + (warnings == 1 ? " warning" : " warnings")) : null
-      ),
       h("div", {className: "de-spacer"}),
       h("div", {className: "slds-button-group", role: "group"},
         this.textButton("copy", "Copy", "Copy the table to the clipboard (paste into Excel)", () => model.copyAll(), false),
@@ -1113,7 +1147,7 @@ class App extends React.Component {
           h("span", {className: "slds-form-element__label"}, "Changes only")
         )
       ),
-      this.textButton("upload", "Send " + sendCount.toLocaleString() + (sendCount == 1 ? " row" : " rows") + " to Data Import", model.readOnlyReason || "Open Data Import preloaded with these rows. You review and run the import there.", () => model.sendToImport(), sendCount == 0 || !!model.readOnlyReason, "slds-button_brand")
+      this.textButton("upload", "Send to Data Import", model.readOnlyReason || ("Open Data Import preloaded with " + sendCount.toLocaleString() + (sendCount == 1 ? " row" : " rows") + ". You review and run the import there."), () => model.sendToImport(), sendCount == 0 || !!model.readOnlyReason, "slds-button_brand")
     );
   }
 
@@ -1124,7 +1158,7 @@ class App extends React.Component {
       if (e.key == "Enter") this.replaceAll();
       if (e.key == "Escape") this.toggleReplace(false);
     };
-    return h("div", {className: "de-valuebar de-replacebar"},
+    return h("div", {className: "de-valuebar de-replacebar", onKeyDown},
       h("input", {
         className: "slds-input",
         ref: el => { this.findInput = el; },
@@ -1151,33 +1185,63 @@ class App extends React.Component {
 
   renderValueBar() {
     let {model} = this.props;
-    if (!model.sel) return null;
-    let col = model.columns[model.sel.fc];
+    let sel = model.sel;
+    let col = sel ? model.columns[sel.fc] : null;
     let fromBar = model.editing?.source == "bar";
-    let row = model.view[model.sel.fr];
-    let locked = model.isCellLocked(row, model.sel.fc);
-    let warning = model.editing ? "" : model.cellWarning(row, model.sel.fc);
-    let note = warning || (locked ? col.reason : "") || (col.field ? col.field.type : "");
+    let row = sel ? model.view[sel.fr] : null;
+    let locked = !sel || model.isCellLocked(row, sel.fc);
+    let warning = !sel || model.editing ? "" : model.cellWarning(row, sel.fc);
+    let note = warning || (locked && col ? col.reason : "") || (col?.field ? col.field.type : "");
     return h("div", {className: "de-valuebar"},
-      h("span", {className: "de-cellref", title: col.name}, col.name + " · row " + (model.sel.fr + 1)),
+      h("span", {className: "de-cellref", title: col ? col.name : ""}, col ? col.name + " · row " + (sel.fr + 1) : "\u00a0"),
       h("input", {
         className: "slds-input",
         "aria-label": "Cell value",
         readOnly: locked,
-        value: model.editing ? model.editing.value : model.activeValue(),
-        onFocus: () => { model.beginEdit(null, "bar"); model.didUpdate(); },
+        disabled: !sel,
+        value: sel ? (model.editing ? model.editing.value : model.activeValue()) : "",
+        onFocus: () => {
+          if (!sel) return;
+          model.beginEdit(null, "bar");
+          model.didUpdate();
+        },
         onChange: e => {
+          if (!sel) return;
           if (!model.editing) model.beginEdit(null, "bar");
           if (model.editing) model.editing.value = e.target.value;
           model.didUpdate();
         },
         onKeyDown: e => {
+          if (!sel) return;
           if (e.key == "Enter") { model.commitEdit(e.ctrlKey || e.metaKey); this.grid?.scroller.focus(); this.act(() => {}); }
           if (e.key == "Escape") { model.cancelEdit(); this.grid?.scroller.focus(); model.didUpdate(); }
         },
         onBlur: () => { if (fromBar && model.editing) { model.commitEdit(); model.didUpdate(); } }
       }),
       note ? h("span", {className: "de-cellnote" + (warning ? " de-cellnote-warning" : ""), title: note}, note) : null
+    );
+  }
+
+  renderFooter() {
+    let {model} = this.props;
+    let {changedRows, newRows, warnings} = model.stats();
+    let totalEdited = changedRows + newRows;
+    let filtered = model.view.length != model.rows.length;
+    let rowsText = model.view.length.toLocaleString() + (filtered ? " of " + model.rows.length.toLocaleString() : "");
+    return h("div", {className: "de-footer"},
+      h("div", {className: "de-footer-shortcuts"},
+        h("kbd", null, "Double-click"), " or type to edit · ",
+        h("kbd", null, "Enter"), " save & move down · ",
+        h("kbd", null, "Ctrl+Enter"), " fill selection · ",
+        h("kbd", null, "Ctrl+C"), "/", h("kbd", null, "Ctrl+V"), " copy & paste · ",
+        h("kbd", null, "Ctrl+Z"), " undo · ",
+        h("kbd", null, "Ctrl+H"), " replace · click a header to sort, drag its edge to resize"
+      ),
+      h("div", {className: "de-footer-stats de-stats"},
+        "Rows: " + rowsText,
+        h("span", {className: totalEdited > 0 ? "de-stats-edited" : null}, " \u00a0 edited: " + totalEdited),
+        h("span", {className: warnings > 0 ? "de-stats-warning" : null, title: warnings > 0 ? "Edited values that do not match the field type. Point at the warning icons for details." : null}, " \u00a0 Warning: " + warnings)
+      )
     );
   }
 
@@ -1193,8 +1257,8 @@ class App extends React.Component {
         spinnerCount: model.spinnerCount,
         ...model.userInfoModel.getProps()
       }),
-      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
-        h("div", {className: "slds-card slds-m-around_medium", style: {flex: "1 1 0", display: "flex", flexDirection: "column", minHeight: 0}},
+      h("div", {className: "de-page-container"},
+        h("div", {className: "slds-card de-card", style: {flex: "1 1 0", display: "flex", flexDirection: "column", minHeight: 0}},
           model.errorMessage ? h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "alert"}, model.errorMessage) : null,
           model.hasData ? this.renderToolbar() : null,
           model.hasData ? this.renderReplaceBar() : null,
@@ -1206,16 +1270,7 @@ class App extends React.Component {
               h("p", {className: "slds-text-heading_small"}, model.spinnerCount > 0 ? "Loading…" : "Paste data here (Ctrl+V)"),
               h("p", null, "Copy cells from Excel or Google Sheets, or open a query result from Data Export with the Edit button. The first line is used as the header.")
             ),
-          model.hasData
-            ? h("div", {className: "de-footer"},
-              h("kbd", null, "Double-click"), " or type to edit · ",
-              h("kbd", null, "Enter"), " save & move down · ",
-              h("kbd", null, "Ctrl+Enter"), " fill selection · ",
-              h("kbd", null, "Ctrl+C"), "/", h("kbd", null, "Ctrl+V"), " copy & paste · ",
-              h("kbd", null, "Ctrl+Z"), " undo · ",
-              h("kbd", null, "Ctrl+H"), " replace · click a header to sort, drag its edge to resize"
-            )
-            : null
+          model.hasData ? this.renderFooter() : null
         )
       )
     );
@@ -1225,24 +1280,37 @@ class App extends React.Component {
 {
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
-  initButton(sfHost, true);
-  sfConn.getSession(sfHost).then(() => {
-    let root = document.getElementById("root");
-    let model = new Model(sfHost);
-    model.reactCallback = cb => {
-      ReactDOM.render(h(App, {model}), root, cb);
-    };
+  let root = document.getElementById("root");
+
+  if (!sfHost) {
+    let model = new Model(sfHost, {skipUserInfo: true});
+    model.errorMessage = "No Salesforce organization specified. Please launch Data Editor from Data Export or provide a ?host= parameter.";
     ReactDOM.render(h(App, {model}), root);
-    if (args.has("handoff")) {
-      model.spinFor(loadHandoff(args.get("handoff")).then(payload => {
-        if (!payload) {
-          model.errorMessage = "The data is no longer available. Open it again from Data Export.";
-          return;
-        }
-        model.setTable(payload.header, payload.rows, {apiType: payload.apiType, changesOnly: true, query: payload.query});
-      }).catch(err => {
-        model.errorMessage = "Could not load the data: " + err.message;
-      }));
-    }
-  });
+  } else {
+    initButton(sfHost, true);
+    sfConn.getSession(sfHost).then(() => {
+      let model = new Model(sfHost);
+      model.reactCallback = cb => {
+        ReactDOM.render(h(App, {model}), root, cb);
+      };
+      ReactDOM.render(h(App, {model}), root);
+      if (args.has("handoff")) {
+        model.spinFor(
+          loadHandoff(args.get("handoff")).then(payload => {
+            if (!payload) {
+              model.errorMessage = "The data is no longer available. Open it again from Data Export.";
+              return;
+            }
+            model.setTable(payload.header, payload.rows, {apiType: payload.apiType, changesOnly: true, query: payload.query});
+          }).catch(err => {
+            model.errorMessage = "Could not load the data: " + err.message;
+          })
+        );
+      }
+    }).catch(err => {
+      let model = new Model(sfHost, {skipUserInfo: true});
+      model.errorMessage = "Session error: " + (err?.message || err);
+      ReactDOM.render(h(App, {model}), root);
+    });
+  }
 }

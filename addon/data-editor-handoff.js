@@ -49,18 +49,30 @@ export async function saveHandoff(payload) {
 
 // Opens the target page in a new tab with the payload key in the URL.
 export function openWithHandoff(page, args, payload) {
-  let win = window.open("", "_blank");
+  let win = null;
+  try {
+    win = window.open("", "_blank");
+  } catch (e) {
+    // Popup might be blocked or restricted
+  }
   return saveHandoff(payload).then(key => {
     args.set("handoff", key);
     let url = new URL(page + "?" + args, location.href).href;
-    if (win) win.location.href = url; else window.open(url, "_blank");
+    if (win && !win.closed) {
+      win.location.href = url;
+    } else {
+      window.open(url, "_blank");
+    }
   }, err => {
-    win?.close();
+    if (win && !win.closed) {
+      try { win.close(); } catch (e) {}
+    }
     throw err;
   });
 }
 
 // Loads payload from IndexedDB by key.
 export function loadHandoff(key) {
+  if (!key) return Promise.resolve(null);
   return withStore("readonly", store => store.get(key));
 }

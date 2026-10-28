@@ -161,7 +161,7 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
-  test("Query Editor Uses SOQL Colouring", async ({page, extensionId}) => {
+  test("Query Editor Uses SOQL, SOSL and GraphQL Colouring", async ({page, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
@@ -180,6 +180,12 @@ test.describe("Data Export", () => {
 
     await query.fill("FIND {Acme} IN ALL FIELDS RETURNING Account(Id), Contact(Id)");
     await expect(highlight.locator(".token.sobject")).toHaveText(["Account", "Contact"]);
+
+    // A query starting with "{" is sent to the GraphQL endpoint, so it uses the GraphQL grammar, not SQL's
+    await query.fill("{\n\tuiapi {\n\t\tquery {\n\t\t\tContact {\n\t\t\t\tedges {\n\t\t\t\t\tnode {\n\t\t\t\t\t\tId\n\t\t\t\t\t\tName { value }\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}");
+    await expect(highlight.locator(".token.keyword")).toHaveText(["query"]);
+    await expect(highlight.locator(".token.property")).toHaveText(["Id", "value"]);
+    await expect(highlight.locator(".token.sobject")).toHaveCount(0);
   });
 
 });

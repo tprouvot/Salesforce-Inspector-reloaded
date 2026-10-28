@@ -531,18 +531,22 @@ export function createChangeGuard() {
 }
 
 /**
- * Picks the Prism language for a Data Export query, from those registered by
- * lib/prism/prism-sf.js: SELECT is SOQL and FIND is SOSL, anything else such as
- * GraphQL keeps plain SQL.
+ * Picks the Prism language for a Data Export query: SELECT is SOQL and FIND is SOSL
+ * (both from lib/prism/prism-sf.js), a leading "{" is GraphQL (lib/prism/prism.js),
+ * the same rule Data Export uses to send it to the GraphQL endpoint. Anything else
+ * keeps plain SQL.
  * @param {string} query
- * @returns {"soql"|"sosl"|"sql"}
+ * @returns {"soql"|"sosl"|"graphql"|"sql"}
  */
 export function queryLanguage(query) {
   const start = query.trimStart();
   if (/^select\b/i.test(start)) {
     return "soql";
   }
-  return /^find\b/i.test(start) ? "sosl" : "sql";
+  if (/^find\b/i.test(start)) {
+    return "sosl";
+  }
+  return start.startsWith("{") ? "graphql" : "sql";
 }
 
 // OAuth utilities

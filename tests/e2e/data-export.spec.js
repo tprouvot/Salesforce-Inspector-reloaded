@@ -164,6 +164,27 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
+  test("Query Editor Uses SOQL Colouring", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    // Objects get their own token and field names that clash with SQL keywords stay plain.
+    const query = page.locator("textarea#query");
+    await query.fill("SELECT Id, Status FROM Case ORDER BY Type");
+    const highlight = page.locator(".query-highlight");
+    await expect(highlight.locator(".token.sobject")).toHaveText("Case");
+    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "FROM", "ORDER BY"]);
+
+    // Metadata is a field outside WITH METADATA, and a SOQL function after "), " is
+    // not a further object the way it is in SOSL RETURNING.
+    await query.fill("SELECT Metadata, toLabel(Status), convertCurrency(Amount) FROM Opportunity");
+    await expect(highlight.locator(".token.sobject")).toHaveText(["Opportunity"]);
+    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "toLabel", "convertCurrency", "FROM"]);
+
+    await query.fill("FIND {Acme} IN ALL FIELDS RETURNING Account(Id), Contact(Id)");
+    await expect(highlight.locator(".token.sobject")).toHaveText(["Account", "Contact"]);
+  });
+
   test("Query History Search", async ({page, context, extensionId}) => {
     await context.addInitScript(() => {
       window.localStorage.setItem("insextQueryHistory", JSON.stringify([
@@ -706,25 +727,6 @@ test.describe("Data Export", () => {
 
     await options.first().click();
     await expect(page.locator("textarea#query")).toHaveValue("SELECT Id FROM ");
-  });
-
-  test("Query Editor Uses SOQL Colouring", async ({page, extensionId}) => {
-    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
-    await page.waitForSelector("textarea#query", {timeout: 2000});
-
-    // The editor shares the dropdown grammar: objects get their own token and
-    // field names that clash with SQL keywords stay plain.
-    const query = page.locator("textarea#query");
-    await query.fill("SELECT Id, Status FROM Case ORDER BY Type");
-    const highlight = page.locator(".query-highlight");
-    await expect(highlight.locator(".token.sobject")).toHaveText("Case");
-    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "FROM", "ORDER BY"]);
-
-    // Metadata is a field outside WITH METADATA, and a SOQL function after "), " is
-    // not a further object the way it is in SOSL RETURNING.
-    await query.fill("SELECT Metadata, toLabel(Status), convertCurrency(Amount) FROM Opportunity");
-    await expect(highlight.locator(".token.sobject")).toHaveText(["Opportunity"]);
-    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "toLabel", "convertCurrency", "FROM"]);
   });
 
   test("Keyboard Never Acts On A Hidden List", async ({page, context, extensionId}) => {

@@ -165,14 +165,6 @@ textarea[hidden] {
   overflow-wrap: anywhere;
 }
 
-.sfir-query-combobox-dropdown .token.sobject,
-.query-highlight .token.sobject {
-  color: light-dark(
-    var(--slds-g-color-palette-purple-40),
-    var(--slds-g-color-palette-purple-60)
-  );
-}
-
 .sfir-query-combobox-dropdown .sfir-search-match {
   background-color: light-dark(
     var(--slds-g-color-palette-yellow-90),
@@ -281,6 +273,15 @@ textarea[hidden] {
   height: auto;
   max-height: none;
   overflow: visible;
+}
+
+/* Object names after FROM and RETURNING, from the SOQL grammar in soql-grammar.js. */
+.query-highlight .token.sobject,
+.sfir-query-combobox-dropdown .token.sobject {
+  color: light-dark(
+    var(--slds-g-color-palette-purple-40),
+    var(--slds-g-color-palette-purple-60)
+  );
 }
 
 #result-area {

@@ -4,10 +4,10 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {queryGrammar} from "./soql-grammar.js";
 import {SldsCombobox} from "./components/SldsCombobox.js";
 import Toast from "./components/Toast.js";
 import {dropdownEntries, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
-import {queryGrammar} from "./soql-grammar.js";
 
 // Where the query in the editor can come from. Mutually exclusive, so the picker is
 // a radio button group and only the selected source's list and actions are shown.

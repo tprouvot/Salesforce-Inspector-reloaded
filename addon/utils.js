@@ -532,7 +532,7 @@ export function createChangeGuard() {
 
 /**
  * Picks the Prism language for a Data Export query, from those registered by
- * lib/prism/prism-soql.js: SELECT is SOQL and FIND is SOSL, anything else such as
+ * lib/prism/prism-sf.js: SELECT is SOQL and FIND is SOSL, anything else such as
  * GraphQL keeps plain SQL.
  * @param {string} query
  * @returns {"soql"|"sosl"|"sql"}

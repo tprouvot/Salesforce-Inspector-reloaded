@@ -311,7 +311,8 @@ Instructions:**
 
 ## Troubleshooting
 
-- **No Rules Enabled:** If you see a message about no rules being enabled, open the Options page and enable at least one rule.
+- **Unable to Load Flow:** If Flow Scanner cannot retrieve the flow, it shows a load error with the message returned by Salesforce, and Flow Information says the flow could not be loaded. Use **Retry**. This is separate from a scan that found no issues.
+- **No Rules Enabled:** If you see a message about no rules being enabled, open the Options page and enable at least one rule. A flow that loads and passes every enabled rule shows **No Issues Found** instead.
 - **Initialization Error:** If the scanner fails to load, check your network connection and ensure you're logged into Salesforce.
 - **Unsupported Flow Type:** Some flow types may not be supported. The scanner will list which types are supported if this occurs.
 - **Still Stuck?** Check the browser console for errors or reach out to the extension's support channels.

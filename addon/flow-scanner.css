@@ -480,6 +480,15 @@ button:disabled,
   max-width: 300px;
 }
 
+.empty-state.load-error-state,
+.empty-state.load-error-state p {
+  max-width: 560px;
+}
+
+.empty-state.load-error-state p {
+  overflow-wrap: anywhere;
+}
+
 .unsupported-flow-intro {
   margin-top: 0;
   margin-bottom: 12px;

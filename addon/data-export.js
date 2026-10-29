@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory, queryLanguage} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -19,6 +19,36 @@ function createQueryHistory(storageKey, max) {
     sortComparator: isSaved ? (a, b) => (a.query > b.query ? 1 : b.query > a.query ? -1 : 0) : null,
     addToFront: true
   });
+}
+
+/**
+ * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
+ * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
+ * Salesforce GraphQL examples. SOQL and SOSL never start with either.
+ * @param {string} query
+ * @returns {boolean}
+ */
+function isGraphqlQuery(query) {
+  return /^(?:\{|query\b)/.test(query.trimStart());
+}
+
+/**
+ * Picks the Prism language for a Data Export query: SELECT is SOQL and FIND is SOSL
+ * (both from lib/prism/prism-sf.js), GraphQL as detected by isGraphqlQuery (lib/prism/prism.js),
+ * the same rule Data Export uses to send it to the GraphQL endpoint. Anything else
+ * keeps plain SQL.
+ * @param {string} query
+ * @returns {"soql"|"sosl"|"graphql"|"sql"}
+ */
+function queryLanguage(query) {
+  const start = query.trimStart();
+  if (/^select\b/i.test(start)) {
+    return "soql";
+  }
+  if (/^find\b/i.test(start)) {
+    return "sosl";
+  }
+  return isGraphqlQuery(start) ? "graphql" : "sql";
 }
 
 class Model {
@@ -136,10 +166,12 @@ class Model {
       method = "queryAll";
     } else if (this.queryInput.value.toLowerCase().startsWith("find")){
       method = "search";
-    } else if (this.queryInput.value.trim().startsWith("{")){
+    } else if (isGraphqlQuery(query)){
       method = "graphql";
       queryParams = "";
-      params = {...baseParams, method: "POST", body: {"query": "query objects " + query}};
+      // The "{ ... }" shorthand of the query templates gets an operation name, a full "query accounts { ... }" is sent as is
+      const operation = query.trimStart().startsWith("{") ? "query objects " + query : query;
+      params = {...baseParams, method: "POST", body: {"query": operation}};
     } else {
       method = "query";
     }

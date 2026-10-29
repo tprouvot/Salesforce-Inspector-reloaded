@@ -27,6 +27,7 @@ export class Constants {
   static PRELOAD_SOBJECTS_BEFORE_POPUP = "preloadSobjectsBeforePopup";
   static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
   static ENABLE_RECENTLY_VIEWED_RECORDS = "enableRecentlyViewedRecords";
+  static AUTO_SPLIT_LARGE_IN_CLAUSES = "autoSplitLargeInClauses";
   static QA_INTERNAL_MODE = "qaInternalMode";
   static USER_SEARCH_EXCLUSIONS_KEY = "_userSearchExclusions";
   // Custom Shortcuts shared across every org (not prefixed by sfHost)

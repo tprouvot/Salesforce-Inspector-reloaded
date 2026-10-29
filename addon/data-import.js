@@ -55,6 +55,7 @@ export class Model {
     this.batchSizeBeforeUpdateOnly = null;
     this.batchConcurrency = localStorage.getItem("defaultThreadSize") ? localStorage.getItem("defaultThreadSize") : "6";
     this.confirmPopup = null;
+    this.showCustomHeadersError = false;
     this.activeBatches = 0;
     this.isProcessingQueue = false;
     this.importState = null;
@@ -493,6 +494,18 @@ export class Model {
     return "";
   }
 
+  customHeadersError() {
+    if (!(this.customHeaders?.length > 0)) {
+      return "";
+    }
+    try {
+      JSON.parse(this.customHeaders);
+    } catch (e) {
+      return "Invalid header: " + e.message;
+    }
+    return "";
+  }
+
   canCopy() {
     return this.importData.taggedRows != null;
   }
@@ -638,6 +651,10 @@ export class Model {
   }
 
   doImport() {
+    if (this.customHeadersError()) {
+      this.showCustomHeadersError = true;
+      return;
+    }
     let importedRecords = this.importData.counts.Queued + this.importData.counts.Processing;
     let skippedRecords = this.importAction != "undelete" ? this.importData.counts.Succeeded + this.importData.counts.Failed : 0;
     let actionVerb = this.getActionVerb(this.importAction);
@@ -1479,6 +1496,7 @@ export class App extends React.Component {
     this.onExternalIdChange = this.onExternalIdChange.bind(this);
     this.onBatchSizeChange = this.onBatchSizeChange.bind(this);
     this.onCustomHeadersChange = this.onCustomHeadersChange.bind(this);
+    this.onCustomHeadersBlur = this.onCustomHeadersBlur.bind(this);
     this.onCustomHeadersKeyPress = this.onCustomHeadersKeyPress.bind(this);
     this.onBatchConcurrencyChange = this.onBatchConcurrencyChange.bind(this);
     this.onToggleHelpClick = this.onToggleHelpClick.bind(this);
@@ -1578,6 +1596,12 @@ export class App extends React.Component {
   onCustomHeadersChange(e){
     let {model} = this.props;
     model.customHeaders = e.target.value;
+    model.showCustomHeadersError = false;
+    model.didUpdate();
+  }
+  onCustomHeadersBlur() {
+    let {model} = this.props;
+    model.showCustomHeadersError = true;
     model.didUpdate();
   }
   onBatchConcurrencyChange(e) {
@@ -1910,6 +1934,7 @@ export class App extends React.Component {
 
   render() {
     let {model} = this.props;
+    let customHeadersError = model.showCustomHeadersError ? model.customHeadersError() : "";
 
     // Build utility items for PageHeader
     let utilityItems = [
@@ -2042,7 +2067,8 @@ export class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-custom-headers"}, "Custom Headers"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "form-custom-headers", className: "slds-textarea", type: "textarea", rows: 1, placeholder: model.isBulk() ? "Not available with Bulk API 2.0" : "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, disabled: model.isBulk()}),
+                              h("textarea", {id: "form-custom-headers", className: customHeadersError ? "slds-textarea slds-has-error" : "slds-textarea", type: "textarea", rows: 1, placeholder: model.isBulk() ? "Not available with Bulk API 2.0" : "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, onBlur: this.onCustomHeadersBlur, disabled: model.isBulk()}),
+                              h("div", {id: "error-custom-headers", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !customHeadersError}, customHeadersError)
                             )
                           )
                         ),

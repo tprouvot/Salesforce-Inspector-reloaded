@@ -42,6 +42,36 @@ function createQueryHistory(storageKey, max) {
   });
 }
 
+/**
+ * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
+ * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
+ * Salesforce GraphQL examples. SOQL and SOSL never start with either.
+ * @param {string} query
+ * @returns {boolean}
+ */
+function isGraphqlQuery(query) {
+  return /^(?:\{|query\b)/.test(query.trimStart());
+}
+
+/**
+ * Picks the Prism language for a Data Export query: SELECT is SOQL and FIND is SOSL
+ * (both from lib/prism/prism-sf.js), GraphQL as detected by isGraphqlQuery (lib/prism/prism.js),
+ * the same rule Data Export uses to send it to the GraphQL endpoint. Anything else
+ * keeps plain SQL.
+ * @param {string} query
+ * @returns {"soql"|"sosl"|"graphql"|"sql"}
+ */
+function queryLanguage(query) {
+  const start = query.trimStart();
+  if (/^select\b/i.test(start)) {
+    return "soql";
+  }
+  if (/^find\b/i.test(start)) {
+    return "sosl";
+  }
+  return isGraphqlQuery(start) ? "graphql" : "sql";
+}
+
 class Model {
   static QUERY_TAB_PREFIX = "Query";
   static BULK_POLL_INTERVAL_MS = 10000;
@@ -187,10 +217,12 @@ class Model {
       method = "queryAll";
     } else if (this.queryInput.value.toLowerCase().startsWith("find")){
       method = "search";
-    } else if (this.queryInput.value.trim().startsWith("{")){
+    } else if (isGraphqlQuery(query)){
       method = "graphql";
       queryParams = "";
-      params = {...baseParams, method: "POST", body: {"query": "query objects " + query}};
+      // The "{ ... }" shorthand of the query templates gets an operation name, a full "query accounts { ... }" is sent as is
+      const operation = query.trimStart().startsWith("{") ? "query objects " + query : query;
+      params = {...baseParams, method: "POST", body: {"query": operation}};
     } else {
       method = "query";
     }
@@ -2082,7 +2114,8 @@ class App extends React.Component {
     queryInput.classList.remove("query-plain");
     // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
     this.highlightGuard(code, () => {
-      queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+      const language = queryLanguage(code);
+      queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages[language], language);
     });
   }
 

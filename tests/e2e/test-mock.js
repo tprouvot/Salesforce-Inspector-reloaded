@@ -30,6 +30,38 @@ const accountRecords = [
   }
 ];
 
+// Field Manager - "Retrieve Fields" mock CustomField records, keyed by Tooling API Id
+const mockCustomFieldRecords = {
+  "00N000000000001AAA": {
+    Id: "00N000000000001AAA",
+    DeveloperName: "Existing_Text",
+    TableEnumOrId: "Account",
+    Metadata: {
+      label: "Existing Text",
+      type: "Text",
+      length: 100,
+      required: false,
+      unique: false,
+      externalId: false,
+      description: "An existing text field",
+      inlineHelpText: "Help for existing text",
+      formula: null
+    }
+  },
+  "00N000000000002AAA": {
+    Id: "00N000000000002AAA",
+    DeveloperName: "Existing_Checkbox",
+    TableEnumOrId: "Account",
+    Metadata: {
+      label: "Existing Checkbox",
+      type: "Checkbox",
+      defaultValue: false,
+      description: "",
+      inlineHelpText: null
+    }
+  }
+};
+
 function mockDescribeForName(name) {
   if (name === "Account") {
     return {
@@ -178,6 +210,13 @@ export async function routeMock(route, host) {
             layoutable: false
           }]
       });
+      return true;
+    }
+
+    // Tooling API - CustomField GET by Id (Field Manager's "Retrieve Fields")
+    if (path.match(/\/tooling\/sobjects\/CustomField\/[a-zA-Z0-9]+$/) && method === "GET") {
+      const id = path.split("/").pop();
+      await fulfillSuccess(route, mockCustomFieldRecords[id] || {});
       return true;
     }
 
@@ -643,6 +682,19 @@ export async function routeMock(route, host) {
         return true;
       }
 
+      // Field Manager - "Retrieve Fields" list query (Id only; Metadata is fetched per-record after)
+      if (query.includes("from customfield")) {
+        await fulfillSuccess(route, {
+          totalSize: 2,
+          done: true,
+          records: [
+            {Id: "00N000000000001AAA"},
+            {Id: "00N000000000002AAA"}
+          ]
+        });
+        return true;
+      }
+
       // REST API - RecentlyViewed Query
       if (query.includes(" from recentlyviewed") || query.includes("from+recentlyviewed")) {
         await fulfillSuccess(route, {
@@ -829,7 +881,8 @@ export async function routeMock(route, host) {
         {version: "64.0", label: "Summer '25"},
         {version: "65.0", label: "Winter '26"},
         {version: "66.0", label: "Spring '26"},
-        {version: "67.0", label: "Summer '26"}
+        {version: "67.0", label: "Summer '26"},
+        {version: "68.0", label: "Winter '27"}
       ]);
       return true;
     }

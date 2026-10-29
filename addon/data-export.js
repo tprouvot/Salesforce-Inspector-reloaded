@@ -1,9 +1,14 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+
+// Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
+// cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
+// so we fall back to plain (uncolored) text instead of colorizing on every keystroke.
+const MAX_HIGHLIGHT_LENGTH = 100000;
 
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
@@ -14,6 +19,36 @@ function createQueryHistory(storageKey, max) {
     sortComparator: isSaved ? (a, b) => (a.query > b.query ? 1 : b.query > a.query ? -1 : 0) : null,
     addToFront: true
   });
+}
+
+/**
+ * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
+ * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
+ * Salesforce GraphQL examples. SOQL and SOSL never start with either.
+ * @param {string} query
+ * @returns {boolean}
+ */
+function isGraphqlQuery(query) {
+  return /^(?:\{|query\b)/.test(query.trimStart());
+}
+
+/**
+ * Picks the Prism language for a Data Export query: SELECT is SOQL and FIND is SOSL
+ * (both from lib/prism/prism-sf.js), GraphQL as detected by isGraphqlQuery (lib/prism/prism.js),
+ * the same rule Data Export uses to send it to the GraphQL endpoint. Anything else
+ * keeps plain SQL.
+ * @param {string} query
+ * @returns {"soql"|"sosl"|"graphql"|"sql"}
+ */
+function queryLanguage(query) {
+  const start = query.trimStart();
+  if (/^select\b/i.test(start)) {
+    return "soql";
+  }
+  if (/^find\b/i.test(start)) {
+    return "sosl";
+  }
+  return isGraphqlQuery(start) ? "graphql" : "sql";
 }
 
 // Maximum safe length for the encoded REST query URI. This includes the
@@ -442,10 +477,12 @@ class Model {
       method = "queryAll";
     } else if (this.queryInput.value.toLowerCase().startsWith("find")){
       method = "search";
-    } else if (this.queryInput.value.trim().startsWith("{")){
+    } else if (isGraphqlQuery(query)){
       method = "graphql";
       queryParams = "";
-      params = {...baseParams, method: "POST", body: {"query": "query objects " + query}};
+      // The "{ ... }" shorthand of the query templates gets an operation name, a full "query accounts { ... }" is sent as is
+      const operation = query.trimStart().startsWith("{") ? "query objects " + query : query;
+      params = {...baseParams, method: "POST", body: {"query": operation}};
     } else {
       method = "query";
     }
@@ -1764,6 +1801,7 @@ class App extends React.Component {
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
     this.updateQueryHighlight = this.updateQueryHighlight.bind(this);
+    this.highlightGuard = createChangeGuard();
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -2010,7 +2048,20 @@ class App extends React.Component {
     if (code === "" || code.endsWith("\n")) {
       code += " ";
     }
-    queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages.sql, "sql");
+    if (code.length > MAX_HIGHLIGHT_LENGTH) {
+      queryInput.classList.add("query-plain");
+      // Signature stays constant while oversized, so this clears the (now stale) backdrop only once instead of on every keystroke.
+      this.highlightGuard("__plain__", () => {
+        queryHighlightCode.textContent = "";
+      });
+      return;
+    }
+    queryInput.classList.remove("query-plain");
+    // Skip re-highlighting when the query text itself hasn't changed, since componentDidUpdate fires on every unrelated state change too.
+    this.highlightGuard(code, () => {
+      const language = queryLanguage(code);
+      queryHighlightCode.innerHTML = window.Prism.highlight(code, window.Prism.languages[language], language);
+    });
   }
 
   onTabNameEdit(e, index) {

@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, createChangeGuard, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -279,6 +279,7 @@ class App extends React.Component {
     this.onConfirmRemoveSaved = this.onConfirmRemoveSaved.bind(this);
     this.onConfirmClearSaved = this.onConfirmClearSaved.bind(this);
     this.disableGenerate = this.disableGenerate.bind(this);
+    this.highlightGuard = createChangeGuard();
     this.getEventChannels();
     this.state = {peLimits: []};
   }
@@ -885,6 +886,14 @@ class App extends React.Component {
     }
   }
 
+  componentDidUpdate() {
+    let {model} = this.props;
+    // Only re-run Prism when the event list actually changed, not on every unrelated render (e.g. selecting an event).
+    if (window.Prism) {
+      this.highlightGuard([model.events, model.events.length], () => window.Prism.highlightAll());
+    }
+  }
+
   render() {
     let {model} = this.props;
     let {peLimits} = this.state;
@@ -1147,13 +1156,7 @@ class App extends React.Component {
             },
             JSON.stringify(eventWithoutHidden, null, 4)
             );
-          },
-          setTimeout(() => {
-            if (window.Prism) {
-              window.Prism.highlightAll();
-            }
-          }, 0)
-          )
+          })
         )
       )
       )

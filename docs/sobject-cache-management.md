@@ -38,7 +38,7 @@ flowchart TB
     subgraph Triggers["Trigger Points"]
         A[Popup/App loads]
         B[Objects tab opened]
-        C[Field Creator page]
+        C[Field Manager page]
     end
 
     subgraph shouldLoadSobjects["shouldLoadSobjects()"]
@@ -132,7 +132,7 @@ flowchart TB
 - **Popup (AllDataBox):** When `shouldLoadSobjects()` is true:
   - Popup expanded + Objects tab active, or
   - Preload enabled + popup not expanded (loads before user opens it)
-- **Field Creator:** When the page loads and needs layoutable objects
+- **Field Manager:** When the page loads and needs layoutable objects
 
 ### 2. `getSobjectsList(sfHost)`
 

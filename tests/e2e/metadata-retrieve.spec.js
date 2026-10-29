@@ -286,8 +286,9 @@ test.describe("Metadata Retrieve", () => {
     await page.waitForTimeout(500);
     await page.waitForSelector(".slds-notify", {timeout: 1000});
 
-    // Verify success toast appears
-    await expect(page.locator("text=imported successfully")).toBeVisible({timeout: 1000});
+    // Verify success toast appears (scoped to the visible toast, since a sr-only
+    // live region now also announces the same message for screen readers)
+    await expect(page.locator(".slds-notify_toast").getByText("imported successfully")).toBeVisible({timeout: 1000});
 
     const apexClassCheckbox = page
       .locator(".slds-accordion__list-item")

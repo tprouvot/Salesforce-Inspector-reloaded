@@ -161,4 +161,68 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
+  test("Query Editor Uses SOQL, SOSL and GraphQL Colouring", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    // Objects get their own token and field names that clash with SQL keywords stay plain.
+    const query = page.locator("textarea#query");
+    await query.fill("SELECT Id, Status FROM Case ORDER BY Type");
+    const highlight = page.locator(".query-highlight");
+    await expect(highlight.locator(".token.sobject")).toHaveText("Case");
+    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "FROM", "ORDER BY"]);
+
+    // Metadata is a field outside WITH METADATA, and a SOQL function after "), " is
+    // not a further object the way it is in SOSL RETURNING.
+    await query.fill("SELECT Metadata, toLabel(Status), convertCurrency(Amount) FROM Opportunity");
+    await expect(highlight.locator(".token.sobject")).toHaveText(["Opportunity"]);
+    await expect(highlight.locator(".token.keyword")).toHaveText(["SELECT", "toLabel", "convertCurrency", "FROM"]);
+
+    await query.fill("FIND {Acme} IN ALL FIELDS RETURNING Account(Id), Contact(Id)");
+    await expect(highlight.locator(".token.sobject")).toHaveText(["Account", "Contact"]);
+
+    // A query starting with "{" is sent to the GraphQL endpoint, so it uses the GraphQL grammar, not SQL's
+    await query.fill("{\n\tuiapi {\n\t\tquery {\n\t\t\tContact {\n\t\t\t\tedges {\n\t\t\t\t\tnode {\n\t\t\t\t\t\tId\n\t\t\t\t\t\tName { value }\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}");
+    await expect(highlight.locator(".token.keyword")).toHaveText(["query"]);
+    await expect(highlight.locator(".token.property")).toHaveText(["Id", "value"]);
+    await expect(highlight.locator(".token.sobject")).toHaveCount(0);
+
+    // A full operation, as in the Salesforce GraphQL examples, is GraphQL too
+    await query.fill("query accounts {\n\tuiapi {\n\t\tquery {\n\t\t\tAccount {\n\t\t\t\tedges {\n\t\t\t\t\tnode {\n\t\t\t\t\t\tId\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}");
+    await expect(highlight.locator(".token.keyword")).toHaveText(["query", "query"]);
+    await expect(highlight.locator(".token.property")).toHaveText(["Id"]);
+  });
+
+  test("Execute GraphQL Export, shorthand and full operation", async ({page, context, extensionId}) => {
+    const sentQueries = [];
+    // Registered after the generic mock, so it takes precedence for the GraphQL endpoint (requests carry a "?cache=" parameter)
+    await context.route(new RegExp(`/services/data/v${apiVersion}/graphql(\\?|$)`), async route => {
+      sentQueries.push(route.request().postDataJSON().query);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({data: {uiapi: {query: {Account: {edges: [{node: {Id: "001000000000001AAA", Name: {value: "Acme"}}}]}}}}, errors: []})
+      });
+    });
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const selection = "uiapi { query { Account { edges { node { Id Name { value } } } } } }";
+    const queries = [
+      // Query template shorthand: the extension adds the operation name
+      {typed: `{ ${selection} }`, sent: `query objects { ${selection} }`},
+      // Salesforce documentation example: sent unchanged
+      {typed: `query accounts { ${selection} }`, sent: `query accounts { ${selection} }`}
+    ];
+    for (const {typed, sent} of queries) {
+      await page.locator("textarea#query").fill(typed);
+      await page.click("button:has-text('Run Export')");
+
+      await expect(page.locator(".result-status")).toContainText("Exported 1 record", {timeout: 2000});
+      await expect(page.locator("#result-area table tr").nth(1).locator("td").nth(2)).toHaveText("Acme");
+      expect(sentQueries.at(-1)).toBe(sent);
+    }
+    expect(sentQueries).toHaveLength(2);
+  });
+
 });

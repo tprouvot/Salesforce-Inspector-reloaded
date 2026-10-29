@@ -1386,13 +1386,21 @@ class App extends React.Component {
           )),
         h("div", {className: "slds-card slds-m-horizontal_medium slds-p-around_small"},
           h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
-            h("div", {className: "slds-col"},
+            h("div", {className: "slds-col action-buttons"},
               h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
               h("div", {className: "slds-button-group"},
-                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel)"),
-                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"}, "Copy (CSV)"),
+                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"},
+                  h("svg", {className: "slds-button__icon slds-button__icon_left"},
+                    h("use", {xlinkHref: "symbols.svg#copy"})
+                  ), "Excel"
+                ),
+                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"},
+                  h("svg", {className: "slds-button__icon slds-button__icon_left"},
+                    h("use", {xlinkHref: "symbols.svg#copy"})
+                  ), "CSV"
+                ),
                 h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsvClick, title: "Download as a CSV file"},
                   h("svg", {className: "slds-button__icon"},
                     h("use", {xlinkHref: "symbols.svg#download"})
@@ -1409,8 +1417,8 @@ class App extends React.Component {
               ),
             ),
             h("div", {className: "slds-col slds-text-align_right"},
-              h("button", {onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row", className: "slds-button slds-button_neutral"}, "Copy Options"),
-              h("button", {onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_neutral"}, "Skip all unknown fields")
+              h("button", {onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row", className: "slds-button slds-button_neutral compact-button"}, "Copy Options"),
+              h("button", {onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_neutral compact-button"}, "Skip all unknown fields")
             ),
           ),
           !model.showHelp ? null : h("div", {className: "slds-box slds-theme_info slds-m-top_medium"},

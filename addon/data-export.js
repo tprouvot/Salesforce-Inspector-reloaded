@@ -4,6 +4,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {openWithHandoff} from "./data-editor-handoff.js";
 
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
@@ -146,6 +147,7 @@ class Model {
     data.endpoint = "/services/data/v" + apiVersion + "/" + method + queryParams;
     data.params = params;
     data.queryMethod = method;
+    data.query = query;
   }
   setQueryName(value) {
     this.queryName = value;
@@ -267,6 +269,9 @@ class Model {
   canCopy() {
     return this.exportedData != null && this.exportedData.table.length > 0;
   }
+  canEdit() {
+    return this.canCopy() && ["query", "queryAll", "tooling/query"].includes(this.exportedData.queryMethod);
+  }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
     return this.exportedData
@@ -297,6 +302,11 @@ class Model {
     if (this.queryTooling) args.set("apitype", "Tooling");
 
     window.open("data-import.html?" + args, getLinkTarget(e, false));
+  }
+  openInEditor() {
+    let [header, ...rows] = this.exportedData.getVisibleStrings();
+    let payload = {header, rows, apiType: this.exportedData.isTooling ? "Tooling" : "Enterprise", query: this.exportedData.query};
+    this.spinFor(openWithHandoff("data-editor.html", new URLSearchParams({host: this.sfHost}), payload));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -1312,6 +1322,7 @@ function RecordTable(vm) {
         discoverColumns(record, "", row);
       }
     },
+    getVisibleStrings: () => rt.getVisibleTable().map(row => row.map(cell => (cell && typeof cell == "object" && !cell.attributes ? JSON.stringify(cell) : cellToString(cell)))),
     csvSerialize: separator => rt.getVisibleTable().map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
     updateVisibility() {
       let filter = vm.resultsFilter;
@@ -1375,6 +1386,7 @@ class App extends React.Component {
     this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
+    this.onOpenInEditor = this.onOpenInEditor.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
@@ -1554,6 +1566,11 @@ class App extends React.Component {
   onDeleteRecords(e) {
     let {model} = this.props;
     model.deleteRecords(e);
+    model.didUpdate();
+  }
+  onOpenInEditor() {
+    let {model} = this.props;
+    model.openInEditor();
     model.didUpdate();
   }
   onResultsFilterInput(e) {
@@ -2122,6 +2139,12 @@ class App extends React.Component {
                   h("svg", {className: `slds-button__icon ${model.prefHideRelations ? "" : "disabled"}`},
                     h("use", {xlinkHref: "symbols.svg#hide"})
                   )
+                ),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canEdit(), onClick: this.onOpenInEditor, title: "Edit the results in a spreadsheet-like table, then send the changes to Data Import"},
+                  h("svg", {className: "slds-button__icon slds-button__icon_left"},
+                    h("use", {xlinkHref: "symbols.svg#edit"})
+                  ),
+                  "Edit"
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
                   ? h("button", {className: "slds-button slds-button_destructive delete-btn", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,

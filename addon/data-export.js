@@ -21,6 +21,27 @@ function createQueryHistory(storageKey, max) {
   });
 }
 
+const labelContext = document.createElement("canvas").getContext("2d");
+function truncateToWidth(text, maxWidthRatio) {
+  const label = text.replace(/\s+/g, " ");
+  const maxWidth = window.innerWidth * maxWidthRatio;
+  const style = getComputedStyle(document.querySelector("select.query-history") || document.body);
+  labelContext.font = style.fontSize + " " + style.fontFamily;
+  if (labelContext.measureText(label).width <= maxWidth) {
+    return label;
+  }
+  let low = 0, high = label.length;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (labelContext.measureText(label.substring(0, mid) + "…").width <= maxWidth) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return label.substring(0, low) + "…";
+}
+
 /**
  * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
  * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
@@ -1932,14 +1953,14 @@ class App extends React.Component {
                 h("div", {className: "slds-button-group"},
                   h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
                     h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-                    model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+                    model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q), title: q.query}, truncateToWidth(q.query, 2 / 3)))
                   ),
                   h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
                 ),
                 h("div", {className: "slds-button-group slds-m-left_small"},
                   h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                     h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
-                    model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+                    model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q), title: q.query}, truncateToWidth(q.query, 1 / 2)))
                   ),
                   h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
                   h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),

@@ -174,6 +174,28 @@ export function nullToEmptyString(value) {
   return (value == null) ? "" : value;
 }
 
+let labelContext;
+export function truncateToWidth(text, maxWidthRatio) {
+  labelContext = labelContext || document.createElement("canvas").getContext("2d");
+  const label = text.replace(/\s+/g, " ");
+  const maxWidth = window.innerWidth * maxWidthRatio;
+  const style = getComputedStyle(document.querySelector("select") || document.body);
+  labelContext.font = style.fontSize + " " + style.fontFamily;
+  if (labelContext.measureText(label).width <= maxWidth) {
+    return label;
+  }
+  let low = 0, high = label.length;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (labelContext.measureText(label.substring(0, mid) + "…").width <= maxWidth) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return label.substring(0, low) + "…";
+}
+
 export function isOptionEnabled(optionName, optionsArray){
   const option = optionsArray?.find((element) => element.name == optionName);
   if (option){

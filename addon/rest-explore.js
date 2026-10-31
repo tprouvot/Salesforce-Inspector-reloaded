@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory, truncateToWidth} from "./utils.js";
 
 function createRestQueryHistory(storageKey, max) {
   const isSaved = storageKey === "restSavedQueryHistory";
@@ -644,7 +644,10 @@ class App extends React.Component {
                         h("div", {className: "slds-form-element__control"},
                           h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "slds-select", title: "Check documentation to customize templates"},
                             h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-                            model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
+                            model.requestTemplates.map(req => {
+                              const label = req.method + " " + req.endpoint;
+                              return h("option", {key: req.key, value: req.key, title: label}, truncateToWidth(label, 0.6));
+                            })
                           ),
                         )
                       ),
@@ -652,7 +655,10 @@ class App extends React.Component {
                         h("div", {className: "slds-form-element__control"},
                           h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "slds-select"},
                             h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                            model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
+                            model.queryHistory.list.map(q => {
+                              const label = q.method + " " + q.endpoint;
+                              return h("option", {key: JSON.stringify(q), value: q.key, title: label}, truncateToWidth(label, 0.6));
+                            })
                           ),
                         )
                       ),
@@ -665,7 +671,10 @@ class App extends React.Component {
                         h("div", {className: "slds-form-element__control"},
                           h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "slds-select"},
                             h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                            model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
+                            model.savedHistory.list.map(q => {
+                              const label = q.label + " " + q.method + " " + q.endpoint;
+                              return h("option", {key: JSON.stringify(q), value: q.key, title: label}, truncateToWidth(label, 0.4));
+                            })
                           ),
                         )
                       ),

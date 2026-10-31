@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -49,6 +49,7 @@ class Model {
     this.batchSize = localStorage.getItem("defaultBatchSize") ? localStorage.getItem("defaultBatchSize") : "200";
     this.batchConcurrency = localStorage.getItem("defaultThreadSize") ? localStorage.getItem("defaultThreadSize") : "6";
     this.confirmPopup = null;
+    this.showCustomHeadersError = false;
     this.activeBatches = 0;
     this.isProcessingQueue = false;
     this.importState = null;
@@ -322,6 +323,16 @@ class Model {
     }
   }
 
+  // True while neither the cached sobjects list nor the DescribeInfo fallback has data yet,
+  // e.g. right after a page reload before the async fetches resolve.
+  sobjectListLoading() {
+    if (this.sobjectsList && this.sobjectsList.length > 0) {
+      return false;
+    }
+    let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
+    return !globalDescribe;
+  }
+
   idLookupList() {
     let sobjectName = this.importType;
     let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", sobjectName).sobjectDescribe;
@@ -382,6 +393,9 @@ class Model {
 
   importTypeError() {
     let importType = this.importType;
+    if (this.sobjectListLoading()) {
+      return "";
+    }
     if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
       return "Unknown object";
     }
@@ -434,6 +448,18 @@ class Model {
     return "";
   }
 
+  customHeadersError() {
+    if (!(this.customHeaders?.length > 0)) {
+      return "";
+    }
+    try {
+      JSON.parse(this.customHeaders);
+    } catch (e) {
+      return "Invalid header: " + e.message;
+    }
+    return "";
+  }
+
   canCopy() {
     return this.importData.taggedRows != null;
   }
@@ -453,6 +479,22 @@ class Model {
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
     copyToClipboard(csvSerialize([header, ...data], separator));
+  }
+
+  downloadResult(separator) {
+    let header = this.importData.importTable.header.map(c => c.columnValue);
+    let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
+    let csvContent = csvSerialize([header, ...data], separator);
+    let objectName = this.importType;
+    let actionName = this.importAction[0].toUpperCase() + this.importAction.slice(1);
+    const statuses = ["Succeeded", "Failed", "Processing", "Queued"];
+    let countParts = statuses
+      .filter(status => this.showStatus[status] && this.importData.counts[status] > 0)
+      .map(status => `${status}_${this.importData.counts[status]}`);
+    let countsStr = countParts.length > 0 ? "-" + countParts.join("-") : "";
+    let dateStr = new Date().toLocaleDateString();
+    let filename = `${objectName}-${actionName}${countsStr}-${dateStr}.csv`;
+    downloadCsvFile(csvContent, filename);
   }
 
   importCounts() {
@@ -557,6 +599,10 @@ class Model {
   }
 
   doImport() {
+    if (this.customHeadersError()) {
+      this.showCustomHeadersError = true;
+      return;
+    }
     let importedRecords = this.importData.counts.Queued + this.importData.counts.Processing;
     let skippedRecords = this.importAction != "undelete" ? this.importData.counts.Succeeded + this.importData.counts.Failed : 0;
     let actionVerb = this.getActionVerb(this.importAction);
@@ -962,6 +1008,7 @@ class App extends React.Component {
     this.onExternalIdChange = this.onExternalIdChange.bind(this);
     this.onBatchSizeChange = this.onBatchSizeChange.bind(this);
     this.onCustomHeadersChange = this.onCustomHeadersChange.bind(this);
+    this.onCustomHeadersBlur = this.onCustomHeadersBlur.bind(this);
     this.onCustomHeadersKeyPress = this.onCustomHeadersKeyPress.bind(this);
     this.onBatchConcurrencyChange = this.onBatchConcurrencyChange.bind(this);
     this.onToggleHelpClick = this.onToggleHelpClick.bind(this);
@@ -970,6 +1017,7 @@ class App extends React.Component {
     this.onRetryFailedClick = this.onRetryFailedClick.bind(this);
     this.onCopyAsExcelClick = this.onCopyAsExcelClick.bind(this);
     this.onCopyAsCsvClick = this.onCopyAsCsvClick.bind(this);
+    this.onDownloadAsCsvClick = this.onDownloadAsCsvClick.bind(this);
     this.onCopyOptionsClick = this.onCopyOptionsClick.bind(this);
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
@@ -1035,6 +1083,12 @@ class App extends React.Component {
   onCustomHeadersChange(e){
     let {model} = this.props;
     model.customHeaders = e.target.value;
+    model.showCustomHeadersError = false;
+    model.didUpdate();
+  }
+  onCustomHeadersBlur() {
+    let {model} = this.props;
+    model.showCustomHeadersError = true;
     model.didUpdate();
   }
   onBatchConcurrencyChange(e) {
@@ -1084,6 +1138,15 @@ class App extends React.Component {
     }
     model.copyResult(separator);
   }
+  onDownloadAsCsvClick(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+    model.downloadResult(separator);
+  }
   onCopyOptionsClick(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -1108,7 +1171,7 @@ class App extends React.Component {
   }
   onImportUndelete(model){
     //reinit import table to remove __Status column to be able to undelete rows after deleting it
-    if (model.importData.importTable.header.find(c => c.columnValue == "__Status")) {
+    if (model.importData.importTable && model.importData.importTable.header.find(c => c.columnValue == "__Status")) {
       //get indexes to remove
       const indices = model.importData.importTable.header.map((element, index) => element.columnValue.startsWith("__") ? index : undefined).filter(index => index !== undefined);
       //remove indexes from header and data
@@ -1161,6 +1224,7 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
+    let customHeadersError = model.showCustomHeadersError ? model.customHeadersError() : "";
 
     // Build utility items for PageHeader
     let utilityItems = [
@@ -1272,7 +1336,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-batch-size"}, "Batch size"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, disabled: model.isWorking()}),
+                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange}),
                               h("div", {id: "error-batch-size", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchSizeError()}, model.batchSizeError())
                             )
                           )
@@ -1281,7 +1345,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-threads"}, "Threads"),
                             h("div", {className: "slds-form-element__control"},
-                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, disabled: model.isWorking()}),
+                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange}),
                               h("div", {id: "error-threads", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
                             )
                           )
@@ -1292,7 +1356,8 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-custom-headers"}, "Custom Headers"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "form-custom-headers", className: "slds-textarea", type: "textarea", rows: 1, placeholder: "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange}),
+                              h("textarea", {id: "form-custom-headers", className: customHeadersError ? "slds-textarea slds-has-error" : "slds-textarea", type: "textarea", rows: 1, placeholder: "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, onBlur: this.onCustomHeadersBlur}),
+                              h("div", {id: "error-custom-headers", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !customHeadersError}, customHeadersError)
                             )
                           )
                         ),
@@ -1326,8 +1391,13 @@ class App extends React.Component {
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
               h("div", {className: "slds-button-group"},
-                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel format)"),
+                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel)"),
                 h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"}, "Copy (CSV)"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsvClick, title: "Download as a CSV file"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#download"})
+                  )
+                )
               ),
             ),
             h("div", {className: "slds-col"},
@@ -1536,13 +1606,24 @@ function convertValueForApi(value) {
   return !Number.isNaN(n) && String(n) === s ? n : s;
 }
 
+function isUnsafeKey(key) {
+  return key === "__proto__" || key === "constructor" || key === "prototype";
+}
+
 function setNestedValue(obj, path, value) {
   const parts = path.split(".");
   let cur = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const k = parts[i];
+    if (isUnsafeKey(k)) {
+      throw new Error(`Invalid field path "${path}"`);
+    }
     if (!(cur[k] && typeof cur[k] === "object")) cur[k] = {};
     cur = cur[k];
   }
-  cur[parts[parts.length - 1]] = value;
+  const lastKey = parts[parts.length - 1];
+  if (isUnsafeKey(lastKey)) {
+    throw new Error(`Invalid field path "${path}"`);
+  }
+  cur[lastKey] = value;
 }

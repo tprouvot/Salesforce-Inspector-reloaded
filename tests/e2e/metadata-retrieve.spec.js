@@ -256,6 +256,13 @@ test.describe("Metadata Retrieve", () => {
 
     // Wait for page to load
     await page.waitForSelector("button[title='Import package.xml or package zip file']", {timeout: 1000});
+    let retrieveRequestCount = 0;
+    page.on("request", request => {
+      const requestBody = request.postData();
+      if (request.method() === "POST" && requestBody?.includes("retrieve") && !requestBody.includes("checkRetrieveStatus")) {
+        retrieveRequestCount++;
+      }
+    });
 
     // Create a test package.xml file
     const packageXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -279,7 +286,38 @@ test.describe("Metadata Retrieve", () => {
     await page.waitForTimeout(500);
     await page.waitForSelector(".slds-notify", {timeout: 1000});
 
-    // Verify success toast appears
-    await expect(page.locator("text=imported successfully")).toBeVisible({timeout: 1000});
+    // Verify success toast appears (scoped to the visible toast, since a sr-only
+    // live region now also announces the same message for screen readers)
+    await expect(page.locator(".slds-notify_toast").getByText("imported successfully")).toBeVisible({timeout: 1000});
+
+    const apexClassCheckbox = page
+      .locator(".slds-accordion__list-item")
+      .filter({hasText: "ApexClass"})
+      .first()
+      .locator("input.metadata")
+      .first();
+    await expect(apexClassCheckbox).toBeChecked();
+    await expect(page.locator("button:has-text('Retrieve Metadata')")).toBeEnabled();
+    expect(retrieveRequestCount).toBe(0);
+  });
+
+  test("Save Status Info Downloads Retrieve Status JSON", async ({page, extensionId}) => {
+    await initMetadataRetrievePage(page, extensionId);
+
+    const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
+    await firstCheckbox.click();
+
+    const metadataDownloadPromise = page.waitForEvent("download");
+    await page.locator("button:has-text('Retrieve Metadata')").click();
+    const metadataDownload = await metadataDownloadPromise;
+    expect(metadataDownload.suggestedFilename()).toBe("metadata.zip");
+
+    const statusButton = page.locator("button[title='Save status info']");
+    await expect(statusButton).toBeVisible();
+
+    const statusDownloadPromise = page.waitForEvent("download");
+    await statusButton.click();
+    const statusDownload = await statusDownloadPromise;
+    expect(statusDownload.suggestedFilename()).toBe("status_info.json");
   });
 });

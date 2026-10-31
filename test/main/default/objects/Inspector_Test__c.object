@@ -85,6 +85,92 @@
         <type>Number</type>
         <unique>false</unique>
     </fields>
+    <fields>
+        <!-- Intentionally a Text field (not Email) so the Object Scanner "Type Hygiene" rule flags it -->
+        <fullName>Email__c</fullName>
+        <externalId>true</externalId>
+        <inlineHelpText>Customer email</inlineHelpText>
+        <label>Email Address</label>
+        <length>80</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>true</unique>
+    </fields>
+    <fields>
+        <!-- Unrestricted, mostly-inactive picklist so the Object Scanner "Unrestricted Picklist" and "Inactive Picklist Bloat" rules flag it -->
+        <fullName>Status__c</fullName>
+        <externalId>false</externalId>
+        <label>Status</label>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Picklist</type>
+        <valueSet>
+            <restricted>false</restricted>
+            <valueSetDefinition>
+                <sorted>false</sorted>
+                <value>
+                    <fullName>New</fullName>
+                    <default>true</default>
+                    <isActive>true</isActive>
+                </value>
+                <value>
+                    <fullName>Old1</fullName>
+                    <default>false</default>
+                    <isActive>false</isActive>
+                </value>
+                <value>
+                    <fullName>Old2</fullName>
+                    <default>false</default>
+                    <isActive>false</isActive>
+                </value>
+                <value>
+                    <fullName>Old3</fullName>
+                    <default>false</default>
+                    <isActive>false</isActive>
+                </value>
+                <value>
+                    <fullName>Old4</fullName>
+                    <default>false</default>
+                    <isActive>false</isActive>
+                </value>
+            </valueSetDefinition>
+        </valueSet>
+    </fields>
+    <fields>
+        <!-- Shares its label with DupB__c so the Object Scanner "Duplicate Labels" rule flags both -->
+        <fullName>DupA__c</fullName>
+        <externalId>false</externalId>
+        <label>Duplicate Label</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <!-- Shares its label with DupA__c so the Object Scanner "Duplicate Labels" rule flags both -->
+        <fullName>DupB__c</fullName>
+        <externalId>false</externalId>
+        <label>Duplicate Label</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <!-- Encrypted with no Data Classification metadata so the Object Scanner "Encrypted Unclassified" rule flags it -->
+        <fullName>Encrypted_SSN__c</fullName>
+        <externalId>false</externalId>
+        <label>Encrypted SSN</label>
+        <length>20</length>
+        <maskChar>asterisk</maskChar>
+        <maskType>ssn</maskType>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>EncryptedText</type>
+    </fields>
     <label>Inspector Test</label>
     <nameField>
         <label>Inspector Test Name</label>

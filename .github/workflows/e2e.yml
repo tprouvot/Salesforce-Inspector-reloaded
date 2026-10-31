@@ -7,6 +7,9 @@ on:
   push:
     branches: [ releaseCandidate, beta, main ]
 
+permissions:
+  contents: read
+
 jobs:
   # Fork PRs: run tests with mocks (no access to secrets)
   test-mocked:

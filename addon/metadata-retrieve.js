@@ -1,7 +1,7 @@
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, generatePackageXml} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, generatePackageXml} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
 
@@ -27,6 +27,7 @@ class Model {
     this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
     this.packageXml;
     this.metadataFilter = "";
+    this.metadataFilterAnnouncement = "";
     this.deployRequestId;
     this.allSelected = false;
     this.orgName = "";
@@ -174,19 +175,35 @@ class Model {
     });
   }
 
-  retrieveMetaFromPackageXml(packageXml){
+  parsePackageXml(packageXml) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(packageXml, "text/xml");
-
     const retrieveRequest = {apiVersion, unpackaged: {types: []}};
 
     const types = xmlDoc.getElementsByTagName("types");
     for (let typeNode of types) {
-      const name = typeNode.getElementsByTagName("name")[0].textContent;
+      const nameNode = typeNode.getElementsByTagName("name")[0];
+      if (!nameNode) continue;
+      const name = nameNode.textContent;
       const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort();
       retrieveRequest.unpackaged.types.push({name, members});
     }
     retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (this.metadataObjects && this.metadataObjects.length > 0) {
+      const typeNames = retrieveRequest.unpackaged.types.map(t => t.name);
+      this.metadataObjects.forEach(obj => {
+        if (typeNames.includes(obj.xmlName)) {
+          obj.selected = true;
+        }
+      });
+    }
+
+    return retrieveRequest;
+  }
+
+  retrieveMetaFromPackageXml(packageXml) {
+    const retrieveRequest = this.parsePackageXml(packageXml);
     this.retrieveMetadata(retrieveRequest);
   }
 
@@ -537,6 +554,9 @@ class App extends React.Component {
     this.onCopyMetadataXml = this.onCopyMetadataXml.bind(this);
     this.onDownloadMetadataXml = this.onDownloadMetadataXml.bind(this);
     this.state = {};
+    this.packageXmlHighlightGuard = createChangeGuard();
+    this.modalXmlHighlightGuard = createChangeGuard();
+    this.wasMetadataModalVisible = false;
   }
   componentDidMount() {
     this.refs.metadataFilter.focus();
@@ -552,20 +572,29 @@ class App extends React.Component {
     }
   }
   componentDidUpdate(){
+    let {model} = this.props;
+    // Only re-run Prism when the displayed package.xml actually changed, not on every unrelated render.
     if (window.Prism) {
-      window.Prism.highlightAll();
+      this.packageXmlHighlightGuard([model.metadataObjects, model.packageXml], () => window.Prism.highlightAll());
     }
-    // Highlight XML in modal if it's open
+    // Highlight XML in modal if it's open. The modal is unmounted/remounted when toggled, so force
+    // a highlight right after it becomes visible again, even if the content matches a previous view.
     if (this.state.showMetadataModal) {
+      let forceHighlight = !this.wasMetadataModalVisible;
       setTimeout(() => {
         if (window.Prism) {
           const modalCode = document.getElementById("metadata-xml-content");
           if (modalCode) {
-            window.Prism.highlightElement(modalCode);
+            if (forceHighlight) {
+              window.Prism.highlightElement(modalCode);
+            } else {
+              this.modalXmlHighlightGuard(this.state.metadataXmlContent, () => window.Prism.highlightElement(modalCode));
+            }
           }
         }
       }, 0);
     }
+    this.wasMetadataModalVisible = this.state.showMetadataModal;
   }
   onSelectAllChange(e) {
     let {model} = this.props;
@@ -642,6 +671,8 @@ class App extends React.Component {
         try {
           const importedPackage = event.target.result;
           model.packageXml = importedPackage;
+          model.parsePackageXml(importedPackage);
+
           this.setState({
             showToast: true,
             toastMessage: fileName + " imported successfully!",
@@ -777,7 +808,7 @@ class App extends React.Component {
     let {model} = this.props;
     let clipText = e.clipboardData.getData("text/plain");
     model.packageXml = clipText;
-    model.retrieveMetaFromPackageXml(clipText);
+    model.parsePackageXml(clipText);
     model.didUpdate();
   }
   onUpdateManagedPackageSelection(e){
@@ -826,6 +857,12 @@ class App extends React.Component {
           });
         }
       });
+
+      let visibleCount = model.metadataObjects.filter(metadataObject => !metadataObject.hidden).length;
+      model.metadataFilterAnnouncement = !model.metadataFilter ? ""
+        : visibleCount === 0 ? "No metadata types found"
+        : visibleCount + " metadata type" + (visibleCount === 1 ? "" : "s") + " found";
+
       model.didUpdate();
     }
   }
@@ -834,6 +871,7 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.metadataFilter = "";
+    model.metadataFilterAnnouncement = "";
     model.metadataObjects = model.metadataObjects.map(metadataObject => ({
       ...metadataObject,
       hidden: false
@@ -845,6 +883,17 @@ class App extends React.Component {
     let {model} = this.props;
     this.setState({showToast: false, toastMessage: ""});
     model.didUpdate();
+  }
+  getToastAnnouncement() {
+    if (!this.state.showToast) {
+      return "";
+    }
+    let {toastTitle, toastMessage} = this.state;
+    if (typeof toastMessage === "string") {
+      return toastTitle + ": " + toastMessage;
+    }
+    let {linkText, post} = toastMessage || {};
+    return toastTitle + ": " + (linkText || "") + (post || "");
   }
   getLanguageForMetadata(metadataType) {
     if (!metadataType) return "markup";
@@ -950,6 +999,7 @@ class App extends React.Component {
     document.title = model.title();
     return (
       h("div", {},
+        h("div", {className: "slds-assistive-text", role: "alert", "aria-live": "assertive", "aria-atomic": "true"}, this.getToastAnnouncement()),
         this.state.showToast
         && h(Toast, {
           variant: this.state.toastVariant,
@@ -1013,6 +1063,7 @@ class App extends React.Component {
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
+            h("span", {className: "slds-assistive-text"}, "Select what to download below, and then click the Retrieve Metadata button. If downloading fails, try unchecking some of the boxes."),
             h("div", {className: "filter-box"},
               h("svg", {className: "filter-icon"},
                 h("use", {xlinkHref: "symbols.svg#search"})
@@ -1024,6 +1075,7 @@ class App extends React.Component {
                 )
               )
             ),
+            h("div", {className: "slds-assistive-text", role: "status", "aria-live": "polite", "aria-atomic": "true"}, model.metadataFilterAnnouncement),
             h("label", {className: "slds-checkbox_toggle max-width-small"},
               h("input", {type: "checkbox", checked: model.allSelected, onChange: this.onSelectAllChange}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -1045,10 +1097,21 @@ class App extends React.Component {
                 onClick: this.onStartClick,
                 disabled: !model.deployRequestId && (!model.metadataObjects || !model.metadataObjects.some(obj => obj.selected))
               }, "Retrieve Metadata"),
-              model.statusLink ? h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Save status info"},
-                h("svg", {className: "slds-button__icon"},
-                  h("use", {xlinkHref: "symbols.svg#info"})
-                )
+              model.statusLink ? h("button", {
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small",
+                onClick: () => {
+                  const a = document.createElement("a");
+                  a.href = model.statusLink;
+                  a.download = "status_info.json";
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                },
+                title: "Save status info"
+              },
+              h("svg", {className: "slds-button__icon"},
+                h("use", {xlinkHref: "symbols.svg#info"})
+              )
               ) : null,
               h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.downloadXml(), title: "Download package.xml"},
                 h("svg", {className: "slds-button__icon"},
@@ -1120,6 +1183,7 @@ class App extends React.Component {
                   },
                   h("option", {value: "NoTestRun"}, "No Test Run"),
                   h("option", {value: "RunSpecifiedTests"}, "Run Specified Tests"),
+                  h("option", {value: "RunRelevantTests"}, "Run Relevant Tests (beta)"),
                   h("option", {value: "RunLocalTests"}, "Run Local Tests"),
                   h("option", {value: "RunAllTestsInOrg"}, "Run All Tests in Org")
                   )
@@ -1456,36 +1520,48 @@ class ObjectSelector extends React.Component {
                 style: {position: "relative"}
               },
               h("h4", {className: "slds-accordion__summary-heading"},
-                h("button", {"aria-controls": "accordion-details-" + child.fullName, "aria-expanded": child.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
-                  child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-                    h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
-                  ) : null,
-                  h("input", {
-                    type: "checkbox",
-                    className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
-                    checked: !!child.selected,
-                    ref: (input) => {
-                      if (input) {
-                        input.indeterminate = !!child.indeterminate;
-                      }
+                h("button", {
+                  "aria-controls": "accordion-details-" + child.fullName,
+                  "aria-expanded": child.expanded,
+                  "aria-label": child.isFolder
+                    ? child.fullName + ", press Enter to " + (child.expanded ? "collapse" : "open") + " the list of " + child.fullName + " items"
+                    : child.fullName,
+                  // Leaf rows have no expand/collapse action of their own; the checkbox is the only
+                  // real control, so the button is pulled out of the tab order instead of being a
+                  // second (confusingly nested) stop for the same row.
+                  tabIndex: child.isFolder ? 0 : -1,
+                  className: "slds-button slds-button_reset slds-accordion__summary-action"
+                },
+                child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
+                ) : null,
+                h("input", {
+                  type: "checkbox",
+                  className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
+                  checked: !!child.selected,
+                  "aria-label": child.isFolder ? "Select all items in " + child.fullName : "Select " + child.fullName,
+                  ref: (input) => {
+                    if (input) {
+                      input.indeterminate = !!child.indeterminate;
                     }
-                  }),
-                  h("span", {
-                    className: "slds-text-body_small slds-accordion__summary-content",
-                    title: child.fullName,
-                    style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
-                  },
-                  child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
-                  !child.isFolder && isHovered && !metadataType.toLowerCase().includes("bundle") && h("svg", {
-                    className: "slds-icon slds-icon_x-small slds-icon-text-default",
-                    style: {cursor: "pointer", flexShrink: 0},
-                    viewBox: "0 0 52 52",
-                    onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
-                    title: "View metadata"
-                  },
-                  h("use", {xlinkHref: "symbols.svg#preview"})
-                  )
-                  )
+                  }
+                }),
+                h("span", {
+                  className: "slds-text-body_small slds-accordion__summary-content",
+                  title: child.fullName,
+                  style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
+                },
+                child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
+                !child.isFolder && isHovered && !metadataType.toLowerCase().includes("bundle") && h("svg", {
+                  className: "slds-icon slds-icon_x-small slds-icon-text-default",
+                  style: {cursor: "pointer", flexShrink: 0},
+                  viewBox: "0 0 52 52",
+                  onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
+                  title: "View metadata"
+                },
+                h("use", {xlinkHref: "symbols.svg#preview"})
+                )
+                )
                 )
               )
               ),
@@ -1507,28 +1583,34 @@ class ObjectSelector extends React.Component {
           onClick: (event) => { this.onSelectMeta(event); }
         },
         h("h3", {className: "slds-accordion__summary-heading"},
-          h("button", {"aria-controls": "accordion-details-" + metadataObject.xmlName, "aria-expanded": metadataObject.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
-            h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-              h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
-            ),
-            h("input", {
-              type: "checkbox",
-              className: "metadata",
-              checked: !!metadataObject.selected,
-              onChange: this.onChange,
-              key: metadataObject.xmlName,
-              ref: (input) => {
-                if (input) {
-                  input.indeterminate = !!metadataObject.indeterminate;
-                }
+          h("button", {
+            "aria-controls": "accordion-details-" + metadataObject.xmlName,
+            "aria-expanded": metadataObject.expanded,
+            "aria-label": metadataObject.xmlName + ", press Enter to " + (metadataObject.expanded ? "collapse" : "open") + " the list of " + metadataObject.xmlName + " items",
+            className: "slds-button slds-button_reset slds-accordion__summary-action"
+          },
+          h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
+          ),
+          h("input", {
+            type: "checkbox",
+            className: "metadata",
+            checked: !!metadataObject.selected,
+            onChange: this.onChange,
+            key: metadataObject.xmlName,
+            "aria-label": "Select all " + metadataObject.xmlName,
+            ref: (input) => {
+              if (input) {
+                input.indeterminate = !!metadataObject.indeterminate;
               }
-            }),
-            h("span", {
-              className: "slds-accordion__summary-content",
-              title: metadataObject.xmlName
-            },
-            metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : "")
-            )
+            }
+          }),
+          h("span", {
+            className: "slds-accordion__summary-content",
+            title: metadataObject.xmlName
+          },
+          metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : "")
+          )
           )
         )
         ),

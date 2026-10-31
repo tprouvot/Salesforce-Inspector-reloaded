@@ -3,10 +3,45 @@
 ## Version 2.1
 
 - `Popup` Fixed Record Type information disappearing when SObjects List Cache is enabled [issue #1247](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1247) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Export` Fix query editor colouring for SOQL and SOSL: only their reserved words are coloured as keywords, so field names such as Status, Type or Language and objects such as Case or Order no longer look like SQL keywords, and the object after `FROM` or `RETURNING` gets its own colour [issue #1429](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1429) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
+- `Data Import` Fix confirmation popup getting stuck and locking the page when Custom Headers is not valid JSON [issue #1425](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1425) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Background` Fix cross-tab/cross-org command execution: the background script tracked the active Salesforce org in a single global variable, so keyboard shortcuts and tool launches (e.g. `Data Import`, `REST Explorer`) could resolve the host of a different, previously-focused tab instead of the tab the user actually acted on when multiple orgs were open concurrently (sandbox and production). Org host is now tracked per-tab [issue #1417 section 3.5](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1417)
+- `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
+- `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
+- Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`
+
+- `Field Manager` Rename `Field Creator` to `Field Manager`, rework the UI with SLDS, and add the ability to retrieve, view and edit existing custom fields' Label, Description and Help Text - including previously unsupported types such as Lookup, Master-Detail, Roll-Up Summary and Auto Number [discussion #1361](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1361)
+- `Show All Data` Fix "Get field usage" displaying as Error for location type fields [issue #1386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1386) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain
+- `Popup` "Enable Log" button now automatically creates (or reuses) a "sfir" Debug Level with every category set to FINEST when the configured debug level doesn't exist in the org, instead of failing
+- `Show All Data` Improve selected text visibility on highlighted rows [issue #1097](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1097) (contribution by [James C](https://github.com/Exotic209093))
+- `Data Import` Add a Download (CSV) button with dynamic file naming that reflects the object, action, and filtered status counts [feature #1272](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1272) (contribution by Prem Kumar)
+- `Data Export` Add coloration on the query editor [issue #666](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/666)
+- `Org Limits` Fix gauge falsely displaying as full/blue when a limit is "0 of 0 consumed" [issue #1347](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1347)
+- `Data Import` Fix Run button doesn't update when selecting Undelete before data is loaded [issue #1331](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1331) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Import` Fix Object field briefly shows a false "Unknown object" error after page load [issue #1333](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1333) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fix Login-as Incognito disconnecting the session on the main tab [issue #1239](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1239) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Event Monitor` Fix "no customChannel found" when the org has more than one custom channel [issue #1323](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1323)
+- `Popup` Fix missing record details in the Winter '27 release and resolve missing Org details when no maintenance is scheduled [issue #1316](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1316) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Import` Allow editing Batch Size and Threads during an active import [issue #1036](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1036)
+- `Popup` Fix "Show Field API Names" button not rendering correctly in certain environments [issue #1246](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1246) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Restore LoginAs buttons for frozen users [discussion #1270](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1270)
+- `Metadata` Add 'Run Relevant Tests' option to metadata deploy Test Level picklist [feature 1286](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1286)
+- `Popup` Fix language flag icons for Catalan and Basque on the Users tab [issue #1196](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1196)
+- `Custom Shortcuts` Add "Global" toggle to share a shortcut across all orgs instead of keeping it specific to the current org [feature 191](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/191)
+- `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
+- `Popup` Add search prefixes to speed up Shortcut tab queries: `/` for setup links only, `!` for metadata, and typed filters (`!flow`, `!profile`, `!class`, `!perm`) [feature 1265](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1265)
+- `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Export` Disabled the Copy/Download buttons when the query output has no results [#1258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1258) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Shortcuts` Fixed broken links for some Setup shortcuts [#1223](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1223) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Metadata` Fix "Retrieve Metadata" button [issue #1256](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1256) and "Save status info" button [issue #1257](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1257) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
 - `Popup` Fix object not refreshing when switching between object list views [issue #1254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1254) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
+- `Cache` Resolve "Unknown object" error for standard objects in Data Import and Field Explorer #1231 (contribution by [Prem Kumar](https://github.com/prem-k-r))
 
 ## Version 2.0
 

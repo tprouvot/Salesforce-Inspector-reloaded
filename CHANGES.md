@@ -1,7 +1,9 @@
 # Version 2.0
 
+- `Data Export` and `REST Explorer` Fix Query History, Saved Queries and Templates dropdown entries being clipped, and show the full query on hover [issue #1439](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1439) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fix missing record details in the Winter '27 release and resolve missing Org details when no maintenance is scheduled [issue #1316](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1316) (contribution by [Prem Kumar](https://github.com/prem-k-r))
-- `Popup` Restore LoginAs buttons for frozen users [discussion #1270](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1270)- `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Restore LoginAs buttons for frozen users [discussion #1270](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1270) (contribution by [Ruben Halman](https://github.com/RubenHalman))
+- `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
 - `Data Export` Fix unrecognized Salesforce Ids [issue #984](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/984)
 - `Options/Popup` Change SObjects List Cache default (`enableSobjectsListCache`) from enabled to disabled for new installs
@@ -27,7 +29,7 @@
 - Reduce API calls in popup by skipping unnecessary requests when not expanded [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - Add API Statistics page to track and monitor REST and SOAP API calls (enable via `Enable API Stats Debug Mode` in Options > API tab) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `User Experience` Add dynamic popup height and option to enable / disable setting (contribution by [Nicolas Greard](https://github.com/ngreardSF))
-- `Field Creator` Fix Currency Field [#1046](https://github.com/RubenHalman/Salesforce-Inspector-reloaded/issues/1046) (contribution by [Ruben Halman](https://github.com/RubenHalman))
+- `Field Creator` Fix Currency Field [#1046](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1046) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
 - `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)
 - Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory, truncateToWidth} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -19,27 +19,6 @@ function createQueryHistory(storageKey, max) {
     sortComparator: isSaved ? (a, b) => (a.query > b.query ? 1 : b.query > a.query ? -1 : 0) : null,
     addToFront: true
   });
-}
-
-const labelContext = document.createElement("canvas").getContext("2d");
-function truncateToWidth(text, maxWidthRatio) {
-  const label = text.replace(/\s+/g, " ");
-  const maxWidth = window.innerWidth * maxWidthRatio;
-  const style = getComputedStyle(document.querySelector("select.query-history") || document.body);
-  labelContext.font = style.fontSize + " " + style.fontFamily;
-  if (labelContext.measureText(label).width <= maxWidth) {
-    return label;
-  }
-  let low = 0, high = label.length;
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2);
-    if (labelContext.measureText(label.substring(0, mid) + "…").width <= maxWidth) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-  return label.substring(0, low) + "…";
 }
 
 /**

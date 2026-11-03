@@ -9,7 +9,8 @@ export const test = base.extend({
     const pathToExtension = path.join(process.cwd(), "addon");
     const context = await chromium.launchPersistentContext("", {
       headless: true,
-      channel: "chromium",
+      // eslint-disable-next-line no-undef
+      channel: process.env.PLAYWRIGHT_CHANNEL || "chromium", // e.g. "msedge" to use the installed Edge
       args: [
         `--disable-extensions-except=${pathToExtension}`,
         `--load-extension=${pathToExtension}`,

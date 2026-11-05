@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Option to automatically split and merge large SOQL IN clauses [issue #250](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/250) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Fix query editor colouring for SOQL and SOSL: only their reserved words are coloured as keywords, so field names such as Status, Type or Language and objects such as Case or Order no longer look like SQL keywords, and the object after `FROM` or `RETURNING` gets its own colour [issue #1429](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1429) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Data Import` Fix confirmation popup getting stuck and locking the page when Custom Headers is not valid JSON [issue #1425](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1425) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Background` Fix cross-tab/cross-org command execution: the background script tracked the active Salesforce org in a single global variable, so keyboard shortcuts and tool launches (e.g. `Data Import`, `REST Explorer`) could resolve the host of a different, previously-focused tab instead of the tab the user actually acted on when multiple orgs were open concurrently (sandbox and production). Org host is now tracked per-tab [issue #1417 section 3.5](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1417)

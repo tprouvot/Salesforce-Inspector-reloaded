@@ -52,6 +52,13 @@ Example:
 
 <img width="895" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/16490965-ec4f-42d7-a534-8f24febe1ee3">
 
+## Populating queries from List Views
+
+You can quickly load SOQL queries from existing Salesforce List Views.
+When an SObject is identified in your query (e.g., after typing `SELECT Id FROM Account`), a dropdown menu appears next to the "Saved Queries" button. Selecting a List View from this dropdown will automatically replace your current query with the SOQL filter associated with that List View.
+
+This feature can be enabled or disabled in **Options** -> **Data Export** tab by toggling **Enable List View Selector**.
+
 ## Customize Select all fields in a query shortcut
 
 If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in `chrome://extensions/shortcuts` and choose the one you prefer.
@@ -76,7 +83,6 @@ To enable performance metrics for queries on the data export page, open the Opti
 then set "Display Query Execution Time" to enabled. Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
 are displayed.
 
-
 ## Hide object columns in query results
 
 After running a query in the "Data Export" page, you can hide columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
@@ -94,6 +100,7 @@ When quering EventLogFile, add the "LogFile" field in the query and click on the
 
 Since the extension offers more features, the number of button is increasing.
 Some of the users may don't need some of those, to make the UI lighter some of the buttons can be hidden:
+
 - Delete Records
 - Export Query
 - Agentforce icon
@@ -110,16 +117,16 @@ You can use Agentforce to generate SOQL queries directly from the Data Export pa
 > The standard Salesforce 'Prompt Template User' permission is required to use this feature.
 
 By default, the Agentforce button is hidden. To enable it:
+
 1. Go to Options -> Data Export
 2. Enable "Show Agentforce button"
 3. Optionally, you can customize the prompt template name that will be used for generating queries
 
 <img width="1443" alt="Agentforce SOQL builder" src="https://github.com/user-attachments/assets/deab54b8-df9a-4b74-ab81-b27aea5be800" />
 
-
 GenerateSOQL.genAiPromptTemplate meta content:
 
-``` xml
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
     <activeVersionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</activeVersionIdentifier>

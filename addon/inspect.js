@@ -7,6 +7,7 @@ import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
 import {Combobox, getControllerValueIndex, isValueValidForControllerIndex, isPicklistValueValidForController} from "./components/Combobox.js";
+import {DatePicker, DateTimePicker} from "./components/DatePicker.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
@@ -1448,6 +1449,9 @@ class FieldRow extends TableRow {
   comboMode() {
     return this.fieldDescribe && this.fieldDescribe.type === "multipicklist" ? "multi" : "single";
   }
+  isDateEditableType() {
+    return !!this.fieldDescribe && (this.fieldDescribe.type === "date" || this.fieldDescribe.type === "datetime");
+  }
   controllerFieldName() {
     return this.fieldDescribe ? this.fieldDescribe.controllerName : null;
   }
@@ -2399,7 +2403,7 @@ class FieldValueCell extends React.Component {
     let {row} = this.props;
     if (row.tryEdit()) {
       let td = e.currentTarget;
-      row.rowList.model.didUpdate(() => td.querySelector("textarea, .slds-combobox__input")?.focus());
+      row.rowList.model.didUpdate(() => td.querySelector("textarea, .slds-combobox__input, .sfir-date-input")?.focus());
     }
   }
   onDataEditValueInput(e) {
@@ -2408,7 +2412,7 @@ class FieldValueCell extends React.Component {
     row.rowList.model.didUpdate();
   }
   onCancelEdit(e) {
-    e.preventDefault();
+    e?.preventDefault();
     let {row} = this.props;
     row.dataEditValue = null;
     row.dependentPicklistError = false;
@@ -2491,6 +2495,19 @@ class FieldValueCell extends React.Component {
                 row.rowList.revalidateDependents(row.fieldName);
                 row.rowList.model.didUpdate();
               }
+            }),
+            undoButton
+          )
+        );
+      }
+      if (row.isDateEditableType()) {
+        return h("td", {className: col.className},
+          h("div", {className: "sfir-edit-cell"},
+            h(row.fieldDescribe.type === "datetime" ? DateTimePicker : DatePicker, {
+              value: row.dataEditValue,
+              ariaLabel: row.fieldName,
+              onChange: this.onComboChange,
+              onCancel: this.onCancelEdit
             }),
             undoButton
           )

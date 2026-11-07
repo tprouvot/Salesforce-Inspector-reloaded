@@ -14,6 +14,7 @@
  * @param {Function} [props.onCancel] - Called when Escape is pressed
  * @param {Function} [props.onToggle] - Called with true/false when the dropdown opens/closes
  * @param {boolean} [props.isSearchable] - Allows free-text typing and filters options by value, label, title and secondaryText
+ * @param {boolean} [props.hideEmpty] - Searchable mode: hides the dropdown instead of showing "No available options" when nothing matches
  * @param {boolean} [props.isLoading] - Indicates if the options are currently fetching
  * @param {boolean} [props.clearOnSelect] - Clears the input after an option is picked (searchable mode)
  * @param {string} [props.width] - Width of the root element
@@ -29,6 +30,8 @@
  * @param {string} [props.label] - Form element label (wraps the combobox in slds-form-element)
  * @param {boolean} [props.showLabel=true] - Shows the label visibly (false keeps it as assistive text)
  * @param {string} [props.placeholder] - Placeholder text
+ * @param {string} [props.title] - Tooltip of the input (defaults to the selected option's title)
+ * @param {string} [props.icon] - Utility icon name shown on the right instead of the chevron/clear button (e.g. "clock")
  * @param {string} [props.ariaLabel] - Accessible label (defaults to label)
  * @param {boolean} [props.showSecondaryText=false] - Displays option.secondaryText next to each option
  * @param {boolean} [props.showCheckmark=true] - Shows a checkmark next to selected options
@@ -403,9 +406,9 @@ export class Combobox extends React.Component {
  
   render() {
     let {
-      options = [], value, onChange, mode, isSearchable, isLoading,
+      options = [], value, onChange, mode, isSearchable, isLoading, hideEmpty,
       width, height, dropdownHeight, dropdownWidth, className, style, textAlign, fixedDropdown,
-      id, name, label, placeholder, ariaLabel, showLabel = true, showSecondaryText = false,
+      id, name, label, title, placeholder, icon, ariaLabel, showLabel = true, showSecondaryText = false,
       disabled, hasError, errorMessage, showCheckmark = true,
       autoComplete = "nope", spellCheck = false, autoCorrect = "off"
     } = this.props;
@@ -416,7 +419,7 @@ export class Combobox extends React.Component {
     let optionId = i => this.instanceId + "-option-" + i;
    
     let visibleOptions = this.getVisibleOptions();
-    let inputTitle = this.selectedOptionLabel() || undefined;
+    let inputTitle = title || this.selectedOptionLabel() || undefined;
 
     let rootStyle = Object.assign({}, style || {});
     if (width) rootStyle.width = width;
@@ -428,10 +431,10 @@ export class Combobox extends React.Component {
       rootStyle.zIndex = 9000;
     }
 
-    let chevronIcon = isOpen ? "chevronup" : "chevrondown";
+    let chevronIcon = icon || (isOpen ? "chevronup" : "chevrondown");
     let inputLower = (this.state.inputValue || "").toLowerCase();
     let isValueAnOption = (options || []).some(o => (o.label !== undefined ? String(o.label) : String(o.value)).toLowerCase() === inputLower);
-    let showClear = isSearchable && this.state.inputValue && !disabled && !isLoading && !isValueAnOption;
+    let showClear = isSearchable && this.state.inputValue && !disabled && !isLoading && !isValueAnOption && !icon;
 
     let comboboxInner = h("div", {
         className: "slds-combobox_container" + (!label && hasError ? " slds-has-error" : ""),
@@ -510,7 +513,7 @@ export class Combobox extends React.Component {
             )
           )
       ),
-      isOpen ? h("div", {
+      isOpen && !(hideEmpty && visibleOptions.length === 0 && !isLoading) ? h("div", {
         id: listboxId,
         ref: "listbox",
         className: "slds-dropdown slds-dropdown_fluid slds-dropdown_length-5 slds-dropdown_left sfir-combobox-dropdown",

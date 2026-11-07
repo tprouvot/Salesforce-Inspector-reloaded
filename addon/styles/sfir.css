@@ -290,3 +290,21 @@ td:has(.slds-is-open) {
 .slds-combobox_container {
   position: relative;
 }
+
+/* Keyboard-highlighted day in the date picker (focus stays in the input, so the cell can't use :focus): the ring sits inside the day's circle,
+   except on the solid-blue day (slds-is-selected, the saved value) where it floats 2px outside */
+.slds-datepicker tbody > tr > td.sfir-day-focus > .slds-day {
+  box-shadow: none;
+  outline: 3px solid var(--slds-g-color-brand-base-15);
+  outline-offset: -3px;
+}
+
+.slds-datepicker tbody > tr > td.sfir-day-focus.slds-is-selected > .slds-day {
+  outline-offset: 2px;
+}
+
+/* The table's row-hover lines would otherwise be drawn across each week of the calendar */
+.slds-datepicker__month tbody > tr,
+.slds-datepicker__month tbody > tr > td {
+  box-shadow: none !important;
+}

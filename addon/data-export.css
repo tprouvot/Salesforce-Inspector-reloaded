@@ -136,6 +136,14 @@ textarea[hidden] {
   overflow: visible;
 }
 
+/* Object names after FROM and RETURNING, from lib/prism/prism-sf.js. */
+.query-highlight .token.sobject {
+  color: light-dark(
+    var(--slds-g-color-palette-purple-40),
+    var(--slds-g-color-palette-purple-60)
+  );
+}
+
 #result-area {
   flex: 1 1 0;
   margin-bottom: 12px;

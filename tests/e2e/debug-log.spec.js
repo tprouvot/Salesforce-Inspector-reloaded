@@ -6,8 +6,10 @@ test.describe("Debug Log Viewer", () => {
 
   const LOG_BODY = [
     "12:00:00.0|USER_DEBUG|First message",
+    "First continuation line",
     "12:00:00.1|FATAL_ERROR|Something failed",
-    "12:00:00.2|USER_DEBUG|Second message"
+    "12:00:00.2|USER_DEBUG|Second message",
+    "Second continuation line"
   ].join("\n");
 
   const MOCK_LOG = {
@@ -154,7 +156,9 @@ test.describe("Debug Log Viewer", () => {
 
     const preview = page.locator(".sfir-preview-code-block");
     await expect(preview).toContainText("First message");
+    await expect(preview).toContainText("First continuation line");
     await expect(preview).toContainText("Second message");
+    await expect(preview).toContainText("Second continuation line");
     await expect(preview).not.toContainText("Something failed");
     await expect(filterInput).toBeFocused();
   });

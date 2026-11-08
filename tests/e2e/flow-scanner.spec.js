@@ -238,12 +238,9 @@ test.describe("Flow Scanner", () => {
   test("Open Help/Settings", async ({page, extensionId}) => {
     await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
-    // Find settings/help button
-    const settingsButton = page.locator("button[title='Open Flow Scanner Options'], button:has(svg use[xlinkHref*='settings'])").first();
-    await settingsButton.isVisible();
-    await settingsButton.click();
-
-    // Verify new tab/window opens (we can't verify this in E2E, but we can verify click works)
+    const settingsLink = page.getByRole("link", {name: "Open Flow Scanner settings"});
+    await expect(settingsLink).toBeVisible();
+    await expect(settingsLink).toHaveAttribute("href", `options.html?host=${mockHost}&selectedTab=flow-scanner`);
 
   });
 

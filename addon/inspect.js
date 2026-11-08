@@ -1943,6 +1943,7 @@ class App extends React.Component {
       h("div", {onClick: this.handleClick},
         h(PageHeader, {
           pageTitle: "Inspect",
+          settingsTab: "user-experience",
           navItems,
           subTitle: model.objectName() + " " + model.recordHeading(),
           orgName: model.orgName,

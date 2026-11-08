@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const config = {
       startOnLoad: true,
+      securityLevel: "strict",
       theme: isDark ? "dark" : "default",
       themeVariables: {
         // Dark theme configuration
@@ -70,7 +71,8 @@ document.addEventListener("DOMContentLoaded", () => {
             diagram.innerHTML = "";
             diagram.removeAttribute("data-processed");
             mermaid.render("mermaid-" + index, graphDefinition, (svg) => {
-              diagram.innerHTML = svg;
+              const svgElement = new DOMParser().parseFromString(svg, "text/html").body.firstElementChild;
+              diagram.replaceChildren(svgElement);
             });
           });
         }

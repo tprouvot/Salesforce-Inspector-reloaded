@@ -280,9 +280,12 @@ export let setupLinks = [
   {label: "Visualforce Components", link: "/lightning/setup/ApexComponents/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Visualforce Pages", link: "/lightning/setup/ApexPages/home", section: "Platform Tools > Custom Code", prod: false},
   //Platform Tools >   Development
+  {label: "Agentforce Vibes Extension", link: "/lightning/setup/EinsteinForDevelopers/home", section: "Platform Tools > Development", prod: true},
   {label: "Dev Hub", link: "/lightning/setup/DevHub/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "DevOps Center", link: "/lightning/setup/DevOpsCenterSetup/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "Org Shape", link: "/lightning/setup/ShapeGrantAccess/home", section: "Platform Tools > Dev Hub", prod: true},
+  {label: "Scratch Orgs", link: "/lightning/setup/ScratchOrgInfo/home", section: "Platform Tools > Development", prod: true},
+  {label: "Web Console", link: "/lightning/setup/PlatformWebIdeSetup/home", section: "Platform Tools > Development", prod: true},
   //Scale
   {label: "Org Performance", link: "/lightning/setup/Metrics/home", section: "Scale > Scale Center", prod: true},
   {label: "Performance Analysis", link: "/lightning/setup/PerformanceAnalysis/home", section: "Scale > Scale Center", prod: true},

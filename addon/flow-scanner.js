@@ -1622,13 +1622,6 @@ class App extends React.Component {
     }
   }
 
-  onToggleHelp(e) {
-    e.preventDefault();
-    const target = getLinkTarget(e);
-    const url = chrome.runtime.getURL(`options.html?selectedTab=flow-scanner&host=${this.flowScanner?.sfHost}`);
-    window.open(url, target);
-  }
-
   onToggleAgentforce(e) {
     if (e) {
       e.preventDefault();
@@ -2275,6 +2268,7 @@ class App extends React.Component {
     return h("div", {},
       h(PageHeader, {
         pageTitle: "Flow Scanner",
+        settingsTab: isOptionEnabled("flow-settings", this.state.hideButtonsOption) ? "flow-scanner" : null,
         orgName: this.state.orgName,
         sfLink,
         sfHost,
@@ -2311,20 +2305,6 @@ class App extends React.Component {
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
             h("use", {xlinkHref: "symbols.svg#einstein"})
           ))),
-          isOptionEnabled("flow-settings", this.state.hideButtonsOption) && h("div", {
-            key: "help-btn",
-            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
-          },
-          h("button", {
-            className: "slds-button slds-button_icon slds-button_icon-border-filled",
-            title: "Open Flow Scanner Options",
-            onClick: this.onToggleHelp
-          },
-          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#settings"})
-          )
-          )
-          )
         ]
       }),
       h("div", {className: "slds-m-top_xx-large"},

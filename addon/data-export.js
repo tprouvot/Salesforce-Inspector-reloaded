@@ -16,7 +16,44 @@ const COMMA_BEFORE_FROM_REGEX = /,\s*FROM\b/gi;
 const HORIZONTAL_SPACE_REGEX = /[^\S\r\n]+/g; // Matches spaces and tabs, but NOT newlines
 const MULTISPACE_REGEX = /\s+/g; // Matches ALL whitespace (including newlines)
 const RESTORE_STRING_REGEX = /__STRING_(\d+)__/g;
-const SOQL_SOSL_KEYWORDS_REGEX = /\b(?:FIND|RETURNING|SELECT|FROM|WHERE|WITH|GROUP\s+BY|HAVING|ORDER\s+BY|LIMIT|OFFSET|IN|AND|OR|LIKE|NOT|ASC|DESC|NULL)\b/gi;
+const SOQL_SOSL_KEYWORDS = [
+  // Core SOQL & SOSL
+  "FIND", "RETURNING", "SELECT", "FROM", "WHERE", "WITH", "GROUP\\s+BY", "HAVING",
+  "ORDER\\s+BY", "LIMIT", "OFFSET", "IN", "AND", "OR", "LIKE", "NOT", "ASC", "DESC", 
+  "NULL", "TRUE", "FALSE", "NULLS\\s+FIRST", "NULLS\\s+LAST",
+  // Modifiers & Clauses (Combined to protect field names)
+  "WITH\\s+DATA\\s+CATEGORY", "WITH\\s+DIVISION", "WITH\\s+HIGHLIGHT", 
+  "WITH\\s+METADATA", "WITH\\s+NETWORK", "WITH\\s+SNIPPET",
+  "WITH\\s+SECURITY_ENFORCED", "WITH\\s+USER_MODE", "WITH\\s+SYSTEM_MODE",
+  "FOR\\s+VIEW", "FOR\\s+REFERENCE", "FOR\\s+UPDATE", 
+  "UPDATE\\s+TRACKING", "UPDATE\\s+VIEWSTAT", 
+  "USING\\s+SCOPE", "USING\\s+LISTVIEW", "ALL\\s+ROWS",
+  // SOSL Search Groups (Combined to protect field names)
+  "ALL\\s+FIELDS", "NAME\\s+FIELDS", "EMAIL\\s+FIELDS", "PHONE\\s+FIELDS", "SIDEBAR\\s+FIELDS",
+  // Polymorphism (TYPEOF)
+  "TYPEOF", "WHEN", "THEN", "ELSE", "END",
+  // Functions, Macros, & Aggregates (Protected by parenthesis lookahead)
+  "FIELDS(?=\\s*\\()", "ALL", "STANDARD", "CUSTOM", "FORMAT(?=\\s*\\()", "CUBE(?=\\s*\\()", 
+  "ROLLUP(?=\\s*\\()", "GROUPING(?=\\s*\\()", "EXCLUDES(?=\\s*\\()", "INCLUDES(?=\\s*\\()",
+  "COUNT(?=\\s*\\()", "COUNT_DISTINCT(?=\\s*\\()", "SUM(?=\\s*\\()", "AVG(?=\\s*\\()", 
+  "MIN(?=\\s*\\()", "MAX(?=\\s*\\()",
+  // Date Functions (Protected by parenthesis lookahead)
+  "CALENDAR_MONTH(?=\\s*\\()", "CALENDAR_QUARTER(?=\\s*\\()", "CALENDAR_YEAR(?=\\s*\\()", 
+  "DAY_IN_MONTH(?=\\s*\\()", "DAY_IN_WEEK(?=\\s*\\()", "DAY_IN_YEAR(?=\\s*\\()", 
+  "DAY_ONLY(?=\\s*\\()", "FISCAL_MONTH(?=\\s*\\()", "FISCAL_QUARTER(?=\\s*\\()", 
+  "FISCAL_YEAR(?=\\s*\\()", "HOUR_IN_DAY(?=\\s*\\()", "WEEK_IN_MONTH(?=\\s*\\()", 
+  "WEEK_IN_YEAR(?=\\s*\\()",
+  // Date Literals
+  "TODAY", "YESTERDAY", "TOMORROW", "LAST_WEEK", "THIS_WEEK", "NEXT_WEEK", "LAST_MONTH",
+  "THIS_MONTH", "NEXT_MONTH", "LAST_90_DAYS", "NEXT_90_DAYS", "LAST_N_DAYS", "NEXT_N_DAYS",
+  "N_DAYS_AGO", "LAST_N_WEEKS", "NEXT_N_WEEKS", "N_WEEKS_AGO", "LAST_N_MONTHS", "NEXT_N_MONTHS",
+  "N_MONTHS_AGO", "THIS_QUARTER", "LAST_QUARTER", "NEXT_QUARTER", "LAST_N_QUARTERS",
+  "NEXT_N_QUARTERS", "N_QUARTERS_AGO", "THIS_YEAR", "LAST_YEAR", "NEXT_YEAR", "LAST_N_YEARS",
+  "NEXT_N_YEARS", "N_YEARS_AGO", "THIS_FISCAL_QUARTER", "LAST_FISCAL_QUARTER", "NEXT_FISCAL_QUARTER",
+  "LAST_N_FISCAL_QUARTERS", "NEXT_N_FISCAL_QUARTERS", "N_FISCAL_QUARTERS_AGO", "THIS_FISCAL_YEAR",
+  "LAST_FISCAL_YEAR", "NEXT_FISCAL_YEAR", "LAST_N_FISCAL_YEARS", "NEXT_N_FISCAL_YEARS", "N_FISCAL_YEARS_AGO"
+];
+const SOQL_SOSL_KEYWORDS_REGEX = new RegExp(`\\b(?:${SOQL_SOSL_KEYWORDS.join("|")})\\b`, "gi");
 
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";

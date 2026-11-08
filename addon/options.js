@@ -248,7 +248,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100, inputSize: "1"}},
           {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50, inputSize: "1"}},
           {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", inputSize: "6", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
-          {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Automatically cleans up typos (double or trailing commas, spaces) from query input"}},
+          {option: Option, props: {type: "toggle", title: "Auto-Fix Query Typos", key: "enableQueryTypoFix", default: false, tooltip: "Automatically cleans up typos (e.g., double or trailing commas) upon export"}},
           {option: Option, props: {type: "toggle", title: "Auto-Capitalize Query Keywords", key: "enableQueryAutoFormat", default: false, tooltip: "Automatically capitalizes SOQL and SOSL keywords upon export"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}},
           //This option is created to disable BOM for CSV in case of errors appearing during export, created in v2.0.0, can be deleted in two releases if no issues are reported

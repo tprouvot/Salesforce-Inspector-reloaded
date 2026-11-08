@@ -12,6 +12,7 @@ class Model {
     this.title = "API Request";
     this.userInfo = "...";
     this.userInitials = "";
+    this.userPhotoUrl = null;
     this.userFullName = "";
     this.userName = "";
     this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
@@ -43,6 +44,7 @@ class Model {
     this.spinFor(getUserInfo().then(result => {
       this.userInfo = result.userInfo;
       this.userInitials = result.userInitials;
+      this.userPhotoUrl = result.userPhotoUrl;
       this.userFullName = result.userFullName;
       this.userName = result.userName;
     }));
@@ -277,6 +279,7 @@ class App extends React.Component {
         sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
         userInitials: model.userInitials,
+        userPhotoUrl: model.userPhotoUrl,
         userFullName: model.userFullName,
         userName: model.userName
       }),

@@ -181,7 +181,7 @@ export function PageHeader(props) {
         ) : null,
 
         // User avatar (always present at the end)
-        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_small sfir-border-none"},
+        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-left_x-small slds-p-right_small sfir-border-none"},
           h("div", {className: "slds-media__body sfir-display-popover-trigger"},
             h("span", {className: "slds-avatar slds-avatar_circle"},
               userError

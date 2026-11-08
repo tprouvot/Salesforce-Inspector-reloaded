@@ -1622,6 +1622,12 @@ class App extends React.Component {
     }
   }
 
+  onToggleHelp(e) {
+    e.preventDefault();
+    const url = chrome.runtime.getURL(`options.html?host=${encodeURIComponent(this.flowScanner.sfHost)}&selectedTab=flow-scanner`);
+    window.open(url, getLinkTarget(e));
+  }
+
   onToggleAgentforce(e) {
     if (e) {
       e.preventDefault();

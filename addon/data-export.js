@@ -12,7 +12,12 @@ const MAX_HIGHLIGHT_LENGTH = 100000;
 
 const STRING_LITERAL_REGEX = /(?:'(?:[^'\\]+|\\.)*'|"(?:[^"\\]+|\\.)*")/g;
 const MULTIPLE_COMMAS_REGEX = /,(?:\s*,)+/g;
-const COMMA_BEFORE_FROM_REGEX = /,\s*FROM\b/gi;
+const COMMA_AFTER_SELECT_REGEX = /(\bSELECT)\s*,\s*/gi;
+const COMMA_BEFORE_FROM_REGEX = /,\s*(FROM\b)/gi;
+const COMMA_AFTER_OPEN_PAREN_REGEX = /\(\s*,\s*/g;
+const COMMA_BEFORE_CLOSE_PAREN_REGEX = /,\s*\)/g;
+const DUPLICATE_AND_OR_REGEX = /\b(AND|OR)(?:\s+\1)+\b/gi;
+const LIMIT_SPACE_REGEX = /\b(LIMIT)(?=\d+\b)/gi;
 const HORIZONTAL_SPACE_REGEX = /[^\S\r\n]+/g; // Matches spaces and tabs, but NOT newlines
 const MULTISPACE_REGEX = /\s+/g; // Matches ALL whitespace (including newlines)
 const RESTORE_STRING_REGEX = /__STRING_(\d+)__/g;
@@ -924,7 +929,12 @@ class Model {
     if (applyTypoFix) {
       query = query
         .replace(MULTIPLE_COMMAS_REGEX, ",")
-        .replace(COMMA_BEFORE_FROM_REGEX, " FROM")
+        .replace(COMMA_AFTER_SELECT_REGEX, "$1 ")
+        .replace(COMMA_BEFORE_FROM_REGEX, " $1")
+        .replace(COMMA_AFTER_OPEN_PAREN_REGEX, "(")
+        .replace(COMMA_BEFORE_CLOSE_PAREN_REGEX, ")")
+        .replace(DUPLICATE_AND_OR_REGEX, "$1")
+        .replace(LIMIT_SPACE_REGEX, "$1 ")
         .replace(HORIZONTAL_SPACE_REGEX, " "); // Preserves user's line breaks
     }
     // Apply Auto-Formatting

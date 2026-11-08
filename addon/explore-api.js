@@ -285,7 +285,7 @@ class App extends React.Component {
         style: {
           display: "flex",
           flexDirection: "column",
-          height: "calc(100vh - 4rem)"
+          height: "calc(100vh - 3rem)"
         }
       },
       h("div", {className: "slds-card slds-m-around_medium", id: "result-area"},

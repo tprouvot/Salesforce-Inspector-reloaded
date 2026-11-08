@@ -2188,7 +2188,7 @@ class App extends React.Component {
         style: {
           display: "flex",
           flexDirection: "column",
-          height: "calc(100vh - 4rem)"
+          height: "calc(100vh - 3rem)"
         }
       },
       // Select Object Card

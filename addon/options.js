@@ -2323,7 +2323,7 @@ class App extends React.Component {
           onClose: this.hideToast
         }),
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
-        h("div", {className: "slds-card slds-m-top_medium slds-m-horizontal_medium main-container", id: "main-container_header"},
+        h("div", {className: "slds-card slds-m-around_medium main-container", id: "main-container_header"},
           h(OptionsTabSelector, {model, appRef: this})
         )
       )

@@ -345,7 +345,22 @@ textarea[readonly] {
 }
 
 .delete-btn {
+  color: var(--slds-c-button-text-color);
+  padding-inline: 0.9rem 1rem;
   pointer-events: auto !important;
+}
+
+.delete-btn-label {
+  min-width: 0;
+}
+
+.delete-btn-icon,
+.delete-btn.slds-button_icon .delete-btn-label {
+  display: none;
+}
+
+.delete-btn.slds-button_icon .delete-btn-icon {
+  display: block;
 }
 
 .char-btn {

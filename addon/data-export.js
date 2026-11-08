@@ -10,6 +10,56 @@ import {PageHeader} from "./components/PageHeader.js";
 // so we fall back to plain (uncolored) text instead of colorizing on every keystroke.
 const MAX_HIGHLIGHT_LENGTH = 100000;
 
+const STRING_LITERAL_REGEX = /(?:'(?:[^'\\]+|\\.)*'|"(?:[^"\\]+|\\.)*")/g;
+const MULTIPLE_COMMAS_REGEX = /,(?:\s*,)+/g;
+const COMMA_AFTER_SELECT_REGEX = /(\bSELECT)\s*,\s*/gi;
+const COMMA_BEFORE_FROM_REGEX = /,\s*(FROM\b)/gi;
+const COMMA_AFTER_OPEN_PAREN_REGEX = /\(\s*,\s*/g;
+const COMMA_BEFORE_CLOSE_PAREN_REGEX = /,\s*\)/g;
+const DUPLICATE_AND_OR_REGEX = /\b(AND|OR)(?:\s+\1)+\b/gi;
+const LIMIT_SPACE_REGEX = /\b(LIMIT)(?=\d+\b)/gi;
+const HORIZONTAL_SPACE_REGEX = /[^\S\r\n]+/g; // Matches spaces and tabs, but NOT newlines
+const MULTISPACE_REGEX = /\s+/g; // Matches ALL whitespace (including newlines)
+const RESTORE_STRING_REGEX = /__STRING_(\d+)__/g;
+const SOQL_SOSL_KEYWORDS = [
+  // Core SOQL & SOSL
+  "FIND", "RETURNING", "SELECT", "FROM", "WHERE", "WITH", "GROUP\\s+BY", "HAVING",
+  "ORDER\\s+BY", "LIMIT", "OFFSET", "IN", "AND", "OR", "LIKE", "NOT", "ASC", "DESC", 
+  "NULL", "TRUE", "FALSE", "NULLS\\s+FIRST", "NULLS\\s+LAST",
+  // Modifiers & Clauses (Combined to protect field names)
+  "WITH\\s+DATA\\s+CATEGORY", "WITH\\s+DIVISION", "WITH\\s+HIGHLIGHT", 
+  "WITH\\s+METADATA", "WITH\\s+NETWORK", "WITH\\s+SNIPPET",
+  "WITH\\s+SECURITY_ENFORCED", "WITH\\s+USER_MODE", "WITH\\s+SYSTEM_MODE",
+  "FOR\\s+VIEW", "FOR\\s+REFERENCE", "FOR\\s+UPDATE", 
+  "UPDATE\\s+TRACKING", "UPDATE\\s+VIEWSTAT", 
+  "USING\\s+SCOPE", "USING\\s+LISTVIEW", "ALL\\s+ROWS",
+  // SOSL Search Groups (Combined to protect field names)
+  "ALL\\s+FIELDS", "NAME\\s+FIELDS", "EMAIL\\s+FIELDS", "PHONE\\s+FIELDS", "SIDEBAR\\s+FIELDS",
+  // Polymorphism (TYPEOF)
+  "TYPEOF", "WHEN", "THEN", "ELSE", "END",
+  // Functions, Macros, & Aggregates (Protected by parenthesis lookahead)
+  "FIELDS(?=\\s*\\()", "ALL", "STANDARD", "CUSTOM", "FORMAT(?=\\s*\\()", "CUBE(?=\\s*\\()", 
+  "ROLLUP(?=\\s*\\()", "GROUPING(?=\\s*\\()", "EXCLUDES(?=\\s*\\()", "INCLUDES(?=\\s*\\()",
+  "COUNT(?=\\s*\\()", "COUNT_DISTINCT(?=\\s*\\()", "SUM(?=\\s*\\()", "AVG(?=\\s*\\()", 
+  "MIN(?=\\s*\\()", "MAX(?=\\s*\\()",
+  // Date Functions (Protected by parenthesis lookahead)
+  "CALENDAR_MONTH(?=\\s*\\()", "CALENDAR_QUARTER(?=\\s*\\()", "CALENDAR_YEAR(?=\\s*\\()", 
+  "DAY_IN_MONTH(?=\\s*\\()", "DAY_IN_WEEK(?=\\s*\\()", "DAY_IN_YEAR(?=\\s*\\()", 
+  "DAY_ONLY(?=\\s*\\()", "FISCAL_MONTH(?=\\s*\\()", "FISCAL_QUARTER(?=\\s*\\()", 
+  "FISCAL_YEAR(?=\\s*\\()", "HOUR_IN_DAY(?=\\s*\\()", "WEEK_IN_MONTH(?=\\s*\\()", 
+  "WEEK_IN_YEAR(?=\\s*\\()",
+  // Date Literals
+  "TODAY", "YESTERDAY", "TOMORROW", "LAST_WEEK", "THIS_WEEK", "NEXT_WEEK", "LAST_MONTH",
+  "THIS_MONTH", "NEXT_MONTH", "LAST_90_DAYS", "NEXT_90_DAYS", "LAST_N_DAYS", "NEXT_N_DAYS",
+  "N_DAYS_AGO", "LAST_N_WEEKS", "NEXT_N_WEEKS", "N_WEEKS_AGO", "LAST_N_MONTHS", "NEXT_N_MONTHS",
+  "N_MONTHS_AGO", "THIS_QUARTER", "LAST_QUARTER", "NEXT_QUARTER", "LAST_N_QUARTERS",
+  "NEXT_N_QUARTERS", "N_QUARTERS_AGO", "THIS_YEAR", "LAST_YEAR", "NEXT_YEAR", "LAST_N_YEARS",
+  "NEXT_N_YEARS", "N_YEARS_AGO", "THIS_FISCAL_QUARTER", "LAST_FISCAL_QUARTER", "NEXT_FISCAL_QUARTER",
+  "LAST_N_FISCAL_QUARTERS", "NEXT_N_FISCAL_QUARTERS", "N_FISCAL_QUARTERS_AGO", "THIS_FISCAL_YEAR",
+  "LAST_FISCAL_YEAR", "NEXT_FISCAL_YEAR", "LAST_N_FISCAL_YEARS", "NEXT_N_FISCAL_YEARS", "N_FISCAL_YEARS_AGO"
+];
+const SOQL_SOSL_KEYWORDS_REGEX = new RegExp(`\\b(?:${SOQL_SOSL_KEYWORDS.join("|")})\\b`, "gi");
+
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
@@ -113,6 +163,7 @@ class Model {
     this.separator = getSeparator();
     this.soqlPrompt = "";
     this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
+    this.enableQueryAutoFormat = localStorage.getItem("enableQueryAutoFormat") == "true";
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -864,17 +915,36 @@ class Model {
       return;
     }
   }
-  removeTypo(query) {
-    // Remove double commas
-    query = query.replace(/,\s*,/g, ",");
-    // Remove comma before FROM
-    query = query.replace(/,\s+FROM\s+/gi, " FROM ");
-    // Remove trailing comma before FROM
-    query = query.replace(/,\s*FROM\s+/gi, " FROM ");
-    // Remove multiple spaces
-    query = query.replace(/\s+/g, " ");
-
-    return query.trim();
+  cleanQuery(query, applyTypoFix, applyAutoFormat) {
+    if (isGraphqlQuery(query)) {
+      return query.trim();
+    }
+    // Mask string literals
+    let strings = [];
+    query = query.replace(STRING_LITERAL_REGEX, (match) => {
+      strings.push(match);
+      return `__STRING_${strings.length - 1}__`;
+    });
+    // Apply Typo Fixes
+    if (applyTypoFix) {
+      query = query
+        .replace(MULTIPLE_COMMAS_REGEX, ",")
+        .replace(COMMA_AFTER_SELECT_REGEX, "$1 ")
+        .replace(COMMA_BEFORE_FROM_REGEX, " $1")
+        .replace(COMMA_AFTER_OPEN_PAREN_REGEX, "(")
+        .replace(COMMA_BEFORE_CLOSE_PAREN_REGEX, ")")
+        .replace(DUPLICATE_AND_OR_REGEX, "$1")
+        .replace(LIMIT_SPACE_REGEX, "$1 ")
+        .replace(HORIZONTAL_SPACE_REGEX, " "); // Preserves user's line breaks
+    }
+    // Apply Auto-Formatting
+    if (applyAutoFormat) {
+      query = query
+        .replace(MULTISPACE_REGEX, " ") // Flattens all newlines into single spaces
+        .replace(SOQL_SOSL_KEYWORDS_REGEX, (kw) => kw.toUpperCase());
+    }
+    // Restore string literals
+    return query.replace(RESTORE_STRING_REGEX, (_, index) => strings[Number(index)]).trim();
   }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
@@ -883,8 +953,11 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
-    vm.queryInput.value = query; // Update the input value with the cleaned query
+    let query = vm.queryInput.value;
+    if (vm.enableQueryTypoFix || vm.enableQueryAutoFormat) {
+      query = vm.cleanQuery(query, vm.enableQueryTypoFix, vm.enableQueryAutoFormat);
+      vm.queryInput.value = query; // Update the input value with the cleaned query
+    }
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {

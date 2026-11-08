@@ -2129,7 +2129,7 @@ class App extends React.Component {
         h(
           "div",
           {
-            className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium",
+            className: "slds-card slds-m-horizontal_medium",
             id: "result-area",
             style: {
               flex: "1 1 0",

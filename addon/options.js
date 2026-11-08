@@ -738,7 +738,7 @@ class APIVersionOption extends React.Component {
           h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
-      h("div", {className: "slds-col slds-size_10-of-12 slds-form-element"},
+      h("div", {className: "slds-col slds-size_9-of-12 slds-form-element"},
         h("div", {className: "slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
           h("div", {className: "slds-col slds-size_1-of-12"},
             h("div", {className: "slds-form-element__control"},

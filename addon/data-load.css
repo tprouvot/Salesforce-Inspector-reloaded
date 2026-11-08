@@ -89,3 +89,16 @@
   margin: 102px 232px 0 0;
   z-index: 2;
 }
+
+.slds-button.compact-button {
+  height: auto;
+  min-height: 31.6px;
+  padding-block: 3px;
+  line-height: 1.2;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}

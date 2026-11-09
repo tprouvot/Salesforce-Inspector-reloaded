@@ -1101,6 +1101,7 @@ class FaviconOption extends React.Component {
     super(props);
     this.sfHost = props.model.sfHost;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
+    this.onDeleteFavicon = this.onDeleteFavicon.bind(this);
     this.populateFaviconColors = this.populateFaviconColors.bind(this);
     this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
     this.toggleColorPicker = this.toggleColorPicker.bind(this);
@@ -1170,6 +1171,11 @@ class FaviconOption extends React.Component {
     localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
   }
 
+  onDeleteFavicon() {
+    localStorage.removeItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY);
+    this.setState({favicon: "", isInternal: false, showColorPicker: false});
+  }
+
   onToogleSmartMode(e) {
     let smartMode = e.target.checked;
     this.setState({smartMode});
@@ -1180,9 +1186,6 @@ class FaviconOption extends React.Component {
     if (this.state.showColorPicker) {
       this.setState({showColorPicker: false});
     } else {
-      if (!this.state.favicon.startsWith("#")){
-        this.setState({favicon: null});
-      }
       // Calculate position relative to the icon
       const iconElement = this.colorIconRef;
       if (iconElement) {
@@ -1275,11 +1278,11 @@ class FaviconOption extends React.Component {
         )
       ),
       h("div", {className: "slds-col slds-size_4-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12", style: {position: "relative"}},
+        h("div", {className: "slds-form-element__control slds-col slds-size_9-of-12", style: {position: "relative"}},
           h("input", {
             type: "text",
             className: "slds-input",
-            style: this.state.isInternal ? {paddingRight: "2.5rem"} : {},
+            style: {paddingRight: "2.5rem"},
             placeholder: "All HTML Color Names, Hex code or external URL",
             value: nullToEmptyString(this.state.favicon),
             onChange: this.onChangeFavicon
@@ -1295,23 +1298,35 @@ class FaviconOption extends React.Component {
             title: "Click to open color picker"
           }),
           this.state.showColorPicker && h(ColorPicker, {
-            value: this.state.favicon,
+            value: this.state.favicon && this.state.favicon.startsWith("#") ? this.state.favicon : "",
             position: this.state.colorPickerPosition,
             triggerRef: this.colorIconRef,
             onChange: this.handleColorSelect,
             onClose: () => this.setState({showColorPicker: false})
           })
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12", style: {position: "relative"}},
+        h("div", {className: "slds-form-element__control slds-col slds-size_3-of-12 slds-grid slds-grid_vertical-align-center", style: {position: "relative"}},
           this.state.isInternal ? h("svg", {
             className: "icon"
           },
           h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
+          ) : null,
+          nullToEmptyString(this.state.favicon).length > 0 ? h("button", {
+            type: "button",
+            className: "slds-button slds-button_icon slds-button_destructive favicon-delete-button slds-m-left_small",
+            onClick: this.onDeleteFavicon,
+            "aria-label": "Delete favicon",
+            title: "Delete the favicon color or link for this org"
+          },
+          h("svg", {className: "slds-button__icon"},
+            h("use", {xlinkHref: "symbols.svg#delete"})
+          ),
+          h("span", {className: "slds-assistive-text"}, "Delete favicon")
           ) : null
         )
       ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {dir: "ltr", className: "slds-form-element__control slds-col "},
+      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-center slds-grid_vertical-align-center"},
+        h("div", {dir: "ltr", className: "slds-form-element__control"},
           h("label", {className: "slds-checkbox_toggle slds-grid"},
             h("input", {type: "checkbox", required: true, className: "slds-input", checked: this.state.smartMode, onChange: this.onToogleSmartMode}),
             h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -1321,7 +1336,7 @@ class FaviconOption extends React.Component {
             )
           )
         ),
-        h("div", {className: "slds-form-element__control slds-col"},
+        h("div", {className: "slds-form-element__control slds-m-left_small"},
           h("button", {className: "slds-button slds-button_brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
         )
       )

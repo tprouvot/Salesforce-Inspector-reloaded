@@ -877,7 +877,7 @@ svg.icon:hover {
   align-items: center;
   justify-content: center;
   font-size: 0.8125rem;
-  line-height: normal;
+  line-height: 1.1;
 }
 
 .slds-box.slds-theme_default {

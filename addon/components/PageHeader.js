@@ -166,7 +166,9 @@ export function PageHeader(props) {
         // User avatar (always present at the end)
         h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_small sfir-border-none"},
           h("div", {className: "slds-media__body sfir-display-popover-trigger"},
-            h("span", {className: "slds-avatar slds-avatar_circle sfir-user-avatar"},
+            h("span", {
+              className: `slds-avatar slds-avatar_circle sfir-user-avatar${userPhotoUrl && !userError ? " sfir-user-avatar-has-photo" : ""}`
+            },
               userError
                 ? h("span", {className: "slds-avatar__initials slds-avatar__initials_inverse", title: "User Error"},
                   h("span", {className: "slds-icon_container"},
@@ -180,7 +182,10 @@ export function PageHeader(props) {
                 className: "slds-avatar__image sfir-user-photo",
                 src: userPhotoUrl,
                 alt: userFullName,
-                onError: (e) => { e.currentTarget.style.display = "none"; }
+                onError: (e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.parentElement.classList.remove("sfir-user-avatar-has-photo");
+                }
               }) : null
             ),
             h("section", {

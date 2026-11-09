@@ -19,6 +19,10 @@
     position: relative;
 }
 
+.sfir-user-avatar-has-photo .slds-avatar__initials {
+    display: none;
+}
+
 .sfir-user-photo {
     position: absolute;
     inset: 0;
@@ -27,12 +31,12 @@
     object-fit: cover;
     border-radius: 50%;
     box-sizing: border-box;
-    border: 1px solid var(--slds-g-color-border-2);
-    transition: border-width 150ms ease;
+    border: 1px solid var(--slds-g-color-neutral-base-30);
+    transition: border-color 250ms ease;
 }
 
 .sfir-user-photo:hover {
-    border-width: 0;
+    border-color: var(--slds-g-color-neutral-base-40);
 }
 
 .slds-builder-header.sfir-header-override {

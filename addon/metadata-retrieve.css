@@ -74,7 +74,6 @@ label {
   margin: 2px 20px;
   display: block;
 }
-.result,
 .log-info {
   margin-left: 20px;
   margin-bottom: 20px;
@@ -82,6 +81,23 @@ label {
 .result-bar a:visited {
   color: #0176d3;
 }
+#result-area h1 {
+  font-size: 0.9rem;
+   margin-inline: 1rem; 
+}
+.result-bar {
+  margin-bottom: 0;
+}
+.area {
+  border-radius: 20px;
+}
+#result-table {
+  border-radius: 0 0 20px 20px;
+}
+.slds-button {
+  line-height: 1rem;
+}
+
 h2 {
   font-size: 14px;
 }
@@ -110,62 +126,111 @@ textarea {
 .max-width-small {
   max-width: 10%;
 }
+
 .filter-box {
   white-space: nowrap;
   margin: 0 0.5rem;
   position: relative;
+  width: 20em;
 }
 
-.filter-input {
-  font: inherit;
-  width: 20em;
-  padding: 0 2.5rem;
-  background-color: #fff;
-  color: #16325c;
-  border: 1px solid #d8dde6;
-  border-radius: 0.25rem;
-  transition: border 0.1s linear, background-color 0.1s linear;
-  display: inline-block;
-  line-height: 1.875rem;
-  min-height: calc(1.875rem + (1px * 2));
+.filter-box .filter-input {
+  width: 100%;
+  height: auto;
+  padding: 0 1.75rem;
+  border: var(--slds-g-sizing-border-1) solid var(--slds-s-input-color-border);
+  border-radius: var(--slds-s-input-radius-border);
+  font-size: 0.8125rem;
 }
-.filter-input:active,
-.filter-input:focus {
-  outline: 0;
-  border-color: #1589ee;
-  background-color: #fff;
-  box-shadow: 0 0 3px #0070d2;
+
+.filter-box .filter-input:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--slds-g-color-brand-base-15);
 }
-.filter-icon {
-  left: 0.75rem;
-  width: 1rem;
-  height: 1rem;
+
+.filter-box .filter-icon,
+.filter-box .filter-clear {
   position: absolute;
   top: 50%;
-  margin-top: -0.5rem;
-  fill: #9faab5;
-}
-.filter-clear {
-  right: 0.75rem;
-  width: 1rem;
-  height: 1rem;
-  position: absolute;
-  top: 50%;
-  margin-top: -0.5rem;
-  fill: #9faab5;
-  line-height: 1;
-  vertical-align: middle;
-  color: #54698d;
-  display: inline-block;
-  border: 1px solid transparent;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  text-decoration: none;
-  transition: color 50ms linear, background-color 50ms linear;
-}
-.filter-clear-icon {
+  z-index: 2;
   width: 0.875rem;
   height: 0.875rem;
+  margin: 0;
+  transform: translateY(-50%);
+  color: var(--slds-g-color-neutral-base-50);
+  fill: currentColor;
+}
+
+.filter-box .filter-icon {
+  left: var(--slds-g-spacing-2);
+}
+
+.filter-box .filter-clear {
+  right: var(--slds-g-spacing-2);
+}
+
+.filter-box .filter-clear:hover,
+.filter-box .filter-clear:focus-visible {
+  color: var(--slds-g-color-neutral-base-50);
+}
+
+.metadata-accordion-action {
+  margin-block: 0;
+  padding-block: 1.25rem;
+  font-size: 1.1rem;
+}
+
+.metadata-accordion-action .slds-accordion__summary-content {
+  font-size: inherit;
+}
+
+.slds-accordion__summary {
+  margin: 0;
+  padding: 0;
+}
+
+.slds-accordion__section {
+  margin-block: 0;
+  padding-block: 0;
+}
+
+.slds-accordion__summary-content {
+  overflow: visible;
+}
+
+.slds-accordion > .slds-accordion__list-item:first-child {
+  margin-top: 2px;
+}
+
+.slds-accordion__content .slds-accordion__summary,
+.slds-accordion__content .metadata-accordion-action {
+  margin-block: 0;
+  padding-block: 0;
+}
+
+.slds-accordion__content .metadata-accordion-action {
+  font-size: 0.9rem;
+}
+
+.metadata-preview-action .slds-button__icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.metadata-preview-action .slds-button__icon_left,
+.metadata-preview-action .slds-button__icon_right {
+  margin-inline: 4px;
+}
+
+.slds-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--slds-g-spacing-2);
+}
+
+.slds-modal__footer .slds-button + .slds-button {
+  margin-inline-start: 0;
 }
 .reset-margin {
   margin: 0;
@@ -174,6 +239,7 @@ textarea {
   margin-left: auto;
   display: flex;
   align-items: center;
+  gap: 0.25rem;
 }
 .area input[type="radio"],
 .area input[type="checkbox"] {
@@ -218,12 +284,16 @@ select {
 
 /* Scrollable columns */
 #result-table .result.slds-grid {
-  height: calc(100vh - 5rem);
+  height: 100%;
   overflow: hidden;
 }
 
 #result-table .result .slds-col {
   overflow-y: auto;
   height: 100%;
-  padding: 0 1rem;
+  padding: 0 1.25rem 1rem;
+}
+
+#packageXml {
+  background-position: 0 1.5em;
 }

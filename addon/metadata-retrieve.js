@@ -1014,9 +1014,11 @@ class App extends React.Component {
           onCopy: this.onCopyMetadataXml,
           copyLabel: "Copy",
           copyIconName: "symbols.svg#copy",
+          copyButtonClass: "slds-button slds-button_neutral metadata-preview-action",
           onConfirm: this.onDownloadMetadataXml,
           confirmLabel: "Download",
           confirmIconName: "symbols.svg#download",
+          confirmButtonClass: "slds-button slds-button_brand metadata-preview-action",
           cancelLabel: "Close",
           modalSize: "large",
           children: h("div", {className: "slds-scrollable_y"},
@@ -1064,13 +1066,13 @@ class App extends React.Component {
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
             h("span", {className: "slds-assistive-text"}, "Select what to download below, and then click the Retrieve Metadata button. If downloading fails, try unchecking some of the boxes."),
-            h("div", {className: "filter-box"},
-              h("svg", {className: "filter-icon"},
+            h("div", {className: "filter-box slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right"},
+              h("svg", {className: "slds-input__icon slds-input__icon_left filter-icon", "aria-hidden": "true"},
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
-              h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
-              h("a", {href: "about:blank", className: "filter-clear", title: "Clear filter", onClick: this.onClearAndFocusFilter},
-                h("svg", {className: "filter-clear-icon"},
+              h("input", {className: "slds-input filter-input", "aria-label": "Filter metadata", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+              h("button", {type: "button", className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right filter-clear", title: "Clear filter", "aria-label": "Clear filter", onClick: this.onClearAndFocusFilter},
+                h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
                   h("use", {xlinkHref: "symbols.svg#clear"})
                 )
               )
@@ -1094,6 +1096,8 @@ class App extends React.Component {
             ),
             h("div", {className: "flex-right"},
               h("button", {
+                type: "button",
+                className: "slds-button slds-button_brand",
                 onClick: this.onStartClick,
                 disabled: !model.deployRequestId && (!model.metadataObjects || !model.metadataObjects.some(obj => obj.selected))
               }, "Retrieve Metadata"),
@@ -1210,7 +1214,6 @@ class App extends React.Component {
             model.metadataObjects
               ? h("div", {className: "result slds-grid"},
                 h("div", {className: "slds-col"},
-                  h("br", {}),
                   h("ul", {className: "slds-accordion"},
                     model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model, onViewMetadata: this.onViewMetadata, key: metadataObject.xmlName}))),
                   !model.deployRequestId ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
@@ -1530,7 +1533,7 @@ class ObjectSelector extends React.Component {
                   // real control, so the button is pulled out of the tab order instead of being a
                   // second (confusingly nested) stop for the same row.
                   tabIndex: child.isFolder ? 0 : -1,
-                  className: "slds-button slds-button_reset slds-accordion__summary-action"
+                  className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
                 },
                 child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                   h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
@@ -1587,7 +1590,7 @@ class ObjectSelector extends React.Component {
             "aria-controls": "accordion-details-" + metadataObject.xmlName,
             "aria-expanded": metadataObject.expanded,
             "aria-label": metadataObject.xmlName + ", press Enter to " + (metadataObject.expanded ? "collapse" : "open") + " the list of " + metadataObject.xmlName + " items",
-            className: "slds-button slds-button_reset slds-accordion__summary-action"
+            className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
           },
           h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
             h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})

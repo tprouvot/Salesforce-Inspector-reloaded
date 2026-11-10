@@ -140,14 +140,25 @@
 .description-toggle-btn:hover,
 .description-toggle-btn:focus {
   color: #005fb8;
-  text-decoration: underline;
+  text-decoration: none;
   outline: none;
+}
+
+.description-toggle-btn:hover #toggle-label,
+.description-toggle-btn:focus #toggle-label {
+  text-decoration: underline;
+}
+
+.flow-scanner-svg-icon {
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
 .toggle-icon {
   display: inline-block;
   transition: transform 0.2s;
-  font-size: 1em;
+  width: 14px;
+  height: 14px;
 }
 
 .flow-description-container.collapsed .toggle-icon {
@@ -456,14 +467,14 @@ button:disabled,
 
 .warning-state .empty-icon {
   color: #f0ad4e;
-  font-size: 2.5rem;
   margin-bottom: 16px;
 }
 
 .empty-icon {
+  width: 32px;
+  height: 32px;
   margin-bottom: 12px;
   opacity: 0.6;
-  font-size: 2rem;
 }
 
 .empty-state h3 {
@@ -539,7 +550,8 @@ button:disabled,
 }
 
 .success-icon {
-  font-size: 2rem;
+  width: 32px;
+  height: 32px;
   margin-bottom: 12px;
 }
 
@@ -1173,7 +1185,30 @@ svg.icon:hover {
 }
 
 .flow-icon {
-  font-size: 1.25rem;
+  width: 20px;
+  height: 20px;
+}
+
+.results-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.sev-ico {
+  width: 18px;
+  height: 18px;
+}
+
+.sev-ico.error {
+  color: #c23934;
+}
+
+.sev-ico.warning {
+  color: #e6b800;
+}
+
+.sev-ico.info {
+  color: #0070d2;
 }
 
 .flow-info-card {
@@ -1341,6 +1376,12 @@ svg.icon:hover {
   align-items: center;
 }
 
+.flow-scanner-note-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+}
+
 .tooltip-container {
   position: relative;
   display: inline-flex;
@@ -1466,8 +1507,15 @@ h1 {
 
 .unsupported-icon-large {
   color: #f0ad4e;
-  font-size: 3rem;
+  width: 48px;
+  height: 48px;
   margin-bottom: 16px;
+}
+
+.supported-types-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
 }
 
 .unsupported-title {

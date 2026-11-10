@@ -279,6 +279,7 @@ class App extends React.PureComponent {
       a: ["all", "clickAllDataBtn"],
       f: ["all", "clickShowFieldAPINameBtn"],
       n: ["all", "clickNewBtn"],
+      w: ["all", "openFlowScanner"],
       e: ["click", "dataExportBtn"],
       i: ["click", "dataImportBtn"],
       l: ["click", "limitsBtn"],
@@ -304,8 +305,8 @@ class App extends React.PureComponent {
     if (!actionMap[key]) {
       return;
     }
-    e.preventDefault();
     const [action, target] = actionMap[key];
+    e.preventDefault();
     if (target === "quit") {
       closePopup();
       return;
@@ -1968,20 +1969,17 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   clickAllDataBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickAllDataBtn();
-    }
+    this.refs.allDataSelection?.clickAllDataBtn();
   }
 
   clickShowFieldAPINameBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickShowFieldAPINameBtn();
-    }
+    this.refs.allDataSelection?.clickShowFieldAPINameBtn();
+  }
+  openFlowScanner() {
+    this.refs.allDataSelection?.openFlowScanner();
   }
   clickNewBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickNewBtn();
-    }
+    this.refs.allDataSelection?.clickNewBtn();
   }
 
   resultRender(matches, userQuery) {
@@ -4056,14 +4054,13 @@ class AllDataSelection extends React.PureComponent {
     this.refs.showAllDataBtn.click();
   }
   clickShowFieldAPINameBtn() {
-    if (this.refs.showFieldApiNameBtn) {
-      this.refs.showFieldApiNameBtn.click();
-    }
+    this.refs.showFieldApiNameBtn?.click();
   }
   clickNewBtn() {
-    if (this.refs.showNewBtn) {
-      this.refs.showNewBtn.click();
-    }
+    this.refs.showNewBtn?.click();
+  }
+  openFlowScanner() {
+    this.refs.flowScannerBtn?.click();
   }
   getAllDataUrl(toolingApi) {
     let {sfHost, selectedValue} = this.props;
@@ -4519,14 +4516,13 @@ class AllDataSelection extends React.PureComponent {
         ? h(
           "a",
           {
+            ref: "flowScannerBtn",
             href: this.getFlowScannerUrl(),
             target: linkTarget,
             className:
                 "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
           },
-          "Flow Scanner"
-        )
-        : null,
+          "Flo", h("u", {}, "w"), "\u00A0Scanner") : null,
       flowDefinitionId
         ? h(
           "a",
@@ -4559,8 +4555,8 @@ class AllDataSelection extends React.PureComponent {
             button == "regularApi"
               ? ""
               : button == "toolingApi"
-                ? " (Tooling API)"
-                : " (Not readable)"
+                ? "\u00A0(Tooling API)"
+                : "\u00A0(Not readable)"
           )
         )
       ),

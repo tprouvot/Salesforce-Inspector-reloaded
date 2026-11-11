@@ -186,16 +186,88 @@ textarea {
 
 .slds-accordion__summary {
   margin: 0;
-  padding: 0;
+  padding: 0 1rem;
 }
 
 .slds-accordion__section {
-  margin-block: 0;
-  padding-block: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .slds-accordion__summary-content {
   overflow: visible;
+}
+
+.metadata-accordion {
+  --slds-c-accordion-section-color-border: var(--slds-g-color-neutral-base-90);
+}
+
+.metadata-accordion .slds-accordion__summary-heading {
+  align-items: center;
+}
+
+.metadata-accordion .slds-accordion__summary:focus-within {
+  background-color: var(--slds-g-color-brand-base-95);
+  border-radius: 8px;
+}
+
+.metadata-accordion .metadata-child-summary:focus-within {
+  background-color: transparent;
+  border-radius: 0;
+}
+
+.metadata-accordion .metadata-accordion-action:focus,
+.metadata-accordion .metadata-accordion-action:focus-visible {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.metadata-accordion .metadata-child-summary-heading:focus-within {
+  position: relative;
+  isolation: isolate;
+  background-color: transparent;
+}
+
+.metadata-accordion .metadata-child-summary-heading:focus-within::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  inset-inline-start: 0.5rem;
+  z-index: -1;
+  border-radius: 8px;
+  background-color: var(--slds-g-color-brand-base-95);
+  pointer-events: none;
+}
+
+.metadata-selection-checkbox {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 1rem;
+  align-items: center;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-end: 0.5rem;
+  vertical-align: middle;
+}
+
+.metadata-selection-checkbox input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  clip: auto;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.metadata-selection-checkbox .slds-checkbox__label {
+  display: inline-flex;
+  margin: 0;
+  cursor: pointer;
 }
 
 .slds-accordion > .slds-accordion__list-item:first-child {
@@ -204,8 +276,13 @@ textarea {
 
 .slds-accordion__content .slds-accordion__summary,
 .slds-accordion__content .metadata-accordion-action {
-  margin-block: 0;
-  padding-block: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.metadata-child-summary-heading {
+  padding: 0;
+  margin-inline-start: 1rem;
 }
 
 .slds-accordion__content .metadata-accordion-action {

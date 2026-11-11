@@ -1224,7 +1224,7 @@ class App extends React.Component {
             model.metadataObjects
               ? h("div", {className: "result slds-grid"},
                 h("div", {className: "slds-col"},
-                  h("ul", {className: "slds-accordion"},
+                  h("ul", {className: "slds-accordion metadata-accordion"},
                     model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model, onViewMetadata: this.onViewMetadata, key: metadataObject.xmlName}))),
                   !model.deployRequestId ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
                 ),
@@ -1504,7 +1504,7 @@ class ObjectSelector extends React.Component {
         return null;
       }
 
-      return h("ul", {className: "slds-accordion", key: parentXmlName + "_children"},
+      return h("ul", {className: "slds-accordion metadata-accordion", key: parentXmlName + "_children"},
         children.map(child => {
           const metadataType = child.type || parentType || metadataObject.xmlName;
           const metadataName = child.fullName;
@@ -1513,13 +1513,33 @@ class ObjectSelector extends React.Component {
           return h("li", {key: itemKey, className: "slds-accordion__list-item", hidden: child.hidden},
             h("section", {className: child.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
               h("div", {
-                className: "slds-accordion__summary",
+                className: "slds-accordion__summary metadata-child-summary",
                 title: child.fullName,
                 onClick: (e) => this.onSelectChild(child, e),
                 style: {position: "relative"}
               },
-              h("h4", {className: "slds-accordion__summary-heading"},
+              h("h4", {className: "slds-accordion__summary-heading metadata-child-summary-heading"},
+                h("span", {className: "slds-checkbox metadata-selection-checkbox" + (!child.isFolder ? " margin-grandchild" : ""), onClick: (e) => e.stopPropagation()},
+                  h("input", {
+                    type: "checkbox",
+                    id: "metadata-" + itemKey,
+                    className: "metadata",
+                    checked: !!child.selected,
+                    onChange: (e) => this.onSelectChild(child, e),
+                    "aria-label": child.isFolder ? "Select all items in " + child.fullName : "Select " + child.fullName,
+                    ref: (input) => {
+                      if (input) {
+                        input.indeterminate = !!child.indeterminate;
+                      }
+                    }
+                  }),
+                  h("label", {className: "slds-checkbox__label", htmlFor: "metadata-" + itemKey},
+                    h("span", {className: "slds-checkbox_faux"}),
+                    h("span", {className: "slds-assistive-text"}, child.isFolder ? "Select all items in " + child.fullName : "Select " + child.fullName)
+                  )
+                ),
                 h("button", {
+                  type: "button",
                   "aria-controls": "accordion-details-" + child.fullName,
                   "aria-expanded": child.expanded,
                   "aria-label": child.isFolder
@@ -1534,17 +1554,6 @@ class ObjectSelector extends React.Component {
                 child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                   h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
                 ) : null,
-                h("input", {
-                  type: "checkbox",
-                  className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
-                  checked: !!child.selected,
-                  "aria-label": child.isFolder ? "Select all items in " + child.fullName : "Select " + child.fullName,
-                  ref: (input) => {
-                    if (input) {
-                      input.indeterminate = !!child.indeterminate;
-                    }
-                  }
-                }),
                 h("span", {
                   className: "slds-text-body_small slds-accordion__summary-content",
                   title: child.fullName,
@@ -1580,7 +1589,28 @@ class ObjectSelector extends React.Component {
           onClick: (event) => { this.onSelectMeta(event); }
         },
         h("h3", {className: "slds-accordion__summary-heading"},
+          h("span", {className: "slds-checkbox metadata-selection-checkbox", onClick: (e) => e.stopPropagation()},
+            h("input", {
+              type: "checkbox",
+              id: "metadata-" + metadataObject.xmlName,
+              className: "metadata",
+              checked: !!metadataObject.selected,
+              onChange: this.onChange,
+              key: metadataObject.xmlName,
+              "aria-label": "Select all " + metadataObject.xmlName,
+              ref: (input) => {
+                if (input) {
+                  input.indeterminate = !!metadataObject.indeterminate;
+                }
+              }
+            }),
+            h("label", {className: "slds-checkbox__label", htmlFor: "metadata-" + metadataObject.xmlName},
+              h("span", {className: "slds-checkbox_faux"}),
+              h("span", {className: "slds-assistive-text"}, "Select all " + metadataObject.xmlName)
+            )
+          ),
           h("button", {
+            type: "button",
             "aria-controls": "accordion-details-" + metadataObject.xmlName,
             "aria-expanded": metadataObject.expanded,
             "aria-label": metadataObject.xmlName + ", press Enter to " + (metadataObject.expanded ? "collapse" : "open") + " the list of " + metadataObject.xmlName + " items",
@@ -1589,19 +1619,6 @@ class ObjectSelector extends React.Component {
           h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
             h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
           ),
-          h("input", {
-            type: "checkbox",
-            className: "metadata",
-            checked: !!metadataObject.selected,
-            onChange: this.onChange,
-            key: metadataObject.xmlName,
-            "aria-label": "Select all " + metadataObject.xmlName,
-            ref: (input) => {
-              if (input) {
-                input.indeterminate = !!metadataObject.indeterminate;
-              }
-            }
-          }),
           h("span", {
             className: "slds-accordion__summary-content",
             title: metadataObject.xmlName

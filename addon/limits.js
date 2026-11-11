@@ -13,6 +13,7 @@ class Model {
     this.spinnerCount = 0;
     this.title = "Org Limits";
     this.allLimitData = [];
+    this.searchQuery = "";
     this.errorMessages = [];
     this.sortOptions = [{label: "Consumption", value: "consumption"}, {label: "A-Z %", value: "asc"}];
 
@@ -111,29 +112,32 @@ class LimitData extends React.Component {
   render() {
     // "0 of 0 consumed" means the limit does not apply to this org, not that it is fully consumed
     let isNotApplicable = this.props.max === 0 && this.props.remaining === 0;
-    let percentage = isNotApplicable ? 0 : Math.round((1 - this.divide(this.props.remaining, this.props.max)) * 100);
+    let rawPercentage = isNotApplicable ? 0 : this.props.consumption * 100;
+    let percentage = Math.round(rawPercentage);
+    let gaugeState = rawPercentage <= 0 ? "neutral" : rawPercentage < 100 ? "healthy" : rawPercentage === 100 ? "full" : "over";
     return (
-      h("div", {className: "slds-col slds-size_1-of-5 slds-p-top_xx-large"},
-        h("figure", {},
+      h("article", {className: "limits-grid__item"},
+        h("figure", {className: "limits-gauge-card"},
           h("div", {
-            className: "gauge"
+            className: "limits-gauge gauge"
           },
           h("div", {
-            className: "meter" + (isNotApplicable ? " meter-not-applicable" : ""),
+            className: "limits-gauge__meter meter limits-gauge__meter_state_" + gaugeState + (isNotApplicable ? " limits-gauge__meter_not-applicable meter-not-applicable" : ""),
             ref: "meter"
           },
           ""
           ),
           h("div", {
-            className: "meter-value-container"
+            className: "limits-gauge__value-container meter-value-container"
           },
           h("div", {
-            className: "meter-value"
+            className: "limits-gauge__value meter-value limits-gauge__value_state_" + gaugeState
           }, percentage + "%")
           )
           ),
-          h("figcaption", {}, this.props.label,
-            h("div", {}, (this.props.max - this.props.remaining).toLocaleString() + " of " + (this.props.max).toLocaleString() + " consumed",
+          h("figcaption", {className: "limits-gauge-card__caption"},
+            h("span", {className: "limits-gauge-card__name"}, this.props.label),
+            h("div", {className: "limits-gauge-card__details"}, (this.props.max - this.props.remaining).toLocaleString() + " of " + (this.props.max).toLocaleString() + " consumed",
               h("br", {}), this.props.remaining >= 0 ? "(" + (this.props.remaining).toLocaleString() + " left)" : "(" + (0 - this.props.remaining).toLocaleString() + " overconsumed)"
             ),
           )
@@ -141,13 +145,11 @@ class LimitData extends React.Component {
       )
     );
   }
-  divide(a, b) {
-    return (a / b) ? (a / b) : 0;
-  }
   componentDidMount() {
     // Animate gauge to relevant value
     let isNotApplicable = this.props.max === 0 && this.props.remaining === 0;
-    let targetDegree = isNotApplicable ? "0deg" : this.props.remaining < 0 ? "180deg" : ((1 - this.divide(this.props.remaining, this.props.max)) * 180) + "deg"; //180deg = 100%, 0deg = 0%
+    let gaugePercentage = isNotApplicable ? 0 : Math.min(Math.max(this.props.consumption, 0), 1);
+    let targetDegree = (gaugePercentage * 180) + "deg";
     this.refs.meter.animate([{
       transform: "rotate(0deg)"
     }, {
@@ -166,6 +168,7 @@ class App extends React.Component {
     this.model = this.props.vm;
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onSortBy = this.onSortBy.bind(this);
+    this.onSearch = this.onSearch.bind(this);
     this.onRefreshLimits = this.onRefreshLimits.bind(this);
   }
 
@@ -182,6 +185,11 @@ class App extends React.Component {
     this.model.didUpdate();
   }
 
+  onSearch(e) {
+    this.model.searchQuery = e.target.value;
+    this.model.didUpdate();
+  }
+
   onRefreshLimits(){
     this.model.startLoading();
   }
@@ -189,6 +197,10 @@ class App extends React.Component {
   render() {
     let model = this.props.vm;
     document.title = model.title;
+    const searchQuery = model.searchQuery.trim().toLowerCase();
+    const visibleLimits = model.allLimitData.filter(limit =>
+      !searchQuery || limit.label.toLowerCase().includes(searchQuery) || limit.key.toLowerCase().includes(searchQuery)
+    );
     return h("div", {},
       h(PageHeader, {
         pageTitle: "Org Limits",
@@ -198,39 +210,42 @@ class App extends React.Component {
         spinnerCount: model.spinnerCount,
         ...model.userInfoModel.getProps()
       }),
-      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
-        h("div", {className: "slds-card slds-m-around_medium", style: {flex: "1 1 0", display: "flex", flexDirection: "column", minHeight: 0}},
-          h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center"},
-            h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate slds-p-top_small slds-p-horizontal_small"},
-              h("div", {className: "slds-media__body"},
-                h("h2", {className: "slds-card__header-title"}, "Limits snapshot")
+      h("main", {className: "limits-page sfir-page-container"},
+        h("section", {className: "limits-panel", "aria-labelledby": "limits-heading"},
+          h("header", {className: "limits-panel__header"},
+            h("div", {className: "limits-panel__title"},
+              h("h2", {id: "limits-heading"}, "Limits snapshot"),
+              h("p", {}, "Current consumption across your org-wide limits.")
+            ),
+            h("div", {className: "limits-toolbar"},
+              h("button", {className: "slds-button slds-button_neutral limits-copy-button", disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy JSON"),
+              h("label", {className: "limits-search", htmlFor: "limits-search"},
+                h("span", {className: "limits-sort__label"}, "Search limits"),
+                h("input", {className: "slds-input limits-search__input", id: "limits-search", type: "search", placeholder: "Search by label or API name...", value: model.searchQuery, onChange: this.onSearch})
               ),
-              h("div", {className: "slds-col slds-size_8-of-12"},
-                h("button", {className: "slds-button slds-button_neutral", disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
-              ),
-              h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
-                h("div", {className: "slds-form-element"},
-                  h("div", {className: "slds-form-element__control"},
-                    h("div", {className: "slds-select_container"},
-                      h("select", {className: "slds-select", id: "select-01", value: model.sortBy.value, onChange: this.onSortBy},
-                        h("option", {value: "none", disabled: true, defaultValue: true, hidden: true}, "Sort By"),
-                        model.sortOptions.map(opt => h("option", {key: opt.value, value: opt.value}, opt.label))
-                      )
-                    )
+              h("label", {className: "limits-sort", htmlFor: "limits-sort"},
+                h("span", {className: "limits-sort__label"}, "Sort by"),
+                h("span", {className: "slds-select_container"},
+                  h("select", {className: "slds-select limits-sort__select", id: "limits-sort", value: model.sortBy.value, onChange: this.onSortBy},
+                    model.sortOptions.map(opt => h("option", {key: opt.value, value: opt.value}, opt.label))
                   )
                 )
               )
             )
           ),
-          h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1", overflowY: "auto", minHeight: 0}},
-            h("div", {className: "slds-grid slds-gutters slds-wrap"},
-              model.allLimitData.map(limitData =>
-                h(LimitData, limitData)
+          h("div", {className: "limits-panel__body"},
+            visibleLimits.length
+              ? h("div", {className: "limits-grid"},
+                visibleLimits.map(limitData =>
+                  h(LimitData, {...limitData, key: limitData.key})
+                )
               )
+              : model.searchQuery
+                ? h("p", {className: "limits-empty"}, "No limits match your search.")
+                : null
             )
-          ),
+          )
         )
-      )
     );
   }
 }

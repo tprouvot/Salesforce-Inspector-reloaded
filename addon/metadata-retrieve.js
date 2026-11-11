@@ -64,9 +64,6 @@ class Model {
   }
 
   title() {
-    if (this.progress == "working") {
-      return "(Loading) Metadata";
-    }
     return "Metadata";
   }
 
@@ -92,8 +89,9 @@ class Model {
   startLoading() {
     let logWait = this.logWait.bind(this);
     (async () => {
+      this.spinnerCount++;
       try {
-        this.progress = "working";
+        this.progress = "loading";
         this.didUpdate();
 
         let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
@@ -124,6 +122,9 @@ class Model {
         this.didUpdate();
       } catch (e) {
         this.logError(e);
+      } finally {
+        this.spinnerCount = Math.max(0, this.spinnerCount - 1);
+        this.didUpdate();
       }
     })();
   }
@@ -352,26 +353,50 @@ class Model {
   }
 
   formatXml(xmlString) {
-    // Parse the XML string
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    // Pretty-print with plain DOM traversal (XSLTProcessor is deprecated in browsers)
+    const xmlDoc = new DOMParser().parseFromString(xmlString, "text/xml");
+    if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+      return xmlString;
+    }
 
-    // Use XSLT to format the XML with indentation
-    const xsltDoc = parser.parseFromString([
-      '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
-      '  <xsl:strip-space elements="*"/>',
-      '  <xsl:template match="node()|@*">',
-      '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
-      "  </xsl:template>",
-      '  <xsl:output indent="yes"/>',
-      "</xsl:stylesheet>"
-    ].join("\n"), "application/xml");
+    const indent = "  ";
+    const escText = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const escAttr = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
-    const xsltProcessor = new XSLTProcessor();
-    xsltProcessor.importStylesheet(xsltDoc);
-    const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
-    const formattedXml = new XMLSerializer().serializeToString(resultDoc);
-    return formattedXml;
+    const render = (node, depth) => {
+      const pad = indent.repeat(depth);
+      switch (node.nodeType) {
+        case Node.ELEMENT_NODE: {
+          const attrs = Array.from(node.attributes).map(a => " " + a.name + "=\"" + escAttr(a.value) + "\"").join("");
+          // Like xsl:strip-space: drop whitespace-only text nodes
+          const kids = Array.from(node.childNodes).filter(c => c.nodeType !== Node.TEXT_NODE || c.nodeValue.trim() !== "");
+          if (kids.length === 0) {
+            return pad + "<" + node.nodeName + attrs + "/>";
+          }
+          if (kids.every(c => c.nodeType === Node.TEXT_NODE || c.nodeType === Node.CDATA_SECTION_NODE)) {
+            const text = kids.map(c => c.nodeType === Node.CDATA_SECTION_NODE ? "<![CDATA[" + c.nodeValue + "]]>" : escText(c.nodeValue)).join("");
+            return pad + "<" + node.nodeName + attrs + ">" + text + "</" + node.nodeName + ">";
+          }
+          return [
+            pad + "<" + node.nodeName + attrs + ">",
+            ...kids.map(c => render(c, depth + 1)),
+            pad + "</" + node.nodeName + ">"
+          ].filter(Boolean).join("\n");
+        }
+        case Node.TEXT_NODE:
+          return pad + escText(node.nodeValue.trim());
+        case Node.CDATA_SECTION_NODE:
+          return pad + "<![CDATA[" + node.nodeValue + "]]>";
+        case Node.COMMENT_NODE:
+          return pad + "<!--" + node.nodeValue + "-->";
+        case Node.PROCESSING_INSTRUCTION_NODE:
+          return pad + "<?" + node.target + " " + node.nodeValue + "?>";
+        default:
+          return "";
+      }
+    };
+
+    return Array.from(xmlDoc.childNodes).map(node => render(node, 0)).filter(Boolean).join("\n");
   }
 
   getMetadataFormat(metadataType) {
@@ -1043,6 +1068,7 @@ class App extends React.Component {
         h(PageHeader, {
           pageTitle: model.title(),
           subTitle: model.progress == "ready" ? "Ready"
+          : model.progress == "loading" ? "Loading metadata types..."
           : model.progress == "working" ? "Retrieving metadata..."
           : model.progress == "deploying" ? "Deploying metadata..."
           : model.progress == "done" ? "Finished"
@@ -1053,14 +1079,14 @@ class App extends React.Component {
           spinnerCount: model.spinnerCount,
           ...model.userInfoModel.getProps()
         }),
-        ((model.progress == "working" || model.progress == "deploying") || (model.spinnerCount > 0 && !this.state.metadataPreviewLoading))
+        (model.progress == "working" || model.progress == "deploying")
         && h("div", {
           className: "sfir-spinner-overlay"
         },
         h(Spinner, {
           size: "large",
           type: "brand",
-          text: model.progress == "working" ? "Retrieving metadata..." : (model.progress == "deploying" ? "Deploying metadata..." : "Loading..."),
+          text: model.progress == "working" ? "Retrieving metadata..." : "Deploying metadata...",
           centered: false
         })
         ),
@@ -1226,7 +1252,7 @@ class App extends React.Component {
                 h("div", {className: "slds-col"},
                   h("ul", {className: "slds-accordion metadata-accordion"},
                     model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model, onViewMetadata: this.onViewMetadata, key: metadataObject.xmlName}))),
-                  !model.deployRequestId ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
+                  !model.deployRequestId && model.progress != "loading" ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
                 ),
                 h("div", {className: "slds-col"},
                   h("pre", {className: "reset-margin"},
@@ -1452,6 +1478,11 @@ class ObjectSelector extends React.Component {
     if (meta.childXmlNames.length == 0 || model.deployRequestId || meta.childXmlNames[0].fullName == "*"){
 
       // Check if this metadata type should use REST API query
+      meta.loadingChildren = true;
+      const stopRowLoading = () => {
+        meta.loadingChildren = false;
+        model.didUpdate();
+      };
       if (this.shouldUseRestApiForList(meta.xmlName)) {
         model.spinFor(
           this.queryMetadataViaRest({
@@ -1460,7 +1491,7 @@ class ObjectSelector extends React.Component {
             objectName: "ProcessDefinition"
           }).then(records => {
             this.buildChildMetadataFromRest(model, meta, records, "DeveloperName", "TableEnumOrId");
-          })
+          }).finally(stopRowLoading)
         );
       } else {
         // Use standard listMetadata API
@@ -1487,7 +1518,7 @@ class ObjectSelector extends React.Component {
               });
               meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
             }
-          })
+          }).finally(stopRowLoading)
         );
       }
     } else {
@@ -1498,6 +1529,10 @@ class ObjectSelector extends React.Component {
 
   render() {
     let {metadataObject} = this.props;
+
+    const renderRowSpinner = name => h("span", {className: "metadata-row-spinner"},
+      h(Spinner, {size: "small", type: "brand", text: "Loading " + name + " items"})
+    );
 
     const renderChildren = (children, parentXmlName, parentType) => {
       if (!children || children.length === 0) {
@@ -1564,7 +1599,8 @@ class ObjectSelector extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#preview"})
                 )
                 )
-              )
+              ),
+              child.loadingChildren && renderRowSpinner(child.fullName)
               ),
               child.expanded && h("div", {className: "slds-accordion__content", id: "accordion-details-" + child.fullName},
                 renderChildren(child.childXmlNames, child.fullName, metadataType)
@@ -1620,7 +1656,8 @@ class ObjectSelector extends React.Component {
           },
           metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : "")
           )
-        )
+        ),
+        metadataObject.loadingChildren && renderRowSpinner(metadataObject.xmlName)
         ),
         metadataObject.expanded && h("div", {className: "slds-accordion__content", id: "accordion-details-" + metadataObject.xmlName},
           renderChildren(metadataObject.childXmlNames, metadataObject.xmlName, metadataObject.xmlName)

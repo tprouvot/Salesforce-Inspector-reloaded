@@ -328,6 +328,25 @@ select {
   justify-content: center;
 }
 
+.metadata-accordion .slds-accordion__summary {
+  position: relative;
+}
+
+.metadata-row-spinner {
+  position: absolute;
+  inset-inline-end: 1rem;
+  top: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.metadata-row-spinner > .slds-is-relative {
+  width: 100%;
+  height: 100%;
+}
+
 /* Scrollable columns */
 #result-table .result.slds-grid {
   height: 100%;

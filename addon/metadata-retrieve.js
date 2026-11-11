@@ -1515,15 +1515,26 @@ class ObjectSelector extends React.Component {
               h("div", {
                 className: "slds-accordion__summary metadata-child-summary",
                 title: child.fullName,
-                onClick: (e) => this.onSelectChild(child, e),
-                style: {position: "relative"}
+                tabIndex: -1,
+                onClick: (e) => this.onSelectChild(child, e)
               },
               h("h4", {className: "slds-accordion__summary-heading metadata-child-summary-heading"},
+                // Only folders can expand, so leaf rows have no chevron (and no extra tab stop).
+                child.isFolder ? h("button", {
+                  type: "button",
+                  "aria-controls": "accordion-details-" + child.fullName,
+                  "aria-expanded": child.expanded,
+                  "aria-label": child.fullName + ", press Enter to " + (child.expanded ? "collapse" : "open") + " the list of " + child.fullName + " items",
+                  className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
+                },
+                h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
+                )
+                ) : null,
                 h("span", {className: "slds-checkbox metadata-selection-checkbox" + (!child.isFolder ? " margin-grandchild" : ""), onClick: (e) => e.stopPropagation()},
                   h("input", {
                     type: "checkbox",
                     id: "metadata-" + itemKey,
-                    className: "metadata",
                     checked: !!child.selected,
                     onChange: (e) => this.onSelectChild(child, e),
                     "aria-label": child.isFolder ? "Select all items in " + child.fullName : "Select " + child.fullName,
@@ -1538,24 +1549,8 @@ class ObjectSelector extends React.Component {
                     h("span", {className: "slds-assistive-text"}, child.isFolder ? "Select all items in " + child.fullName : "Select " + child.fullName)
                   )
                 ),
-                h("button", {
-                  type: "button",
-                  "aria-controls": "accordion-details-" + child.fullName,
-                  "aria-expanded": child.expanded,
-                  "aria-label": child.isFolder
-                    ? child.fullName + ", press Enter to " + (child.expanded ? "collapse" : "open") + " the list of " + child.fullName + " items"
-                    : child.fullName,
-                  // Leaf rows have no expand/collapse action of their own; the checkbox is the only
-                  // real control, so the button is pulled out of the tab order instead of being a
-                  // second (confusingly nested) stop for the same row.
-                  tabIndex: child.isFolder ? 0 : -1,
-                  className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
-                },
-                child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-                  h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
-                ) : null,
                 h("span", {
-                  className: "slds-text-body_small slds-accordion__summary-content",
+                  className: "slds-accordion__summary-content",
                   title: child.fullName,
                   style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
                 },
@@ -1567,7 +1562,6 @@ class ObjectSelector extends React.Component {
                   title: "View metadata"
                 },
                 h("use", {xlinkHref: "symbols.svg#preview"})
-                )
                 )
                 )
               )
@@ -1586,14 +1580,25 @@ class ObjectSelector extends React.Component {
         h("div", {
           className: "slds-accordion__summary",
           title: metadataObject.xmlName,
+          tabIndex: -1,
           onClick: (event) => { this.onSelectMeta(event); }
         },
         h("h3", {className: "slds-accordion__summary-heading"},
+          h("button", {
+            type: "button",
+            "aria-controls": "accordion-details-" + metadataObject.xmlName,
+            "aria-expanded": metadataObject.expanded,
+            "aria-label": metadataObject.xmlName + ", press Enter to " + (metadataObject.expanded ? "collapse" : "open") + " the list of " + metadataObject.xmlName + " items",
+            className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
+          },
+          h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
+          )
+          ),
           h("span", {className: "slds-checkbox metadata-selection-checkbox", onClick: (e) => e.stopPropagation()},
             h("input", {
               type: "checkbox",
               id: "metadata-" + metadataObject.xmlName,
-              className: "metadata",
               checked: !!metadataObject.selected,
               onChange: this.onChange,
               key: metadataObject.xmlName,
@@ -1609,22 +1614,11 @@ class ObjectSelector extends React.Component {
               h("span", {className: "slds-assistive-text"}, "Select all " + metadataObject.xmlName)
             )
           ),
-          h("button", {
-            type: "button",
-            "aria-controls": "accordion-details-" + metadataObject.xmlName,
-            "aria-expanded": metadataObject.expanded,
-            "aria-label": metadataObject.xmlName + ", press Enter to " + (metadataObject.expanded ? "collapse" : "open") + " the list of " + metadataObject.xmlName + " items",
-            className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
-          },
-          h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
-          ),
           h("span", {
             className: "slds-accordion__summary-content",
             title: metadataObject.xmlName
           },
           metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : "")
-          )
           )
         )
         ),

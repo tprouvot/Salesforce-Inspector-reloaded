@@ -40,7 +40,8 @@ label {
   margin-inline-start: 1rem;
 }
 
-.area {
+#result-area.area {
+  margin: 1rem;
   border-radius: 20px;
 }
 

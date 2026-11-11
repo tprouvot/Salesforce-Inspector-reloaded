@@ -33,6 +33,11 @@ label {
 
 .result-bar {
   margin-bottom: 0;
+  padding-inline-end: 20px;
+}
+
+.slds-grid.slds-grid_align-spread {
+  margin-inline-start: 1rem;
 }
 
 .area {
@@ -299,7 +304,7 @@ textarea {
 }
 
 .options-text {
-  padding: 0 15px;
+  padding: 0 12px;
   margin-top: 10px;
   margin-bottom: 5px;
 }
@@ -307,10 +312,9 @@ textarea {
 .options-text > h2 {
   font-size: 0.9rem;
   display: inline;
-  color: #080707;
   font-weight: 700;
   line-height: 1.25;
-  margin: revert;
+  margin-inline: 1rem;
 }
 
 select {

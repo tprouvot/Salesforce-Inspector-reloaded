@@ -557,6 +557,7 @@ class App extends React.Component {
     this.packageXmlHighlightGuard = createChangeGuard();
     this.modalXmlHighlightGuard = createChangeGuard();
     this.wasMetadataModalVisible = false;
+    this.metadataPreviewRequestId = 0;
   }
   componentDidMount() {
     this.refs.metadataFilter.focus();
@@ -903,9 +904,11 @@ class App extends React.Component {
   }
   async onViewMetadata(metadataType, metadataName) {
     let {model} = this.props;
+    const requestId = ++this.metadataPreviewRequestId;
     this.setState({
       showMetadataModal: true,
       metadataXmlContent: "Loading...",
+      metadataPreviewLoading: true,
       metadataFileName: metadataName,
       metadataType
     });
@@ -913,23 +916,23 @@ class App extends React.Component {
 
     model.spinFor(
       model.retrieveSingleMetadata(metadataType, metadataName).then(result => {
-        if (result && result.content) {
-          this.setState({
-            metadataXmlContent: result.content,
-            metadataFileName: metadataName,
-            metadataType
-          });
-        } else {
-          this.setState({
-            metadataXmlContent: "No content found",
-            metadataFileName: metadataName,
-            metadataType
-          });
+        if (requestId !== this.metadataPreviewRequestId) {
+          return;
         }
+        this.setState({
+          metadataPreviewLoading: false,
+          metadataXmlContent: result && result.content ? result.content : "No content found",
+          metadataFileName: metadataName,
+          metadataType
+        });
         model.didUpdate();
       }).catch(error => {
         console.error(error);
+        if (requestId !== this.metadataPreviewRequestId) {
+          return;
+        }
         this.setState({
+          metadataPreviewLoading: false,
           metadataXmlContent: "Error retrieving metadata: " + error.message,
           metadataFileName: metadataName,
           metadataType
@@ -939,8 +942,10 @@ class App extends React.Component {
     );
   }
   onCloseMetadataModal() {
+    this.metadataPreviewRequestId++;
     this.setState({
       showMetadataModal: false,
+      metadataPreviewLoading: false,
       metadataXmlContent: null,
       metadataFileName: null,
       metadataType: null
@@ -1021,14 +1026,19 @@ class App extends React.Component {
           confirmButtonClass: "slds-button slds-button_brand metadata-preview-action",
           cancelLabel: "Close",
           modalSize: "large",
-          children: h("div", {className: "slds-scrollable_y"},
-            h("pre", {className: "reset-margin"},
-              h("code", {
-                id: "metadata-xml-content",
-                className: "language-" + (this.getLanguageForMetadata(this.state.metadataType))
-              }, this.state.metadataXmlContent || "")
+          children: this.state.metadataPreviewLoading
+            ? h("div", {className: "metadata-preview-loading", "aria-live": "polite"},
+              h(Spinner, {size: "medium", type: "brand", text: "Loading metadata...", className: "slds-spinner_inline"}),
+              h("span", {className: "slds-text-body_regular"}, "Loading metadata...")
             )
-          )
+            : h("div", {className: "slds-scrollable_y"},
+              h("pre", {className: "reset-margin"},
+                h("code", {
+                  id: "metadata-xml-content",
+                  className: "language-" + (this.getLanguageForMetadata(this.state.metadataType))
+                }, this.state.metadataXmlContent || "")
+              )
+            )
         }),
         h(PageHeader, {
           pageTitle: model.title(),
@@ -1043,7 +1053,7 @@ class App extends React.Component {
           spinnerCount: model.spinnerCount,
           ...model.userInfoModel.getProps()
         }),
-        ((model.progress == "working" || model.progress == "deploying") || model.spinnerCount > 0)
+        ((model.progress == "working" || model.progress == "deploying") || (model.spinnerCount > 0 && !this.state.metadataPreviewLoading))
         && h("div", {
           className: "sfir-spinner-overlay"
         },
@@ -1240,18 +1250,7 @@ class ObjectSelector extends React.Component {
     this.onSelectMeta = this.onSelectMeta.bind(this);
     this.onSelectChild = this.onSelectChild.bind(this);
     this.onViewMetadataClick = this.onViewMetadataClick.bind(this);
-    this.onMouseEnter = this.onMouseEnter.bind(this);
-    this.onMouseLeave = this.onMouseLeave.bind(this);
     props.metadataObject.childXmlNames = [];
-    this.state = {
-      hoveredItem: null
-    };
-  }
-  onMouseEnter(item) {
-    this.setState({hoveredItem: item});
-  }
-  onMouseLeave() {
-    this.setState({hoveredItem: null});
   }
   onViewMetadataClick(e, metadataType, metadataName) {
     e.stopPropagation();
@@ -1509,7 +1508,6 @@ class ObjectSelector extends React.Component {
         children.map(child => {
           const metadataType = child.type || parentType || metadataObject.xmlName;
           const metadataName = child.fullName;
-          const isHovered = this.state.hoveredItem === child.fullName;
           const itemKey = parentXmlName + "_li_" + child.fullName;
 
           return h("li", {key: itemKey, className: "slds-accordion__list-item", hidden: child.hidden},
@@ -1518,8 +1516,6 @@ class ObjectSelector extends React.Component {
                 className: "slds-accordion__summary",
                 title: child.fullName,
                 onClick: (e) => this.onSelectChild(child, e),
-                onMouseEnter: () => !child.isFolder && this.onMouseEnter(child.fullName),
-                onMouseLeave: () => this.onMouseLeave(),
                 style: {position: "relative"}
               },
               h("h4", {className: "slds-accordion__summary-heading"},
@@ -1555,9 +1551,8 @@ class ObjectSelector extends React.Component {
                   style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
                 },
                 child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
-                !child.isFolder && isHovered && !metadataType.toLowerCase().includes("bundle") && h("svg", {
-                  className: "slds-icon slds-icon_x-small slds-icon-text-default",
-                  style: {cursor: "pointer", flexShrink: 0},
+                !child.isFolder && !metadataType.toLowerCase().includes("bundle") && h("svg", {
+                  className: "slds-icon slds-icon_x-small slds-icon-text-default metadata-preview-icon",
                   viewBox: "0 0 52 52",
                   onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
                   title: "View metadata"
@@ -1577,7 +1572,6 @@ class ObjectSelector extends React.Component {
       );
     };
 
-    const isHovered = this.state.hoveredItem === metadataObject.xmlName;
     return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden, key: metadataObject.xmlName},
       h("section", {className: metadataObject.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
         h("div", {

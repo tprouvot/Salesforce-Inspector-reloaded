@@ -1,5 +1,5 @@
 
-let sfHost;
+const hostByTab = new Map();
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
@@ -35,7 +35,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "getSession") {
-    sfHost = request.sfHost;
+    hostByTab.set(sender.tab.id, request.sfHost);
     chrome.cookies.get({url: "https://" + request.sfHost, name: "sid", storeId: sender.tab.cookieStoreId}, sessionCookie => {
       if (!sessionCookie) {
         sendResponse(null);
@@ -58,12 +58,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return false;
 });
-chrome.action.onClicked.addListener(() => {
+chrome.tabs.onRemoved.addListener(tabId => hostByTab.delete(tabId));
+chrome.action.onClicked.addListener((tab) => {
   chrome.runtime.sendMessage({
-    msg: "shortcut_pressed", sfHost, command: "open-popup"
+    msg: "shortcut_pressed", sfHost: hostByTab.get(tab.id), command: "open-popup"
   });
 });
-chrome.commands?.onCommand.addListener((command) => {
+chrome.commands?.onCommand.addListener((command, tab) => {
+  const sfHost = hostByTab.get(tab.id);
   if (command.startsWith("link-")){
     let link;
     switch (command){

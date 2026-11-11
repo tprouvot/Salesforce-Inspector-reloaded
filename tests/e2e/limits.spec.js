@@ -62,6 +62,17 @@ test.describe("Org Limits", () => {
     await expect(page.locator("figcaption").first()).toContainText("consumed");
   });
 
+  test("Gauge is gray and shows 0% when limit is 0 of 0 consumed", async ({page, extensionId}) => {
+    await initLimitsPage(page, extensionId);
+
+    // "PrivateConnectOutboundCalloutHourlyLimitMB" is mocked with Max: 0, Remaining: 0
+    const figure = page.locator("figure", {hasText: "Private Connect"});
+    await expect(figure.locator("figcaption")).toContainText("0 of 0 consumed");
+    // Should render as an empty/not-applicable gauge, not a falsely "full" one
+    await expect(figure.locator(".meter-value")).toHaveText("0%");
+    await expect(figure.locator(".meter")).toHaveClass(/meter-not-applicable/);
+  });
+
   test("Copy button is enabled when limits load", async ({page, extensionId}) => {
     await initLimitsPage(page, extensionId);
 

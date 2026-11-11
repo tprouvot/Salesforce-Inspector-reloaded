@@ -1,0 +1,80 @@
+name: Check changelog entry
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-changelog:
+    name: Check changelog entry
+    runs-on: ubuntu-latest
+    if: >-
+      !contains(github.event.pull_request.head.ref, 'dependabot/') &&
+      !contains(github.event.pull_request.head.ref, 'renovate/')
+    steps:
+      - name: Verify CHANGES.md was updated
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = "<!-- check-changelog -->";
+            const pr = context.payload.pull_request;
+
+            const hasSkipLabel = pr.labels.some(label => label.name === "no-changelog");
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+            const changelogUpdated = files.some(file => file.filename === "CHANGES.md");
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existingComment = comments.find(
+              comment => comment.user?.type === "Bot" && comment.body.includes(marker)
+            );
+
+            // Requirement satisfied - clean up our own comment (if any) and stop
+            if (changelogUpdated || hasSkipLabel) {
+              if (existingComment) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                });
+              }
+              return;
+            }
+
+            // Requirement not satisfied - avoid posting a duplicate comment on every push
+            if (existingComment) {
+              return;
+            }
+
+            const lines = [
+              marker,
+              "This pull request does not update **CHANGES.md**.",
+              "",
+              "Please add an entry describing your change under the current version section, following the [existing conventions](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/CHANGES.md).",
+              "",
+              "If this change does not need a changelog entry, a maintainer can add the `no-changelog` label to skip this check.",
+            ];
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: lines.join("\n"),
+            });

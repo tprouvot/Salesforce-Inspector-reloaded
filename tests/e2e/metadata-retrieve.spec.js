@@ -43,6 +43,16 @@ test.describe("Metadata Retrieve", () => {
     await page.waitForTimeout(500);
   }
 
+  function getMetadataRow(page, name) {
+    return page.locator(".slds-accordion__list-item").filter({
+      has: page.getByTitle(name, {exact: true})
+    }).first();
+  }
+
+  function getMetadataCheckbox(row) {
+    return row.locator(".metadata-selection-checkbox input[type='checkbox']").first();
+  }
+
   test("Load Page and Verify Initial State", async ({page, extensionId}) => {
     await initMetadataRetrievePage(page, extensionId);
 
@@ -66,7 +76,7 @@ test.describe("Metadata Retrieve", () => {
     await expect(metadataItems.first()).toBeVisible();
 
     // Verify ApexClass is in the list
-    await expect(page.locator("text=ApexClass")).toBeVisible();
+    await expect(page.getByText("ApexClass", {exact: true})).toBeVisible();
   });
 
   test("Filter Metadata Objects", async ({page, extensionId}) => {
@@ -80,11 +90,11 @@ test.describe("Metadata Retrieve", () => {
     await page.waitForTimeout(250);
 
     // Verify filtered results
-    await expect(page.locator("text=ApexClass")).toBeVisible();
+    await expect(page.getByText("ApexClass", {exact: true})).toBeVisible();
     // CustomObject should be hidden
-    const customObject = page.locator("text=CustomObject");
-    if (await customObject.count() > 0) {
-      await expect(customObject.first()).toBeHidden();
+    const customObject = getMetadataRow(page, "CustomObject");
+    if (await customObject.count()) {
+      await expect(customObject).toBeHidden();
     }
   });
 
@@ -123,7 +133,7 @@ test.describe("Metadata Retrieve", () => {
     await initMetadataRetrievePage(page, extensionId);
 
     // Find first metadata object checkbox
-    const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
+    const firstCheckbox = getMetadataCheckbox(page.locator(".slds-accordion__list-item").first());
     await firstCheckbox.click();
 
     // Verify checkbox is checked
@@ -139,7 +149,7 @@ test.describe("Metadata Retrieve", () => {
     await initMetadataRetrievePage(page, extensionId);
 
     // Click on ApexClass to expand
-    const apexClassItem = page.locator(".slds-accordion__list-item:has-text('ApexClass')");
+    const apexClassItem = getMetadataRow(page, "ApexClass");
     await apexClassItem.locator("button.slds-accordion__summary-action").click();
 
     // Wait for listMetadata API call and children to load
@@ -171,7 +181,7 @@ test.describe("Metadata Retrieve", () => {
     await initMetadataRetrievePage(page, extensionId);
 
     // Select a metadata object
-    const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
+    const firstCheckbox = getMetadataCheckbox(page.locator(".slds-accordion__list-item").first());
     await firstCheckbox.click();
 
     // Wait for package.xml to be generated
@@ -190,7 +200,7 @@ test.describe("Metadata Retrieve", () => {
     await initMetadataRetrievePage(page, extensionId);
 
     // Select a metadata object
-    const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
+    const firstCheckbox = getMetadataCheckbox(page.locator(".slds-accordion__list-item").first());
     await firstCheckbox.click();
 
     // Wait for package.xml to be generated
@@ -290,12 +300,7 @@ test.describe("Metadata Retrieve", () => {
     // live region now also announces the same message for screen readers)
     await expect(page.locator(".slds-notify_toast").getByText("imported successfully")).toBeVisible({timeout: 1000});
 
-    const apexClassCheckbox = page
-      .locator(".slds-accordion__list-item")
-      .filter({hasText: "ApexClass"})
-      .first()
-      .locator("input.metadata")
-      .first();
+    const apexClassCheckbox = getMetadataCheckbox(getMetadataRow(page, "ApexClass"));
     await expect(apexClassCheckbox).toBeChecked();
     await expect(page.locator("button:has-text('Retrieve Metadata')")).toBeEnabled();
     expect(retrieveRequestCount).toBe(0);
@@ -304,7 +309,7 @@ test.describe("Metadata Retrieve", () => {
   test("Save Status Info Downloads Retrieve Status JSON", async ({page, extensionId}) => {
     await initMetadataRetrievePage(page, extensionId);
 
-    const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
+    const firstCheckbox = getMetadataCheckbox(page.locator(".slds-accordion__list-item").first());
     await firstCheckbox.click();
 
     const metadataDownloadPromise = page.waitForEvent("download");

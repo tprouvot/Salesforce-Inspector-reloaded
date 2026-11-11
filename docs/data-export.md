@@ -54,7 +54,10 @@ Example:
 
 ## Customize Select all fields in a query shortcut
 
-If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in `chrome://extensions/shortcuts` and choose the one you prefer.
+If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in your browser's extension settings:
+* Chrome: `chrome://extensions/shortcuts`
+* Edge: `edge://extensions/shortcuts`
+* Firefox: Open the Add-ons Manager (`Ctrl+Shift+A`), click the gear icon, then select "Manage Extension Shortcuts"
 
 <img width="1133" alt="Customize Select all fields in a query shortcut" src="https://github.com/user-attachments/assets/f0bca12a-7c92-4fbe-9ca4-a8db51b050e9">
 

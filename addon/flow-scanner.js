@@ -105,6 +105,8 @@ class FlowScanner {
     this.flowId = flowId;
     this.currentFlow = null;
     this.scanResults = [];
+    this.loadError = null;
+    this.noRulesEnabledMessage = null;
     this.flowScannerCore = null;
     this.isScanning = false;
     this._elementMap = new Map();
@@ -241,8 +243,11 @@ class FlowScanner {
     try {
       const flowInfo = await this.getFlowMetadata();
       this.currentFlow = flowInfo;
+      this.loadError = null;
     } catch (error) {
-      this.setNoRulesEnabledMessage("Failed to load flow information: " + error.message);
+      this.currentFlow = null;
+      this.loadError = error?.message || "The flow metadata could not be loaded.";
+      this.noRulesEnabledMessage = null;
     }
   }
 
@@ -720,7 +725,11 @@ class FlowScanner {
    */
   async scanFlow() {
     if (!this.currentFlow) {
-      this.setNoRulesEnabledMessage("No flow loaded");
+      if (!this.loadError) {
+        this.loadError = "No flow was loaded.";
+      }
+      this.noRulesEnabledMessage = null;
+      this.scanResults = [];
       return;
     }
 
@@ -802,8 +811,10 @@ class FlowScanner {
       const rulesToRun = allRules.filter(r => r.checked && !r.path && !r.code);
       if (rulesToRun.length === 0) {
         this.setNoRulesEnabledMessage("No Flow Scanner rules are enabled. Please enable rules on the Options page.");
+        this.scanResults = [];
         return;
       }
+      this.noRulesEnabledMessage = null;
 
       let results = [];
       const ruleConfig = {rules: {}};
@@ -1075,8 +1086,8 @@ class FlowScanner {
   }
 
   /**
-   * Sets a message to be displayed when no rules are enabled or an error occurs.
-   * This message is used in the UI to provide user feedback.
+   * Sets the message shown when a scan is skipped because no rules are enabled.
+   * Load failures use `loadError` and are not reported here.
    * @param {string} message - The message to display.
    */
   setNoRulesEnabledMessage(message) {
@@ -1121,7 +1132,7 @@ function calculateVersionCountStyle(totalVersions) {
 }
 
 function FlowInfoSection(props) {
-  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick, sfHost, flowId} = props;
+  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick, sfHost, flowId, loadError} = props;
 
   if (!flow) {
     return h("div", {className: "area"},
@@ -1131,7 +1142,7 @@ function FlowInfoSection(props) {
           h("span", {className: "slds-card__header-title"}, "Flow Information")
         ),
         h("div", {className: "flow-info-card compact"},
-          h("div", {}, "Loading flow information...")
+          h("div", {}, loadError ? "Flow information could not be loaded." : "Loading flow information...")
         )
       )
     );
@@ -1965,6 +1976,7 @@ class App extends React.Component {
     return h(FlowInfoSection, {
       flow,
       elements,
+      loadError: this.flowScanner?.loadError,
       onPurgeVersions: this.onPurgeVersions,
       onToggleDescription: this.onToggleDescription,
       handleMouseDown: e => this.handleMouseDown(e),
@@ -2022,6 +2034,17 @@ class App extends React.Component {
               )
             )
           )
+        )
+      );
+    }
+
+    if (this.flowScanner.loadError) {
+      return h("div", {className: RESULTS_AREA_CLASS},
+        h("div", {className: "empty-state load-error-state"},
+          h("div", {className: "empty-icon"}, "❌"),
+          h("h3", {}, "Unable to Load Flow"),
+          h("p", {}, this.flowScanner.loadError),
+          h("button", {className: "slds-button slds-button_brand slds-m-top_small", onClick: this.retryAfterError}, "Retry")
         )
       );
     }

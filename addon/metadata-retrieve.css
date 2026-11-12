@@ -22,8 +22,9 @@ label {
   margin-bottom: 20px;
 }
 
-.result-bar a:visited {
-  color: #0176d3;
+#result-area.area {
+  margin: 1rem;
+  border-radius: 20px;
 }
 
 #result-area h1 {
@@ -36,17 +37,32 @@ label {
   padding-inline-end: 20px;
 }
 
-.slds-grid.slds-grid_align-spread {
-  margin-inline-start: 1rem;
-}
-
-#result-area.area {
-  margin: 1rem;
-  border-radius: 20px;
+.result-bar a:visited {
+  color: #0176d3;
 }
 
 #result-table {
   border-radius: 0 0 20px 20px;
+}
+
+/* Scrollable columns */
+#result-table .result.slds-grid {
+  height: 100%;
+  overflow: hidden;
+}
+
+#result-table .result .slds-col {
+  overflow-y: auto;
+  height: 100%;
+  padding: 0 1.25rem 1rem;
+}
+
+#packageXml {
+  background-position: 0 1.5em;
+}
+
+#packageXml * {
+  vertical-align: baseline;
 }
 
 .slds-button {
@@ -304,6 +320,10 @@ textarea {
   margin-left: 20px !important;
 }
 
+.slds-grid.slds-grid_align-spread {
+  margin-inline-start: 1rem;
+}
+
 .options-text {
   padding: 0 12px;
   margin-top: 10px;
@@ -350,20 +370,4 @@ select {
 .metadata-row-spinner > .slds-is-relative {
   width: 100%;
   height: 100%;
-}
-
-/* Scrollable columns */
-#result-table .result.slds-grid {
-  height: 100%;
-  overflow: hidden;
-}
-
-#result-table .result .slds-col {
-  overflow-y: auto;
-  height: 100%;
-  padding: 0 1.25rem 1rem;
-}
-
-#packageXml {
-  background-position: 0 1.5em;
 }

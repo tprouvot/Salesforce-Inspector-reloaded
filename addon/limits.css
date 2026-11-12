@@ -183,15 +183,15 @@
 }
 
 .limits-gauge__meter_state_healthy {
-  background-color: var(--slds-g-color-success-base-50);
+  background-color: #159b72;
 }
 
 .limits-gauge__meter_state_full {
-  background-color: var(--slds-g-color-brand-base-50);
+  background-color: #018eff;
 }
 
 .limits-gauge__meter_state_over {
-  background-color: var(--slds-g-color-error-base-40);
+  background-color: #e76f51;
 }
 
 .limits-gauge__value-container {
@@ -217,15 +217,15 @@
 }
 
 .limits-gauge__value_state_healthy {
-  color: var(--slds-g-color-success-base-50);
+  color: #159b72;
 }
 
 .limits-gauge__value_state_full {
-  color: var(--slds-g-color-brand-base-50);
+  color: #018eff;
 }
 
 .limits-gauge__value_state_over {
-  color: var(--slds-g-color-error-base-40);
+  color: #e76f51;
 }
 
 .limits-gauge-card__caption {

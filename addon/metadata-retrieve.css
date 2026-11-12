@@ -216,6 +216,11 @@ select {
   justify-content: center;
 }
 
+/* Toast feedback for the metadata preview must remain visible above its modal. */
+.sfir-toast-above-modal {
+  z-index: 9002;
+}
+
 /* Scrollable columns */
 #result-table .result.slds-grid {
   height: calc(100vh - 5rem);

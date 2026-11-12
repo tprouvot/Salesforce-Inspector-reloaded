@@ -4,7 +4,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import Toast, {copyWithToast, downloadWithToast, hideToast} from "./components/Toast.js";
+import Toast, {copyWithToast, downloadWithToast, hideToast, showToast} from "./components/Toast.js";
 
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
@@ -1498,6 +1498,7 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.addToHistory();
+    showToast(this, "success", "Saved", "Query saved successfully");
     model.didUpdate();
   }
   onRemoveFromHistory(e) {

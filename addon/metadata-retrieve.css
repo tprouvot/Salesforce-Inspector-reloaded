@@ -24,7 +24,7 @@ label {
 }
 
 #result-area h1 {
-  font-size: 0.9rem;
+  font-size: var(--slds-g-font-scale-2);
   margin-inline: 1rem;
 }
 
@@ -251,19 +251,26 @@ h2 {
   margin-left: 20px !important;
 }
 
-.slds-grid.slds-grid_align-spread {
-  margin-inline-start: 1rem;
+.options-card {
+  padding-inline: var(--slds-g-spacing-5);
+  border-radius: 1rem;
 }
 
-.options-text {
-  margin-top: 10px;
-  margin-bottom: 5px;
+.options-toggle {
+  display: grid;
+  grid-template-columns: 8rem auto;
+  align-items: center;
+  justify-content: start;
 }
 
-.options-text > h2 {
-  font-size: 0.9rem;
-  display: inline;
-  line-height: 1.25;
+.options-card__title {
+  font-size: var(--slds-g-font-scale-2);
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: var(--slds-g-spacing-3) var(--slds-g-spacing-6);
 }
 
 .sfir-spinner-overlay {

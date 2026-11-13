@@ -1182,28 +1182,25 @@ class App extends React.Component {
               })
             )
           ),
-          model.showOptions && h("div", {className: "options-text slds-p-horizontal_small"},
-            h("h2", {className: "slds-text-title_bold slds-col slds-size_1-of-1 slds-m-horizontal_medium"}, "Deployment Settings"),
-            h("div", {className: "slds-grid slds-grid_align-spread slds-wrap"},
+          model.showOptions && h("div", {},
+            h("h2", {id: "deployment-settings-heading", className: "options-card__title slds-text-title_bold slds-p-horizontal_small slds-m-horizontal_medium slds-m-top_xx-small slds-m-bottom_x-small"}, "Deployment Settings"),
+            h("section", {className: "options-card slds-box slds-theme_default slds-m-horizontal_medium slds-m-top_none slds-m-bottom_small", "aria-labelledby": "deployment-settings-heading"},
+            h("div", {className: "options-grid"},
               Object.entries(model.deployOptions)
                 .filter(([_, value]) => typeof value === "boolean")
                 .map(([key, value]) =>
-                  h("div", {className: "slds-col slds-size_1-of-9 slds-p-around_x-small", key},
-                    h("label", {className: "slds-checkbox_toggle max-width-small"},
-                      h("span", {className: "slds-form-element__label slds-m-bottom_none"}, key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())),
-                      h("input", {type: "checkbox", name: key, checked: value, onChange: this.onUpdateDeployOptions}),
-                      h("span", {className: "slds-checkbox_faux_container center-label"},
-                        h("span", {className: "slds-checkbox_faux"}),
-                        h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                        h("span", {className: "slds-checkbox_off"}, "Disabled"),
-                      )
+                  h("label", {className: "slds-checkbox_toggle options-toggle slds-m-around_none", key},
+                    h("span", {className: "slds-form-element__label slds-p-top_none slds-m-bottom_none"}, key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())),
+                    h("input", {type: "checkbox", name: key, checked: value, onChange: this.onUpdateDeployOptions}),
+                    h("span", {className: "slds-checkbox_faux_container"},
+                      h("span", {className: "slds-checkbox_faux"})
                     )
                   )
                 )
             ),
-            h("div", {className: "slds-grid slds-grid_align-spread"},
-              h("div", {className: "slds-col slds-size_1-of-4 slds-p-around_x-small"},
-                h("label", {className: "slds-form-element__label slds-p-around_none slds-m-left_x-small slds-m-right_none slds-m-top_none slds-m-bottom_xx-small"}, "Test Level"),
+            h("div", {className: "slds-grid slds-wrap slds-m-top_medium"},
+              h("div", {className: "slds-size_1-of-1 slds-medium-size_1-of-4 slds-p-right_small"},
+                h("label", {className: "slds-form-element__label slds-p-around_none slds-m-horizontal_none slds-m-top_none slds-m-bottom_xx-small"}, "Test Level"),
                 h("div", {className: "slds-form-element__control"},
                   h("select", {
                     className: "slds-select",
@@ -1229,8 +1226,8 @@ class App extends React.Component {
                   )
                 )
               ),
-              model.deployOptions.testLevel === "RunSpecifiedTests" && h("div", {className: "slds-col slds-size_3-of-4 slds-p-around_x-small"},
-                h("label", {className: "slds-form-element__label slds-p-around_none slds-m-left_x-small slds-m-right_none slds-m-top_none slds-m-bottom_xx-small"}, "Specified Tests"),
+              model.deployOptions.testLevel === "RunSpecifiedTests" && h("div", {className: "slds-size_1-of-1 slds-medium-size_3-of-4"},
+                h("label", {className: "slds-form-element__label slds-p-around_none slds-m-horizontal_none slds-m-top_none slds-m-bottom_xx-small"}, "Specified Tests"),
                 h("div", {className: "slds-form-element__control"},
                   h("input", {
                     type: "text",
@@ -1245,6 +1242,7 @@ class App extends React.Component {
                 )
               )
             )
+          )
           ),
           h("div", {id: "result-table", ref: "scroller"},
             model.metadataObjects

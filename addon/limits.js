@@ -116,28 +116,28 @@ class LimitData extends React.Component {
     let percentage = Math.round(rawPercentage);
     let gaugeState = rawPercentage <= 0 ? "neutral" : rawPercentage < 100 ? "healthy" : rawPercentage === 100 ? "full" : "over";
     return (
-      h("article", {className: "limits-grid__item"},
-        h("figure", {className: "limits-gauge-card"},
+      h("article", {className: "limits-grid__item slds-box"},
+        h("figure", {className: "slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
           h("div", {
-            className: "limits-gauge gauge"
+            className: "limits-gauge"
           },
           h("div", {
-            className: "limits-gauge__meter meter limits-gauge__meter_state_" + gaugeState + (isNotApplicable ? " limits-gauge__meter_not-applicable meter-not-applicable" : ""),
+            className: "limits-gauge__meter limits-gauge__meter_state_" + gaugeState,
             ref: "meter"
           },
           ""
           ),
           h("div", {
-            className: "limits-gauge__value-container meter-value-container"
+            className: "limits-gauge__value-container slds-text-align_center"
           },
           h("div", {
-            className: "limits-gauge__value meter-value limits-gauge__value_state_" + gaugeState
+            className: "limits-gauge__value limits-gauge__value_state_" + gaugeState
           }, percentage + "%")
           )
           ),
-          h("figcaption", {className: "limits-gauge-card__caption"},
-            h("span", {className: "limits-gauge-card__name"}, this.props.label),
-            h("div", {className: "limits-gauge-card__details"}, (this.props.max - this.props.remaining).toLocaleString() + " of " + (this.props.max).toLocaleString() + " consumed",
+          h("figcaption", {className: "slds-m-top_medium slds-text-align_center"},
+            h("div", {className: "limits-gauge-card__name slds-hyphenate"}, this.props.label),
+            h("div", {className: "slds-text-title slds-m-top_xx-small"}, (this.props.max - this.props.remaining).toLocaleString() + " of " + (this.props.max).toLocaleString() + " consumed",
               h("br", {}), this.props.remaining >= 0 ? "(" + (this.props.remaining).toLocaleString() + " left)" : "(" + (0 - this.props.remaining).toLocaleString() + " overconsumed)"
             ),
           )
@@ -170,6 +170,8 @@ class App extends React.Component {
     this.onSortBy = this.onSortBy.bind(this);
     this.onSearch = this.onSearch.bind(this);
     this.onRefreshLimits = this.onRefreshLimits.bind(this);
+    this.onClearSearch = this.onClearSearch.bind(this);
+    this.searchInput = null;
   }
 
   onCopyAsJson() {
@@ -188,6 +190,12 @@ class App extends React.Component {
   onSearch(e) {
     this.model.searchQuery = e.target.value;
     this.model.didUpdate();
+  }
+
+  onClearSearch(e) {
+    e.preventDefault();
+    this.model.searchQuery = "";
+    this.model.didUpdate(() => this.searchInput?.focus());
   }
 
   onRefreshLimits(){
@@ -210,30 +218,42 @@ class App extends React.Component {
         spinnerCount: model.spinnerCount,
         ...model.userInfoModel.getProps()
       }),
-      h("main", {className: "limits-page sfir-page-container"},
-        h("section", {className: "limits-panel", "aria-labelledby": "limits-heading"},
-          h("header", {className: "limits-panel__header"},
+      h("main", {className: "limits-page sfir-page-container slds-theme_shade slds-p-around_medium"},
+        h("section", {className: "limits-panel slds-card slds-grid slds-grid_vertical slds-grow slds-scrollable_none", "aria-labelledby": "limits-heading"},
+          h("header", {className: "limits-panel__header slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-wrap slds-p-around_medium slds-border_bottom"},
             h("div", {className: "limits-panel__title"},
               h("h2", {id: "limits-heading"}, "Limits snapshot"),
-              h("p", {}, "Current consumption across your org-wide limits.")
+              h("p", {className: "slds-text-title slds-m-top_xx-small"}, "Current consumption across your org-wide limits.")
             ),
-            h("div", {className: "limits-toolbar"},
-              h("button", {className: "slds-button slds-button_neutral limits-copy-button", disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy JSON"),
-              h("label", {className: "limits-search", htmlFor: "limits-search"},
-                h("span", {className: "limits-sort__label"}, "Search limits"),
-                h("input", {className: "slds-input limits-search__input", id: "limits-search", type: "search", placeholder: "Search by label or API name...", value: model.searchQuery, onChange: this.onSearch})
+            h("div", {className: "limits-toolbar slds-grid slds-wrap slds-grid_vertical-align-end"},
+              h("button", {className: "slds-button slds-button_neutral", disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy JSON"),
+              h("div", {className: "limits-search slds-form-element slds-grow"},
+                h("div", {className: "slds-form-element__label"}, "Search limits"),
+                h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right"},
+                  h("svg", {className: "slds-input__icon slds-input__icon_left limits-search__icon", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#search"})
+                  ),
+                  h("input", {className: "slds-input", type: "text", "aria-label": "Search limits", placeholder: "Search by label or API name...", value: model.searchQuery, onChange: this.onSearch, ref: el => { this.searchInput = el; }}),
+                  model.searchQuery
+                    ? h("button", {type: "button", className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right limits-search__icon", title: "Clear search", "aria-label": "Clear search", onClick: this.onClearSearch},
+                      h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                        h("use", {xlinkHref: "symbols.svg#clear"})
+                      )
+                    )
+                    : null
+                )
               ),
-              h("label", {className: "limits-sort", htmlFor: "limits-sort"},
-                h("span", {className: "limits-sort__label"}, "Sort by"),
-                h("span", {className: "slds-select_container"},
-                  h("select", {className: "slds-select limits-sort__select", id: "limits-sort", value: model.sortBy.value, onChange: this.onSortBy},
+              h("div", {className: "slds-form-element slds-grow"},
+                h("div", {className: "slds-form-element__label"}, "Sort by"),
+                h("div", {className: "slds-form-element__control slds-select_container"},
+                  h("select", {className: "slds-select", "aria-label": "Sort by", value: model.sortBy.value, onChange: this.onSortBy},
                     model.sortOptions.map(opt => h("option", {key: opt.value, value: opt.value}, opt.label))
                   )
                 )
               )
             )
           ),
-          h("div", {className: "limits-panel__body"},
+          h("div", {className: "slds-grow slds-scrollable slds-p-around_medium"},
             visibleLimits.length
               ? h("div", {className: "limits-grid"},
                 visibleLimits.map(limitData =>
@@ -241,7 +261,7 @@ class App extends React.Component {
                 )
               )
               : model.searchQuery
-                ? h("p", {className: "limits-empty"}, "No limits match your search.")
+                ? h("p", {className: "slds-text-color_weak slds-text-align_center slds-m-vertical_large"}, "No limits match your search.")
                 : null
             )
           )
@@ -291,5 +311,4 @@ class App extends React.Component {
       }
     };
   }
-
 }

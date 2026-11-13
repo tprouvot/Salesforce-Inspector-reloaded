@@ -1052,12 +1052,12 @@ class App extends React.Component {
           cancelLabel: "Close",
           modalSize: "large",
           children: this.state.metadataPreviewLoading
-            ? h("div", {className: "metadata-preview-loading", "aria-live": "polite"},
+            ? h("div", {className: "metadata-preview-loading slds-grid slds-grid_vertical slds-grid_vertical-align-center slds-grid_align-center", "aria-live": "polite"},
               h(Spinner, {size: "medium", type: "brand", text: "Loading metadata...", className: "slds-spinner_inline"}),
               h("span", {className: "slds-text-body_regular"}, "Loading metadata...")
             )
             : h("div", {className: "slds-scrollable_y"},
-              h("pre", {className: "reset-margin"},
+              h("pre", {className: "slds-m-around_none"},
                 h("code", {
                   id: "metadata-xml-content",
                   className: "language-" + (this.getLanguageForMetadata(this.state.metadataType))
@@ -1095,23 +1095,23 @@ class App extends React.Component {
           style: {
             display: "flex",
             flexDirection: "column",
-            height: "calc(100vh - 4rem)"
+            height: "calc(100vh - 3rem)"
           }
         },
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
             h("span", {className: "slds-assistive-text"}, "Select what to download below, and then click the Retrieve Metadata button. If downloading fails, try unchecking some of the boxes."),
-            h("div", {className: "filter-box slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right"},
-              h("svg", {className: "slds-input__icon slds-input__icon_left filter-icon", "aria-hidden": "true"},
+            h("div", {className: "filter-box slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right slds-m-horizontal_x-small"},
+              h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left filter-icon", "aria-hidden": "true"},
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
               h("input", {className: "slds-input filter-input", "aria-label": "Filter metadata", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
-              h("button", {type: "button", className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right filter-clear", title: "Clear filter", "aria-label": "Clear filter", onClick: this.onClearAndFocusFilter},
+              model.metadataFilter ? h("button", {type: "button", className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right filter-icon filter-clear", title: "Clear filter", "aria-label": "Clear filter", onClick: this.onClearAndFocusFilter},
                 h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
                   h("use", {xlinkHref: "symbols.svg#clear"})
                 )
-              )
+              ) : null
             ),
             h("div", {className: "slds-assistive-text", role: "status", "aria-live": "polite", "aria-atomic": "true"}, model.metadataFilterAnnouncement),
             h("label", {className: "slds-checkbox_toggle max-width-small"},
@@ -1182,8 +1182,8 @@ class App extends React.Component {
               })
             )
           ),
-          model.showOptions && h("div", {className: "options-text"},
-            h("h2", {className: "slds-text-title_bold slds-col slds-size_1-of-1"}, "Deployment Settings"),
+          model.showOptions && h("div", {className: "options-text slds-p-horizontal_small"},
+            h("h2", {className: "slds-text-title_bold slds-col slds-size_1-of-1 slds-m-horizontal_medium"}, "Deployment Settings"),
             h("div", {className: "slds-grid slds-grid_align-spread slds-wrap"},
               Object.entries(model.deployOptions)
                 .filter(([_, value]) => typeof value === "boolean")
@@ -1203,7 +1203,7 @@ class App extends React.Component {
             ),
             h("div", {className: "slds-grid slds-grid_align-spread"},
               h("div", {className: "slds-col slds-size_1-of-4 slds-p-around_x-small"},
-                h("label", {className: "slds-form-element__label"}, "Test Level"),
+                h("label", {className: "slds-form-element__label slds-p-around_none slds-m-left_x-small slds-m-right_none slds-m-top_none slds-m-bottom_xx-small"}, "Test Level"),
                 h("div", {className: "slds-form-element__control"},
                   h("select", {
                     className: "slds-select",
@@ -1230,7 +1230,7 @@ class App extends React.Component {
                 )
               ),
               model.deployOptions.testLevel === "RunSpecifiedTests" && h("div", {className: "slds-col slds-size_3-of-4 slds-p-around_x-small"},
-                h("label", {className: "slds-form-element__label"}, "Specified Tests"),
+                h("label", {className: "slds-form-element__label slds-p-around_none slds-m-left_x-small slds-m-right_none slds-m-top_none slds-m-bottom_xx-small"}, "Specified Tests"),
                 h("div", {className: "slds-form-element__control"},
                   h("input", {
                     type: "text",
@@ -1252,10 +1252,12 @@ class App extends React.Component {
                 h("div", {className: "slds-col"},
                   h("ul", {className: "slds-accordion metadata-accordion"},
                     model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model, onViewMetadata: this.onViewMetadata, key: metadataObject.xmlName}))),
-                  !model.deployRequestId && model.progress != "loading" ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
+                  model.metadataFilter && model.metadataObjects.every(metadataObject => metadataObject.hidden)
+                    ? h("p", {className: "slds-text-color_weak slds-text-align_center slds-m-vertical_large"}, "No metadata types found.")
+                    : !model.deployRequestId && model.progress != "loading" ? h("p", {className: "slds-m-top_x-small"}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
                 ),
                 h("div", {className: "slds-col"},
-                  h("pre", {className: "reset-margin"},
+                  h("pre", {className: "slds-m-horizontal_none slds-m-bottom_none slds-m-top_small"},
                     h("code", {id: "packageXml", className: "language-markup"}, model.packageXml)
                   )
                 )
@@ -1560,7 +1562,7 @@ class ObjectSelector extends React.Component {
                   "aria-controls": "accordion-details-" + child.fullName,
                   "aria-expanded": child.expanded,
                   "aria-label": child.fullName + ", press Enter to " + (child.expanded ? "collapse" : "open") + " the list of " + child.fullName + " items",
-                  className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
+                  className: "slds-button slds-button_reset slds-accordion__summary-action slds-no-flex metadata-accordion-action"
                 },
                 h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                   h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
@@ -1591,7 +1593,7 @@ class ObjectSelector extends React.Component {
                 },
                 child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
                 !child.isFolder && !metadataType.toLowerCase().includes("bundle") && h("svg", {
-                  className: "slds-icon slds-icon_x-small slds-icon-text-default metadata-preview-icon",
+                  className: "slds-icon slds-icon_x-small slds-icon-text-default slds-shrink-none metadata-preview-icon",
                   viewBox: "0 0 52 52",
                   onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
                   title: "View metadata"
@@ -1625,7 +1627,7 @@ class ObjectSelector extends React.Component {
             "aria-controls": "accordion-details-" + metadataObject.xmlName,
             "aria-expanded": metadataObject.expanded,
             "aria-label": metadataObject.xmlName + ", press Enter to " + (metadataObject.expanded ? "collapse" : "open") + " the list of " + metadataObject.xmlName + " items",
-            className: "slds-button slds-button_reset slds-accordion__summary-action metadata-accordion-action"
+            className: "slds-button slds-button_reset slds-accordion__summary-action slds-no-flex metadata-accordion-action"
           },
           h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
             h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})

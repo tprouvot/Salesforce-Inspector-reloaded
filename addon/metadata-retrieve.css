@@ -1,7 +1,3 @@
-* {
-  box-sizing: border-box;
-}
-
 .log-error {
   color: red;
   font-weight: bold;
@@ -37,15 +33,10 @@ label {
   padding-inline-end: 20px;
 }
 
-.result-bar a:visited {
-  color: #0176d3;
-}
-
 #result-table {
   border-radius: 0 0 20px 20px;
 }
 
-/* Scrollable columns */
 #result-table .result.slds-grid {
   height: 100%;
   overflow: hidden;
@@ -73,74 +64,31 @@ h2 {
   font-size: 14px;
 }
 
-ul {
-  list-style-type: none;
-  margin: 0;
-  padding: 0;
-}
-
-textarea {
-  display: block;
-  width: 100%;
-  height: 50em;
-  resize: vertical;
-  overflow-wrap: normal;
-  font-size: 11px;
-}
-
 .max-width-small {
   max-width: 10%;
 }
 
 .filter-box {
   white-space: nowrap;
-  margin: 0 0.5rem;
-  position: relative;
   width: 20em;
 }
 
 .filter-box .filter-input {
-  width: 100%;
-  height: auto;
-  padding: 0 1.75rem;
+  padding-inline: 1.75rem;
   border: var(--slds-g-sizing-border-1) solid var(--slds-s-input-color-border);
   border-radius: var(--slds-s-input-radius-border);
-  font-size: 0.8125rem;
 }
 
 .filter-box .filter-input:focus {
-  border-color: transparent;
   box-shadow: 0 0 0 2px var(--slds-g-color-brand-base-15);
 }
 
-.filter-box .filter-icon,
-.filter-box .filter-clear {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
-  width: 0.875rem;
-  height: 0.875rem;
-  margin: 0;
-  transform: translateY(-50%);
+.filter-icon {
   color: var(--slds-g-color-neutral-base-50);
   fill: currentcolor;
 }
 
-.filter-box .filter-icon {
-  left: var(--slds-g-spacing-2);
-}
-
-.filter-box .filter-clear {
-  right: var(--slds-g-spacing-2);
-}
-
-.filter-box .filter-clear:hover,
-.filter-box .filter-clear:focus-visible {
-  color: var(--slds-g-color-neutral-base-50);
-}
-
 .metadata-accordion-action {
-  flex: none;
   height: auto;
   margin: 0;
   padding: 0;
@@ -179,6 +127,7 @@ textarea {
 }
 
 .metadata-accordion .slds-accordion__summary {
+  position: relative;
   outline: 0;
 }
 
@@ -235,7 +184,6 @@ textarea {
   width: 100%;
   height: 100%;
   margin: 0;
-  /* stylelint-disable-next-line property-no-deprecated -- undoes SLDS's clip: rect(0 0 0 0) so the invisible input stays clickable */
   clip: auto;
   opacity: 0;
   cursor: pointer;
@@ -260,7 +208,6 @@ textarea {
 }
 
 .metadata-preview-icon {
-  flex-shrink: 0;
   cursor: pointer;
   visibility: hidden;
 }
@@ -272,10 +219,6 @@ textarea {
 
 .metadata-preview-loading {
   min-height: 16rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 1rem;
 }
 
@@ -300,20 +243,8 @@ textarea {
   margin-inline-start: 0;
 }
 
-.reset-margin {
-  margin: 0;
-}
-
 .flex-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
   gap: 0.25rem;
-}
-
-.area input[type="radio"],
-.area input[type="checkbox"] {
-  margin-right: 7px;
 }
 
 .margin-grandchild {
@@ -325,7 +256,6 @@ textarea {
 }
 
 .options-text {
-  padding: 0 12px;
   margin-top: 10px;
   margin-bottom: 5px;
 }
@@ -333,16 +263,9 @@ textarea {
 .options-text > h2 {
   font-size: 0.9rem;
   display: inline;
-  font-weight: 700;
   line-height: 1.25;
-  margin-inline: 1rem;
 }
 
-select {
-  width: auto;
-}
-
-/* Spinner overlay for metadata retrieval */
 .sfir-spinner-overlay {
   position: fixed;
   inset: 0;
@@ -351,10 +274,6 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.metadata-accordion .slds-accordion__summary {
-  position: relative;
 }
 
 .metadata-row-spinner {

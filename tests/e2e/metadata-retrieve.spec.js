@@ -60,6 +60,7 @@ test.describe("Metadata Retrieve", () => {
     const filterInput = page.locator(".filter-input");
     await expect(filterInput).toBeVisible();
     await expect(filterInput).toHaveValue("");
+    await expect(page.locator(".filter-clear")).toHaveCount(0);
 
     // Verify buttons exist
     await expect(page.locator("button:has-text('Retrieve Metadata')")).toBeVisible();
@@ -105,12 +106,14 @@ test.describe("Metadata Retrieve", () => {
     const filterInput = page.locator(".filter-input");
     await filterInput.fill("Apex");
 
-    // Click clear filter button
+    // Clear button appears once there is text
     const clearButton = page.locator(".filter-clear");
+    await expect(clearButton).toBeVisible();
     await clearButton.click();
 
-    // Verify filter is cleared
+    // Verify filter is cleared and the button is gone again
     await expect(filterInput).toHaveValue("");
+    await expect(clearButton).toHaveCount(0);
   });
 
   test("Select All Metadata Objects", async ({page, extensionId}) => {

@@ -25,6 +25,7 @@ label {
 
 #result-area h1 {
   font-size: var(--slds-g-font-scale-2);
+  font-weight: var(--slds-g-font-weight-6);
   margin-inline: 1rem;
 }
 
@@ -251,7 +252,7 @@ h2 {
   margin-left: 20px !important;
 }
 
-.options-card {
+.options-card.slds-box.slds-theme_default{
   padding-inline: var(--slds-g-spacing-5);
   border-radius: 1rem;
 }
@@ -265,6 +266,7 @@ h2 {
 
 .options-card__title {
   font-size: var(--slds-g-font-scale-2);
+  font-weight: var(--slds-g-font-weight-6);
 }
 
 .options-grid {

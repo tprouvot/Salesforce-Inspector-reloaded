@@ -522,6 +522,20 @@ test.describe("Popup", () => {
       await expect(page.frameLocator(".insext-popup").locator("text=" + TEST_CONSTANTS.accountRecordId)).toBeVisible({timeout: 1000});
     });
 
+    test("Show Flow Version Details from the Tooling API", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      await waitForObjectsTabToLoad(page);
+
+      const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Record id']");
+      await searchInput.fill(TEST_CONSTANTS.flowId);
+      const flowResult = page.frameLocator(".insext-popup").locator(".slds-dropdown__item").first();
+      await flowResult.waitFor({state: "visible", timeout: 1000});
+      await flowResult.click();
+
+      await expect(page.frameLocator(".insext-popup").locator("text=RecordTrigger InspectorTest")).toBeVisible({timeout: 1000});
+      await expect(page.frameLocator(".insext-popup").locator("text=(intuser)")).toBeVisible({timeout: 1000});
+    });
+
     test("Show All Data Button", async ({page, extensionId}) => {
       await initPopupPage(page, extensionId);
       await waitForObjectsTabToLoad(page);

@@ -272,6 +272,10 @@ a.download-salesforce {
   justify-content: center;
 }
 
+.slds-input.slds-combobox__input {
+  padding-inline-start: var(--slds-g-spacing-3);
+}
+
 /* Elevate the active row and cell so the dropdown floats ABOVE subsequent table rows */
 tr:has(.slds-is-open),
 td:has(.slds-is-open) {

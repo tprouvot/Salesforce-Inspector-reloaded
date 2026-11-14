@@ -29,6 +29,7 @@
  * @param {string} [props.name] - name attribute of the input
  * @param {string} [props.label] - Form element label (wraps the combobox in slds-form-element)
  * @param {boolean} [props.showLabel=true] - Shows the label visibly (false keeps it as assistive text)
+ * @param {string} [props.labelClassName] - Extra CSS classes for the label (e.g. to override the default label margin/padding)
  * @param {string} [props.placeholder] - Placeholder text
  * @param {string} [props.title] - Tooltip of the input (defaults to the selected option's title)
  * @param {string} [props.icon] - Utility icon name shown on the right instead of the chevron/clear button (e.g. "clock")
@@ -408,7 +409,7 @@ export class Combobox extends React.Component {
     let {
       options = [], value, onChange, mode, isSearchable, isLoading, hideEmpty,
       width, height, dropdownHeight, dropdownWidth, className, style, textAlign, fixedDropdown,
-      id, name, label, title, placeholder, icon, ariaLabel, showLabel = true, showSecondaryText = false,
+      id, name, label, labelClassName, title, placeholder, icon, ariaLabel, showLabel = true, showSecondaryText = false,
       disabled, hasError, errorMessage, showCheckmark = true,
       autoComplete = "nope", spellCheck = false, autoCorrect = "off"
     } = this.props;
@@ -586,7 +587,7 @@ export class Combobox extends React.Component {
 
     if (label) {
       return h("div", { className: `slds-form-element ${hasError ? "slds-has-error" : ""} ${className || ""}`.trim(), style: rootStyle },
-        h("label", { className: `slds-form-element__label ${showLabel === false ? "slds-assistive-text" : ""}` }, label),
+        h("label", { className: `slds-form-element__label ${showLabel === false ? "slds-assistive-text" : ""} ${labelClassName || ""}`.trim() }, label),
         h("div", { className: "slds-form-element__control" }, comboboxInner),
         hasError && errorMessage ? h("div", { className: "slds-form-element__help", id: helpId }, errorMessage) : null
       );

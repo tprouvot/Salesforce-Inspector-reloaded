@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import Toast, {copyWithToast, downloadWithToast, hideToast} from "./components/Toast.js";
+import Toast, {copyWithToast, downloadWithToast, hideToast, showToast} from "./components/Toast.js";
 import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
 
 const allApis = [
@@ -468,7 +468,7 @@ class Model {
   canSkipAllUnknownFields() {
     if (this.importData.importTable && this.importData.importTable.header) {
       for (let column of this.importData.importTable.header) {
-        if (!column.columnIgnore() && column.columnUnknownField()) {
+        if (!column.columnIgnore() && column.columnError()) {
           return true;
         }
       }
@@ -1058,7 +1058,16 @@ class App extends React.Component {
   onDataPaste(e) {
     let {model} = this.props;
     let text = e.clipboardData.getData("text/plain");
+    let wasWorking = model.isWorking();
     model.setData(text);
+    if (!wasWorking) {
+      if (model.dataError) {
+        showToast(this, "error", "Pasted data could not be loaded", "Error: " + model.dataError);
+      } else {
+        let count = model.importData.importTable?.data?.length;
+        showToast(this, "success", "Data pasted", count ? count + (count === 1 ? " record" : " records") + " loaded into the import table" : "Loaded into the import table", 3000);
+      }
+    }
     model.didUpdate();
   }
   onExternalIdChange(e) {
@@ -1340,7 +1349,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", placeholder: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
                             )
                           )

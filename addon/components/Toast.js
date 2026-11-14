@@ -2,14 +2,14 @@ let h = React.createElement;
 
 let toastSequence = 0;
 
-export function showToast(component, variant, title, message) {
+export function showToast(component, variant, title, message, duration) {
   component.setState({
     toast: {
       id: ++toastSequence,
       variant,
       title,
       message,
-      duration: variant === "success" ? 2000 : 0,
+      duration: duration ?? (variant === "success" ? 2000 : 0),
     },
   });
 }

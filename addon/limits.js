@@ -1,6 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {Combobox} from "./components/Combobox.js";
 import {UserInfoModel, copyToClipboard} from "./utils.js";
 /* global initButton */
 
@@ -173,12 +174,12 @@ class App extends React.Component {
     this.model.copyAsJson();
     this.model.didUpdate();
   }
-  onSortBy(e){
-    this.model.sortBy = e.target.value;
+  onSortBy(val) {
+    this.model.sortBy = this.model.sortOptions.find(opt => opt.value === val) || this.model.sortOptions[1];
     const url = new URL(window.location);
-    url.searchParams.set("sort", this.model.sortBy);
+    url.searchParams.set("sort", val);
     window.history.pushState({}, "", url);
-    this.model.allLimitData = this.model.sortLimits(this.model.allLimitData, this.model.sortBy);
+    this.model.allLimitData = this.model.sortLimits(this.model.allLimitData, val);
     this.model.didUpdate();
   }
 
@@ -208,17 +209,14 @@ class App extends React.Component {
               h("div", {className: "slds-col slds-size_8-of-12"},
                 h("button", {className: "slds-button slds-button_neutral", disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
               ),
-              h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
-                h("div", {className: "slds-form-element"},
-                  h("div", {className: "slds-form-element__control"},
-                    h("div", {className: "slds-select_container"},
-                      h("select", {className: "slds-select", id: "select-01", value: model.sortBy.value, onChange: this.onSortBy},
-                        h("option", {value: "none", disabled: true, defaultValue: true, hidden: true}, "Sort By"),
-                        model.sortOptions.map(opt => h("option", {key: opt.value, value: opt.value}, opt.label))
-                      )
-                    )
-                  )
-                )
+              h("div", {className: "slds-col slds-size_2-of-12", style: { display: "flex", justifyContent: "flex-end" }},
+                h(Combobox, {
+                  id: "sfir-limits-sort",
+                  value: model.sortBy.value,
+                  options: model.sortOptions,
+                  onChange: this.onSortBy,
+                  width: "150px"
+                })
               )
             )
           ),

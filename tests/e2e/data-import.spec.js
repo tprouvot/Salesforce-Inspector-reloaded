@@ -5,6 +5,7 @@ import {
   injectSessionData,
   createModelExposureSetup,
   pasteData,
+  selectComboboxOption,
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -71,8 +72,7 @@ test.describe("Data Import", () => {
 
     // Set object type
     const objectInput = page.locator("#form-search-object");
-    await objectInput.fill("Inspector_Test__c");
-    await objectInput.press("Enter");
+    await selectComboboxOption(page, objectInput, "Inspector_Test__c", {search: true});
 
     // Wait for SObject describe to load (spinner to finish)
     await page.waitForFunction(() => {
@@ -91,7 +91,7 @@ test.describe("Data Import", () => {
    */
   async function createRecords(page) {
     // Set action to Insert
-    await page.locator("#form-import-action").selectOption("create");
+    await selectComboboxOption(page, "#form-import-action", "create");
 
     //Paste CSV data - trigger onDataPaste handler by dispatching paste event with clipboardData
     const csvData = '"Name","Checkbox__c","Number__c"\r\ntest3-' + TEST_GUID + ",false,300.03\r\ntest4-" + TEST_GUID + ",true,400.04";
@@ -101,7 +101,7 @@ test.describe("Data Import", () => {
 
     // Wait for data to be parsed and field mapping to be validated
     // First wait for the field mapping section to appear (indicates data was parsed)
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
+    await page.waitForSelector(".sfir-field-mapping-body .slds-combobox__input", {timeout: 2000});
     // Then wait for the button to be enabled
     await page.waitForSelector("button:has-text('Run Insert'):not([disabled])", {timeout: 2000});
 
@@ -138,10 +138,10 @@ test.describe("Data Import", () => {
     await pasteData(page, "#data-paste", csvData);
 
     // Now update the select element to match
-    await page.locator("#form-import-action").selectOption("update");
+    await selectComboboxOption(page, "#form-import-action", "update");
 
     // Wait for data to be parsed and field mapping to appear
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
+    await page.waitForSelector(".sfir-field-mapping-body .slds-combobox__input", {timeout: 2000});
 
     // Wait for button to be enabled - with debugging info
     await page.waitForSelector("button:has-text('Run Update'):not([disabled])", {timeout: 2000});
@@ -163,7 +163,7 @@ test.describe("Data Import", () => {
 
   async function upsertRecords(page, recordIds = []) {
     // Set action to Upsert
-    await page.locator("#form-import-action").selectOption("upsert");
+    await selectComboboxOption(page, "#form-import-action", "upsert");
 
     // Wait for external ID field to be visible (it's conditionally rendered when upsert is selected)
     // The parent div has hidden attribute, so we wait for the input to be visible
@@ -171,15 +171,14 @@ test.describe("Data Import", () => {
     await externalIdField.waitFor({state: "visible", timeout: 2000});
 
     // Set external ID field
-    await page.locator("#form-external-id").fill("Name");
-    await page.waitForTimeout(500); // Wait for validation
+    await selectComboboxOption(page, externalIdField, "Name", {search: true});
 
     // Paste CSV data
     const csvData = "Name,Number__c\r\ntest2-" + TEST_GUID + ",222\r\ntest6-" + TEST_GUID + ",666";
     await pasteData(page, "#data-paste", csvData);
 
     // Wait for data to be parsed
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
+    await page.waitForSelector(".sfir-field-mapping-body .slds-combobox__input", {timeout: 2000});
     // Wait for button to be enabled
     await page.waitForSelector("button:has-text('Run Upsert'):not([disabled])", {timeout: 2000});
 
@@ -203,14 +202,14 @@ test.describe("Data Import", () => {
 
   async function deleteRecords(page, recordIds = []) {
     // Now update the select element to match
-    await page.locator("#form-import-action").selectOption("delete");
+    await selectComboboxOption(page, "#form-import-action", "delete");
 
     // Paste CSV data with Id column and ignored column
     const csvData = "Id,_foo*\r\n" + recordIds.map(id => `${id},foo`).join("\r\n");
     await pasteData(page, "#data-paste", csvData);
 
     // Wait for data to be parsed and field mapping to appear
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
+    await page.waitForSelector(".sfir-field-mapping-body .slds-combobox__input", {timeout: 2000});
 
     // Wait for button to be enabled - with debugging info
     await page.waitForSelector("button:has-text('Run Delete'):not([disabled])", {timeout: 2000});
@@ -250,14 +249,14 @@ test.describe("Data Import", () => {
     await initImportPage(page, context, extensionId);
 
     // Set action to Insert
-    await page.locator("#form-import-action").selectOption("create");
+    await selectComboboxOption(page, "#form-import-action", "create");
 
     // Paste Excel data (tab-separated) - make sure tabs are actual tab characters
     const excelData = '"Name"\t"Number__c"\r\ntest6-' + TEST_GUID + "\t600.06\r\ntest7-" + TEST_GUID + "\t700.07";
     await pasteData(page, "#data-paste", excelData);
 
     // Wait for data to be parsed and field mapping to appear
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
+    await page.waitForSelector(".sfir-field-mapping-body .slds-combobox__input", {timeout: 2000});
 
     // Wait for button to be enabled
     await page.waitForSelector("button:has-text('Run Insert'):not([disabled])", {timeout: 2000});
@@ -280,7 +279,7 @@ test.describe("Data Import", () => {
     await initImportPage(page, context, extensionId);
 
     // Set action to Update
-    await page.locator("#form-import-action").selectOption("update");
+    await selectComboboxOption(page, "#form-import-action", "update");
 
     // Click Copy Options button
     await page.click("button:has-text('Copy Options')");
@@ -318,4 +317,3 @@ test.describe("Data Import", () => {
     await expect(page.locator(".slds-text-color_error:has-text('Invalid field name')")).toBeVisible();
   });
 });
-

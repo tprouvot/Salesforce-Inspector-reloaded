@@ -2,13 +2,17 @@
 
 ## Version 2.1
 
+- `Show All Data` Add reusable SLDS2 datetime picker component and replace the plain-text editor for date and datetime fields with it (calendar popup with keyboard navigation) and, for datetime fields, a searchable time combobox that edits in UTC and shows the local equivalent [feature #1451](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1451) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Show All Data` Replace the plain-text editor for picklist, multipicklist, and boolean fields with an SLDS2 combobox, including dependent picklist filtering and validation [feature #405](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/405), [feature #1207](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1207) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Show All Data` Add color-coding to table values to visually distinguish editable fields (deep teal) from read-only fields (grey) [feature #1396](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1396) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Import` Show labels alongside API names in the Object and field mapping dropdowns, and allow searching by either [feature #1398](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1398) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `UI` Add a reusable SLDS2 combobox component and replace native select dropdowns across the extension (`Data Import`, `Field Manager`, `Event Monitor`, `Logs Viewer`, `REST Explorer`, `Org Limits`, `Metadata Retrieve`, `Options`) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Fix query editor colouring for SOQL and SOSL: only their reserved words are coloured as keywords, so field names such as Status, Type or Language and objects such as Case or Order no longer look like SQL keywords, and the object after `FROM` or `RETURNING` gets its own colour [issue #1429](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1429) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Data Import` Fix confirmation popup getting stuck and locking the page when Custom Headers is not valid JSON [issue #1425](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1425) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Background` Fix cross-tab/cross-org command execution: the background script tracked the active Salesforce org in a single global variable, so keyboard shortcuts and tool launches (e.g. `Data Import`, `REST Explorer`) could resolve the host of a different, previously-focused tab instead of the tab the user actually acted on when multiple orgs were open concurrently (sandbox and production). Org host is now tracked per-tab [issue #1417 section 3.5](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1417)
 - `Metadata Retrieve` Improve screen reader accessibility: announce filter result counts, announce success/error messages reliably (even after the toast disappears), and remove the redundant button stop from the tab order on metadata item checkboxes [issue #1399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1399)
 - `Show All Data` Fix Field Usage (%) column sorting by the rounded displayed percentage instead of the exact populated ratio [issue #1401](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1401)
 - Fix Prism syntax highlighting re-running on every unrelated re-render instead of only when the highlighted content actually changed, across `Data Export`, `REST Explorer`, `Explore API`, `Event Monitor`, `Dependencies Explorer` and `Metadata Retrieve`
-
 - `Field Manager` Rename `Field Creator` to `Field Manager`, rework the UI with SLDS, and add the ability to retrieve, view and edit existing custom fields' Label, Description and Help Text - including previously unsupported types such as Lookup, Master-Detail, Roll-Up Summary and Auto Number [discussion #1361](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1361)
 - `Show All Data` Fix "Get field usage" displaying as Error for location type fields [issue #1386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1386) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fix record context (and "Show all data" button) not detected on Lightning domains that insert extra labels between `lightning` and the base domain
@@ -28,7 +32,7 @@
 - `Metadata` Add 'Run Relevant Tests' option to metadata deploy Test Level picklist [feature 1286](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1286)
 - `Popup` Fix language flag icons for Catalan and Basque on the Users tab [issue #1196](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1196)
 - `Custom Shortcuts` Add "Global" toggle to share a shortcut across all orgs instead of keeping it specific to the current org [feature 191](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/191)
-- `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
+- `Typo Fix` Fix Dependencies Explorer Typo  [issue #1276](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1276) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist))
 - `Popup` Add search prefixes to speed up Shortcut tab queries: `/` for setup links only, `!` for metadata, and typed filters (`!flow`, `!profile`, `!class`, `!perm`) [feature 1265](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1265)
 - `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))
@@ -54,11 +58,11 @@
 - `Data Export` Fix Column order not respected when performing subqueries [#598](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/598)
 - `Accessibility` Improve screen reader support: fix AlertBanner silent announcements, convert inspector button and tooltip trigger to semantic elements, add popup iframe title issues [#1107](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1107) & [#1108](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1108) (contribution by [akj](https://github.com/akj))
 - `Dependencies Explorer` (contribution by [Georgi Dobrishinov](https://github.com/dobrishinov))
-- `Flow Scanner` Extract Flow Scanner rules logic into shared module (fixes the Flow Scanner import flash on the Options page) contribution by [Camille Guillory](https://github.com/CamilleGuillory))
+- `Flow Scanner` Extract Flow Scanner rules logic into shared module (fixes the Flow Scanner import flash on the Options page) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - Introduce SObjectList cache to prevent request to Salesforce requests to be sent each time the popup opens [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
 - `Popup` Support record ID detection in Lightning Setup URLs with address parameter [feature 1099](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1099)
-- `Data Export` Fix Incorrect SOSL Query stamping when selected from Saved Queries [issue #1075](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1075) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
-- `Data Import` Fix data import issue with quoted words [issue #748](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/748) (contribution by [Maral Zakarian](https://github.com/MaralZak)
+- `Data Export` Fix Incorrect SOSL Query stamping when selected from Saved Queries [issue #1075](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1075) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist))
+- `Data Import` Fix data import issue with quoted words [issue #748](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/748) (contribution by [Maral Zakarian](https://github.com/MaralZak))
 - `Data Export` Refactor "Hide Object Columns" toggle to update UI instantly without re-querying Salesforce (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - Fix Popup issue when User tab is configured as default one [issue #974](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/974) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `Data Export` Data export new tab context [issue #1080](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1080)(contribution by [Maral Zakarian](https://github.com/MaralZak))
@@ -67,7 +71,7 @@
 - Reduce API calls in popup by skipping unnecessary requests when not expanded [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - Add API Statistics page to track and monitor REST and SOAP API calls (enable via `Enable API Stats Debug Mode` in Options > API tab) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `User Experience` Add dynamic popup height and option to enable / disable setting (contribution by [Nicolas Greard](https://github.com/ngreardSF))
-- `Field Creator` Fix Currency Field [#1046](https://github.com/RubenHalman/Salesforce-Inspector-reloaded/issues/1046) (contribution by [Ruben Halman](https://github.com/RubenHalman))
+- `Field Creator` Fix Currency Field [#1046](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1046) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
 - `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)
 - Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)
@@ -269,13 +273,13 @@
 - Add "Enable Logs" button in the User tab [feature 245](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245) (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
 - Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. [feature 198](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198) (issue by [SfdxDieter](https://github.com/SfdxDieter))
-- Fix flow scrollability] checkbox on non dev environments [issue 258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/258) (by [Samuel Krissi](https://github.com/samuelkrissi))
+- Fix flow scrollability checkbox on non dev environments [issue 258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/258) (by [Samuel Krissi](https://github.com/samuelkrissi))
 - Fix 'Record Type not displayed' in popup [issue 255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/255)
 - Add "Options" page to manage local storage variables directly from the UX. Allow to reposition the popup button [feature 145](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/145) (contribution by [Pietro Martino](https://github.com/pietromartino))
 - Bugfix Delete button does not check for 'toolingApi' parameter [issue 254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/254) (contribution by [Oscar Gomez Balaguer](https://github.com/ogomezba))
 - Add Apex classes documentation in shortcut [feature 247](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/247)
 - Disable "Delete records" button when a query returns more than 20k records [feature 251](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/251)
-- Automatically request SObject type for data import and SObject record id for data export [feature 45](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/45) SObject record (#45)) (contribution by [Olivier Dufour](https://github.com/dufoli))
+- Automatically request SObject type for data import and SObject record id for data export [feature 45](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/45) (contribution by [Olivier Dufour](https://github.com/dufoli))
 - Add support to Hyperforce China Organizations [PR141](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/141) (contribution by [Yaacov Elbaz](https://github.com/yaacov9))
 
 ## Version 1.21

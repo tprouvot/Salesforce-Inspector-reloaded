@@ -20,13 +20,15 @@
 }
 
 .sfir-inspect-table-text.value-is-blank {
-  color: #aaa;
+  color: var(--slds-g-color-neutral-base-70, #aaa);
   font-style: italic;
+  opacity: 0.6;
 }
 
 .sfir-inspect-table-text.value-is-unknown {
-  color: #aaa;
+  color: var(--slds-g-color-neutral-base-70, #aaa);
   font-style: italic;
+  opacity: 0.6;
 }
 
 tr.fieldCalculated {
@@ -56,4 +58,34 @@ tr.fieldHidden a[href] {
   width: 0.875rem;
   height: 0.875rem;
   fill: currentColor;
+}
+
+.sfir-edit-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sfir-edit-cell > div,
+.sfir-edit-cell textarea {
+  flex: 1 1 auto;
+  min-width: 10rem;
+  width: 100%;
+}
+
+.sfir-edit-cell .slds-combobox__input {
+  cursor: pointer;
+  background-color: var(--slds-g-color-surface-container-1, #fff);
+}
+
+.sfir-edit-cell .slds-form-element__help {
+  white-space: normal;
+}
+
+.sfir-inspect-table-text.value-is-readonly {
+  color: var(--slds-g-color-neutral-base-10, #181818);
+}
+
+.sfir-inspect-table-text.value-is-editable {
+  color: var(--slds-g-color-palette-teal-40, #056764);
 }

@@ -73,7 +73,6 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "User Experience",
         content: [
           {option: ArrowButtonOption, props: {key: 1}},
-          {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
           {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
           {option: MultiCheckboxButtonGroup,
@@ -260,7 +259,8 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200", inputSize: "1"}},
           {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6", inputSize: "1"}},
-          {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
+          {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}},
+          {option: Option, props: {type: "toggle", title: "Show Paste Clipboard Button in Data Import", key: "showPasteClipboardButton", default: true, tooltip: "When enabled, shows a Paste button at the bottom right of the data input box in Data Import, which pastes the clipboard content into the import table."}}
         ]
       },
       {
@@ -463,6 +463,7 @@ class OptionsTabSelector extends React.Component {
         id: "show-all",
         tabTitle: "Show All",
         content: [
+          {option: Option, props: {type: "toggle", title: "Show table borders on Inspect page", key: "displayInspectTableBorders", tooltip: "When enabled, the tables on the Show all data page are displayed with row borders."}},
           {option: Option, props: {type: "toggle", title: "Enable Agentforce Helper for formula fields", key: "showAgentforceHelperInspect", default: true, tooltip: "When enabled, shows the 'Agentforce Helper' link in the field actions menu for calculated/formula fields."}},
           {option: Option, props: {type: "text", title: "Formula Helper Prompt Template Name", key: this.sfHost + "_formulaAgentForcePrompt", default: "FormulaHelper", tooltip: "Developer name of the prompt template to use for Formula Field Analysis in the Inspect page"}},
         ]

@@ -459,6 +459,7 @@ export function copyToClipboard(value) {
     if (!success) {
       alert("Copy failed");
     }
+    return success;
   } finally {
     document.body.removeChild(temp);
   }

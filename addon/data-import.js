@@ -4,6 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import Toast, {copyWithToast, downloadWithToast, hideToast, showToast} from "./components/Toast.js";
 import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
 
 const allApis = [
@@ -252,7 +253,7 @@ class Model {
     if (this.importAction == "upsert") importOptions.set("externalId", this.externalId);
     importOptions.set("batchSize", this.batchSize);
     importOptions.set("threads", this.batchConcurrency);
-    copyToClipboard(importOptions.toString());
+    return copyToClipboard(importOptions.toString());
   }
 
   skipAllUnknownFields() {
@@ -467,7 +468,7 @@ class Model {
   canSkipAllUnknownFields() {
     if (this.importData.importTable && this.importData.importTable.header) {
       for (let column of this.importData.importTable.header) {
-        if (!column.columnIgnore() && column.columnUnknownField()) {
+        if (!column.columnIgnore() && column.columnError()) {
           return true;
         }
       }
@@ -478,7 +479,7 @@ class Model {
   copyResult(separator) {
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
-    copyToClipboard(csvSerialize([header, ...data], separator));
+    return copyToClipboard(csvSerialize([header, ...data], separator));
   }
 
   downloadResult(separator) {
@@ -1019,11 +1020,15 @@ class App extends React.Component {
     this.onCopyAsCsvClick = this.onCopyAsCsvClick.bind(this);
     this.onDownloadAsCsvClick = this.onDownloadAsCsvClick.bind(this);
     this.onCopyOptionsClick = this.onCopyOptionsClick.bind(this);
+    this.dismissToast = this.dismissToast.bind(this);
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.unloadListener = null;
-    this.state = {templateValueIndex: -1};
+    this.state = {templateValueIndex: -1, toast: null};
+  }
+  dismissToast() {
+    hideToast(this);
   }
   onApiTypeChange(e) {
     let {model} = this.props;
@@ -1053,7 +1058,16 @@ class App extends React.Component {
   onDataPaste(e) {
     let {model} = this.props;
     let text = e.clipboardData.getData("text/plain");
+    let wasWorking = model.isWorking();
     model.setData(text);
+    if (!wasWorking) {
+      if (model.dataError) {
+        showToast(this, "error", "Pasted data could not be loaded", "Error: " + model.dataError);
+      } else {
+        let count = model.importData.importTable?.data?.length;
+        showToast(this, "success", "Data pasted", count ? count + (count === 1 ? " record" : " records") + " loaded into the import table" : "Loaded into the import table", 3000);
+      }
+    }
     model.didUpdate();
   }
   onExternalIdChange(e) {
@@ -1127,7 +1141,7 @@ class App extends React.Component {
   onCopyAsExcelClick(e) {
     e.preventDefault();
     let {model} = this.props;
-    model.copyResult("\t");
+    copyWithToast(this, () => model.copyResult("\t"));
   }
   onCopyAsCsvClick(e) {
     e.preventDefault();
@@ -1136,7 +1150,7 @@ class App extends React.Component {
     if (localStorage.getItem("csvSeparator")) {
       separator = localStorage.getItem("csvSeparator");
     }
-    model.copyResult(separator);
+    copyWithToast(this, () => model.copyResult(separator));
   }
   onDownloadAsCsvClick(e) {
     e.preventDefault();
@@ -1145,12 +1159,12 @@ class App extends React.Component {
     if (localStorage.getItem("csvSeparator")) {
       separator = localStorage.getItem("csvSeparator");
     }
-    model.downloadResult(separator);
+    downloadWithToast(this, () => model.downloadResult(separator));
   }
   onCopyOptionsClick(e) {
     e.preventDefault();
     let {model} = this.props;
-    model.copyOptions();
+    copyWithToast(this, () => model.copyOptions());
   }
   onSkipAllUnknownFieldsClick(e) {
     e.preventDefault();
@@ -1245,6 +1259,14 @@ class App extends React.Component {
     ];
 
     return h("div", {},
+      this.state.toast && h(Toast, {
+        key: this.state.toast.id,
+        variant: this.state.toast.variant,
+        title: this.state.toast.title,
+        message: this.state.toast.message,
+        onClose: this.dismissToast,
+        duration: this.state.toast.duration,
+      }),
       h(PageHeader, {
         pageTitle: "Data Import",
         orgName: model.orgName,
@@ -1327,7 +1349,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", placeholder: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
                             )
                           )

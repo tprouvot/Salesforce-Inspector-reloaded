@@ -3112,7 +3112,24 @@ class UserDetails extends React.PureComponent {
     this.enableDebugLog = this.enableDebugLog.bind(this);
     this.toggleDisplay = this.toggleDisplay.bind(this);
     this.onSelectLanguage = this.onSelectLanguage.bind(this);
-    this.state = {};
+    this.state = {copiedUserId: null};
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.userIdCopiedTimeout);
+  }
+
+  handleUserIdCopy(e, userId) {
+    e.preventDefault();
+    if (!copyToClipboard(userId)) {
+      return;
+    }
+
+    this.setState({copiedUserId: userId});
+    clearTimeout(this.userIdCopiedTimeout);
+    this.userIdCopiedTimeout = setTimeout(() => {
+      this.setState({copiedUserId: null});
+    }, 1500);
   }
 
   showSuccessToast(operation, message, link) {
@@ -3759,18 +3776,35 @@ class UserDetails extends React.PureComponent {
                   user.Id,
                   isOptionEnabled("copy-userId", hideButtonsOption)
                     ? h("span", {
-                      className: "sfir-copy-userid-icon",
-                      title: "Copy to clipboard",
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        handleUserIdCopy(e, user.Id);
+                        className:
+                          "sfir-copy-userid-icon"
+                          + (this.state.copiedUserId === user.Id ? " copied" : ""),
+                        title:
+                          this.state.copiedUserId === user.Id
+                            ? "Copied to clipboard"
+                            : "Copy to clipboard",
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          this.handleUserIdCopy(e, user.Id);
+                        },
+                        onMouseEnter: (e) => e.stopPropagation(),
+                        onMouseLeave: (e) => e.stopPropagation()
                       },
-                      onMouseEnter: (e) => e.stopPropagation(),
-                      onMouseLeave: (e) => e.stopPropagation()
-                    },
-                    h("svg", {className: "slds-button__icon slds-m-left_xx-small sfir-vertical-align_sub"},
-                      h("use", {xlinkHref: "symbols.svg#copy"})
-                    )
+                      h("svg", {
+                        className: "slds-button__icon slds-m-left_xx-small sfir-vertical-align_sub sfir-copy-userid-icon-copy",
+                        "aria-hidden": "true",
+                      },
+                        h("use", {xlinkHref: "symbols.svg#copy"})
+                      ),
+                      h("svg", {
+                        className: "slds-button__icon sfir-vertical-align_sub sfir-copy-userid-icon-check",
+                        "aria-hidden": "true",
+                      },
+                        h("use", {xlinkHref: "symbols.svg#check"})
+                      ),
+                      this.state.copiedUserId === user.Id
+                        ? h("span", {className: "slds-assistive-text", role: "status"}, "User ID copied")
+                        : null
                     )
                     : null,
                 )
@@ -5335,9 +5369,4 @@ function handleLightningLinkClick(e) {
   e.preventDefault(); // Prevent the default link behavior (href navigation)
   const url = e.currentTarget.href;
   navigateWithExtensionCheck(e, url, {navigationType: "url", url});
-}
-
-function handleUserIdCopy(e, userId) {
-  e.preventDefault();
-  copyToClipboard(userId);
 }

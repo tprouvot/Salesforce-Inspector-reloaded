@@ -234,4 +234,9 @@ a.download-salesforce {
   position: relative;
   top: 50%;
   transform: translateY(-50%);
+}/* Toast with only a title: keep the close button on the same vertical centre as the
+   icon and title, instead of SLDS pinning it to the top of a multi-line toast. */
+.slds-notify_toast.sfir-toast-title-only .slds-notify__close {
+  top: 50%;
+  transform: translateY(-50%);
 }

@@ -1,5 +1,5 @@
 import {sfConn, apiVersion, XML} from "./inspector.js";
-import Toast from "./components/Toast.js";
+import Toast, {copyWithToast, downloadWithToast, hideToast, showToast} from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, generatePackageXml} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
@@ -548,7 +548,7 @@ class App extends React.Component {
     this.onUpdateDeployOptions = this.onUpdateDeployOptions.bind(this);
     this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
     this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
-    this.hideToast = this.hideToast.bind(this);
+    this.dismissToast = this.dismissToast.bind(this);
     this.onViewMetadata = this.onViewMetadata.bind(this);
     this.onCloseMetadataModal = this.onCloseMetadataModal.bind(this);
     this.onCopyMetadataXml = this.onCopyMetadataXml.bind(this);
@@ -632,13 +632,15 @@ class App extends React.Component {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "package.xml";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    downloadWithToast(this, () => {
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
   }
   copyXml(){
     let {model} = this.props;
-    copyToClipboard(model.packageXml);
+    copyWithToast(this, () => copyToClipboard(model.packageXml));
   }
   showOptions(){
     let {model} = this.props;
@@ -650,12 +652,7 @@ class App extends React.Component {
     const fileInput = this.refs.fileInput;
 
     if (!fileInput.files.length) {
-      this.setState({
-        showToast: true,
-        toastMessage: "Import Failed",
-        toastVariant: "error",
-        toastTitle: "Error"
-      });
+      showToast(this, "error", "Error", "Import Failed");
       console.error("No file selected.");
       return;
     }
@@ -673,22 +670,11 @@ class App extends React.Component {
           model.packageXml = importedPackage;
           model.parsePackageXml(importedPackage);
 
-          this.setState({
-            showToast: true,
-            toastMessage: fileName + " imported successfully!",
-            toastVariant: "success",
-            toastTitle: "Success"
-          });
-          setTimeout(this.hideToast, 3000);
+          showToast(this, "success", "Success", fileName + " imported successfully!");
           model.didUpdate();
         } catch (error) {
           console.error(error);
-          this.setState({
-            showToast: true,
-            toastMessage: "Failed to import XML file: " + error.message,
-            toastVariant: "error",
-            toastTitle: "Error"
-          });
+          showToast(this, "error", "Error", "Failed to import XML file: " + error.message);
         }
       };
       reader.readAsText(file);
@@ -768,27 +754,16 @@ class App extends React.Component {
             throw new Error("Deployment failed: " + JSON.stringify(deployResult.details));
           }
 
-          this.setState({
-            showToast: true,
-            toastMessage: "Metadata deployed successfully!",
-            toastVariant: "success",
-            toastTitle: "Success"
-          });
+          showToast(this, "success", "Success", "Metadata deployed successfully!");
           model.progress = "done";
-          setTimeout(this.hideToast, 3000);
         } catch (error) {
           console.error(error);
-          this.setState({
-            showToast: true,
-            toastMessage: {
-              pre: "",
-              linkText: `${error.id}: `,
-              linkTitle: "View deployment error in Salesforce",
-              link: `https://${this.props.model.sfHost}/lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${error.id}%26retURL%3D%252Fchangemgmt%252FmonitorDeployment.apexpa`,
-              post: error.message,
-            },
-            toastVariant: "error",
-            toastTitle: "Error"
+          showToast(this, "error", "Error", {
+            pre: "",
+            linkText: `${error.id}: `,
+            linkTitle: "View deployment error in Salesforce",
+            link: `https://${this.props.model.sfHost}/lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${error.id}%26retURL%3D%252Fchangemgmt%252FmonitorDeployment.apexpa`,
+            post: error.message,
           });
           model.progress = "error";
         }
@@ -796,12 +771,7 @@ class App extends React.Component {
       };
       reader.readAsArrayBuffer(file);
     } else {
-      this.setState({
-        showToast: true,
-        toastMessage: "Unsupported file type. Please use .xml or .zip files.",
-        toastVariant: "error",
-        toastTitle: "Error"
-      });
+      showToast(this, "error", "Error", "Unsupported file type. Please use .xml or .zip files.");
     }
   }
   onPastePackage(e){
@@ -879,21 +849,24 @@ class App extends React.Component {
     this.refs.metadataFilter.focus();
     model.didUpdate();
   }
-  hideToast() {
+  dismissToast() {
     let {model} = this.props;
-    this.setState({showToast: false, toastMessage: ""});
+    hideToast(this);
     model.didUpdate();
   }
   getToastAnnouncement() {
-    if (!this.state.showToast) {
+    if (!this.state.toast) {
       return "";
     }
-    let {toastTitle, toastMessage} = this.state;
-    if (typeof toastMessage === "string") {
-      return toastTitle + ": " + toastMessage;
+    let {title, message} = this.state.toast;
+    if (!message) {
+      return title;
     }
-    let {linkText, post} = toastMessage || {};
-    return toastTitle + ": " + (linkText || "") + (post || "");
+    if (typeof message === "string") {
+      return title + ": " + message;
+    }
+    let {linkText, post} = message || {};
+    return title + ": " + (linkText || "") + (post || "");
   }
   getLanguageForMetadata(metadataType) {
     if (!metadataType) return "markup";
@@ -952,15 +925,8 @@ class App extends React.Component {
     if (!metadataXmlContent || metadataXmlContent === "Loading..." || metadataXmlContent.startsWith("Error")) {
       return;
     }
-    copyToClipboard(metadataXmlContent);
     let {model} = this.props;
-    this.setState({
-      showToast: true,
-      toastMessage: "Metadata copied to clipboard",
-      toastVariant: "success",
-      toastTitle: "Success"
-    });
-    setTimeout(this.hideToast, 3000);
+    copyWithToast(this, () => copyToClipboard(metadataXmlContent));
     model.didUpdate();
   }
   onDownloadMetadataXml() {
@@ -989,10 +955,12 @@ class App extends React.Component {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = (metadataFileName || "metadata") + "." + fileExtension;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
+    downloadWithToast(this, () => {
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    });
   }
   render() {
     let {model} = this.props;
@@ -1000,12 +968,15 @@ class App extends React.Component {
     return (
       h("div", {},
         h("div", {className: "slds-assistive-text", role: "alert", "aria-live": "assertive", "aria-atomic": "true"}, this.getToastAnnouncement()),
-        this.state.showToast
+        this.state.toast
         && h(Toast, {
-          variant: this.state.toastVariant,
-          title: this.state.toastTitle,
-          message: this.state.toastMessage,
-          onClose: this.hideToast
+          key: this.state.toast.id,
+          variant: this.state.toast.variant,
+          title: this.state.toast.title,
+          message: this.state.toast.message,
+          onClose: this.dismissToast,
+          duration: this.state.toast.duration,
+          containerClassName: "sfir-toast-above-modal",
         }),
         this.state.showMetadataModal && h(ConfirmModal, {
           isOpen: this.state.showMetadataModal,
@@ -1103,9 +1074,11 @@ class App extends React.Component {
                   const a = document.createElement("a");
                   a.href = model.statusLink;
                   a.download = "status_info.json";
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
+                  downloadWithToast(this, () => {
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                  });
                 },
                 title: "Save status info"
               },

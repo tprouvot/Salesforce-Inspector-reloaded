@@ -202,6 +202,7 @@ class App extends React.Component {
       return h("div", {},
         h(PageHeader, {
           pageTitle: "API Debug Stats",
+          settingsTab: "api",
           orgName: this.model.orgName,
           sfLink: this.model.sfLink,
           sfHost: this.model.sfHost,
@@ -236,6 +237,7 @@ class App extends React.Component {
       return h("div", {},
         h(PageHeader, {
           pageTitle: "API Debug Stats",
+          settingsTab: "api",
           orgName: this.model.orgName,
           sfLink: this.model.sfLink,
           sfHost: this.model.sfHost,
@@ -284,6 +286,7 @@ class App extends React.Component {
     return h("div", {},
       h(PageHeader, {
         pageTitle: "API Debug Stats",
+        settingsTab: "api",
         orgName: this.model.orgName,
         sfLink: this.model.sfLink,
         sfHost: this.model.sfHost,

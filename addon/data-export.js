@@ -5,6 +5,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import Toast, {copyWithToast, downloadWithToast, hideToast, showToast} from "./components/Toast.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
@@ -1433,6 +1434,8 @@ class App extends React.Component {
     this.onTabContextMenu = this.onTabContextMenu.bind(this);
     this.onOverlayContextMenu = this.onOverlayContextMenu.bind(this);
     this.onCloseContextMenu = this.onCloseContextMenu.bind(this);
+    this.showConfirm = this.showConfirm.bind(this);
+    this.closeConfirm = this.closeConfirm.bind(this);
 
     // Tab editing state
     this.state = {
@@ -1443,7 +1446,14 @@ class App extends React.Component {
       dropTargetIndex: -1,
       contextMenu: null,
       toast: null,
+      confirmModal: null,
     };
+  }
+  showConfirm(message, onConfirm, {title, confirmLabel, onCancel} = {}) {
+    this.setState({confirmModal: {message, onConfirm, title, confirmLabel, onCancel}});
+  }
+  closeConfirm() {
+    this.setState({confirmModal: null});
   }
   dismissToast() {
     hideToast(this);
@@ -1481,12 +1491,11 @@ class App extends React.Component {
   }
   onClearHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to clear the query history?");
-    if (r == true) {
+    this.showConfirm("Are you sure you want to clear the query history?", () => {
       let {model} = this.props;
       model.clearHistory();
       model.didUpdate();
-    }
+    }, {title: "Clear history", confirmLabel: "Clear"});
   }
   onSelectSavedEntry(e) {
     let {model} = this.props;
@@ -1503,23 +1512,27 @@ class App extends React.Component {
   }
   onRemoveFromHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove this saved query?");
     let {model} = this.props;
-    if (r == true) {
+    let done = () => {
+      model.toggleSavedOptions();
+      model.didUpdate();
+    };
+    this.showConfirm("Are you sure you want to remove this saved query?", () => {
       model.removeFromHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+      done();
+    }, {title: "Remove saved query", confirmLabel: "Remove", onCancel: done});
   }
   onClearSavedHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove all saved queries?");
     let {model} = this.props;
-    if (r == true) {
+    let done = () => {
+      model.toggleSavedOptions();
+      model.didUpdate();
+    };
+    this.showConfirm("Are you sure you want to remove all saved queries?", () => {
       model.clearSavedHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+      done();
+    }, {title: "Remove all saved queries", confirmLabel: "Remove all", onCancel: done});
   }
   onToggleHelp(e) {
     e.preventDefault();
@@ -1920,6 +1933,25 @@ class App extends React.Component {
         message: this.state.toast.message,
         onClose: this.dismissToast,
         duration: this.state.toast.duration,
+      }),
+      this.state.confirmModal && h(ConfirmModal, {
+        isOpen: true,
+        title: this.state.confirmModal.title,
+        message: this.state.confirmModal.message,
+        confirmLabel: this.state.confirmModal.confirmLabel,
+        confirmVariant: "destructive",
+        onConfirm: () => {
+          let {onConfirm} = this.state.confirmModal;
+          this.closeConfirm();
+          onConfirm();
+        },
+        onCancel: () => {
+          let {onCancel} = this.state.confirmModal;
+          this.closeConfirm();
+          if (onCancel) {
+            onCancel();
+          }
+        }
       }),
       h(PageHeader, {
         pageTitle: "Data Export",

@@ -212,9 +212,43 @@ a.download-salesforce {
   text-decoration: none;
 }
 
-/* API Statistics Error Modal Styles */
-.sfir-error-modal-content {
-  max-height: 400px;
+/* API Statistics page */
+.sfir-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--slds-g-spacing-4);
+}
+
+.sfir-stats-grid > .slds-card {
+  margin-block-start: 0;
+}
+
+.sfir-stats-page {
+  --slds-c-card-color-border: #ececec;
+}
+
+.sfir-stats-page .slds-card__header {
+  --slds-c-card-header-spacing-blockstart: var(--slds-g-spacing-4);
+}
+
+.sfir-stats-page .slds-card__body_inner {
+  --slds-c-card-body-spacing-inlinestart: var(--slds-g-spacing-4);
+  --slds-c-card-body-spacing-inlineend: var(--slds-g-spacing-4);
+  --slds-c-card-body-spacing-block: var(--slds-g-spacing-4);
+}
+
+.sfir-stats-page .slds-card__header + .slds-card__body_inner {
+  --slds-c-card-body-spacing-blockstart: 0;
+}
+
+.sfir-stats-grid .slds-card__body_inner {
+  --slds-c-card-body-spacing-blockstart: var(--slds-g-spacing-4);
+  --slds-c-card-body-spacing-inlinestart: var(--slds-g-spacing-5);
+  --slds-c-card-body-spacing-inlineend: var(--slds-g-spacing-5);
+}
+
+.sfir-table-outline {
+  border-inline: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
 }
 
 /* Improve text selection visibility on highlighted rows */

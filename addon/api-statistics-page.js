@@ -10,6 +10,7 @@ class Model {
   constructor(sfHost) {
     this.reactCallback = null;
     this.sfHost = sfHost;
+    this.apiHost = sfConn.instanceHostname; // resolved host the statistics are stored under
     this.sfLink = "https://" + sfHost;
     this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
     this.spinnerCount = 0;
@@ -17,6 +18,7 @@ class Model {
     this.stats = null;
     this.debugModeEnabled = ApiStatistics.isDebugModeEnabled();
     this.showErrorModal = false;
+    this.showResetModal = false;
     this.errorMessages = [];
 
     // Initialize user info model
@@ -45,12 +47,23 @@ class Model {
 
   loadStats() {
     // Load stats filtered by selected day
-    this.stats = apiStatistics.getStats();
+    this.stats = apiStatistics.getStats(this.apiHost);
+    this.didUpdate();
+  }
+
+  showResetConfirm() {
+    this.showResetModal = true;
+    this.didUpdate();
+  }
+
+  hideResetConfirm() {
+    this.showResetModal = false;
     this.didUpdate();
   }
 
   resetStats() {
-    apiStatistics.reset();
+    apiStatistics.reset(this.apiHost);
+    this.showResetModal = false;
     this.loadStats();
   }
 
@@ -59,7 +72,7 @@ class Model {
   }
 
   showErrors() {
-    this.errorMessages = apiStatistics.getLastErrors();
+    this.errorMessages = apiStatistics.getLastErrors(this.apiHost);
     this.showErrorModal = true;
     this.didUpdate();
   }
@@ -74,8 +87,8 @@ let h = React.createElement;
 
 class StatsCard extends React.Component {
   render() {
-    const {title, value, subtitle, className = "", titleAttr} = this.props;
-    return h("div", {className: `slds-card slds-m-around_small ${className}`, title: titleAttr},
+    const {title, value, subtitle, className = "slds-theme_shade", titleAttr} = this.props;
+    return h("div", {className: `slds-card ${className}`, title: titleAttr},
       h("div", {className: "slds-card__body slds-card__body_inner"},
         h("h3", {className: "slds-text-heading_small slds-m-bottom_x-small"}, title),
         h("div", {className: "slds-text-heading_large slds-text-color_success"}, value),
@@ -92,12 +105,12 @@ class EndpointTable extends React.Component {
       return null;
     }
 
-    return h("div", {className: "slds-card slds-m-around_medium"},
+    return h("div", {className: "slds-card"},
       h("div", {className: "slds-card__header"},
         h("h2", {className: "slds-card__header-title"}, title)
       ),
       h("div", {className: "slds-card__body slds-card__body_inner"},
-        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped"},
+        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-table_striped sfir-table-outline"},
           h("thead", {},
             h("tr", {},
               h("th", {scope: "col"}, "Endpoint"),
@@ -133,12 +146,12 @@ class MethodTable extends React.Component {
       return null;
     }
 
-    return h("div", {className: "slds-card slds-m-around_medium"},
+    return h("div", {className: "slds-card"},
       h("div", {className: "slds-card__header"},
         h("h2", {className: "slds-card__header-title"}, title)
       ),
       h("div", {className: "slds-card__body slds-card__body_inner"},
-        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped"},
+        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-table_striped sfir-table-outline"},
           h("thead", {},
             h("tr", {},
               h("th", {scope: "col"}, "Method"),
@@ -172,15 +185,23 @@ class App extends React.Component {
     super(props);
     this.model = this.props.vm;
     this.onResetStats = this.onResetStats.bind(this);
+    this.onConfirmReset = this.onConfirmReset.bind(this);
+    this.onCancelReset = this.onCancelReset.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onErrorClick = this.onErrorClick.bind(this);
     this.onCloseErrorModal = this.onCloseErrorModal.bind(this);
   }
 
   onResetStats() {
-    if (confirm("Are you sure you want to reset all API Debug statistics? This action cannot be undone.")) {
-      this.model.resetStats();
-    }
+    this.model.showResetConfirm();
+  }
+
+  onConfirmReset() {
+    this.model.resetStats();
+  }
+
+  onCancelReset() {
+    this.model.hideResetConfirm();
   }
 
   onCopyAsJson() {
@@ -208,8 +229,8 @@ class App extends React.Component {
           spinnerCount: this.model.spinnerCount,
           ...this.model.userInfoModel.getProps()
         }),
-        h("div", {className: "slds-m-top_xx-large sfir-page-container"},
-          h("div", {className: "slds-card slds-m-around_medium"},
+        h("div", {className: "slds-m-top_xx-large slds-p-around_medium sfir-stats-page"},
+          h("div", {className: "slds-card"},
             h("div", {className: "slds-card__body slds-card__body_inner"},
               h("div", {className: "slds-text-align_center slds-p-vertical_xx-large"},
                 h("svg", {className: "slds-icon slds-icon_large slds-icon-text-warning", "aria-hidden": true, style: {width: "4rem", height: "4rem"}},
@@ -290,8 +311,8 @@ class App extends React.Component {
         spinnerCount: this.model.spinnerCount,
         ...this.model.userInfoModel.getProps()
       }),
-      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
-        h("div", {className: "slds-card slds-m-around_medium"},
+      h("div", {className: "slds-m-top_xx-large slds-p-around_medium sfir-stats-page"},
+        h("div", {className: "slds-card"},
           h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center"},
             h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
               h("div", {className: "slds-media__body"},
@@ -312,7 +333,7 @@ class App extends React.Component {
             )
           ),
           h("div", {className: "slds-card__body slds-card__body_inner"},
-            h("div", {className: "slds-grid slds-wrap"},
+            h("div", {className: "sfir-stats-grid"},
               h(StatsCard, {
                 title: "Total API Calls",
                 value: stats.total.calls.toLocaleString(),
@@ -322,7 +343,7 @@ class App extends React.Component {
                 title: "Total Errors",
                 value: stats.total.errors.toLocaleString(),
                 subtitle: `REST: ${stats.rest.errors.toLocaleString()} | SOAP: ${stats.soap.errors.toLocaleString()}`,
-                className: stats.total.errors > 0 ? "slds-theme_error" : ""
+                className: stats.total.errors > 0 ? "slds-theme_error" : undefined
               }),
               h(StatsCard, {
                 title: "Session Duration",
@@ -340,12 +361,12 @@ class App extends React.Component {
             )
           )
         ),
-        restMethods.length > 0 && h("div", {className: "slds-card slds-m-around_medium"},
+        restMethods.length > 0 && h("div", {className: "slds-card"},
           h("div", {className: "slds-card__header"},
             h("h2", {className: "slds-card__header-title"}, "REST Calls by HTTP Method")
           ),
           h("div", {className: "slds-card__body slds-card__body_inner"},
-            h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped"},
+            h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-table_striped sfir-table-outline"},
               h("thead", {},
                 h("tr", {},
                   h("th", {scope: "col"}, "Method"),
@@ -374,21 +395,29 @@ class App extends React.Component {
           onErrorClick: this.onErrorClick
         }),
         h(ConfirmModal, {
+          isOpen: this.model.showResetModal,
+          title: "Reset Statistics",
+          message: "Are you sure you want to reset all API Debug statistics? This action cannot be undone.",
+          confirmLabel: "Reset Statistics",
+          confirmVariant: "destructive",
+          onConfirm: this.onConfirmReset,
+          onCancel: this.onCancelReset
+        }),
+        h(ConfirmModal, {
           isOpen: this.model.showErrorModal,
           title: "Last 10 API Errors",
-          onCancel: this.onCloseErrorModal,
+          // No onCancel: ConfirmModal would render an empty Cancel button. The X button and Esc fall back to onConfirm.
           confirmLabel: "Close",
           confirmVariant: "brand",
-          cancelLabel: null,
           onConfirm: this.onCloseErrorModal,
-          containerClassName: "slds-modal_large"
+          modalSize: "small"
         },
         this.model.errorMessages.length > 0 ? h("div", {},
-          h("div", {className: "slds-scrollable_y sfir-error-modal-content"},
+          h("div", {},
             this.model.errorMessages.map((error, index) =>
               h("div", {
                 key: index,
-                className: "slds-box slds-m-bottom_small"
+                className: "slds-box" + (index > 0 ? " slds-m-top_small" : "")
               },
               h("div", {className: "slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small"},
                 h("div", {className: "slds-col slds-text-heading_small"},
@@ -398,7 +427,7 @@ class App extends React.Component {
                   new Date(error.timestamp).toLocaleString()
                 )
               ),
-              error.url && h("div", {className: "slds-text-body_small slds-m-bottom_x-small"},
+              error.url && h("div", {className: "slds-text-body_small slds-m-bottom_x-small slds-hyphenate"},
                 h("strong", {}, "URL: "),
                 error.url
               ),
@@ -406,7 +435,7 @@ class App extends React.Component {
                 h("strong", {}, "Method: "),
                 error.method
               ),
-              h("div", {className: "slds-text-body_regular"},
+              h("div", {className: "slds-hyphenate"},
                 h("strong", {}, "Error: "),
                 h("span", {className: "slds-text-color_error"}, error.message)
               )

@@ -1,31 +1,66 @@
 /**
  * API Debug Statistics Module
- * Tracks API calls made to Salesforce server when debug mode is enabled
+ * Tracks API calls made to Salesforce server when debug mode is enabled.
+ * Statistics are stored per org in localStorage, so each org has its own counters.
  */
 import {Constants} from "./utils.js";
 
-export class ApiStatistics {
-  constructor() {
-    this.stats = {
-      rest: {
-        total: 0,
-        byMethod: {},
-        byEndpoint: {},
-        errors: 0,
-        totalDuration: 0
-      },
-      soap: {
-        total: 0,
-        byMethod: {},
-        errors: 0,
-        totalDuration: 0
-      },
-      startTime: Date.now(),
-      errorMessages: []
-    };
-    this._statsLoaded = false;
-  }
+const MAX_ERROR_MESSAGES = 10;
 
+/**
+ * localStorage key of an org's statistics
+ * @param {string} sfHost - Org host the statistics belong to
+ * @returns {string}
+ */
+function storageKey(sfHost) {
+  return sfHost + "_" + Constants.API_DEBUG_STATISTICS;
+}
+
+/**
+ * Get default stats structure
+ * @returns {Object} Default stats object
+ */
+function getDefaultStats() {
+  return {
+    rest: {
+      total: 0,
+      byMethod: {},
+      byEndpoint: {},
+      errors: 0,
+      totalDuration: 0
+    },
+    soap: {
+      total: 0,
+      byMethod: {},
+      errors: 0,
+      totalDuration: 0
+    },
+    startTime: Date.now(),
+    errorMessages: []
+  };
+}
+
+/**
+ * Add a call to a count/totalDuration/errors bucket, creating the bucket if needed
+ * @param {Object} buckets - byMethod or byEndpoint object
+ * @param {string} key - Method or endpoint
+ * @param {number} duration - Duration in milliseconds
+ * @param {boolean} isError - Whether the call resulted in an error
+ */
+function recordInBucket(buckets, key, duration, isError) {
+  const bucket = buckets[key] ??= {count: 0, totalDuration: 0, errors: 0};
+  bucket.count++;
+  bucket.totalDuration += duration;
+  if (isError) {
+    bucket.errors++;
+  }
+}
+
+function averageDuration({total, totalDuration}) {
+  return total > 0 ? Math.round(totalDuration / total) : 0;
+}
+
+export class ApiStatistics {
   /**
    * Check if debug mode is enabled
    * @returns {boolean}
@@ -35,203 +70,39 @@ export class ApiStatistics {
   }
 
   /**
-   * Load statistics from localStorage
-   */
-  loadStats() {
-    // Lazy load to avoid circular dependency issues
-    if (!this._statsLoaded) {
-      this._statsLoaded = true;
-    }
-    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Ensure backward compatibility - initialize calls arrays if missing
-        if (parsed.rest && parsed.rest.byEndpoint) {
-          Object.keys(parsed.rest.byEndpoint).forEach(endpoint => {
-            if (!parsed.rest.byEndpoint[endpoint].calls) {
-              parsed.rest.byEndpoint[endpoint].calls = [];
-            }
-          });
-        }
-        if (parsed.soap && parsed.soap.byMethod) {
-          Object.keys(parsed.soap.byMethod).forEach(method => {
-            if (!parsed.soap.byMethod[method].calls) {
-              parsed.soap.byMethod[method].calls = [];
-            }
-          });
-        }
-        this.stats = {
-          ...this.stats,
-          ...parsed,
-          startTime: parsed.startTime || Date.now(),
-          errorMessages: parsed.errorMessages || []
-        };
-      } catch (e) {
-        console.error("Error loading API debug statistics:", e);
-      }
-    }
-  }
-
-  /**
-   * Save statistics to localStorage
-   * @param {Object} stats - Optional stats object to save. If not provided, uses this.stats
-   */
-  saveStats(stats = null) {
-    try {
-      const statsToSave = stats || this.stats;
-      localStorage.setItem(Constants.API_DEBUG_STATISTICS, JSON.stringify(statsToSave));
-      // Update instance stats for consistency
-      if (stats) {
-        this.stats = stats;
-      }
-    } catch (e) {
-      console.error("Error saving API debug statistics:", e);
-    }
-  }
-
-  /** @description Initialize the stats object from the localStorage
+   * Track an API call in the statistics of the org
+   * @param {string} sfHost - Org host the call was made to
    * @param {string} mode - 'rest' or 'soap'
    * @param {string} url - URL of the call
    * @param {string} method - Method name
    * @param {number} duration - Duration in milliseconds
    * @param {boolean} isError - Whether the call resulted in an error
    * @param {string} errorMessage - Error message if isError is true
-  */
-  trackApiCall(mode, url, method, duration, isError = false, errorMessage = null){
+   */
+  trackApiCall(sfHost, mode, url, method, duration, isError = false, errorMessage = null) {
     if (!ApiStatistics.isDebugModeEnabled()) {
       return;
     }
 
-    // Ensure stats are loaded before tracking
-    if (!this._statsLoaded) {
-      this.loadStats();
+    // Read-modify-write on localStorage keeps all pages of the same org in sync
+    const stats = this._readStats(sfHost);
+    const modeStats = stats[mode];
+
+    modeStats.total++;
+    modeStats.totalDuration += duration;
+    if (url && modeStats.byEndpoint) {
+      recordInBucket(modeStats.byEndpoint, this.simplifyUrl(url), duration, isError);
     }
+    recordInBucket(modeStats.byMethod, method, duration, isError);
 
-    // Load current stats from localStorage to ensure synchronization across instances
-    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
-    let stats;
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        stats = {
-          rest: {
-            total: parsed.rest?.total || 0,
-            byMethod: parsed.rest?.byMethod || {},
-            byEndpoint: parsed.rest?.byEndpoint || {},
-            errors: parsed.rest?.errors || 0,
-            totalDuration: parsed.rest?.totalDuration || 0
-          },
-          soap: {
-            total: parsed.soap?.total || 0,
-            byMethod: parsed.soap?.byMethod || {},
-            errors: parsed.soap?.errors || 0,
-            totalDuration: parsed.soap?.totalDuration || 0
-          },
-          startTime: parsed.startTime || Date.now(),
-          errorMessages: parsed.errorMessages || []
-        };
-      } catch (e) {
-        console.error("Error loading API debug statistics:", e);
-        stats = this._getDefaultStats();
-      }
-    } else {
-      stats = this._getDefaultStats();
-    }
-
-    this.handleStatsUpdates(mode, stats[mode], url, method, duration, isError, errorMessage);
-    // Store error message if this is an error
-    if (isError && errorMessage) {
-      if (!stats.errorMessages) {
-        stats.errorMessages = [];
-      }
-      const errorEntry = {
-        timestamp: Date.now(),
-        mode,
-        url,
-        method,
-        message: errorMessage
-      };
-      stats.errorMessages.push(errorEntry);
-      // Keep only the last 10 errors
-      if (stats.errorMessages.length > 10) {
-        stats.errorMessages = stats.errorMessages.slice(-10);
-      }
-    }
-    this.saveStats(stats);
-  }
-
-  handleStatsUpdates(mode, statsType, url, method, duration, isError){
-    statsType.total++;
-    statsType.totalDuration += duration;
-
-    // Track by endpoint (simplified URL)
-    if (url && statsType.byEndpoint) {
-      const endpoint = this.simplifyUrl(url);
-      //initialize the endpoint if it doesn't exist
-      if (!statsType.byEndpoint[endpoint]) {
-        statsType.byEndpoint[endpoint] = {
-          count: 0,
-          totalDuration: 0,
-          errors: 0
-        };
-      }
-      statsType.byEndpoint[endpoint].count++;
-      statsType.byEndpoint[endpoint].totalDuration += duration;
-
-      if (isError) {
-        statsType.byEndpoint[endpoint].errors++;
-      }
-    }
-
-    // Track by method
-    if (statsType.byMethod){
-      //initialize the method if it doesn't exist
-      if (!statsType.byMethod[method]) {
-        // Track by method (object with count, totalDuration, errors)
-        statsType.byMethod[method] = {
-          count: 0,
-          totalDuration: 0,
-          errors: 0
-        };
-      }
-      statsType.byMethod[method].count++;
-      statsType.byMethod[method].totalDuration += duration;
-
-      if (isError) {
-        statsType.byMethod[method].errors++;
-      }
-    }
-
-    // Track total errors
     if (isError) {
-      statsType.errors++;
+      modeStats.errors++;
+      if (errorMessage) {
+        stats.errorMessages.push({timestamp: Date.now(), mode, url, method, message: errorMessage});
+        stats.errorMessages = stats.errorMessages.slice(-MAX_ERROR_MESSAGES);
+      }
     }
-  }
-
-  /**
-   * Get default stats structure
-   * @private
-   * @returns {Object} Default stats object
-   */
-  _getDefaultStats() {
-    return {
-      rest: {
-        total: 0,
-        byMethod: {},
-        byEndpoint: {},
-        errors: 0,
-        totalDuration: 0
-      },
-      soap: {
-        total: 0,
-        byMethod: {},
-        errors: 0,
-        totalDuration: 0
-      },
-      startTime: Date.now(),
-      errorMessages: []
-    };
+    this._writeStats(sfHost, stats);
   }
 
   /**
@@ -244,9 +115,6 @@ export class ApiStatistics {
       // Remove query parameters
       let simplified = url.split("?")[0];
 
-      // Replace version numbers
-      //simplified = simplified.replace(/\/v\d+\.\d+\//g, "/v{version}/");
-
       // For query URLs with IDs after the last slash, remove everything after the last /
       // Example: /services/data/v{version}/query/{id}-2000 -> /services/data/v{version}/query/
       if (simplified.includes("/query/")) {
@@ -255,125 +123,88 @@ export class ApiStatistics {
       }
 
       // Replace IDs with placeholders (18-char Salesforce IDs) for other cases
-      simplified = simplified.replace(/[a-zA-Z0-9]{18}/g, "{id}");
-
-      return simplified;
+      return simplified.replace(/[a-zA-Z0-9]{18}/g, "{id}");
     } catch {
       return url;
     }
   }
 
   /**
-   * Get current statistics
+   * Get current statistics of the org
+   * @param {string} sfHost - Org host the statistics belong to
    * @returns {Object} Statistics object
    */
-  getStats() {
-    // Ensure stats are loaded before getting
-    if (!this._statsLoaded) {
-      this.loadStats();
-    }
-    //retrieve stats in the localStorage
-    this.getStatsFromLocalStorage();
-
-    const sessionDuration = Date.now() - this.stats.startTime;
-    const sessionDurationMinutes = Math.floor(sessionDuration / 60000);
+  getStats(sfHost) {
+    const stats = this._readStats(sfHost);
+    const sessionDuration = Date.now() - stats.startTime;
 
     return {
-      ...this.stats,
+      ...stats,
       sessionDuration,
-      sessionDurationMinutes,
-      rest: {
-        ...this.stats.rest,
-        averageDuration: this.stats.rest.total > 0
-          ? Math.round(this.stats.rest.totalDuration / this.stats.rest.total)
-          : 0
-      },
-      soap: {
-        ...this.stats.soap,
-        averageDuration: this.stats.soap.total > 0
-          ? Math.round(this.stats.soap.totalDuration / this.stats.soap.total)
-          : 0
-      },
+      sessionDurationMinutes: Math.floor(sessionDuration / 60000),
+      rest: {...stats.rest, averageDuration: averageDuration(stats.rest)},
+      soap: {...stats.soap, averageDuration: averageDuration(stats.soap)},
       total: {
-        calls: this.stats.rest.total + this.stats.soap.total,
-        errors: this.stats.rest.errors + this.stats.soap.errors,
-        duration: this.stats.rest.totalDuration + this.stats.soap.totalDuration
+        calls: stats.rest.total + stats.soap.total,
+        errors: stats.rest.errors + stats.soap.errors,
+        duration: stats.rest.totalDuration + stats.soap.totalDuration
       }
     };
   }
 
-  /** @description Get stats from localStorage */
-  getStatsFromLocalStorage() {
-    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        this.stats = parsed;
-      } catch (e) {
-        console.error("Error loading API debug statistics:", e);
-        this.stats = this._getDefaultStats();
-      }
-    } else {
-      this.stats = this._getDefaultStats();
-    }
-  }
-
-  setStatsToLocalStorage(stats) {
-    localStorage.setItem(Constants.API_DEBUG_STATISTICS, JSON.stringify(stats));
-  }
-
   /**
-   * Get the last 10 error messages
+   * Get the last error messages of the org
+   * @param {string} sfHost - Org host the statistics belong to
    * @returns {Array} Array of error objects with timestamp, mode, url, method, and message
    */
-  getLastErrors() {
-    if (!this._statsLoaded) {
-      this.loadStats();
-    }
-    this.getStatsFromLocalStorage();
-    return (this.stats.errorMessages || []).slice(-10);
+  getLastErrors(sfHost) {
+    return this._readStats(sfHost).errorMessages;
   }
 
   /**
-   * Reset statistics
+   * Reset statistics of the org
+   * @param {string} sfHost - Org host the statistics belong to
    */
-  reset() {
-    this.stats = {
-      rest: {
-        total: 0,
-        byMethod: {},
-        byEndpoint: {},
-        errors: 0,
-        totalDuration: 0
-      },
-      soap: {
-        total: 0,
-        byMethod: {},
-        errors: 0,
-        totalDuration: 0
-      },
-      startTime: Date.now(),
-      errorMessages: []
-    };
-    this.saveStats();
+  reset(sfHost) {
+    this._writeStats(sfHost, getDefaultStats());
+  }
+
+  /**
+   * Read the org's statistics from localStorage, filling in anything missing with defaults
+   * @private
+   */
+  _readStats(sfHost) {
+    const defaults = getDefaultStats();
+    const stored = localStorage.getItem(storageKey(sfHost));
+    if (!stored) {
+      return defaults;
+    }
+    try {
+      const parsed = JSON.parse(stored);
+      return {
+        ...defaults,
+        ...parsed,
+        rest: {...defaults.rest, ...parsed.rest},
+        soap: {...defaults.soap, ...parsed.soap}
+      };
+    } catch (e) {
+      console.error("Error loading API debug statistics:", e);
+      return defaults;
+    }
+  }
+
+  /**
+   * Save the org's statistics to localStorage
+   * @private
+   */
+  _writeStats(sfHost, stats) {
+    try {
+      localStorage.setItem(storageKey(sfHost), JSON.stringify(stats));
+    } catch (e) {
+      console.error("Error saving API debug statistics:", e);
+    }
   }
 }
 
-// Singleton instance - lazy initialization to avoid circular dependency issues
-let apiStatisticsInstance = null;
-
-function getApiStatistics() {
-  if (!apiStatisticsInstance) {
-    apiStatisticsInstance = new ApiStatistics();
-  }
-  return apiStatisticsInstance;
-}
-
-// Export a proxy object that lazily initializes the instance
-export const apiStatistics = new Proxy({}, {
-  get(target, prop) {
-    const instance = getApiStatistics();
-    const value = instance[prop];
-    return typeof value === "function" ? value.bind(instance) : value;
-  }
-});
+// The class holds no state (everything lives in localStorage), so a plain instance is safe to share
+export const apiStatistics = new ApiStatistics();

@@ -5,6 +5,7 @@ import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
+import {loadHandoff} from "./data-editor-handoff.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -92,6 +93,22 @@ class Model {
       this.importActionName = this.importType.endsWith("__mdt") ? "Delete Metadata" : "Delete";
       this.skipAllUnknownFields();
       console.log(this.importData);
+    }
+
+    if (args.has("handoff")) {
+      this.spinFor(loadHandoff(args.get("handoff")).then(payload => {
+        if (!payload) {
+          this.dataError = "The data sent from Data Editor is no longer available";
+          return;
+        }
+        if (payload.apiType) {
+          this.apiType = payload.apiType;
+          this.updateAvailableActions();
+        }
+        this.setData(payload.text);
+      }).catch(err => {
+        this.dataError = "Could not load the data sent from Data Editor: " + err.message;
+      }));
     }
   }
 

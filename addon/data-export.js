@@ -1439,7 +1439,8 @@ class App extends React.Component {
       editingTabName: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
-      contextMenu: null
+      contextMenu: null,
+      isAltPressed: false
     };
   }
   onQueryAllChange(e) {
@@ -1813,6 +1814,13 @@ class App extends React.Component {
         e.preventDefault();
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
+      } else if (e.altKey && e.key >= "1" && e.key <= "9") {
+        let index = parseInt(e.key, 10) - 1;
+        if (model.autocompleteResults?.results?.length > index) {
+          e.preventDefault();
+          model.autocompleteClick(model.autocompleteResults.results[index]);
+          model.didUpdate();
+        }
       }
     });
     addEventListener("message", e => {
@@ -2064,7 +2072,22 @@ class App extends React.Component {
                 ref: "query",
                 spellCheck: false,
                 style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-                onChange: this.onQueryInput
+                onChange: this.onQueryInput,
+                onKeyDown: (e) => {
+                  if (e.key === "Alt" && !this.state.isAltPressed) {
+                    this.setState({ isAltPressed: true });
+                  }
+                },
+                onKeyUp: (e) => {
+                  if (e.key === "Alt" && this.state.isAltPressed) {
+                    this.setState({ isAltPressed: false });
+                  }
+                },
+                onBlur: () => {
+                  if (this.state.isAltPressed) {
+                    this.setState({ isAltPressed: false });
+                  }
+                }
               })
             ),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
@@ -2093,14 +2116,20 @@ class App extends React.Component {
                 ),
               ),
               h("div", {className: "autocomplete-results slds-m-top_small"},
-                model.autocompleteResults.results.map(r => (
-                  h("span", {className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", key: r.value},
+                model.autocompleteResults.results.map((r, index) => (
+                  h("span", {
+                      className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", 
+                      key: r.value
+                    },
                     h("span", {className: "slds-pill__icon_container " + r.autocompleteType + " " + r.dataType},
                       h("span", {className: "sfir-autocomplete-icon"})
                     ),
                     h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "slds-pill__action slds-p-right_x-small"},
                       h("span", {className: "slds-pill__label field-suggestions-label"}, r.value)
-                    )
+                    ),
+                    (index < 9 && this.state.isAltPressed) ? h("span", {
+                      className: "sfir-autocomplete-shortcut-badge"
+                    }, index + 1) : null
                   )))
               ),
             ),
@@ -2108,11 +2137,14 @@ class App extends React.Component {
               h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Export Help"),
               h("p", {className: "slds-m-bottom_x-small"}, "Use for quick one-off data exports. Enter a ",
                 h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql.htm", target: "_blank"}, "SOQL"),
-                h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm", target: "_blank"}, ", SOSL "),
-                h("a", {href: "https://developer.salesforce.com/docs/platform/graphql/guide/query-record-examples.html", target: "_blank"}, ", GraphQL"),
+                ", ",
+                h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm", target: "_blank"}, "SOSL"),
+                ", ",
+                h("a", {href: "https://developer.salesforce.com/docs/platform/graphql/guide/query-record-examples.html", target: "_blank"}, "GraphQL"),
                 " query in the box above and press Export."
               ),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
+              h("p", {className: "slds-m-bottom_x-small"}, "Press Alt + 1-9 to quickly select the corresponding autocomplete suggestion."),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Enter or F5 to execute the export."),
               h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
               h("p", {className: "slds-m-bottom_x-small"}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")

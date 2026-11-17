@@ -6,6 +6,8 @@ import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
+// Letters with descenders (g, j) lose their underline by default, so draw it straight through and slightly lower.
+const descenderUnderline = {style: {textDecorationSkipInk: "none", textUnderlineOffset: "3px"}};
 const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
 const RECENT_ITEMS_RENDERED_COUNT = 100;
 
@@ -277,12 +279,16 @@ class App extends React.PureComponent {
       a: ["all", "clickAllDataBtn"],
       f: ["all", "clickShowFieldAPINameBtn"],
       n: ["all", "clickNewBtn"],
+      w: ["all", "openFlowScanner"],
       e: ["click", "dataExportBtn"],
       i: ["click", "dataImportBtn"],
       l: ["click", "limitsBtn"],
       g: ["click", "fieldManagerBtn"],
       d: ["click", "metaRetrieveBtn"],
       x: ["click", "apiExploreBtn"],
+      t: ["click", "restExploreBtn"],
+      j: ["click", "objectScannerBtn"],
+      k: ["click", "generateToken"],
       h: ["click", "homeBtn"],
       p: ["click", "optionsBtn"],
       m: ["click", "eventMonitorBtn"],
@@ -295,18 +301,19 @@ class App extends React.PureComponent {
       r: ["tab", "orgTab"],
       Escape: ["", "quit"],
     };
-    if (!actionMap[e.key]) {
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (!actionMap[key]) {
       return;
     }
+    const [action, target] = actionMap[key];
     e.preventDefault();
-    const [action, target] = actionMap[e.key];
     if (target === "quit") {
       closePopup();
       return;
     }
     if (action === "all") {
       refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
-    } else if (action === "click" && refs[target]) {
+    } else if (action === "click" && refs[target] && !refs[target].classList.contains("hide")) {
       refs[target].target = getLinkTarget(e);
       refs[target].click();
     } else if (action === "tab") {
@@ -573,12 +580,12 @@ class App extends React.PureComponent {
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
                 },
-                h("span", {}, "Field Mana", h("u", {}, "g"), "er")
+                h("span", {}, "Field Mana", h("u", descenderUnderline, "g"), "er")
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
-                h("span", {}, h("u", {}, "D"), "ownload Metadata")
+                h("span", {}, "Download Meta", h("u", {}, "d"), "ata")
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
@@ -654,7 +661,7 @@ class App extends React.PureComponent {
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
                 },
-                h("span", {}, h("u", {}, "R"), "EST Explorer")
+                h("span", {}, "RES", h("u", {}, "T"), " Explorer")
               )
             ),
             h(
@@ -689,7 +696,7 @@ class App extends React.PureComponent {
                     target: linkTarget,
                     className: "page-button slds-button slds-button_neutral",
                   },
-                  h("span", {}, "Object Sc", h("u", {}, "a"), "nner")
+                  h("span", {}, "Ob", h("u", descenderUnderline, "j"), "ect Scanner")
                 )
               )
               : null
@@ -726,7 +733,7 @@ class App extends React.PureComponent {
                       : "page-button slds-button slds-button_neutral",
                     onClick: (e) => this.handleGenerateTokenClick(e, sfHost, clientId, browser),
                   },
-                  h("span", {}, h("u", {}, "G"), "enerate Access Token")
+                  h("span", {}, "Generate Access To", h("u", {}, "k"), "en")
                 )
               )
               : null,
@@ -1962,20 +1969,17 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   clickAllDataBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickAllDataBtn();
-    }
+    this.refs.allDataSelection?.clickAllDataBtn();
   }
 
   clickShowFieldAPINameBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickShowFieldAPINameBtn();
-    }
+    this.refs.allDataSelection?.clickShowFieldAPINameBtn();
+  }
+  openFlowScanner() {
+    this.refs.allDataSelection?.openFlowScanner();
   }
   clickNewBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickNewBtn();
-    }
+    this.refs.allDataSelection?.clickNewBtn();
   }
 
   resultRender(matches, userQuery) {
@@ -4050,14 +4054,13 @@ class AllDataSelection extends React.PureComponent {
     this.refs.showAllDataBtn.click();
   }
   clickShowFieldAPINameBtn() {
-    if (this.refs.showFieldApiNameBtn) {
-      this.refs.showFieldApiNameBtn.click();
-    }
+    this.refs.showFieldApiNameBtn?.click();
   }
   clickNewBtn() {
-    if (this.refs.showNewBtn) {
-      this.refs.showNewBtn.click();
-    }
+    this.refs.showNewBtn?.click();
+  }
+  openFlowScanner() {
+    this.refs.flowScannerBtn?.click();
   }
   getAllDataUrl(toolingApi) {
     let {sfHost, selectedValue} = this.props;
@@ -4513,14 +4516,13 @@ class AllDataSelection extends React.PureComponent {
         ? h(
           "a",
           {
+            ref: "flowScannerBtn",
             href: this.getFlowScannerUrl(),
             target: linkTarget,
             className:
                 "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
           },
-          "Flow Scanner"
-        )
-        : null,
+          "Flo", h("u", {}, "w"), "\u00A0Scanner") : null,
       flowDefinitionId
         ? h(
           "a",
@@ -4553,8 +4555,8 @@ class AllDataSelection extends React.PureComponent {
             button == "regularApi"
               ? ""
               : button == "toolingApi"
-                ? " (Tooling API)"
-                : " (Not readable)"
+                ? "\u00A0(Tooling API)"
+                : "\u00A0(Not readable)"
           )
         )
       ),
@@ -4568,7 +4570,7 @@ class AllDataSelection extends React.PureComponent {
             className:
                 "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral slds-m-top_xx-small",
           },
-          h("span", {}, "Show ", h("u", {}, "f"), "ields API names")
+          h("span", {}, "Show ", h("u", {}, "f"), "ield API names")
         )
         : null,
       selectedValue.sobject.name.endsWith("__e")
@@ -4582,7 +4584,7 @@ class AllDataSelection extends React.PureComponent {
               target: linkTarget,
               className: "slds-button slds-button_neutral page-button",
             },
-            h("span", {}, h("u", {}), "Subscribe Event")
+            h("span", {}, "Subscribe Event")
           ),
           h(
             "a",

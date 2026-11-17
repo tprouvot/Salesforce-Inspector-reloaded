@@ -114,6 +114,7 @@ class LimitData extends React.Component {
     let isNotApplicable = this.props.max === 0 && this.props.remaining === 0;
     let rawPercentage = isNotApplicable ? 0 : this.props.consumption * 100;
     let percentage = Math.round(rawPercentage);
+    let percentageText = rawPercentage === 0 ? "0%" : percentage === 0 ? "<1%" : percentage + "%";
     let gaugeState = rawPercentage <= 0 ? "neutral" : rawPercentage < 100 ? "healthy" : rawPercentage === 100 ? "full" : "over";
     return (
       h("article", {className: "limits-grid__item slds-box"},
@@ -132,7 +133,7 @@ class LimitData extends React.Component {
           },
           h("div", {
             className: "limits-gauge__value limits-gauge__value_state_" + gaugeState
-          }, percentage + "%")
+          }, percentageText)
           )
           ),
           h("figcaption", {className: "slds-m-top_medium slds-text-align_center"},

@@ -202,17 +202,50 @@ a.download-salesforce {
   font-size: 0.875rem;
 }
 
-/* API Statistics Error Link Styles */
+/* API Statistics page */
 .sfir-error-link {
   cursor: pointer;
   text-decoration: underline;
+  padding: 0;
+  line-height: inherit;
+  font-weight: inherit;
 }
 
 .sfir-error-link:hover {
   text-decoration: none;
 }
 
-/* API Statistics page */
+.sfir-sort-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.sfir-sort-button:hover {
+  text-decoration: underline;
+}
+
+.sfir-sort-indicator {
+  display: inline-block;
+  width: 1em;
+  margin-inline-start: 0.5rem;
+  font-size: 0.75em;
+}
+
+.sfir-stats-card-note {
+  position: relative;
+  inset-block-start: -0.15rem;
+}
+
+.sfir-clickable {
+  cursor: pointer;
+}
+
 .sfir-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
@@ -224,7 +257,7 @@ a.download-salesforce {
 }
 
 .sfir-stats-page {
-  --slds-c-card-color-border: #ececec;
+  --slds-c-card-color-border: light-dark(#ececec, #363636);
 }
 
 .sfir-stats-page .slds-card__header {

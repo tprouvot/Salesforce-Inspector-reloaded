@@ -20,6 +20,7 @@ class Model {
     this.showErrorModal = false;
     this.showResetModal = false;
     this.errorMessages = [];
+    this.errorFilter = null;
 
     // Initialize user info model
     this.userInfoModel = new UserInfoModel((promise) => {
@@ -48,6 +49,9 @@ class Model {
   loadStats() {
     // Load stats filtered by selected day
     this.stats = apiStatistics.getStats(this.apiHost);
+    if (this.showErrorModal) {
+      this.loadErrors();
+    }
     this.didUpdate();
   }
 
@@ -68,13 +72,23 @@ class Model {
   }
 
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.stats, null, 2));
+    copyToClipboard(JSON.stringify({host: this.apiHost, ...this.stats}, null, 2));
   }
 
-  showErrors() {
-    this.errorMessages = apiStatistics.getLastErrors(this.apiHost);
+  copyError(error) {
+    copyToClipboard(formatErrorForCopy(error));
+  }
+
+  showErrors(label, matches) {
+    this.errorFilter = label ? {label, matches} : null;
+    this.loadErrors();
     this.showErrorModal = true;
     this.didUpdate();
+  }
+
+  loadErrors() {
+    const errors = apiStatistics.getLastErrors(this.apiHost);
+    this.errorMessages = this.errorFilter ? errors.filter(this.errorFilter.matches) : errors;
   }
 
   hideErrors() {
@@ -85,25 +99,82 @@ class Model {
 
 let h = React.createElement;
 
+function formatErrorForCopy(error) {
+  return [
+    `Mode: ${error.mode.toUpperCase()}`,
+    `Time: ${new Date(error.timestamp).toISOString()}`,
+    error.url && `URL: ${error.url}`,
+    error.method && `Method: ${error.method}`,
+    `Error: ${error.message}`
+  ].filter(Boolean).join("\n");
+}
+
 class StatsCard extends React.Component {
   render() {
-    const {title, value, subtitle, className = "slds-theme_shade", titleAttr} = this.props;
-    return h("div", {className: `slds-card ${className}`, title: titleAttr},
+    const {title, value, valueNote, subtitle, className = "slds-theme_shade", titleAttr, onClick} = this.props;
+    const clickProps = onClick ? {
+      role: "button",
+      tabIndex: 0,
+      onClick,
+      onKeyDown: event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }
+    } : {};
+    return h("div", {className: `slds-card ${className}${onClick ? " sfir-clickable" : ""}`, title: titleAttr, ...clickProps},
       h("div", {className: "slds-card__body slds-card__body_inner"},
         h("h3", {className: "slds-text-heading_small slds-m-bottom_x-small"}, title),
-        h("div", {className: "slds-text-heading_large slds-text-color_success"}, value),
+        h("div", {className: "slds-text-heading_large slds-text-color_success"},
+          value,
+          valueNote && h("span", {className: "slds-text-body_regular slds-text-color_weak slds-m-left_x-small sfir-stats-card-note"}, valueNote)
+        ),
         subtitle && h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, subtitle)
       )
     );
   }
 }
 
-class EndpointTable extends React.Component {
+function renderErrorCount(count, onClick) {
+  if (count === 0) {
+    return "0";
+  }
+  return h("button", {
+    type: "button",
+    className: "slds-button slds-text-color_error sfir-error-link",
+    onClick,
+    title: "Click to view error details"
+  }, count.toLocaleString());
+}
+
+function compareValues(a, b) {
+  return typeof a === "number" ? a - b : String(a).localeCompare(String(b));
+}
+
+class StatsTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {sortColumn: 1, descending: true};
+  }
+
+  onSort(column) {
+    this.setState(state => state.sortColumn === column
+      ? {descending: !state.descending}
+      : {sortColumn: column, descending: column > 0});
+  }
+
   render() {
-    const {endpoints, title, onErrorClick} = this.props;
-    if (!endpoints || endpoints.length === 0) {
+    const {title, headers, rows, limit} = this.props;
+    if (!rows || rows.length === 0) {
       return null;
     }
+    const {sortColumn, descending} = this.state;
+    const direction = descending ? -1 : 1;
+    const sortedRows = [...rows].sort((a, b) => direction * compareValues(a.values[sortColumn], b.values[sortColumn]));
+    const visibleRows = limit ? sortedRows.slice(0, limit) : sortedRows;
+    const alignClass = index => index > 0 ? "slds-text-align_right" : undefined;
+    const sortable = rows.length > 1;
 
     return h("div", {className: "slds-card"},
       h("div", {className: "slds-card__header"},
@@ -113,23 +184,26 @@ class EndpointTable extends React.Component {
         h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-table_striped sfir-table-outline"},
           h("thead", {},
             h("tr", {},
-              h("th", {scope: "col"}, "Endpoint"),
-              h("th", {scope: "col", className: "slds-text-align_right"}, "Calls"),
-              h("th", {scope: "col", className: "slds-text-align_right"}, "Errors"),
-              h("th", {scope: "col", className: "slds-text-align_right"}, "Avg Duration (ms)")
+              headers.map((header, index) => {
+                const isSorted = index === sortColumn;
+                return h("th", {
+                  key: header,
+                  scope: "col",
+                  className: alignClass(index),
+                  "aria-sort": sortable ? (isSorted ? (descending ? "descending" : "ascending") : "none") : undefined
+                },
+                sortable ? h("button", {type: "button", className: "sfir-sort-button", onClick: () => this.onSort(index), title: `Sort by ${header}`},
+                  header,
+                  h("span", {className: "sfir-sort-indicator", "aria-hidden": "true"}, isSorted ? (descending ? "\u25BC" : "\u25B2") : "")
+                ) : header
+                );
+              })
             )
           ),
           h("tbody", {},
-            endpoints.map((endpoint, index) =>
-              h("tr", {key: index},
-                h("td", {}, endpoint.endpoint),
-                h("td", {className: "slds-text-align_right"}, endpoint.count.toLocaleString()),
-                h("td", {className: "slds-text-align_right"}, endpoint.errors > 0 ? h("span", {
-                  className: "slds-text-color_error sfir-error-link",
-                  onClick: onErrorClick,
-                  title: "Click to view error details"
-                }, endpoint.errors) : "0"),
-                h("td", {className: "slds-text-align_right"}, endpoint.averageDuration.toLocaleString())
+            visibleRows.map(row =>
+              h("tr", {key: row.values[0]},
+                row.cells.map((cell, index) => h("td", {key: index, className: alignClass(index)}, cell))
               )
             )
           )
@@ -139,45 +213,13 @@ class EndpointTable extends React.Component {
   }
 }
 
-class MethodTable extends React.Component {
-  render() {
-    const {methods, title, onErrorClick} = this.props;
-    if (!methods || methods.length === 0) {
-      return null;
-    }
-
-    return h("div", {className: "slds-card"},
-      h("div", {className: "slds-card__header"},
-        h("h2", {className: "slds-card__header-title"}, title)
-      ),
-      h("div", {className: "slds-card__body slds-card__body_inner"},
-        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-table_striped sfir-table-outline"},
-          h("thead", {},
-            h("tr", {},
-              h("th", {scope: "col"}, "Method"),
-              h("th", {scope: "col", className: "slds-text-align_right"}, "Calls"),
-              h("th", {scope: "col", className: "slds-text-align_right"}, "Errors"),
-              h("th", {scope: "col", className: "slds-text-align_right"}, "Avg Duration (ms)")
-            )
-          ),
-          h("tbody", {},
-            methods.map((method, index) =>
-              h("tr", {key: index},
-                h("td", {}, method.method),
-                h("td", {className: "slds-text-align_right"}, method.count.toLocaleString()),
-                h("td", {className: "slds-text-align_right"}, method.errors > 0 ? h("span", {
-                  className: "slds-text-color_error sfir-error-link",
-                  onClick: onErrorClick,
-                  title: "Click to view error details"
-                }, method.errors) : "0"),
-                h("td", {className: "slds-text-align_right"}, method.averageDuration.toLocaleString())
-              )
-            )
-          )
-        )
-      )
-    );
-  }
+// byMethod / byEndpoint buckets -> items with their average duration
+function toItems(buckets) {
+  return Object.entries(buckets).map(([name, data]) => ({
+    name,
+    ...data,
+    averageDuration: data.averageDuration || (data.count > 0 ? Math.round(data.totalDuration / data.count) : 0)
+  }));
 }
 
 class App extends React.Component {
@@ -187,8 +229,10 @@ class App extends React.Component {
     this.onResetStats = this.onResetStats.bind(this);
     this.onConfirmReset = this.onConfirmReset.bind(this);
     this.onCancelReset = this.onCancelReset.bind(this);
+    this.onRefresh = this.onRefresh.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onErrorClick = this.onErrorClick.bind(this);
+    this.onShowAllErrors = this.onShowAllErrors.bind(this);
     this.onCloseErrorModal = this.onCloseErrorModal.bind(this);
   }
 
@@ -204,11 +248,19 @@ class App extends React.Component {
     this.model.hideResetConfirm();
   }
 
+  onRefresh() {
+    this.model.loadStats();
+  }
+
   onCopyAsJson() {
     this.model.copyAsJson();
   }
 
-  onErrorClick() {
+  onErrorClick(label, matches) {
+    this.model.showErrors(label, matches);
+  }
+
+  onShowAllErrors() {
     this.model.showErrors();
   }
 
@@ -274,28 +326,32 @@ class App extends React.Component {
       );
     }
 
-    // Get filtered endpoints and methods based on granularity
-    const filteredEndpoints = Object.entries(stats.rest.byEndpoint)
-      .map(([endpoint, data]) => ({
-        endpoint,
-        ...data,
-        averageDuration: data.averageDuration || (data.count > 0 ? Math.round(data.totalDuration / data.count) : 0)
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+    // Clicking the errors of a row shows only the errors of that endpoint / method
+    const toDetailRows = (items, matchesItem) => items.map(item => ({
+      cells: [
+        item.name,
+        item.count.toLocaleString(),
+        renderErrorCount(item.errors, () => this.onErrorClick(item.name, error => matchesItem(error, item.name))),
+        item.averageDuration.toLocaleString()
+      ],
+      values: [item.name, item.count, item.errors, item.averageDuration]
+    }));
+    const detailHeaders = ["Calls", "Errors", "Avg Duration (ms)"];
+    const restMethodRows = toItems(stats.rest.byMethod).map(item => ({
+      cells: [item.name, item.count.toLocaleString()],
+      values: [item.name, item.count]
+    }));
+    const endpointRows = toDetailRows(toItems(stats.rest.byEndpoint),
+      (error, endpoint) => error.mode === "rest" && apiStatistics.simplifyUrl(error.url) === endpoint);
+    const soapMethodRows = toDetailRows(toItems(stats.soap.byMethod),
+      (error, method) => error.mode === "soap" && error.method === method);
 
-    const filteredSoapMethods = Object.entries(stats.soap.byMethod)
-      .map(([method, data]) => ({
-        method,
-        ...data,
-        averageDuration: data.averageDuration || (data.count > 0 ? Math.round(data.totalDuration / data.count) : 0)
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+    const errorRate = stats.total.calls > 0 ? stats.total.errors / stats.total.calls * 100 : 0;
+    const errorRateText = stats.total.errors > 0 && errorRate < 0.1 ? "<0.1%" : `${errorRate.toFixed(1)}%`;
 
-    const restMethods = Object.entries(stats.rest.byMethod)
-      .map(([method, data]) => ({method, count: data.count}))
-      .sort((a, b) => b.count - a.count);
+    const errorCount = this.model.errorMessages.length;
+    const errorModalTitle = errorCount === 0 ? "API Errors" : `Last ${errorCount} API ${errorCount === 1 ? "Error" : "Errors"}`;
+    const errorFilter = this.model.errorFilter;
 
     const sessionDurationFull = formatDuration(stats.sessionDurationMinutes);
     // Truncate to first 2 units (each unit is 2 words: number + unit name)
@@ -320,7 +376,12 @@ class App extends React.Component {
               ),
               h("div", {className: "slds-col_bump-left slds-grid slds-grid_vertical-align-center"},
                 h("button", {
-                  className: "slds-button slds-button_neutral slds-m-right_small",
+                  className: "slds-button slds-button_neutral slds-m-right_x-small",
+                  onClick: this.onRefresh,
+                  title: "Reload the statistics"
+                }, "Refresh"),
+                h("button", {
+                  className: "slds-button slds-button_neutral slds-m-right_x-small",
                   onClick: this.onCopyAsJson,
                   title: "Copy statistics as JSON"
                 }, "Copy JSON"),
@@ -342,8 +403,11 @@ class App extends React.Component {
               h(StatsCard, {
                 title: "Total Errors",
                 value: stats.total.errors.toLocaleString(),
+                valueNote: `(${errorRateText})`,
                 subtitle: `REST: ${stats.rest.errors.toLocaleString()} | SOAP: ${stats.soap.errors.toLocaleString()}`,
-                className: stats.total.errors > 0 ? "slds-theme_error" : undefined
+                className: stats.total.errors > 0 ? "slds-theme_error" : undefined,
+                onClick: stats.total.errors > 0 ? this.onShowAllErrors : undefined,
+                titleAttr: stats.total.errors > 0 ? "Click to view the last errors" : undefined
               }),
               h(StatsCard, {
                 title: "Session Duration",
@@ -361,39 +425,9 @@ class App extends React.Component {
             )
           )
         ),
-        restMethods.length > 0 && h("div", {className: "slds-card"},
-          h("div", {className: "slds-card__header"},
-            h("h2", {className: "slds-card__header-title"}, "REST Calls by HTTP Method")
-          ),
-          h("div", {className: "slds-card__body slds-card__body_inner"},
-            h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-table_striped sfir-table-outline"},
-              h("thead", {},
-                h("tr", {},
-                  h("th", {scope: "col"}, "Method"),
-                  h("th", {scope: "col", className: "slds-text-align_right"}, "Count")
-                )
-              ),
-              h("tbody", {},
-                restMethods.map((item, index) =>
-                  h("tr", {key: index},
-                    h("td", {}, item.method),
-                    h("td", {className: "slds-text-align_right"}, item.count.toLocaleString())
-                  )
-                )
-              )
-            )
-          )
-        ),
-        h(EndpointTable, {
-          endpoints: filteredEndpoints,
-          title: "Top REST Endpoints",
-          onErrorClick: this.onErrorClick
-        }),
-        h(MethodTable, {
-          methods: filteredSoapMethods,
-          title: "Top SOAP Methods",
-          onErrorClick: this.onErrorClick
-        }),
+        h(StatsTable, {title: "REST Calls by HTTP Method", headers: ["Method", "Count"], rows: restMethodRows}),
+        h(StatsTable, {title: "Top REST Endpoints", headers: ["Endpoint", ...detailHeaders], rows: endpointRows, limit: 10}),
+        h(StatsTable, {title: "Top SOAP Methods", headers: ["Method", ...detailHeaders], rows: soapMethodRows, limit: 10}),
         h(ConfirmModal, {
           isOpen: this.model.showResetModal,
           title: "Reset Statistics",
@@ -405,26 +439,39 @@ class App extends React.Component {
         }),
         h(ConfirmModal, {
           isOpen: this.model.showErrorModal,
-          title: "Last 10 API Errors",
+          title: errorModalTitle,
           // No onCancel: ConfirmModal would render an empty Cancel button. The X button and Esc fall back to onConfirm.
           confirmLabel: "Close",
           confirmVariant: "brand",
           onConfirm: this.onCloseErrorModal,
+          // Only when filtered: back to all errors (the copy button slot of ConfirmModal is used for it)
+          onCopy: errorFilter ? this.onShowAllErrors : undefined,
+          copyLabel: "Show all errors",
           modalSize: "small"
         },
-        this.model.errorMessages.length > 0 ? h("div", {},
-          h("div", {},
-            this.model.errorMessages.map((error, index) =>
+        h("div", {},
+          errorFilter && h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-bottom_small slds-hyphenate"},
+            `Filtered by: ${errorFilter.label}`
+          ),
+          this.model.errorMessages.length > 0 ? this.model.errorMessages.map((error, index) =>
               h("div", {
                 key: index,
                 className: "slds-box" + (index > 0 ? " slds-m-top_small" : "")
               },
               h("div", {className: "slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small"},
-                h("div", {className: "slds-col slds-text-heading_small"},
+                h("div", {className: "slds-col slds-grow-none slds-m-right_small slds-text-heading_small"},
                   h("span", {className: "slds-badge slds-badge_inverse"}, error.mode.toUpperCase())
                 ),
                 h("div", {className: "slds-col slds-text-body_small slds-text-color_weak"},
                   new Date(error.timestamp).toLocaleString()
+                ),
+                h("div", {className: "slds-col slds-grow-none"},
+                  h("button", {
+                    type: "button",
+                    className: "slds-button slds-button_neutral slds-button_small",
+                    onClick: () => this.model.copyError(error),
+                    title: "Copy this error"
+                  }, "Copy")
                 )
               ),
               error.url && h("div", {className: "slds-text-body_small slds-m-bottom_x-small slds-hyphenate"},
@@ -440,10 +487,11 @@ class App extends React.Component {
                 h("span", {className: "slds-text-color_error"}, error.message)
               )
               )
-            )
+            ) : h("div", {className: "slds-text-align_center slds-p-vertical_large"},
+            h("p", {}, errorFilter
+              ? "No recent errors recorded for this item. Only the most recent errors across all calls are kept."
+              : "No errors recorded.")
           )
-        ) : h("div", {className: "slds-text-align_center slds-p-vertical_large"},
-          h("p", {}, "No errors recorded.")
         )
         )
       )

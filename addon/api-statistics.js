@@ -16,6 +16,10 @@ function storageKey(sfHost) {
   return sfHost + "_" + Constants.API_DEBUG_STATISTICS;
 }
 
+// Statistics used to be stored under one global key, shared by all orgs. That data is
+// no longer read, so it is removed the first time statistics are read. TODO: remove in a future release.
+let legacyStatsRemoved = false;
+
 /**
  * Get default stats structure
  * @returns {Object} Default stats object
@@ -174,6 +178,10 @@ export class ApiStatistics {
    * @private
    */
   _readStats(sfHost) {
+    if (!legacyStatsRemoved) {
+      legacyStatsRemoved = true;
+      localStorage.removeItem(Constants.API_DEBUG_STATISTICS);
+    }
     const defaults = getDefaultStats();
     const stored = localStorage.getItem(storageKey(sfHost));
     if (!stored) {

@@ -217,3 +217,23 @@
   top: 50%;
   transform: translateY(-50%);
 }
+
+.slds-button.favicon-delete-button {
+  width:var(--slds-g-sizing-8);
+  height:var(--slds-g-sizing-8);
+  align-items: center;
+  justify-content: center;
+  transition: transform 80ms ease-out, box-shadow 0.05s linear;
+}
+
+.slds-button.favicon-delete-button:hover {
+  box-shadow: var(--slds-s-button-bordered-shadow-hover);
+  transform: var(--slds-s-button-transform-hover);
+}
+
+.favicon-delete-button .slds-button__icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  fill: #fff;
+}

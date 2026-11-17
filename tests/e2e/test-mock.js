@@ -529,7 +529,8 @@ export async function routeMock(route, host) {
             ProcessType: "Flow",
             TriggerType: "Autopilot",
             TriggerObjectOrEventLabel: "Account",
-            DurableId: TEST_CONSTANTS.flowDefId
+            DurableId: TEST_CONSTANTS.flowDefId,
+            LatestVersionId: TEST_CONSTANTS.flowId
           }]
         });
         return true;

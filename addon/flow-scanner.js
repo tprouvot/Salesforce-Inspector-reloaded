@@ -1086,6 +1086,13 @@ class FlowScanner {
 
 let h = React.createElement;
 
+function flowScannerIcon(name, className) {
+  return h("svg", {
+    className: `flow-scanner-svg-icon ${className}`,
+    "aria-hidden": "true"
+  }, h("use", {xlinkHref: `symbols.svg#${name}`}));
+}
+
 // Cache for color calculations to avoid recomputing
 const versionColorCache = new Map();
 
@@ -1127,7 +1134,7 @@ function FlowInfoSection(props) {
     return h("div", {className: "area"},
       h("div", {className: "flow-info-section"},
         h("h2", {className: "flow-info-title"},
-          h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
+          flowScannerIcon("flow", "flow-icon"),
           h("span", {className: "slds-card__header-title"}, "Flow Information")
         ),
         h("div", {className: "flow-info-card compact"},
@@ -1143,7 +1150,7 @@ function FlowInfoSection(props) {
   return h("div", {className: "area"},
     h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
       h("h2", {className: "flow-info-title"},
-        h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
+        flowScannerIcon("flow", "flow-icon"),
         h("span", {className: "flow-info-title-text", id: "flow-info-title-text"}, "Flow Information")
       ),
       h("div", {className: "flow-info-card compact"},
@@ -1231,7 +1238,7 @@ function FlowInfoSection(props) {
                 onMouseDown: handleMouseDown,
                 onClick: e => { if (shouldIgnoreClick(e)) return; onToggleDescription(e); }
               },
-              h("span", {className: "toggle-icon"}, "▼"),
+              flowScannerIcon("chevrondown", "toggle-icon"),
               h("span", {id: "toggle-label"}, "Show description")
               )
             ),
@@ -1261,7 +1268,7 @@ function ScanSummary(props) {
 
   return h("div", {className: "summary-body", role: "status", "aria-live": "polite"},
     h("h3", {className: "summary-title slds-card__header-title"},
-      h("span", {className: "results-icon"}, "📊"),
+      flowScannerIcon("chart", "results-icon"),
       "Scan Results"
     ),
     h("div", {className: "summary-right-panel"},
@@ -1999,7 +2006,7 @@ class App extends React.Component {
         h("div", {className: "unsupported-flow-state"},
           // Header section using empty-state pattern
           h("div", {className: "unsupported-flow-header"},
-            h("div", {className: "unsupported-icon-large"}, "⚠️"),
+            flowScannerIcon("warning", "unsupported-icon-large"),
             h("h2", {className: "unsupported-title"}, "Unsupported Flow Type"),
             h("p", {className: "unsupported-subtitle"}, headerMessage),
             h("p", {className: "unsupported-description"}, introMessage)
@@ -2010,7 +2017,7 @@ class App extends React.Component {
             h("div", {className: "flow-info-card"},
               h("div", {className: "supported-types-header"},
                 h("h3", {},
-                  h("span", {style: {marginRight: "8px"}}, "✅"),
+                  flowScannerIcon("success", "supported-types-icon"),
                   `${supportedFlowTypes.length} Supported Flow Types`
                 ),
                 h("p", {}, "Flow Scanner can analyze flows of the following types:")
@@ -2039,7 +2046,7 @@ class App extends React.Component {
       if (this.flowScanner.noRulesEnabledMessage) {
         return h("div", {className: RESULTS_AREA_CLASS},
           h("div", {className: "empty-state"},
-            h("div", {className: "empty-icon"}, "⚠️"),
+            flowScannerIcon("warning", "empty-icon"),
             h("h3", {}, "No Rules Enabled"),
             h("p", {}, this.flowScanner.noRulesEnabledMessage),
             h("button", {className: "slds-button slds-button_brand", onClick: this.onToggleHelp}, "Configure Rules")
@@ -2049,7 +2056,7 @@ class App extends React.Component {
       // Default "no issues found" state.
       return h("div", {className: RESULTS_AREA_CLASS},
         h("div", {className: "success-state"},
-          h("div", {className: "success-icon"}, "✅"),
+          flowScannerIcon("success", "success-icon"),
           h("h3", {}, "No Issues Found"),
           h("p", {}, "Great job! Your flow passed all checks with no issues detected."),
           h("div", {className: "success-metrics"},
@@ -2251,7 +2258,7 @@ class App extends React.Component {
 
     return h("div", {className: RESULTS_AREA_CLASS},
       h("div", {className: "empty-state"},
-        h("div", {className: "empty-icon"}, "❌"),
+        flowScannerIcon("error", "empty-icon"),
         h("h3", {}, "Error Occurred"),
         h("p", {}, this.state.error),
         h("div", {className: "slds-m-top_small"},
@@ -2289,7 +2296,8 @@ class App extends React.Component {
           },
           h("div", {className: "flow-scanner-note-header"},
             h("small", {},
-              "💡 Based on ",
+              flowScannerIcon("light_bulb", "flow-scanner-note-icon"),
+              "Based on ",
               h("a", {
                 href: getFlowScannerLinks(scannerVersion).npm,
                 target: getLinkTarget(),
@@ -2363,9 +2371,9 @@ const MONO_HEADERS = new Set(["Name", "Connects to", "Expression", "Location"]);
 const ISSUE_SEVERITY_ORDER = ["error", "warning", "info"];
 const RESULTS_AREA_CLASS = "area scan-results-area";
 const SEVERITY_ICONS = {
-  error: h("span", {className: "sev-ico error", "aria-label": "Error"}, "❗"),
-  warning: h("span", {className: "sev-ico warning", "aria-label": "Warning"}, "⚠️"),
-  info: h("span", {className: "sev-ico info", "aria-label": "Info"}, "ℹ️")
+  error: flowScannerIcon("error", "sev-ico error"),
+  warning: flowScannerIcon("warning", "sev-ico warning"),
+  info: flowScannerIcon("info", "sev-ico info")
 };
 
 // Initialize the application only when this is the main entry point

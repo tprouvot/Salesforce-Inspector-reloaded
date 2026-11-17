@@ -638,13 +638,14 @@ class FlowScanner {
       return [];
     }
 
-    // Cache result - creating temp Flow is expensive and result never changes
+    // Cache result - result never changes
     if (!this._cachedFlowElementTypes) {
-      const tempFlow = new this.flowScannerCore.Flow("temp", {});
+      // The metadata tags of every element type are static members of the Flow class.
+      const {Flow} = this.flowScannerCore;
       this._cachedFlowElementTypes = [
-        ...(tempFlow.NODE_TAGS || []),
-        ...(tempFlow.RESOURCE_TAGS || []),
-        ...(tempFlow.VARIABLE_TAGS || [])
+        ...(Flow.NODE_TAGS || []),
+        ...(Flow.RESOURCE_TAGS || []),
+        ...(Flow.VARIABLE_TAGS || [])
       ];
     }
 
@@ -798,28 +799,35 @@ class FlowScanner {
       // Retrieve core and beta rules from the scanner library.
       const allRules = getFlowScannerRules(this.flowScannerCore);
 
-      // Select only enabled, built-in rules.
-      const rulesToRun = allRules.filter(r => r.checked && !r.path && !r.code);
-      if (rulesToRun.length === 0) {
+      // Only built-in rules are supported.
+      const builtInRules = allRules.filter(r => !r.path && !r.code);
+      if (!builtInRules.some(r => r.checked !== false)) {
         this.setNoRulesEnabledMessage("No Flow Scanner rules are enabled. Please enable rules on the Options page.");
         return;
       }
 
-      let results = [];
-      const ruleConfig = {rules: {}};
+      const ruleConfig = {
+        // The core only loads beta rules when beta mode is on, the ones the user disabled are
+        // filtered out through the `enabled` flag below.
+        betaMode: true,
+        rules: {}
+      };
 
-      // Optimize rule configuration building
-      for (const rule of rulesToRun) {
-        const {name, configType, config = {}, severity: uiSeverity} = rule;
+      // The core runs every rule it knows about, so disabled rules have to be turned off explicitly.
+      for (const rule of builtInRules) {
+        const {name, configType, config = {}, checked, severity: uiSeverity} = rule;
         const scannerSeverity = normalizeSeverity(uiSeverity || "error", "storage");
-        const entry = {severity: scannerSeverity};
+        const entry = {enabled: checked !== false, severity: scannerSeverity};
 
         if (configType === "expression" && config.expression != null) {
           entry.expression = config.expression;
         } else if (configType === "threshold" && config.threshold != null) {
           if (name === "APIVersion") {
-            // Convert numeric threshold into an expression string for the core rule.
-            entry.expression = `>=${config.threshold}`;
+            // The core rule compares the API version through an expression.
+            const threshold = config.threshold;
+            const isIntegerVersion = Number.isInteger(threshold)
+              || (typeof threshold === "string" && /^\d+(?:\.0+)?$/.test(threshold));
+            entry.expression = `>=${isIntegerVersion ? Number(threshold) : threshold}`;
           } else {
             entry.threshold = config.threshold;
           }
@@ -827,70 +835,10 @@ class FlowScanner {
         ruleConfig.rules[name] = entry;
       }
 
-      // --- Handle APIVersion rule separately to avoid unsafe-eval in the core library ---
-      const apiVersionConfig = ruleConfig.rules.APIVersion;
-      if (apiVersionConfig) {
-        delete ruleConfig.rules.APIVersion;
-      }
-
-      // Run all other built-in rules (if any remain).
-      if (Object.keys(ruleConfig.rules).length > 0) {
-        const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
-        results.push(...this.processScanResults(scanResults));
-      }
-
-      // Manually evaluate the APIVersion rule, if it was configured.
-      if (apiVersionConfig) {
-        const flowApiVer = this.currentFlow.apiVersion || this.currentFlow.xmlData?.apiVersion;
-        const apiVersionRuleDef = allRules.find(r => r.name === "APIVersion");
-
-        // Determine the required expression (e.g. ">=58").
-        let requiredExpr;
-        if (apiVersionConfig.expression) {
-          requiredExpr = apiVersionConfig.expression;
-        } else if (apiVersionConfig.threshold != null) {
-          requiredExpr = `>=${apiVersionConfig.threshold}`;
-        }
-
-        if (requiredExpr) {
-          const minVer = parseInt(requiredExpr.replace(/[^0-9]/g, ""), 10);
-          const operator = requiredExpr.replace(/[0-9]/g, "").trim();
-          const operators = {
-            ">=": (a, b) => a < b,
-            "<": (a, b) => a >= b,
-            ">": (a, b) => a <= b,
-            "<=": (a, b) => a > b,
-            "==": (a, b) => a !== b,
-            "=": (a, b) => a !== b
-          };
-          const violation = operators[operator] ? operators[operator](flowApiVer, minVer) : flowApiVer < minVer;
-
-          if (violation) {
-            // Craft a result object that mimics the core scanner output so downstream logic remains unchanged.
-            const manualScanResult = [{
-              flow: parsedFlow,
-              ruleResults: [{
-                ruleName: "APIVersion",
-                ruleDefinition: {
-                  description: apiVersionRuleDef?.description || "API Version check",
-                  label: apiVersionRuleDef?.label || "APIVersion"
-                },
-                occurs: true,
-                severity: apiVersionConfig.severity,
-                details: [{
-                  name: String(flowApiVer),
-                  type: "apiVersion",
-                  expression: requiredExpr
-                }]
-              }]
-            }];
-            results.push(...this.processScanResults(manualScanResult));
-          }
-        }
-      }
+      const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
 
       // Store final results.
-      this.scanResults = results;
+      this.scanResults = this.processScanResults(scanResults);
     } catch (error) {
       this.scanResults = [{
         rule: "Scan Error",
@@ -973,6 +921,20 @@ class FlowScanner {
       const ruleResults = flowResult.ruleResults || flowResult.results || flowResult.issues || [];
 
       for (const ruleResult of ruleResults) {
+        if (ruleResult.errorMessage) {
+          results.push(createResult(
+            "Scan Error",
+            "Failed to scan flow: " + ruleResult.errorMessage,
+            "error",
+            [createAffectedElement({
+              elementName: this.currentFlow.apiName,
+              elementLabel: "Flow",
+              expression: ruleResult.errorMessage
+            })]
+          ));
+          continue;
+        }
+
         if (!ruleResult.occurs) continue;
 
         const ruleDescription = ruleResult.ruleDefinition?.description || "No description available";

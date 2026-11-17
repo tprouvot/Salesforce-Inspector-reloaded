@@ -312,7 +312,11 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
+    const rt = this.exportedData;
+    const records = rt.table.slice(1)
+      .filter((_, i) => rt.rowVisibilities[i + 1])
+      .map(row => row[0]);
+    copyToClipboard(JSON.stringify(records, null, "  "));
   }
   downloadAsCsv(){
     const csvContent = this.exportedData.csvSerialize(this.separator);

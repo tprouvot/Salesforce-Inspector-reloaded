@@ -15,6 +15,7 @@ let h = React.createElement;
  * @param {string} props.sfHost - The Salesforce host (used for localStorage keys)
  * @param {number} props.spinnerCount - Number of active loading operations
  * @param {string} props.userInitials - User's initials for avatar
+ * @param {string} [props.userPhotoUrl] - User's profile photo URL
  * @param {string} props.userFullName - User's full name
  * @param {string} props.userName - User's username
  * @param {string} [props.userError] - Optional error message to display instead of username (shows warning icon)
@@ -60,6 +61,7 @@ export function PageHeader(props) {
     userInitials,
     userFullName,
     userName,
+    userPhotoUrl,
     userError = null,
     userErrorDescription = null,
     navItems = [],
@@ -164,7 +166,9 @@ export function PageHeader(props) {
         // User avatar (always present at the end)
         h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_small sfir-border-none"},
           h("div", {className: "slds-media__body sfir-display-popover-trigger"},
-            h("span", {className: "slds-avatar slds-avatar_circle"},
+            h("span", {
+              className: `slds-avatar slds-avatar_circle sfir-user-avatar${userPhotoUrl && !userError ? " sfir-user-avatar-has-photo" : ""}`
+            },
               userError
                 ? h("span", {className: "slds-avatar__initials slds-avatar__initials_inverse", title: "User Error"},
                   h("span", {className: "slds-icon_container"},
@@ -173,7 +177,16 @@ export function PageHeader(props) {
                     )
                   )
                 )
-                : h("abbr", {className: "slds-avatar__initials slds-avatar__initials_inverse"}, userInitials)
+                : h("abbr", {className: "slds-avatar__initials slds-avatar__initials_inverse"}, userInitials),
+              !userError && userPhotoUrl ? h("img", {
+                className: "slds-avatar__image sfir-user-photo",
+                src: userPhotoUrl,
+                alt: userFullName,
+                onError: (e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.parentElement.classList.remove("sfir-user-avatar-has-photo");
+                }
+              }) : null
             ),
             h("section", {
               className: "sfir-display-popover-target slds-popover slds-nubbin_top-right",
@@ -192,4 +205,3 @@ export function PageHeader(props) {
     )
   );
 }
-

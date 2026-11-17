@@ -213,12 +213,14 @@ export async function setOrgInfo(sfHost) {
 export async function getUserInfo() {
   try {
     const res = await sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {});
+    const userPhotoUrl = await getUserPhotoUrl(res.userId);
     return {
       success: true,
       userInfo: res.userFullName + " / " + res.userName + " / " + res.organizationName,
       userFullName: res.userFullName,
       userInitials: res.userFullName.split(" ").map(n => n[0]).join(""),
       userName: res.userName,
+      userPhotoUrl,
       userError: null,
       userErrorDescription: null
     };
@@ -230,9 +232,60 @@ export async function getUserInfo() {
       userFullName: "Unknown User",
       userInitials: "?",
       userName: "Unknown",
+      userPhotoUrl: null,
       userError: "Error fetching user info",
       userErrorDescription: "Session is probably expired or invalid"
     };
+  }
+}
+
+async function getUserPhotoUrl(userId) {
+  if (!userId || !sfConn.instanceHostname) {
+    return null;
+  }
+
+  const cacheTtl = 24 * 60 * 60 * 1000;
+  const cacheKey = `${sfConn.instanceHostname}_userPhoto_${userId}`;
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (!key?.includes("_userPhoto_")) {
+        continue;
+      }
+      let cachedPhoto;
+      try {
+        cachedPhoto = JSON.parse(localStorage.getItem(key) || "null");
+      } catch (error) {
+        console.error("Error reading cached user photo:", error);
+      }
+      if (!cachedPhoto || !Number.isFinite(cachedPhoto.timestamp) || Date.now() - cachedPhoto.timestamp >= cacheTtl) {
+        localStorage.removeItem(key);
+      }
+    }
+
+    const cachedPhoto = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    if (cachedPhoto && Date.now() - cachedPhoto.timestamp < cacheTtl) {
+      return cachedPhoto.photoUrl || null;
+    }
+  } catch (error) {
+    console.error("Error reading cached user photo:", error);
+  }
+
+  try {
+    const query = new URLSearchParams({q: `SELECT Id, SmallPhotoUrl FROM User WHERE Id = '${userId}'`});
+    const result = await sfConn.rest(`/services/data/v${apiVersion}/query/?${query}`);
+    const photoUrl = result.records?.[0]?.SmallPhotoUrl || "";
+    const photo = photoUrl ? new URL(photoUrl) : null;
+    const usablePhotoUrl = photo?.protocol === "https:" && !/^\/profilephoto\/005\/T\/?$/i.test(photo.pathname) ? photoUrl : "";
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({photoUrl: usablePhotoUrl, timestamp: Date.now()}));
+    } catch (error) {
+      console.error("Error caching user photo:", error);
+    }
+    return usablePhotoUrl || null;
+  } catch (error) {
+    console.error("Error fetching user photo:", error);
+    return null;
   }
 }
 
@@ -262,6 +315,7 @@ export class UserInfoModel {
     this.userFullName = "";
     this.userInitials = "";
     this.userName = "";
+    this.userPhotoUrl = null;
     this.userError = null;
     this.userErrorDescription = null;
 
@@ -281,19 +335,21 @@ export class UserInfoModel {
     this.userFullName = result.userFullName;
     this.userInitials = result.userInitials;
     this.userName = result.userName;
+    this.userPhotoUrl = result.userPhotoUrl;
     this.userError = result.userError;
     this.userErrorDescription = result.userErrorDescription;
   }
 
   /**
    * Get props object for PageHeader component
-   * @returns {Object} Props containing userInitials, userFullName, userName, userError, userErrorDescription
+   * @returns {Object} Props containing userInitials, userFullName, userName, userPhotoUrl, userError, userErrorDescription
    */
   getProps() {
     return {
       userInitials: this.userInitials,
       userFullName: this.userFullName,
       userName: this.userName,
+      userPhotoUrl: this.userPhotoUrl,
       userError: this.userError,
       userErrorDescription: this.userErrorDescription
     };

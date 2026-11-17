@@ -1433,6 +1433,7 @@ class App extends React.Component {
       loadingDescription: "Please wait while we retrieve the flow metadata from Salesforce.",
       userInfo: "...",
       userInitials: "",
+      userPhotoUrl: null,
       userFullName: "",
       userName: "",
       orgName: "",
@@ -1605,6 +1606,7 @@ class App extends React.Component {
         this.setState({
           userInfo: result.userInfo,
           userInitials: result.userInitials,
+          userPhotoUrl: result.userPhotoUrl,
           userFullName: result.userFullName,
           userName: result.userName
         });
@@ -2280,6 +2282,7 @@ class App extends React.Component {
         sfHost,
         spinnerCount: this.state.isLoading ? 1 : 0,
         userInitials: this.state.userInitials,
+        userPhotoUrl: this.state.userPhotoUrl,
         userFullName: this.state.userFullName,
         userName: this.state.userName,
         utilityItems: [

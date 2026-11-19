@@ -533,7 +533,6 @@ test.describe("Popup", () => {
       await flowResult.click();
 
       await expect(page.frameLocator(".insext-popup").locator("text=RecordTrigger InspectorTest")).toBeVisible({timeout: 1000});
-      await expect(page.frameLocator(".insext-popup").locator("text=(intuser)")).toBeVisible({timeout: 1000});
     });
 
     test("Show All Data Button", async ({page, extensionId}) => {

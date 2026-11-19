@@ -276,6 +276,25 @@ test.describe("Data Import", () => {
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
   });
 
+  test("Paste clipboard content with Paste button", async ({page, context, extensionId}) => {
+    await initImportPage(page, context, extensionId);
+
+    await page.locator("#form-import-action").selectOption("create");
+
+    const csvData = "\"Name\",\"Number__c\"\r\ntest-paste-" + TEST_GUID + ",123";
+    await page.evaluate(async (data) => {
+      await navigator.clipboard.writeText(data);
+    }, csvData);
+
+    await page.locator("button[title='Paste clipboard content']").click();
+
+    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
+    const columnInputs = page.locator(".slds-card__body_inner input[list='columnlist']");
+    await expect(columnInputs.nth(0)).toHaveValue("Name");
+    await expect(columnInputs.nth(1)).toHaveValue("Number__c");
+    await expect(page.locator("button:has-text('Run Insert'):not([disabled])")).toBeVisible();
+  });
+
   test("Copy Options", async ({page, context, extensionId}) => {
     await initImportPage(page, context, extensionId);
 

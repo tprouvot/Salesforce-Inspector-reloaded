@@ -1818,29 +1818,11 @@ class AllDataBoxSObject extends React.PureComponent {
       )
       .then((res) => {
         for (let record of res.records) {
-          let lastModifiedDate = new Date(record.LastModifiedDate);
-          let createdDate = new Date(record.CreatedDate);
           this.getUserAliases(
             toolingApi ? [record.CreatedById, record.LastModifiedById] : []
           ).then((userAliases) => {
             this.setState({
-              recordIdDetails: {
-                recordTypeId: record.RecordType ? record.RecordType.Id : "",
-                recordName: record.Name || record.MasterLabel || "",
-                recordTypeName: record.RecordType
-                  ? record.RecordType.DeveloperName
-                  : "",
-                createdBy: record.CreatedBy?.Alias || userAliases[record.CreatedById] || "",
-                lastModifiedBy: record.LastModifiedBy?.Alias || userAliases[record.LastModifiedById] || "",
-                created:
-                  createdDate.toLocaleDateString()
-                  + " "
-                  + createdDate.toLocaleTimeString(),
-                lastModified:
-                  lastModifiedDate.toLocaleDateString()
-                  + " "
-                  + lastModifiedDate.toLocaleTimeString(),
-              },
+              recordIdDetails: this.buildRecordIdDetails(record, userAliases),
             });
           });
         }
@@ -1866,6 +1848,22 @@ class AllDataBoxSObject extends React.PureComponent {
           );
         }
       });
+  }
+
+  buildRecordIdDetails(record, userAliases) {
+    const formatDateTime = (value) => {
+      const date = new Date(value);
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    };
+    return {
+      recordTypeId: record.RecordType ? record.RecordType.Id : "",
+      recordName: record.Name || record.MasterLabel || "",
+      recordTypeName: record.RecordType ? record.RecordType.DeveloperName : "",
+      createdBy: record.CreatedBy?.Alias || userAliases[record.CreatedById] || "",
+      lastModifiedBy: record.LastModifiedBy?.Alias || userAliases[record.LastModifiedById] || "",
+      created: formatDateTime(record.CreatedDate),
+      lastModified: formatDateTime(record.LastModifiedDate),
+    };
   }
 
   getUserAliases(userIds) {

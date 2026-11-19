@@ -14,7 +14,7 @@
   "devDependencies": {
     "@eslint/compat": "^1.2.2",
     "@eslint/js": "^9.14.0",
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.65.1",
     "@types/node": "^25.0.2",
     "eslint": "^9.14.0",
     "eslint-plugin-react": "^7.37.2",

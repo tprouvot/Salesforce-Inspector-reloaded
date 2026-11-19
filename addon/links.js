@@ -187,6 +187,9 @@ export let setupLinks = [
   {label: "Messaging Settings", link: "/lightning/setup/LiveMessageSetup/home", section: "Platform Tools > Feature Settings > Service > Messaging", prod: false},
   {label: "Messaging Components", link: "/lightning/setup/ConversationMessageDefinitions/home", section: "Platform Tools > Feature Settings > Service > Messaging", prod: false},
 
+  //Platform Tools > Feature Settings > Service > Embedded Service
+  {label: "Embedded Service Deployments", link: "/lightning/setup/EmbeddedServiceDeployments/home", section: "Platform Tools > Feature Settings > Service > Embedded Service", prod: false},
+
   {label: "Macro Settings", link: "/lightning/setup/MacroSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   {label: "Omni-Channel Settings", link: "/lightning/setup/OmniChannelSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   {label: "Snap-ins", link: "/lightning/setup/Snap-ins/home", section: "Platform Tools > Feature Settings > Service", prod: false},

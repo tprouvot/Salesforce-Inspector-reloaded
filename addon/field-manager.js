@@ -1,7 +1,7 @@
 /* global React ReactDOM field-manager.js */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import Toast from "./components/Toast.js";
+import Toast, {copyWithToast, downloadWithToast, hideToast} from "./components/Toast.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants, applyProductionStyling, copyToClipboard} from "./utils.js";
 
@@ -1211,7 +1211,8 @@ class App extends React.Component {
       showUpdateConfirmModal: false,
       pendingDeployFields: null,
       infoModal: null,
-      isRetrievingFields: false
+      isRetrievingFields: false,
+      toast: null
     };
 
     // Initialize spinFor method
@@ -1939,18 +1940,20 @@ class App extends React.Component {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${objectName}-fields.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
+    downloadWithToast(this, () => {
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    });
   };
 
   copyFieldsCsv = () => {
-    copyToClipboard(this.exportFieldsCsv());
+    return copyWithToast(this, () => copyToClipboard(this.exportFieldsCsv()));
   };
 
   copyFieldsExcel = () => {
-    copyToClipboard(this.exportFieldsCsv("\t"));
+    return copyWithToast(this, () => copyToClipboard(this.exportFieldsCsv("\t")));
   };
 
   onShowDeploymentStatus = (index) => {
@@ -2129,6 +2132,10 @@ class App extends React.Component {
 
   onCloseErrorToast = () => {
     this.setState({fieldErrorMessage: null, errorMessageClickable: false});
+  };
+
+  dismissToast = () => {
+    hideToast(this);
   };
 
   onEnableEntityDefinitionCaching = () => {
@@ -2459,6 +2466,15 @@ class App extends React.Component {
       },
       this.state.infoModal && h("p", {}, this.state.infoModal.message)
       ),
+
+      this.state.toast && h(Toast, {
+        key: this.state.toast.id,
+        variant: this.state.toast.variant,
+        title: this.state.toast.title,
+        message: this.state.toast.message,
+        onClose: this.dismissToast,
+        duration: this.state.toast.duration,
+      }),
 
       this.state.fieldErrorMessage && h(Toast, {
         variant: "error",

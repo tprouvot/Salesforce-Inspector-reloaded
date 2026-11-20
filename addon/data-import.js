@@ -4,6 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import Toast, {copyWithToast, downloadWithToast, hideToast, showToast} from "./components/Toast.js";
 import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, downloadCsvFile} from "./utils.js";
 
 const allApis = [
@@ -253,7 +254,7 @@ class Model {
     if (this.importAction == "upsert") importOptions.set("externalId", this.externalId);
     importOptions.set("batchSize", this.batchSize);
     importOptions.set("threads", this.batchConcurrency);
-    copyToClipboard(importOptions.toString());
+    return copyToClipboard(importOptions.toString());
   }
 
   skipAllUnknownFields() {
@@ -479,7 +480,7 @@ class Model {
   copyResult(separator) {
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let data = this.importData.taggedRows.filter(row => this.showStatus[row.status]).map(row => row.cells);
-    copyToClipboard(csvSerialize([header, ...data], separator));
+    return copyToClipboard(csvSerialize([header, ...data], separator));
   }
 
   downloadResult(separator) {
@@ -1020,12 +1021,16 @@ class App extends React.Component {
     this.onCopyAsCsvClick = this.onCopyAsCsvClick.bind(this);
     this.onDownloadAsCsvClick = this.onDownloadAsCsvClick.bind(this);
     this.onCopyOptionsClick = this.onCopyOptionsClick.bind(this);
+    this.dismissToast = this.dismissToast.bind(this);
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.onClipboardPasteClick = this.onClipboardPasteClick.bind(this);
     this.unloadListener = null;
-    this.state = {templateValueIndex: -1};
+    this.state = {templateValueIndex: -1, toast: null};
+  }
+  dismissToast() {
+    hideToast(this);
   }
   onApiTypeChange(e) {
     let {model} = this.props;
@@ -1055,7 +1060,16 @@ class App extends React.Component {
   onDataPaste(e) {
     let {model} = this.props;
     let text = e.clipboardData.getData("text/plain");
+    let wasWorking = model.isWorking();
     model.setData(text);
+    if (!wasWorking) {
+      if (model.dataError) {
+        showToast(this, "error", "Pasted data could not be loaded", "Error: " + model.dataError);
+      } else {
+        let count = model.importData.importTable?.data?.length;
+        showToast(this, "success", "Data pasted", count ? count + (count === 1 ? " record" : " records") + " loaded into the import table" : "Loaded into the import table", 3000);
+      }
+    }
     model.didUpdate();
   }
   onClipboardPasteClick(e) {
@@ -1137,7 +1151,7 @@ class App extends React.Component {
   onCopyAsExcelClick(e) {
     e.preventDefault();
     let {model} = this.props;
-    model.copyResult("\t");
+    copyWithToast(this, () => model.copyResult("\t"));
   }
   onCopyAsCsvClick(e) {
     e.preventDefault();
@@ -1146,7 +1160,7 @@ class App extends React.Component {
     if (localStorage.getItem("csvSeparator")) {
       separator = localStorage.getItem("csvSeparator");
     }
-    model.copyResult(separator);
+    copyWithToast(this, () => model.copyResult(separator));
   }
   onDownloadAsCsvClick(e) {
     e.preventDefault();
@@ -1155,12 +1169,12 @@ class App extends React.Component {
     if (localStorage.getItem("csvSeparator")) {
       separator = localStorage.getItem("csvSeparator");
     }
-    model.downloadResult(separator);
+    downloadWithToast(this, () => model.downloadResult(separator));
   }
   onCopyOptionsClick(e) {
     e.preventDefault();
     let {model} = this.props;
-    model.copyOptions();
+    copyWithToast(this, () => model.copyOptions());
   }
   onSkipAllUnknownFieldsClick(e) {
     e.preventDefault();
@@ -1255,6 +1269,14 @@ class App extends React.Component {
     ];
 
     return h("div", {},
+      this.state.toast && h(Toast, {
+        key: this.state.toast.id,
+        variant: this.state.toast.variant,
+        title: this.state.toast.title,
+        message: this.state.toast.message,
+        onClose: this.dismissToast,
+        duration: this.state.toast.duration,
+      }),
       h(PageHeader, {
         pageTitle: "Data Import",
         orgName: model.orgName,

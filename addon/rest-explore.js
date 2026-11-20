@@ -3,6 +3,8 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import Toast, {copyWithToast, hideToast, showToast} from "./components/Toast.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
 
 function createRestQueryHistory(storageKey, max) {
@@ -158,7 +160,7 @@ class Model {
     this.queryHistory.clear();
   }
   copyAsJson() {
-    copyToClipboard(this.apiResponse.value, null, "  ");
+    return copyToClipboard(this.apiResponse.value, null, "  ");
   }
   clear() {
     this.apiResponse.value = "";
@@ -422,7 +424,11 @@ class App extends React.Component {
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
     this.onToggleHeadersEditor = this.onToggleHeadersEditor.bind(this);
     this.onUpdateHeaders = this.onUpdateHeaders.bind(this);
+    this.dismissToast = this.dismissToast.bind(this);
+    this.showConfirm = this.showConfirm.bind(this);
+    this.closeConfirm = this.closeConfirm.bind(this);
     this.highlightGuard = createChangeGuard();
+    this.state = {toast: null, confirmModal: null};
   }
   onSelectEntry(e, list) {
     let {model} = this.props;
@@ -465,38 +471,42 @@ class App extends React.Component {
   }
   onClearHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to clear the query history?");
-    if (r == true) {
+    this.showConfirm("Are you sure you want to clear the query history?", () => {
       let {model} = this.props;
       model.clearHistory();
       model.didUpdate();
-    }
+    }, {title: "Clear history", confirmLabel: "Clear"});
   }
   onAddToHistory(e) {
     e.preventDefault();
     let {model} = this.props;
     model.addToHistory();
+    showToast(this, "success", "Saved", "Query saved successfully");
     model.didUpdate();
   }
   onRemoveFromHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove this saved query?");
     let {model} = this.props;
-    if (r == true) {
+    let done = () => {
+      model.toggleSavedOptions();
+      model.didUpdate();
+    };
+    this.showConfirm("Are you sure you want to remove this saved query?", () => {
       model.removeFromHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+      done();
+    }, {title: "Remove saved query", confirmLabel: "Remove", onCancel: done});
   }
   onClearSavedHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove all saved queries?");
     let {model} = this.props;
-    if (r == true) {
+    let done = () => {
+      model.toggleSavedOptions();
+      model.didUpdate();
+    };
+    this.showConfirm("Are you sure you want to remove all saved queries?", () => {
       model.clearSavedHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+      done();
+    }, {title: "Remove all saved queries", confirmLabel: "Remove all", onCancel: done});
   }
   onToggleSavedOptions(e) {
     e.preventDefault();
@@ -511,8 +521,17 @@ class App extends React.Component {
   }
   onCopyAsJson() {
     let {model} = this.props;
-    model.copyAsJson();
+    copyWithToast(this, () => model.copyAsJson());
     model.didUpdate();
+  }
+  showConfirm(message, onConfirm, {title, confirmLabel, onCancel} = {}) {
+    this.setState({confirmModal: {message, onConfirm, title, confirmLabel, onCancel}});
+  }
+  closeConfirm() {
+    this.setState({confirmModal: null});
+  }
+  dismissToast() {
+    hideToast(this);
   }
   onClearResponse() {
     let {model} = this.props;
@@ -615,6 +634,33 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     return h("div", {},
+      this.state.toast && h(Toast, {
+        key: this.state.toast.id,
+        variant: this.state.toast.variant,
+        title: this.state.toast.title,
+        message: this.state.toast.message,
+        onClose: this.dismissToast,
+        duration: this.state.toast.duration,
+      }),
+      this.state.confirmModal && h(ConfirmModal, {
+        isOpen: true,
+        title: this.state.confirmModal.title,
+        message: this.state.confirmModal.message,
+        confirmLabel: this.state.confirmModal.confirmLabel,
+        confirmVariant: "destructive",
+        onConfirm: () => {
+          let {onConfirm} = this.state.confirmModal;
+          this.closeConfirm();
+          onConfirm();
+        },
+        onCancel: () => {
+          let {onCancel} = this.state.confirmModal;
+          this.closeConfirm();
+          if (onCancel) {
+            onCancel();
+          }
+        }
+      }),
       h(PageHeader, {
         pageTitle: "REST Explorer",
         orgName: model.orgName,

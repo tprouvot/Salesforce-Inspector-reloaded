@@ -604,16 +604,46 @@ a.icon-url {
 /* Copy userId icon hover styles */
 .sfir-copy-userid-icon {
   display: inline-block;
+  position: relative;
   cursor: pointer;
 }
 
 .sfir-copy-userid-icon svg {
   fill: var(--sfir-icon-color);
-  transition: fill 0.1s linear;
+  transition: fill 0.1s linear, opacity 0.15s ease, transform 0.15s ease;
+}
+
+.sfir-copy-userid-icon-check {
+  position: absolute;
+  top: 50%;
+  left: var(--sfir-spacing-xs);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.6);
 }
 
 .sfir-copy-userid-icon:hover svg {
   fill: var(--sfir-blue-color);
+}
+
+.sfir-copy-userid-icon.copied .sfir-copy-userid-icon-copy {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+.sfir-copy-userid-icon.copied .sfir-copy-userid-icon-check {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  fill: var(--sfir-success-color);
+}
+
+.sfir-copy-userid-icon:active .sfir-copy-userid-icon-copy {
+  fill: var(--sfir-dark-blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sfir-copy-userid-icon svg {
+    transition: none;
+  }
 }
 
 /* Prevent link hover decoration when hovering copy icon */

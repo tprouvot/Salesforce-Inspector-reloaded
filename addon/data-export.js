@@ -4,6 +4,8 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import Toast, {copyWithToast, downloadWithToast, hideToast, showToast} from "./components/Toast.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
@@ -306,13 +308,13 @@ class Model {
           && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
   copyAsExcel() {
-    copyToClipboard(this.exportedData.csvSerialize("\t"));
+    return copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    copyToClipboard(this.exportedData.csvSerialize(this.separator));
+    return copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
+    return copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
   downloadAsCsv(){
     const csvContent = this.exportedData.csvSerialize(this.separator);
@@ -1406,6 +1408,7 @@ class App extends React.Component {
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.dismissToast = this.dismissToast.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
@@ -1431,6 +1434,8 @@ class App extends React.Component {
     this.onTabContextMenu = this.onTabContextMenu.bind(this);
     this.onOverlayContextMenu = this.onOverlayContextMenu.bind(this);
     this.onCloseContextMenu = this.onCloseContextMenu.bind(this);
+    this.showConfirm = this.showConfirm.bind(this);
+    this.closeConfirm = this.closeConfirm.bind(this);
 
     // Tab editing state
     this.state = {
@@ -1439,8 +1444,19 @@ class App extends React.Component {
       editingTabName: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
-      contextMenu: null
+      contextMenu: null,
+      toast: null,
+      confirmModal: null,
     };
+  }
+  showConfirm(message, onConfirm, {title, confirmLabel, onCancel} = {}) {
+    this.setState({confirmModal: {message, onConfirm, title, confirmLabel, onCancel}});
+  }
+  closeConfirm() {
+    this.setState({confirmModal: null});
+  }
+  dismissToast() {
+    hideToast(this);
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1475,12 +1491,11 @@ class App extends React.Component {
   }
   onClearHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to clear the query history?");
-    if (r == true) {
+    this.showConfirm("Are you sure you want to clear the query history?", () => {
       let {model} = this.props;
       model.clearHistory();
       model.didUpdate();
-    }
+    }, {title: "Clear history", confirmLabel: "Clear"});
   }
   onSelectSavedEntry(e) {
     let {model} = this.props;
@@ -1492,27 +1507,32 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.addToHistory();
+    showToast(this, "success", "Saved", "Query saved successfully");
     model.didUpdate();
   }
   onRemoveFromHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove this saved query?");
     let {model} = this.props;
-    if (r == true) {
+    let done = () => {
+      model.toggleSavedOptions();
+      model.didUpdate();
+    };
+    this.showConfirm("Are you sure you want to remove this saved query?", () => {
       model.removeFromHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+      done();
+    }, {title: "Remove saved query", confirmLabel: "Remove", onCancel: done});
   }
   onClearSavedHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove all saved queries?");
     let {model} = this.props;
-    if (r == true) {
+    let done = () => {
+      model.toggleSavedOptions();
+      model.didUpdate();
+    };
+    this.showConfirm("Are you sure you want to remove all saved queries?", () => {
       model.clearSavedHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+      done();
+    }, {title: "Remove all saved queries", confirmLabel: "Remove all", onCancel: done});
   }
   onToggleHelp(e) {
     e.preventDefault();
@@ -1554,8 +1574,7 @@ class App extends React.Component {
     let searchParams = url.searchParams;
     searchParams.set("query", model.queryInput.value);
     url.search = searchParams.toString();
-    navigator.clipboard.writeText(url.toString());
-    navigator.clipboard.writeText(url.toString());
+    copyWithToast(this, () => copyToClipboard(url.toString()));
     model.didUpdate();
   }
   onQueryPlan(){
@@ -1565,22 +1584,22 @@ class App extends React.Component {
   }
   onCopyAsExcel() {
     let {model} = this.props;
-    model.copyAsExcel();
+    copyWithToast(this, () => model.copyAsExcel());
     model.didUpdate();
   }
   onCopyAsCsv() {
     let {model} = this.props;
-    model.copyAsCsv();
+    copyWithToast(this, () => model.copyAsCsv());
     model.didUpdate();
   }
   onDownloadAsCsv(){
     let {model} = this.props;
-    model.downloadAsCsv();
+    downloadWithToast(this, () => model.downloadAsCsv());
     model.didUpdate();
   }
   onCopyAsJson() {
     let {model} = this.props;
-    model.copyAsJson();
+    copyWithToast(this, () => model.copyAsJson());
     model.didUpdate();
   }
   onDeleteRecords(e) {
@@ -1907,6 +1926,33 @@ class App extends React.Component {
     ].filter(Boolean); // Remove null items
 
     return h("div", {},
+      this.state.toast && h(Toast, {
+        key: this.state.toast.id,
+        variant: this.state.toast.variant,
+        title: this.state.toast.title,
+        message: this.state.toast.message,
+        onClose: this.dismissToast,
+        duration: this.state.toast.duration,
+      }),
+      this.state.confirmModal && h(ConfirmModal, {
+        isOpen: true,
+        title: this.state.confirmModal.title,
+        message: this.state.confirmModal.message,
+        confirmLabel: this.state.confirmModal.confirmLabel,
+        confirmVariant: "destructive",
+        onConfirm: () => {
+          let {onConfirm} = this.state.confirmModal;
+          this.closeConfirm();
+          onConfirm();
+        },
+        onCancel: () => {
+          let {onCancel} = this.state.confirmModal;
+          this.closeConfirm();
+          if (onCancel) {
+            onCancel();
+          }
+        }
+      }),
       h(PageHeader, {
         pageTitle: "Data Export",
         orgName: model.orgName,

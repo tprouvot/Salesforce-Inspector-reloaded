@@ -1,4 +1,6 @@
 /* global React */
+import {getLinkTarget} from "../utils.js";
+
 let h = React.createElement;
 
 /**
@@ -24,6 +26,7 @@ let h = React.createElement;
  * @param {Array} [props.navItems] - Optional array of navigation items (slot)
  * @param {Array} [props.utilityItems] - Optional array of utility items (slot)
  * @param {string} [props.backLink] - Optional link for the back button (replaces home icon when provided)
+ * @param {string} [props.settingsTab] - Options tab ID to open from the settings icon
  *
  * Example usage:
  *
@@ -65,7 +68,8 @@ export function PageHeader(props) {
     navItems = [],
     utilityItems = [],
     subTitle,
-    backLink
+    backLink,
+    settingsTab
   } = props;
 
   // Check if header color override is enabled and get custom color
@@ -161,8 +165,23 @@ export function PageHeader(props) {
         // Custom utility items slot
         ...utilityItems,
 
+        // Contextual settings link (optional)
+        settingsTab ? h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
+          h("a", {
+            href: `options.html?host=${encodeURIComponent(sfHost)}&selectedTab=${encodeURIComponent(settingsTab)}`,
+            target: getLinkTarget(),
+            className: "slds-button slds-button_icon slds-button_icon-border-filled",
+            title: `Open ${pageTitle} settings`,
+            "aria-label": `Open ${pageTitle} settings`
+          },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#settings"})
+          )
+          )
+        ) : null,
+
         // User avatar (always present at the end)
-        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_small sfir-border-none"},
+        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-left_x-small slds-p-right_small sfir-border-none"},
           h("div", {className: "slds-media__body sfir-display-popover-trigger"},
             h("span", {className: "slds-avatar slds-avatar_circle"},
               userError
@@ -192,4 +211,3 @@ export function PageHeader(props) {
     )
   );
 }
-

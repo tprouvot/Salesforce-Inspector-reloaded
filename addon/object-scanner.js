@@ -398,10 +398,6 @@ class Model {
     return "inspect.html?" + args;
   }
 
-  optionsHref() {
-    return `options.html?host=${encodeURIComponent(this.sfHost)}&selectedTab=object-scanner`;
-  }
-
   summary() {
     const counts = {error: 0, warning: 0, info: 0};
     this.findings.forEach(item => {
@@ -1275,19 +1271,13 @@ class App extends React.Component {
     return h("div", {},
       h(PageHeader, {
         pageTitle: "Object Scanner",
+        settingsTab: "object-scanner",
         orgName: model.orgName,
         sfLink: model.sfLink,
         sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
         ...model.userInfoModel.getProps(),
         utilityItems: [
-          h("div", {key: "settings", className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
-            h("a", {href: model.optionsHref(), title: "Object Scanner settings", className: "slds-button slds-button_icon slds-button_icon-border-filled"},
-              h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#settings"})
-              )
-            )
-          ),
           h("div", {key: "help", className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
             h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", title: "Object Scanner Help", onClick: this.onToggleHelp},
               h("svg", {className: "slds-button__icon", "aria-hidden": "true"},

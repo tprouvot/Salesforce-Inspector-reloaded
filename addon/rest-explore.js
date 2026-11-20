@@ -617,6 +617,7 @@ class App extends React.Component {
     return h("div", {},
       h(PageHeader, {
         pageTitle: "REST Explorer",
+        settingsTab: "rest-explore",
         orgName: model.orgName,
         sfLink: model.sfLink,
         sfHost: model.sfHost,

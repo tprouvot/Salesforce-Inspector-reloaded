@@ -1,5 +1,5 @@
 import {test, expect} from "./fixtures";
-import {TEST_CONSTANTS, injectSessionData, fulfillSuccess} from "./test-helpers";
+import {TEST_CONSTANTS, injectSessionData, fulfillSuccess, selectComboboxOption} from "./test-helpers";
 
 test.describe("Debug Log Viewer", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -108,9 +108,9 @@ test.describe("Debug Log Viewer", () => {
 
   test("Page Size Selector Updates Displayed Value", async ({page, extensionId}) => {
     await gotoPage(page, extensionId);
-    await expect(page.locator("#sfir-page-size")).toHaveValue("15");
-    await page.locator("#sfir-page-size").selectOption("25");
-    await expect(page.locator("#sfir-page-size")).toHaveValue("25");
+    await expect(page.locator("#sfir-page-size")).toHaveAttribute("data-value", "15");
+    await selectComboboxOption(page, page.locator("#sfir-page-size"), "25");
+    await expect(page.locator("#sfir-page-size")).toHaveAttribute("data-value", "25");
   });
 
   test("Sort Column Header Applies Ascending Sort Indicator", async ({page, extensionId}) => {
@@ -196,7 +196,7 @@ test.describe("Debug Log Viewer", () => {
   test("Select Filter Template Hides Non-Matching Lines", async ({page, extensionId}) => {
     await openPreview(page, extensionId);
     // "Exceptions" template filters for EXCEPTION_THROWN|FATAL_ERROR
-    await page.locator("#sfir-log-filter-template").selectOption("EXCEPTION_THROWN|FATAL_ERROR");
+    await selectComboboxOption(page, page.locator("#sfir-log-filter-template"), "EXCEPTION_THROWN|FATAL_ERROR");
     const preview = page.locator(".sfir-preview-code-block");
     await expect(preview).toContainText("Something failed");
     await expect(preview).not.toContainText("First message");
@@ -227,10 +227,10 @@ test.describe("Debug Log Viewer", () => {
 
   test("Select No Filter Template Restores All Log Lines", async ({page, extensionId}) => {
     await openPreview(page, extensionId);
-    await page.locator("#sfir-log-filter-template").selectOption("EXCEPTION_THROWN|FATAL_ERROR");
+    await selectComboboxOption(page, page.locator("#sfir-log-filter-template"), "EXCEPTION_THROWN|FATAL_ERROR");
     await expect(page.locator(".sfir-preview-code-block")).not.toContainText("First message");
 
-    await page.locator("#sfir-log-filter-template").selectOption("");
+    await selectComboboxOption(page, page.locator("#sfir-log-filter-template"), "");
     await expect(page.locator(".sfir-preview-code-block")).toContainText("First message");
     await expect(page.locator(".sfir-preview-code-block")).toContainText("Second message");
   });

@@ -7,6 +7,8 @@
 // If the file does not exist, the template (mock mode) is copied automatically.
 // To configure for a real org, run: npm run set-test-constants
 // Or copy test-constants.template.js to test-constants.local.js and fill in real values.
+import {expect} from "@playwright/test";
+
 const _fs = require("fs");
 const _path = require("path");
 const _localPath = _path.join(__dirname, "test-constants.local.js");
@@ -675,4 +677,57 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
 
     throw error;
   }
+}
+
+/**
+ * Selects an option in an SLDS Combobox (replacement for locator.selectOption on native selects).
+ * @param {Object} page - Playwright page object
+ * @param {string|Object} target - Selector or locator of the combobox input
+ * @param {string} value - Option value to select
+ * @param {Object} [options]
+ * @param {boolean} [options.search] - Type the value first (searchable comboboxes)
+ * @returns {Promise<void>}
+ */
+export async function selectComboboxOption(page, target, value, {search = false} = {}) {
+  const input = typeof target === "string" ? page.locator(target) : target;
+  if (search) {
+    await input.fill(value);
+  } else {
+    await input.click();
+  }
+  const listboxId = await input.getAttribute("aria-controls");
+  const option = page.locator(`[id="${listboxId}"] [role="option"][data-value="${value}"]`);
+  await option.waitFor({state: "visible", timeout: 2000});
+  await option.click();
+  await expect(input).toHaveAttribute("data-value", value);
+}
+
+/**
+ * Returns the option values of an SLDS Combobox (opens and closes the dropdown).
+ * @param {Object} page - Playwright page object
+ * @param {string|Object} target - Selector or locator of the combobox input
+ * @returns {Promise<string[]>}
+ */
+export async function getComboboxOptionValues(page, target) {
+  const input = typeof target === "string" ? page.locator(target) : target;
+  await input.click();
+  const listboxId = await input.getAttribute("aria-controls");
+  const values = await page.locator(`[id="${listboxId}"] [role="option"]`).evaluateAll(els => els.map(el => el.getAttribute("data-value")));
+  await input.press("Escape");
+  return values;
+}
+
+/**
+ * Returns the visible option texts of an SLDS Combobox (opens and closes the dropdown).
+ * @param {Object} page - Playwright page object
+ * @param {string|Object} target - Selector or locator of the combobox input
+ * @returns {Promise<string[]>}
+ */
+export async function getComboboxOptionTexts(page, target) {
+  const input = typeof target === "string" ? page.locator(target) : target;
+  await input.click();
+  const listboxId = await input.getAttribute("aria-controls");
+  const texts = await page.locator(`[id="${listboxId}"] [role="option"]`).allTextContents();
+  await input.press("Escape");
+  return texts;
 }

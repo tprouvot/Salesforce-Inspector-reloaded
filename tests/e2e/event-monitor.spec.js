@@ -3,6 +3,9 @@ import {
   TEST_CONSTANTS,
   injectSessionData,
   createModelExposureSetup,
+  selectComboboxOption,
+  getComboboxOptionValues,
+  getComboboxOptionTexts
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -44,7 +47,7 @@ test.describe("Event Monitor", () => {
     await page.goto(`chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`);
 
     // Wait for page to load
-    await page.waitForSelector("select.slds-select");
+    await page.waitForSelector("#sfir-channel-type");
   }
 
   /** @description Adds a fake test event to the event monitor page
@@ -79,11 +82,11 @@ test.describe("Event Monitor", () => {
     await initEventMonitorPage(page, extensionId);
 
     // Verify channel type dropdown exists and has options
-    const channelTypeSelect = page.locator("select.slds-select").first();
+    const channelTypeSelect = page.locator("#sfir-channel-type");
     await expect(channelTypeSelect).toBeVisible();
 
     // Verify default selection is "Standard Platform Event"
-    await expect(channelTypeSelect).toHaveValue("standardPlatformEvent");
+    await expect(channelTypeSelect).toHaveAttribute("data-value", "standardPlatformEvent");
   });
 
   test("Load Standard Platform Events", async ({page, extensionId}) => {
@@ -93,35 +96,36 @@ test.describe("Event Monitor", () => {
     await page.waitForTimeout(1000);
 
     // Verify channel dropdown has options (org-specific; check list is non-empty)
-    const channelSelect = page.locator("select.slds-select").nth(1); // Second select is the channel dropdown
-    const options = await channelSelect.locator("option").allTextContents();
-    await expect(options.length).toBeGreaterThan(0);
+    const channelSelect = page.locator("#sfir-channel"); // Second select is the channel dropdown
+    const options = await getComboboxOptionValues(page, channelSelect);
+    expect(options.length).toBeGreaterThan(0);
   });
 
   test("Change Channel Type to Custom Platform Event", async ({page, extensionId}) => {
     await initEventMonitorPage(page, extensionId);
 
     // Select "Custom Platform Event" channel type
-    await page.locator("select.slds-select").first().selectOption("platformEvent");
+    await selectComboboxOption(page, page.locator("#sfir-channel-type"), "platformEvent");
     await page.waitForTimeout(250);
 
     // Verify channel dropdown shows custom events (check for the option text)
-    const channelSelect = page.locator("select.slds-select").nth(1);
+    const channelSelect = page.locator("#sfir-channel");
     // Mock returns "Test Event"; real org returns platform event labels (e.g. "Batch Job Execution Event")
-    const options = await channelSelect.locator("option").allTextContents();
-    await expect(options.some(text => text.includes("Event"))).toBeTruthy();
+    const options = await getComboboxOptionTexts(page, channelSelect);
+    expect(options.some(text => text.includes("Event"))).toBeTruthy();
   });
 
   test("Change Channel Type to Change Event", async ({page, extensionId}) => {
     await initEventMonitorPage(page, extensionId);
 
     // Select "Change Event" channel type
-    await page.locator("select.slds-select").first().selectOption("changeEvent");
+    await selectComboboxOption(page, page.locator("#sfir-channel-type"), "changeEvent");
     await page.waitForTimeout(250);
 
     // Verify "All Change Events" option exists (order is org-dependent)
-    const channelSelect = page.locator("select.slds-select").nth(1);
-    await expect(channelSelect.locator("option").filter({hasText: "All Change Events"})).toHaveCount(1);
+    const channelSelect = page.locator("#sfir-channel");
+    const options = await getComboboxOptionTexts(page, channelSelect);
+    expect(options.filter(text => text.includes("All Change Events"))).toHaveLength(1);
   });
 
   test("Enter Custom Channel Path", async ({page, extensionId}) => {
@@ -285,7 +289,7 @@ test.describe("Event Monitor", () => {
     await initEventMonitorPage(page, extensionId);
 
     // Select Custom Platform Event channel type
-    await page.locator("select.slds-select").first().selectOption("platformEvent");
+    await selectComboboxOption(page, page.locator("#sfir-channel-type"), "platformEvent");
     await page.waitForTimeout(1500);
 
 
@@ -314,7 +318,7 @@ test.describe("Event Monitor", () => {
     await expect(page.locator(".slds-modal:has-text('Generate Platform Event')")).toBeVisible();
 
     // Verify History dropdown has new entry (published event is added to history)
-    const historySelect = page.locator(".slds-modal select.sfir-event-history-select");
-    await expect(historySelect.locator("option")).toHaveCount(2, {timeout: 2000}); // "History" placeholder + 1 entry
+    const historySelect = page.locator(".slds-modal #sfir-event-history");
+    await expect.poll(async () => (await getComboboxOptionValues(page, historySelect)).length, {timeout: 2000}).toBe(1);
   });
 });

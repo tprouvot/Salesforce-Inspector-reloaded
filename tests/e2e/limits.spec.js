@@ -2,7 +2,9 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  waitSuccessfulHttpResponse
+  waitSuccessfulHttpResponse,
+  selectComboboxOption,
+  getComboboxOptionValues
 } from "./test-helpers";
 import {routeMock} from "./test-mock";
 
@@ -84,22 +86,23 @@ test.describe("Org Limits", () => {
   test("Sort dropdown has options", async ({page, extensionId}) => {
     await initLimitsPage(page, extensionId);
 
-    const sortSelect = page.locator("select.slds-select");
+    const sortSelect = page.locator("#sfir-limits-sort");
     await expect(sortSelect).toBeVisible();
-    await expect(sortSelect).toHaveValue("asc");
+    await expect(sortSelect).toHaveAttribute("data-value", "asc");
 
     // Verify sort options exist
-    await expect(sortSelect.locator("option[value='consumption']")).toHaveCount(1);
-    await expect(sortSelect.locator("option[value='asc']")).toHaveCount(1);
+    const values = await getComboboxOptionValues(page, sortSelect);
+    expect(values).toContain("consumption");
+    expect(values).toContain("asc");
   });
 
   test("Change sort order", async ({page, extensionId}) => {
     await initLimitsPage(page, extensionId);
 
-    const sortSelect = page.locator("select.slds-select");
-    await sortSelect.selectOption("consumption");
+    const sortSelect = page.locator("#sfir-limits-sort");
+    await selectComboboxOption(page, sortSelect, "consumption");
 
-    await expect(sortSelect).toHaveValue("consumption");
+    await expect(sortSelect).toHaveAttribute("data-value", "consumption");
     // URL should update with sort param
     await expect(page).toHaveURL(/sort=consumption/);
   });

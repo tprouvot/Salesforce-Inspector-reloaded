@@ -5,6 +5,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {CometD} from "./lib/cometd/cometd.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {Combobox} from "./components/Combobox.js";
 
 const channelTypes = [
   {value: "standardPlatformEvent", label: "Standard Platform Event", prefix: "/event/"},
@@ -375,9 +376,9 @@ class App extends React.Component {
     }
   }
 
-  onChannelTypeChange(e) {
+  onChannelTypeChange(val) {
     let {model} = this.props;
-    model.selectedChannelType = e.target.value;
+    model.selectedChannelType = val;
 
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set("channelType", model.selectedChannelType);
@@ -387,9 +388,9 @@ class App extends React.Component {
     model.didUpdate();
   }
 
-  onChannelSelection(e) {
+  onChannelSelection(val) {
     let {model} = this.props;
-    model.selectedChannel = e.target.value;
+    model.selectedChannel = val;
     this.persistParamInUrl("channel", model.selectedChannel);
     model.didUpdate();
   }
@@ -730,9 +731,8 @@ class App extends React.Component {
     model.didUpdate();
   }
 
-  onSelectHistoryEntry(e) {
+  onSelectHistoryEntry(key) {
     let {model} = this.props;
-    const key = e.target.value;
     if (!key) {
       model.selectedHistoryEntry = null;
       model.didUpdate();
@@ -748,9 +748,8 @@ class App extends React.Component {
     }
   }
 
-  onSelectSavedEntry(e) {
+  onSelectSavedEntry(key) {
     let {model} = this.props;
-    const key = e.target.value;
     if (!key) {
       model.selectedSavedEntry = null;
       model.didUpdate();
@@ -972,33 +971,26 @@ class App extends React.Component {
                     })
                   ),
                   h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
-                    h("label", {className: "slds-form-element__label"}, "Channel Type"),
-                    h("div", {className: "slds-select_container"},
-                      h("select", {
-                        className: "slds-select",
-                        value: model.selectedChannelType,
-                        onChange: this.onChannelTypeChange,
-                        disabled: model.isListenning
-                      },
-                      ...channelTypes.map((type) => h("option", {key: type.value, value: type.value}, type.label))
-                      )
-                    )
+                    h(Combobox, {
+                      id: "sfir-channel-type",
+                      label: "Channel Type",
+                      value: model.selectedChannelType,
+                      options: channelTypes,
+                      disabled: model.isListenning,
+                      onChange: this.onChannelTypeChange
+                    })
                   ),
                   h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
-                    h("label", {className: "slds-form-element__label"}, "Channel"),
-                    h("div", {className: "slds-select_container"},
-                      h("select", {
-                        className: "slds-select",
-                        value: model.selectedChannel,
-                        onChange: this.onChannelSelection,
-                        disabled: model.isListenning
-                      },
-                      ...model.channels.map((entity) => {
-                        let channelName = entity.name;
-                        return h("option", {key: entity.name, value: channelName}, entity.label);
-                      })
-                      )
-                    )
+                    h(Combobox, {
+                      id: "sfir-channel",
+                      label: "Channel",
+                      value: model.selectedChannel || "",
+                      dropdownWidth: "350px",
+                      dropdownHeight: "500px",
+                      options: model.channels.map(entity => ({ value: entity.name || "", label: entity.label })),
+                      disabled: model.isListenning,
+                      onChange: this.onChannelSelection
+                    })
                   ),
                   h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
                     h("label", {className: "slds-form-element__label"}, "Replay From"),
@@ -1199,36 +1191,40 @@ class App extends React.Component {
       h("p", {className: "slds-m-bottom_small"}, "Edit the platform event payload below, then click Publish for " + (model.selectedChannel || "") + "."),
       h("div", {className: "slds-grid slds-gutters slds-m-bottom_small"},
         h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_2-of-6"},
-          h("div", {className: "slds-form-element"},
-            h("label", {className: "slds-form-element__label"}, "History"),
-            h("div", {className: "slds-form-element__control"},
-              h("select", {
-                className: "slds-select sfir-event-history-select",
-                value: model.selectedHistoryEntry ? String(model.selectedHistoryEntry.key) : "",
-                onChange: this.onSelectHistoryEntry,
-                disabled: model.generateEventLoading
-              },
-              h("option", {value: "", disabled: true}, "History"),
-              model.platformEventHistory.list.map(entry => h("option", {key: entry.key, value: String(entry.key)}, entry.channel + " " + (entry.payload.length > 100 ? entry.payload.slice(0, 100) + "..." : entry.payload)))
-              )
-            )
-          )
+          h(Combobox, {
+            id: "sfir-event-history",
+            label: "History",
+            placeholder: "History",
+            value: model.selectedHistoryEntry ? String(model.selectedHistoryEntry.key) : "",
+            isSearchable: true,
+            clearOnSelect: true,
+            dropdownWidth: "500px",
+            showCheckmark: false,
+            disabled: model.generateEventLoading,
+            options: model.platformEventHistory.list.map(entry => ({
+              value: String(entry.key), 
+              label: entry.channel + " " + (entry.payload.length > 100 ? entry.payload.slice(0, 100) + "..." : entry.payload)
+            })),
+            onChange: this.onSelectHistoryEntry
+          })
         ),
         h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-6"},
-          h("div", {className: "slds-form-element"},
-            h("label", {className: "slds-form-element__label"}, "Saved"),
-            h("div", {className: "slds-form-element__control"},
-              h("select", {
-                className: "slds-select",
-                value: model.selectedSavedEntry ? String(model.selectedSavedEntry.key) : "",
-                onChange: this.onSelectSavedEntry,
-                disabled: model.generateEventLoading
-              },
-              h("option", {value: "", disabled: true}, "Saved"),
-              model.platformEventSaved.list.map(entry => h("option", {key: entry.key, value: String(entry.key)}, (entry.label || "") + " " + entry.channel))
-              )
-            )
-          )
+          h(Combobox, {
+            id: "sfir-event-saved",
+            label: "Saved",
+            placeholder: "Saved",
+            value: model.selectedSavedEntry ? String(model.selectedSavedEntry.key) : "",
+            isSearchable: true,
+            clearOnSelect: true,
+            dropdownWidth: "400px",
+            showCheckmark: false,
+            disabled: model.generateEventLoading,
+            options: model.platformEventSaved.list.map(entry => ({
+              value: String(entry.key), 
+              label: (entry.label || "") + " " + entry.channel
+            })),
+            onChange: this.onSelectSavedEntry
+          })
         ),
         h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-6"},
           h("div", {className: "slds-form-element"},

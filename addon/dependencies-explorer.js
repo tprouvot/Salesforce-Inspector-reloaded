@@ -2,6 +2,7 @@
 import {sfConn, apiVersion} from "./inspector.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, isRecordId, generatePackageXml} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {Combobox} from "./components/Combobox.js";
 /* global initButton */
 
 // Configuration constants
@@ -2403,13 +2404,13 @@ class App extends React.Component {
       h("div", {className: "area", id: "dependencies-area"},
         h("div", {className: "result-bar dep-result-bar"},
           h("div", {className: "dep-controls"},
-            h("select", {
+            h(Combobox, {
               value: model.selectedMetadataType,
-              onChange: e => model.setMetadataType(e.target.value),
-              className: "dep-select"
-            },
-            ...metadataTypes.map(type => h("option", {value: type.value}, type.label))
-            ),
+              options: metadataTypes,
+              width: "320px",
+              dropdownHeight: "550px",
+              onChange: (val) => model.setMetadataType(val)
+            }),
             h("div", {
               tabIndex: 0,
               ref: dropdownRef,

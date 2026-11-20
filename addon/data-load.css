@@ -102,3 +102,57 @@
   align-items: center;
   flex-wrap: wrap;
 }
+
+.sfir-data-paste-wrapper {
+  position: relative;
+  container-type: inline-size;
+}
+
+.sfir-data-paste-wrapper textarea {
+  resize: none;
+}
+
+.sfir-data-paste-wrapper .sfir-data-paste-button {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.75rem;
+  display: inline-grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.5rem;
+  height: 2rem;
+  padding: 0 1rem;
+  transition: grid-template-columns 0.2s ease, column-gap 0.2s ease, padding 0.2s ease;
+}
+
+.sfir-data-paste-wrapper .sfir-data-paste-button .slds-button__icon_left {
+  margin: 0;
+}
+
+.sfir-data-paste-wrapper .sfir-data-paste-button .sfir-paste-button-text {
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.sfir-data-paste-wrapper textarea:focus ~ .sfir-data-paste-button {
+  grid-template-columns: auto 0fr;
+  column-gap: 0;
+  padding: 0 0.5rem;
+}
+
+.sfir-data-paste-wrapper textarea:focus ~ .sfir-data-paste-button .sfir-paste-button-text {
+  opacity: 0;
+}
+
+@container (max-width: 12.5rem) {
+  .sfir-data-paste-wrapper .sfir-data-paste-button {
+    grid-template-columns: auto 0fr;
+    column-gap: 0;
+    padding: 0 0.5rem;
+  }
+
+  .sfir-data-paste-wrapper .sfir-data-paste-button .sfir-paste-button-text {
+    opacity: 0;
+  }
+}

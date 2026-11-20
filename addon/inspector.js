@@ -196,15 +196,15 @@ export let sfConn = {
     let errorMessage = null;
 
     if (rawResponse){
-      apiStatistics.trackApiCall("rest", url, method, duration, false);
+      apiStatistics.trackApiCall(this.instanceHostname, "rest", url, method, duration, false);
       return xhr;
     } else if (xhr.status >= 200 && xhr.status < 400) {
-      apiStatistics.trackApiCall("rest", url, method, duration, false);
+      apiStatistics.trackApiCall(this.instanceHostname, "rest", url, method, duration, false);
       return xhr.response;
     } else if (xhr.status == 0) {
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }
       errorMessage = "Network error, offline or timeout";
-      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
+      apiStatistics.trackApiCall(this.instanceHostname, "rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "SalesforceRestError";
       err.message = errorMessage;
@@ -217,7 +217,7 @@ export let sfConn = {
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
         showToastBanner();
       }
-      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
+      apiStatistics.trackApiCall(this.instanceHostname, "rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "Unauthorized";
       err.message = error;
@@ -229,7 +229,7 @@ export let sfConn = {
         sessionError = {text: error, type: "error", icon: "error"};
         showToastBanner();
       }
-      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
+      apiStatistics.trackApiCall(this.instanceHostname, "rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "Forbidden";
       err.message = error;
@@ -250,7 +250,7 @@ export let sfConn = {
         errorMessage = `HTTP error ${xhr.status} ${xhr.statusText}`;
         err.message = errorMessage;
       }
-      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
+      apiStatistics.trackApiCall(this.instanceHostname, "rest", url, method, duration, true, errorMessage);
       throw err;
     }
   },
@@ -339,7 +339,7 @@ export let sfConn = {
     let errorMessage = null;
 
     if (xhr.status == 200) {
-      apiStatistics.trackApiCall("soap", null, method, duration, false);
+      apiStatistics.trackApiCall(this.instanceHostname, "soap", null, method, duration, false);
       let responseBody = xhr.response.querySelector(method + "Response");
       let parsed = XML.parse(responseBody).result;
       return parsed;
@@ -355,7 +355,7 @@ export let sfConn = {
         errorMessage = `HTTP error ${xhr.status} ${xhr.statusText}`;
         err.message = errorMessage;
       }
-      apiStatistics.trackApiCall("soap", null, method, duration, true, errorMessage);
+      apiStatistics.trackApiCall(this.instanceHostname, "soap", null, method, duration, true, errorMessage);
       throw err;
     }
   },

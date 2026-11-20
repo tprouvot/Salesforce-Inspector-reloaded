@@ -56,6 +56,7 @@ class Model {
     this.isProcessingQueue = false;
     this.importState = null;
     this.greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
+    this.showPasteButton = localStorage.getItem("showPasteClipboardButton") !== "false";
     this.showStatus = {
       Queued: true,
       Processing: true,
@@ -469,7 +470,7 @@ class Model {
   canSkipAllUnknownFields() {
     if (this.importData.importTable && this.importData.importTable.header) {
       for (let column of this.importData.importTable.header) {
-        if (!column.columnIgnore() && column.columnUnknownField()) {
+        if (!column.columnIgnore() && column.columnError()) {
           return true;
         }
       }
@@ -1024,6 +1025,7 @@ class App extends React.Component {
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
+    this.onClipboardPasteClick = this.onClipboardPasteClick.bind(this);
     this.unloadListener = null;
     this.state = {templateValueIndex: -1};
   }
@@ -1057,6 +1059,14 @@ class App extends React.Component {
     let text = e.clipboardData.getData("text/plain");
     model.setData(text);
     model.didUpdate();
+  }
+  onClipboardPasteClick(e) {
+    e.preventDefault();
+    navigator.clipboard.readText().then(text => {
+      this.onDataPaste({clipboardData: {getData: () => text}});
+    }, () => {
+      // Clipboard read failed (permission denied or not supported); nothing to paste.
+    });
   }
   onExternalIdChange(e) {
     let {model} = this.props;
@@ -1381,7 +1391,13 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("label", {className: "slds-form-element__label", htmlFor: "data-paste"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("div", {className: "sfir-data-paste-wrapper"},
+                                h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", placeholder: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                                model.showPasteButton ? h("button", {className: "slds-button slds-button_neutral sfir-data-paste-button", onClick: this.onClipboardPasteClick, title: "Paste clipboard content", disabled: model.isWorking()},
+                                  h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#paste"})),
+                                  h("span", {className: "sfir-paste-button-text"}, "Paste")
+                                ) : null
+                              ),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
                             )
                           )
@@ -1416,7 +1432,6 @@ class App extends React.Component {
                           )
                         ),
                       )
-
                     )
                   )
                 )),

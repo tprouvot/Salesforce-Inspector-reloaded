@@ -1,83 +1,139 @@
-/*********
-* Gauges *
-**********/
-figure {
-  display: table;
-  margin: 0 auto 1rem auto;
-  width: 100%;
+.limits-page {
+  height: calc(100vh - var(--slds-s-header-sizing-height, 3.125rem));
+  margin-block-start: var(--slds-s-header-sizing-height, 3.125rem);
 }
-figcaption {
-  text-align: center;
-  font-weight: bold;
-  display: table-caption;
-  caption-side: bottom;
-  line-height: 1.2;
-  font-size: 1.1em;
+
+.limits-panel {
+  --limits-border-color: var(--slds-g-color-neutral-base-90);
+  --slds-c-card-radius-border: var(--slds-g-radius-border-4);
+  border: 1px solid var(--limits-border-color);
 }
-figcaption > div {
-  font-weight: normal;
-  font-size: 0.9em;
-  margin-top: 2px;
+
+.limits-panel__header {
+  padding-inline: var(--slds-g-spacing-5);
+  border-bottom-color: var(--limits-border-color);
 }
-.gauge {
-  display: block;
+
+.limits-panel__header,
+.limits-toolbar {
+  gap: var(--slds-g-spacing-3);
+}
+
+.limits-panel__title h2 {
+  font-size: var(--slds-g-font-scale-3);
+  font-weight: var(--slds-g-font-weight-6);
+}
+
+.limits-toolbar .slds-form-element {
+  min-width: 12rem;
+}
+
+.limits-toolbar .slds-form-element__label {
+  padding: 0;
+}
+
+.limits-toolbar .limits-search {
+  min-width: 15rem;
+}
+
+.limits-search__icon {
+  color: var(--slds-g-color-neutral-base-50);
+  fill: currentcolor;
+}
+
+.limits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: var(--slds-g-spacing-3);
+}
+
+.limits-grid__item {
+  border-color: var(--limits-border-color);
+  border-radius: 16px;
+}
+
+.limits-grid__item:hover {
+  border-color: var(--slds-g-color-brand-base-70);
+  box-shadow: var(--slds-g-shadow-1);
+}
+
+.limits-gauge-card__name {
+  font-size: var(--slds-g-font-scale-1);
+  font-weight: var(--slds-g-font-weight-6);
+}
+
+.limits-gauge {
   position: relative;
   width: 10rem;
   height: 5rem;
   overflow: hidden;
-  margin: 0 auto;
 }
-.gauge:before,
-.gauge:after,
-.meter {
+
+.limits-gauge::before,
+.limits-gauge::after,
+.limits-gauge__meter {
   position: absolute;
-  display: block;
   content: "";
 }
-.gauge:before,
-.meter {
+
+.limits-gauge::before,
+.limits-gauge__meter {
   width: 10rem;
   height: 5rem;
 }
-.gauge:before {
+
+.limits-gauge::before {
   border-radius: 5rem 5rem 0 0;
-  background: grey;
+  background-color: var(--slds-g-color-neutral-base-80);
 }
-.gauge:after {
-  position: absolute;
+
+.limits-gauge::after {
   bottom: 0;
   left: 2.5rem;
   width: 5rem;
   height: 2.5rem;
-  background: #ffffff;
   border-radius: 2.5rem 2.5rem 0 0;
+  background-color: var(--slds-g-color-surface-container-1);
 }
-.meter {
+
+.limits-gauge__meter {
   top: 100%;
-  transition: 1.5s;
   transform-origin: center top;
   border-radius: 0 0 6rem 6rem;
-  background: deepskyblue;
 }
-.meter-not-applicable {
-  background: lightgrey;
-}
-.meter-value-container {
+
+.limits-gauge__value-container {
   position: absolute;
   bottom: -0.75rem;
   left: 2.5rem;
-  z-index: 1000;
+  z-index: 1;
   width: 5rem;
   height: 2.5rem;
   overflow: hidden;
-  text-align: center;
 }
-.meter-value {
-  font: bold 1.25rem/1.6 sans-serif;
-  color: #333;
-  line-height: 2.5rem;
+
+.limits-gauge__value {
+  font: var(--slds-g-font-weight-7) var(--slds-g-font-scale-2)/2.5rem sans-serif;
   white-space: pre;
-  transition: 1.5s;
-  vertical-align: baseline;
   user-select: none;
+}
+
+.limits-gauge__meter_state_neutral { background-color: var(--slds-g-color-neutral-base-70); }
+.limits-gauge__meter_state_healthy { background-color: #159b72; }
+.limits-gauge__meter_state_full { background-color: #018eff; }
+.limits-gauge__meter_state_over { background-color: #e76f51; }
+
+.limits-gauge__value_state_neutral { color: var(--slds-g-color-neutral-base-50); }
+.limits-gauge__value_state_healthy { color: #159b72; }
+.limits-gauge__value_state_full { color: #018eff; }
+.limits-gauge__value_state_over { color: #e76f51; }
+
+@media (max-width: 40rem) {
+  .limits-toolbar {
+    width: 100%;
+  }
+
+  .limits-toolbar .limits-search {
+    min-width: 0;
+  }
 }

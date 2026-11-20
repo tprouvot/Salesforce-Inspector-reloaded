@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Org Limits` Restyle the page UI, add live filtering by limit label or API name, and color gauges by consumption: gray at 0%, green below 100%, blue at 100%, and orange above 100% [feature #1473](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1473) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Display Flow record details, including Id, Name, Created, and Modified information [feature #1471](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1471) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Add a Paste button in the data input box that reads the clipboard and loads it into the import table [feature #1475](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1475) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Fix query editor colouring for SOQL and SOSL: only their reserved words are coloured as keywords, so field names such as Status, Type or Language and objects such as Case or Order no longer look like SQL keywords, and the object after `FROM` or `RETURNING` gets its own colour [issue #1429](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1429) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))

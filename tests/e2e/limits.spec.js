@@ -53,7 +53,7 @@ test.describe("Org Limits", () => {
     await initLimitsPage(page, extensionId);
 
     // At least one limit gauge should be visible
-    const limitGauges = page.locator("figure .meter-value");
+    const limitGauges = page.locator("figure .limits-gauge__value");
     await expect(limitGauges.first()).toBeVisible({timeout: 5000});
 
     // Each gauge shows consumption percentage (e.g. "90%" or "0%")
@@ -69,8 +69,8 @@ test.describe("Org Limits", () => {
     const figure = page.locator("figure", {hasText: "Private Connect"});
     await expect(figure.locator("figcaption")).toContainText("0 of 0 consumed");
     // Should render as an empty/not-applicable gauge, not a falsely "full" one
-    await expect(figure.locator(".meter-value")).toHaveText("0%");
-    await expect(figure.locator(".meter")).toHaveClass(/meter-not-applicable/);
+    await expect(figure.locator(".limits-gauge__value")).toHaveText("0%");
+    await expect(figure.locator(".limits-gauge__meter")).toHaveClass(/limits-gauge__meter_state_neutral/);
   });
 
   test("Copy button is enabled when limits load", async ({page, extensionId}) => {

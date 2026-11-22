@@ -629,7 +629,7 @@ class App extends React.Component {
           className: "slds-m-top_xx-large sfir-page-container"
         },
         // Request card (not flexible)
-        h("div", {className: "slds-card slds-m-around_medium"},
+        h("div", {className: "slds-card slds-m-horizontal_medium slds-m-top_medium"},
           h("div", {className: "slds-card__body slds-card__body_inner"},
             h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center"},
               h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
@@ -791,8 +791,8 @@ class App extends React.Component {
               flexDirection: "column"
             }
           },
-          h("div", {className: "slds-card__header"},
-            h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-around_small"},
+          h("div", {className: "slds-card__header slds-m-bottom_none"},
+            h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-horizontal_x-small slds-p-vertical_xx-small"},
               h("div", {className: "slds-size_8-of-12"},
                 h("span", {className: "slds-text-heading_small slds-m-right_small"}, "Response"),
                 h("button", {className: "slds-button slds-button_neutral", disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy"),

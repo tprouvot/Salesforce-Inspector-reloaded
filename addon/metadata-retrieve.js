@@ -1,7 +1,7 @@
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, generatePackageXml} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, generatePackageXml, formatXml} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
 
@@ -352,53 +352,6 @@ class Model {
     });
   }
 
-  formatXml(xmlString) {
-    // Pretty-print with plain DOM traversal (XSLTProcessor is deprecated in browsers)
-    const xmlDoc = new DOMParser().parseFromString(xmlString, "text/xml");
-    if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-      return xmlString;
-    }
-
-    const indent = "  ";
-    const escText = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const escAttr = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-
-    const render = (node, depth) => {
-      const pad = indent.repeat(depth);
-      switch (node.nodeType) {
-        case Node.ELEMENT_NODE: {
-          const attrs = Array.from(node.attributes).map(a => " " + a.name + "=\"" + escAttr(a.value) + "\"").join("");
-          // Like xsl:strip-space: drop whitespace-only text nodes
-          const kids = Array.from(node.childNodes).filter(c => c.nodeType !== Node.TEXT_NODE || c.nodeValue.trim() !== "");
-          if (kids.length === 0) {
-            return pad + "<" + node.nodeName + attrs + "/>";
-          }
-          if (kids.every(c => c.nodeType === Node.TEXT_NODE || c.nodeType === Node.CDATA_SECTION_NODE)) {
-            const text = kids.map(c => c.nodeType === Node.CDATA_SECTION_NODE ? "<![CDATA[" + c.nodeValue + "]]>" : escText(c.nodeValue)).join("");
-            return pad + "<" + node.nodeName + attrs + ">" + text + "</" + node.nodeName + ">";
-          }
-          return [
-            pad + "<" + node.nodeName + attrs + ">",
-            ...kids.map(c => render(c, depth + 1)),
-            pad + "</" + node.nodeName + ">"
-          ].filter(Boolean).join("\n");
-        }
-        case Node.TEXT_NODE:
-          return pad + escText(node.nodeValue.trim());
-        case Node.CDATA_SECTION_NODE:
-          return pad + "<![CDATA[" + node.nodeValue + "]]>";
-        case Node.COMMENT_NODE:
-          return pad + "<!--" + node.nodeValue + "-->";
-        case Node.PROCESSING_INSTRUCTION_NODE:
-          return pad + "<?" + node.target + " " + node.nodeValue + "?>";
-        default:
-          return "";
-      }
-    };
-
-    return Array.from(xmlDoc.childNodes).map(node => render(node, 0)).filter(Boolean).join("\n");
-  }
-
   getMetadataFormat(metadataType) {
     // Code-based metadata types that have a 'body' field with source code
     const codeBasedTypes = ["ApexClass", "ApexTrigger"];
@@ -497,7 +450,7 @@ class Model {
       });
 
       // Format the XML with proper indentation
-      const formattedXml = this.formatXml(xmlContent);
+      const formattedXml = formatXml(xmlContent);
       return {
         content: formattedXml,
         format: "xml",

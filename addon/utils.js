@@ -1127,6 +1127,60 @@ export function isRecordId(recordId) {
 }
 
 /**
+ * Pretty-prints an XML string using plain DOM traversal.
+ * Replaces the XSLTProcessor-based approach, since XSLT in browsers is deprecated.
+ * Whitespace-only text nodes are dropped (like xsl:strip-space) and the output is indented with 2 spaces.
+ * If the input is not well-formed XML, it is returned unchanged.
+ * @param {string} xmlString - The XML to format
+ * @returns {string} The indented XML string
+ */
+export function formatXml(xmlString) {
+  const xmlDoc = new DOMParser().parseFromString(xmlString, "text/xml");
+  if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+    return xmlString;
+  }
+
+  const indent = "  ";
+  const escText = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const escAttr = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
+  const render = (node, depth) => {
+    const pad = indent.repeat(depth);
+    switch (node.nodeType) {
+      case Node.ELEMENT_NODE: {
+        const attrs = Array.from(node.attributes).map(a => " " + a.name + "=\"" + escAttr(a.value) + "\"").join("");
+        // Like xsl:strip-space: drop whitespace-only text nodes
+        const kids = Array.from(node.childNodes).filter(c => c.nodeType !== Node.TEXT_NODE || c.nodeValue.trim() !== "");
+        if (kids.length === 0) {
+          return pad + "<" + node.nodeName + attrs + "/>";
+        }
+        if (kids.every(c => c.nodeType === Node.TEXT_NODE || c.nodeType === Node.CDATA_SECTION_NODE)) {
+          const text = kids.map(c => c.nodeType === Node.CDATA_SECTION_NODE ? "<![CDATA[" + c.nodeValue + "]]>" : escText(c.nodeValue)).join("");
+          return pad + "<" + node.nodeName + attrs + ">" + text + "</" + node.nodeName + ">";
+        }
+        return [
+          pad + "<" + node.nodeName + attrs + ">",
+          ...kids.map(c => render(c, depth + 1)),
+          pad + "</" + node.nodeName + ">"
+        ].filter(Boolean).join("\n");
+      }
+      case Node.TEXT_NODE:
+        return pad + escText(node.nodeValue.trim());
+      case Node.CDATA_SECTION_NODE:
+        return pad + "<![CDATA[" + node.nodeValue + "]]>";
+      case Node.COMMENT_NODE:
+        return pad + "<!--" + node.nodeValue + "-->";
+      case Node.PROCESSING_INSTRUCTION_NODE:
+        return pad + "<?" + node.target + " " + node.nodeValue + "?>";
+      default:
+        return "";
+    }
+  };
+
+  return Array.from(xmlDoc.childNodes).map(node => render(node, 0)).filter(Boolean).join("\n");
+}
+
+/**
  * Generates a package.xml string from grouped metadata components
  * @param {Map|Object} groupedComponents - Map or Object where keys are metadata types and values are Set or Array of member names
  * @param {Object} [options] - Optional configuration

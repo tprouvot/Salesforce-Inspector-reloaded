@@ -64,6 +64,9 @@ class Model {
   }
 
   title() {
+    if (this.progress == "working" || this.progress == "loading") {
+      return "(Loading) Metadata";
+    }
     return "Metadata";
   }
 
@@ -263,7 +266,6 @@ class Model {
       );
 
       logMsg("(Finished)");
-      this.spinnerCount--;
 
       // Process the ZIP response
       let zipBin = Uint8Array.from(atob(res.zipFile), c => c.charCodeAt(0));
@@ -281,6 +283,9 @@ class Model {
       this.didUpdate();
     } catch (e) {
       this.logError(e);
+    } finally {
+      this.spinnerCount = Math.max(0, this.spinnerCount - 1);
+      this.didUpdate();
     }
   }
 

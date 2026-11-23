@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory, formatXml} from "./utils.js";
 
 function createRestQueryHistory(storageKey, max) {
   const isSaved = storageKey === "restSavedQueryHistory";
@@ -352,7 +352,7 @@ class Model {
 
   formatResponse(resp, format) {
     if (format === "xml") {
-      return this.formatXml(resp);
+      return formatXml(resp);
     }
     if (format === "text" || format === "log") {
       // For text/log responses, return as-is
@@ -363,28 +363,6 @@ class Model {
       return JSON.stringify(resp, null, "    ");
     }
     return String(resp);
-  }
-
-  formatXml(sourceXml) {
-    let xmlDoc = new DOMParser().parseFromString(sourceXml, "application/xml");
-    let xsltDoc = new DOMParser().parseFromString([
-      '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
-      '  <xsl:strip-space elements="*"/>',
-      '  <xsl:template match="para[content-style][not(text())]">',
-      '    <xsl:value-of select="normalize-space(.)"/>',
-      "  </xsl:template>",
-      '  <xsl:template match="node()|@*">',
-      '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
-      "  </xsl:template>",
-      '  <xsl:output indent="yes"/>',
-      "</xsl:stylesheet>",
-    ].join("\n"), "application/xml");
-
-    let xsltProcessor = new XSLTProcessor();
-    xsltProcessor.importStylesheet(xsltDoc);
-    let resultDoc = xsltProcessor.transformToDocument(xmlDoc);
-    let resultXml = new XMLSerializer().serializeToString(resultDoc);
-    return resultXml;
   }
 
   formatBytes(bytes) {

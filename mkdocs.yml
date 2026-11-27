@@ -79,6 +79,7 @@ nav:
       - Data Management:
           - Data Export: data-export.md
           - Data Import: data-import.md
+          - Data Editor: data-editor.md
       - Debugging:
           - Debug Logs Viewer: logs-viewer.md
       - Metadata:

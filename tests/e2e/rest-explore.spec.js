@@ -164,4 +164,100 @@ test.describe("REST Explore", () => {
 
     expect(await responseCode.evaluate(el => el.textContent)).toBe(malformed);
   });
+
+  test("Request History, Saved Requests And Templates Toolbar", async ({page, context, extensionId}) => {
+    const selectSource = (source) => page.locator(`label[for="sfir-query-source-${source}"]`).click();
+
+    await context.addInitScript(version => {
+      window.localStorage.setItem("restQueryHistory", JSON.stringify([
+        {key: 1, method: "GET", endpoint: `/services/data/v${version}/limits`, body: ""},
+        {key: 2, method: "POST", endpoint: `/services/data/v${version}/sobjects/Account/`, body: '{"Name":"Acme"}'}
+      ]));
+      window.localStorage.setItem("restSavedQueryHistory", JSON.stringify([
+        {key: 10, label: "Create Account", method: "POST", endpoint: `/services/data/v${version}/sobjects/Account/`, body: '{"Name":"Saved"}'}
+      ]));
+    }, apiVersion);
+
+    await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
+    await page.waitForSelector("select.slds-select", {timeout: 1000});
+
+    const endpointInput = page.locator('input[placeholder*="/services/data/v"]');
+    const methodSelect = page.locator('select.slds-select:has(option[value="GET"])');
+    const bodyInput = page.locator("textarea.slds-textarea");
+    const saveBtn = page.getByRole("button", {name: "Save Query"});
+    const labelInput = page.getByLabel("Save as");
+    const clearBtn = page.locator(".sfir-query-clear");
+    const options = page.locator("#query-search-listbox [role='option']");
+
+    // 1. Search History across method and endpoint, with highlighted matches and method badges.
+    const history = page.getByRole("combobox", {name: "Search history"});
+    await history.click();
+    await expect(options).toHaveCount(2);
+    await history.fill("post account");
+    await expect(options).toHaveCount(1);
+    await expect(options.first().locator(".sfir-query-badge")).toHaveText("POST");
+    await expect(options.first().locator(".sfir-search-match")).toHaveText(["POST", "Account"]);
+
+    // Deleting a history item is immediate and does not overwrite the active request.
+    await history.fill("");
+    await expect(options).toHaveCount(2);
+    await options.nth(1).locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(1);
+
+    // 2. Saved requests show label and method badges, restore request fields, and confirm before delete.
+    await selectSource("saved");
+    const saved = page.getByRole("combobox", {name: "Search saved"});
+    await saved.click();
+    await expect(options).toHaveCount(1);
+    await expect(options.first().locator(".slds-badge_inverse")).toHaveText("Create Account");
+    await options.first().click();
+    await expect(methodSelect).toHaveValue("POST");
+    await expect(endpointInput).toHaveValue(`/services/data/v${apiVersion}/sobjects/Account/`);
+    await expect(bodyInput).toHaveValue('{"Name":"Saved"}');
+    await expect(labelInput).toHaveValue("Create Account");
+
+    await saved.click();
+    page.once("dialog", dialog => dialog.dismiss());
+    await options.first().locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(1);
+
+    // 3. Empty endpoint disables Save Query; saving a valid request shows toast and clears label.
+    await endpointInput.fill("");
+    await expect(saveBtn).toBeDisabled();
+
+    await methodSelect.selectOption("PATCH");
+    await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Account/001000000000001AAA`);
+    await bodyInput.fill('{"Name":"Patched"}');
+    await labelInput.fill("Patch Account");
+    await saveBtn.click();
+
+    const toast = page.locator(".slds-notify_toast[role='status']");
+    await expect(toast.getByRole("heading", {name: "Saved"})).toBeVisible();
+    await expect(labelInput).toHaveValue("");
+
+    // PATCH and DELETE on the same endpoint do not overwrite one another in Saved or History.
+    await methodSelect.selectOption("DELETE");
+    await bodyInput.fill("");
+    await labelInput.fill("Delete Account");
+    await saveBtn.click();
+    await saved.click();
+    await expect(options).toHaveCount(3);
+
+    // 4. Templates are searchable and read-only; Clear empties History/Saved and restores focus.
+    await selectSource("templates");
+    await expect(clearBtn).toBeDisabled();
+    const templates = page.getByRole("combobox", {name: "Search templates"});
+    await templates.fill("limits");
+    await expect(options).toHaveCount(1);
+    await expect(options.first().locator(".sfir-combobox-delete")).toHaveCount(0);
+    await options.first().click();
+    await expect(methodSelect).toHaveValue("GET");
+    await expect(endpointInput).toHaveValue(`/services/data/v${apiVersion}/limits`);
+
+    await selectSource("history");
+    page.once("dialog", dialog => dialog.accept());
+    await clearBtn.click();
+    await expect(clearBtn).toBeDisabled();
+    await expect(page.locator("#sfir-query-source-history")).toBeFocused();
+  });
 });

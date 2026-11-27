@@ -3,14 +3,25 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {QueryToolbar} from "./components/SldsCombobox.js";
+import Toast from "./components/Toast.js";
+import {renderRestItem, restDropdownEntries} from "./query-search-utils.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory, formatXml} from "./utils.js";
+
+function sameRestRequest(a, b) {
+  return a.endpoint === b.endpoint && (a.method || "GET").toUpperCase() === (b.method || "GET").toUpperCase();
+}
 
 function createRestQueryHistory(storageKey, max) {
   const isSaved = storageKey === "restSavedQueryHistory";
   return new StorageHistory(storageKey, max, {
-    isValidEntry: (e) => typeof e === "object",
-    matchAdd: (e, ent) => e.endpoint === ent.endpoint,
-    matchRemove: (e, ent) => e.endpoint === ent.endpoint,
+    isValidEntry: (e) => typeof e === "object" && e !== null && typeof e.endpoint === "string" && e.endpoint.length > 0,
+    matchAdd: isSaved
+      ? (e, ent) => sameRestRequest(e, ent) && (e.label || "") === (ent.label || "")
+      : sameRestRequest,
+    matchRemove: isSaved
+      ? (e, ent) => (e.key && ent.key ? e.key === ent.key : sameRestRequest(e, ent) && (e.label || "") === (ent.label || ""))
+      : sameRestRequest,
     sortComparator: isSaved ? (a, b) => (a.endpoint > b.endpoint ? 1 : b.endpoint > a.endpoint ? -1 : 0) : null,
     addToFront: true
   });
@@ -32,10 +43,9 @@ class Model {
     this.exportError = null;
     this.exportedData = null;
     this.queryHistory = createRestQueryHistory("restQueryHistory", 100);
-    this.selectedHistoryEntry = null;
     this.savedHistory = createRestQueryHistory("restSavedQueryHistory", 50);
-    this.selectedSavedEntry = null;
-    this.expandSavedOptions = false;
+    this.toast = null;
+    this.toastTimeout = null;
     this.startTime = null;
     this.totalTime = 0;
     this.autocompleteState = "";
@@ -46,20 +56,21 @@ class Model {
     this.responseCounter = 0;
     this.canSendRequest = true;
     this.resultClass = "neutral";
-    this.request = {endpoint: "", method: "get", body: "", headers: ""};
+    this.request = {endpoint: "", method: "GET", body: "", headers: ""};
     this.showHeadersEditor = false;
     this.apiList;
     this.filteredApiList;
     this.displayOptions = JSON.parse(localStorage.getItem("restExploreDisplayOptions") || "[]");
-    this.requestTemplates = localStorage.getItem("requestTemplates") ? this.requestTemplates = localStorage.getItem("requestTemplates").split("//") : [
-      {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
-      {key: "executeApex", endpoint: `/services/data/v${apiVersion}/tooling/executeAnonymous/?anonymousBody=System.debug(LoggingLevel.INFO, 'Executing apex example');`, method: "GET", body: ""},
-      {key: "getAccount", endpoint: `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+LIMIT+1`, method: "GET", body: ""},
-      {key: "createAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/`, method: "POST", body: '{  \n"Name" : "SFIR",\n"Industry" : "Chrome Extension"\n}'},
-      {key: "updateAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "PATCH", body: '{  \n"Name" : "SFIR Updated"\n}'},
-      {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
-    ];
-    this.selectedTemplate = "";
+    this.requestTemplates = localStorage.getItem("requestTemplates")
+      ? localStorage.getItem("requestTemplates").split("//").filter(Boolean).map((tpl, idx) => ({key: `tpl-${idx}`, endpoint: tpl.trim(), method: "GET", body: ""}))
+      : [
+        {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
+        {key: "executeApex", endpoint: `/services/data/v${apiVersion}/tooling/executeAnonymous/?anonymousBody=System.debug(LoggingLevel.INFO, 'Executing apex example');`, method: "GET", body: ""},
+        {key: "getAccount", endpoint: `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+LIMIT+1`, method: "GET", body: ""},
+        {key: "createAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/`, method: "POST", body: '{  \n"Name" : "SFIR",\n"Industry" : "Chrome Extension"\n}'},
+        {key: "updateAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "PATCH", body: '{  \n"Name" : "SFIR Updated"\n}'},
+        {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
+      ];
 
     // Initialize spinFor method
     this.spinFor = createSpinForMethod(this);
@@ -72,12 +83,12 @@ class Model {
 
     if (args.has("endpoint") && args.has("method")) {
       this.request.endpoint = args.get("endpoint");
-      this.request.method = args.get("method");
+      this.request.method = args.get("method").toUpperCase();
     } else if (this.queryHistory.list[0]) {
-      this.request = this.queryHistory.list[0];
+      this.request = {...this.queryHistory.list[0], method: (this.queryHistory.list[0].method || "GET").toUpperCase()};
       this.didUpdate();
     } else {
-      this.request = this.requestTemplates[0];
+      this.request = {...this.requestTemplates[0]};
     }
 
     this.spinFor(sfConn.rest(`/services/data/v${apiVersion}/`, {})
@@ -109,8 +120,21 @@ class Model {
   setQueryName(value) {
     this.queryName = value;
   }
-  toggleSavedOptions() {
-    this.expandSavedOptions = !this.expandSavedOptions;
+  showToast(variant, title, message) {
+    clearTimeout(this.toastTimeout);
+    this.toast = {variant, title, message};
+    this.didUpdate();
+    this.toastTimeout = setTimeout(() => {
+      this.toast = null;
+      this.toastTimeout = null;
+      this.didUpdate();
+    }, 2000);
+  }
+  closeToast() {
+    clearTimeout(this.toastTimeout);
+    this.toastTimeout = null;
+    this.toast = null;
+    this.didUpdate();
   }
   toggleHeadersEditor() {
     this.showHeadersEditor = !this.showHeadersEditor;
@@ -163,32 +187,36 @@ class Model {
   clear() {
     this.apiResponse.value = "";
   }
-  selectSavedEntry() {
-    let delimiter = ":";
-    if (this.selectedSavedEntry != null) {
-      let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter)) {
-        let query = this.selectedSavedEntry.query.split(delimiter);
-        this.queryName = query[0];
-        queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
-      } else {
-        queryStr = this.selectedSavedEntry.query;
-      }
-      this.request.endpoint = queryStr;
-      this.queryAutocompleteHandler();
-      this.selectedSavedEntry = null;
-    }
-  }
   clearSavedHistory() {
     this.savedHistory.clear();
   }
   addToHistory() {
-    this.request.key = Date.now();
-    this.request.label = this.queryName ? this.queryName : "";
-    this.savedHistory.add(this.request);
+    const endpoint = this.request.endpoint?.trim();
+    if (!endpoint) {
+      return false;
+    }
+    const entry = {
+      ...this.request,
+      endpoint,
+      method: (this.request.method || "GET").toUpperCase(),
+      key: Date.now(),
+      label: this.queryName || ""
+    };
+    this.savedHistory.add(entry);
+    const wasSaved = this.savedHistory.list.some(
+      saved => sameRestRequest(saved, entry) && (saved.label || "") === entry.label
+    );
+    if (!wasSaved) {
+      return false;
+    }
+    this.queryName = "";
+    return true;
   }
-  removeFromHistory() {
-    this.savedHistory.remove(this.request);
+  deleteHistoryEntry(entry) {
+    this.queryHistory.remove(entry);
+  }
+  deleteSavedEntry(entry) {
+    this.savedHistory.remove(entry);
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -218,6 +246,9 @@ class Model {
     // This enables dynamic format detection based on Content-Type header
     let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "";
     this.request.method = this.request.method.toUpperCase();
+    if (this.request.endpoint.trim()) {
+      this.queryHistory.add({...this.request, key: Date.now()});
+    }
     const customHeaders = this.parseHeaders(this.request.headers);
     this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", headers: customHeaders, progressHandler: this.autocompleteProgress, useCache: false}, true)
       .catch(err => {
@@ -234,14 +265,11 @@ class Model {
         return null;
       })
       .then((result) => {
-        //generate key with timestamp
         if (shouldCalculateDuration) {
           this.totalTime = performance.now() - this.startTime;
         }
-        this.request.key = Date.now();
-        this.queryHistory.add(this.request);
         if (!result) {
-          model.didUpdate();
+          this.didUpdate();
           return;
         }
         this.parseResponse(result, "Success");
@@ -383,15 +411,10 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
-    this.onSelectRequestTemplate = this.onSelectRequestTemplate.bind(this);
     this.onSelectQueryMethod = this.onSelectQueryMethod.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
-    this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
-    this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
-    this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onSend = this.onSend.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onClearResponse = this.onClearResponse.bind(this);
@@ -402,33 +425,27 @@ class App extends React.Component {
     this.onUpdateHeaders = this.onUpdateHeaders.bind(this);
     this.highlightGuard = createChangeGuard();
   }
-  onSelectEntry(e, list) {
+  applyRestEntry(selectedRequest, {restoreLabel = false} = {}) {
+    if (!selectedRequest) {
+      return;
+    }
     let {model} = this.props;
-    const selectedRequest = list.filter(template => template.key.toString() === e.target.value)[0];
     // Preserve headers editor state and headers if they exist
     const currentHeaders = model.request.headers || "";
     const showHeadersEditor = model.showHeadersEditor;
-    model.request = selectedRequest;
-    // Restore headers if they were set, otherwise initialize empty
+    model.request = {
+      ...selectedRequest,
+      method: (selectedRequest.method || "GET").toUpperCase(),
+      body: selectedRequest.body || ""
+    };
     if (!model.request.headers) {
-      model.request.headers = currentHeaders || "";
+      model.request.headers = currentHeaders;
     }
     model.showHeadersEditor = showHeadersEditor;
+    model.queryName = restoreLabel ? (selectedRequest.label || "") : "";
     this.refs.endpoint.value = model.request.endpoint;
+    this.canSendRequest();
     this.resetRequest(model);
-    model.didUpdate();
-  }
-  onSelectHistoryEntry(e) {
-    let {model} = this.props;
-    this.onSelectEntry(e, model.queryHistory.list);
-  }
-  onSelectRequestTemplate(e) {
-    let {model} = this.props;
-    this.onSelectEntry(e, model.requestTemplates);
-  }
-  onSelectSavedEntry(e) {
-    let {model} = this.props;
-    this.onSelectEntry(e, model.savedHistory.list);
   }
   resetRequest(model) {
     model.apiResponse = "";
@@ -443,44 +460,84 @@ class App extends React.Component {
   }
   onClearHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to clear the query history?");
-    if (r == true) {
-      let {model} = this.props;
-      model.clearHistory();
-      model.didUpdate();
+    if (!confirm("Are you sure you want to clear the query history?")) {
+      return false;
     }
+    let {model} = this.props;
+    model.clearHistory();
+    model.didUpdate();
+    return true;
   }
   onAddToHistory(e) {
     e.preventDefault();
     let {model} = this.props;
-    model.addToHistory();
-    model.didUpdate();
-  }
-  onRemoveFromHistory(e) {
-    e.preventDefault();
-    let r = confirm("Are you sure you want to remove this saved query?");
-    let {model} = this.props;
-    if (r == true) {
-      model.removeFromHistory();
+    if (model.addToHistory()) {
+      model.showToast("success", "Saved", "Query saved successfully.");
     }
-    model.toggleSavedOptions();
-    model.didUpdate();
   }
   onClearSavedHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove all saved queries?");
-    let {model} = this.props;
-    if (r == true) {
-      model.clearSavedHistory();
+    if (!confirm("Are you sure you want to remove all saved queries?")) {
+      return false;
     }
-    model.toggleSavedOptions();
+    let {model} = this.props;
+    model.clearSavedHistory();
+    model.didUpdate();
+    return true;
+  }
+  onDeleteHistoryEntry(entry) {
+    let {model} = this.props;
+    model.deleteHistoryEntry(entry);
     model.didUpdate();
   }
-  onToggleSavedOptions(e) {
-    e.preventDefault();
+  onDeleteSavedEntry(entry) {
+    if (!confirm("Are you sure you want to remove this saved query?")) {
+      return;
+    }
     let {model} = this.props;
-    model.toggleSavedOptions();
+    model.deleteSavedEntry(entry);
     model.didUpdate();
+  }
+  querySources() {
+    let {model} = this.props;
+    return [
+      {
+        id: "history",
+        label: "History",
+        entries: model.queryHistory.list,
+        getResults: restDropdownEntries,
+        renderEntry: (entry, searchValue) => renderRestItem({...entry, label: null}, searchValue),
+        select: (entry) => this.applyRestEntry(entry),
+        remove: (entry) => this.onDeleteHistoryEntry(entry),
+        clear: this.onClearHistory,
+        clearLabel: "Clear Request History",
+        clearAriaLabel: "Clear list of request history"
+      },
+      {
+        id: "saved",
+        label: "Saved",
+        entries: model.savedHistory.list,
+        getResults: restDropdownEntries,
+        renderEntry: (entry, searchValue) => renderRestItem(entry, searchValue),
+        select: (entry) => this.applyRestEntry(entry, {restoreLabel: true}),
+        remove: (entry) => this.onDeleteSavedEntry(entry),
+        clear: this.onClearSavedHistory,
+        clearLabel: "Clear Saved Queries",
+        clearAriaLabel: "Clear list of saved queries"
+      },
+      {
+        id: "templates",
+        label: "Templates",
+        entries: model.requestTemplates,
+        getResults: restDropdownEntries,
+        renderEntry: (entry, searchValue) => renderRestItem({...entry, label: null}, searchValue),
+        select: (entry) => this.applyRestEntry(entry),
+        remove: null,
+        clear: null,
+        clearLabel: "Clear",
+        clearAriaLabel: "Clear list"
+      }
+    ];
   }
   onSend() {
     let {model} = this.props;
@@ -513,7 +570,7 @@ class App extends React.Component {
     model.request.endpoint = e.target.value;
     //replace current endpoint with latest on the have the autocomplete works for all api versions
     let updatedApiEndpoint = e.target.value.replace(/\/data\/v\d+\.0\//, `/data/v${apiVersion}/`);
-    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
+    model.filteredApiList = model.apiList?.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
     model.didUpdate();
   }
   onToggleHeadersEditor() {
@@ -587,11 +644,9 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  toggleQueryMoreMenu(event) {
-    this.refs.buttonQueryMenu?.classList.toggle("slds-is-open");
-  }
   render() {
     let {model} = this.props;
+    const isEndpointEmpty = !model.request.endpoint?.trim();
     return h("div", {},
       h(PageHeader, {
         pageTitle: "REST Explorer",
@@ -601,6 +656,12 @@ class App extends React.Component {
         spinnerCount: model.spinnerCount,
         ...model.userInfoModel.getProps()
       }),
+      model.toast && h(Toast, {
+        variant: model.toast.variant,
+        title: model.toast.title,
+        message: model.toast.message,
+        onClose: () => model.closeToast()
+      }),
       h(
         "div",
         {
@@ -609,86 +670,15 @@ class App extends React.Component {
         // Request card (not flexible)
         h("div", {className: "slds-card slds-m-around_medium"},
           h("div", {className: "slds-card__body slds-card__body_inner"},
-            h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center"},
-              h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
-                h("div", {className: "slds-media__body"},
-                  h("h3", {className: " slds-card__header-title"}, "Request"),
-                ),
-                h("div", {},
-                  h("div", {className: "slds-form-element__control"},
-                    h("div", {className: "slds-grid slds-grid_align-end"},
-                      h("div", {className: "slds-size_1-of-6"}),
-                      h("div", {className: "slds-size-1-of-6 slds-p-horizontal_xx-small"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "slds-select", title: "Check documentation to customize templates"},
-                            h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-                            model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
-                          ),
-                        )
-                      ),
-                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "slds-select"},
-                            h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                            model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
-                          ),
-                        )
-                      ),
-                      h("div", {className: "slds-col slds-p-horizontal_xx-small slds-p-horizontal_xx-small slds-m-right_large"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
-                        )
-                      ),
-                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
-                        h("div", {className: "slds-form-element__control"},
-                          h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "slds-select"},
-                            h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                            model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
-                          ),
-                        )
-                      ),
-                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
-                        h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
-                          h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
-                            h("use", {xlinkHref: "symbols.svg#save"})
-                          ),
-                          h("input", {className: "slds-input", placeholder: "Query Label", value: model.queryName, onInput: this.onSetQueryName})
-                        )
-                      ),
-                      h("div", {className: "slds-col slds-p-left_xx-small"},
-                        h("div", {className: "slds-button-group", role: "group"},
-                          h("button", {
-                            className: "slds-button slds-button_neutral",
-                            onClick: this.onAddToHistory,
-                            style: {whiteSpace: "nowrap"}
-                          }, "Save Query"),
-                          h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last", onClick: (event) => event.currentTarget.classList.toggle("slds-is-open")},
-                            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled"},
-                              h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-                                h("use", {xlinkHref: "symbols.svg#down"})
-                              )
-                            ),
-                            h("div", {className: "slds-dropdown slds-dropdown_right slds-dropdown_actions"},
-                              h("ul", {className: "slds-dropdown__list", role: "menu"},
-                                h("li", {className: "slds-dropdown__item", role: "presentation"},
-                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
-                                    h("span", {onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
-                                  )
-                                ),
-                                h("li", {className: "slds-dropdown__item", role: "presentation"},
-                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
-                                    h("span", {onClick: this.onClearSavedHistory, title: "Clear Saved Queries"}, "Clear Saved Queries")
-                                  )
-                                ),
-                              )
-                            )
-                          )
-                        )
-                      )
-                    )
-                  ),
-                )
-              )
+            h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap"},
+              h("h3", {className: "slds-card__header-title slds-m-vertical_xx-small slds-m-right_small"}, "Request"),
+              h(QueryToolbar, {
+                sources: this.querySources(),
+                queryName: model.queryName,
+                onQueryNameChange: this.onSetQueryName,
+                onSave: this.onAddToHistory,
+                isSaveDisabled: isEndpointEmpty
+              })
             ),
             h("div", {className: "slds-card__body slds-card__body_inner"},
               h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},

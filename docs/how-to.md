@@ -66,6 +66,82 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
+## Use History, Saved Queries, and Templates in Data Export and REST Explorer
+
+Data Export and REST Explorer share an inline toolbar in their top header bar. Pick where
+the entry comes from with the **History / Saved / Templates** buttons, then search that
+list in the box beside them:
+
+* **History**: queries or REST requests you have run, newest first
+* **Saved**: entries you saved, with their optional labels
+* **Templates**: the starter queries or REST requests from your Templates configuration
+
+Only the selected list is shown, and the search box names it, so there is never any doubt
+about which list you are searching. Long entries are truncated to two lines in the dropdown,
+with the full query or request shown on hover. **Clear** empties the selected History or Saved
+list and is disabled for Templates. Drag the bottom-right corner of an open dropdown to
+set its preferred maximum height; shorter lists still shrink to fit their items.
+
+The **Optional label** input and **Save Query** are separated from the browsing controls
+because they save what is currently in the editor, regardless of which source is selected.
+After saving, a success message appears and the label is cleared. In Data Export, the label
+is also cleared when you switch query tabs, while remaining intact as you edit the query.
+
+### Delete individual entries
+
+1. Select **History** or **Saved** and open the dropdown
+2. Highlight an entry with the arrow keys, or hover over it
+3. Press **Delete** (**Fn+Delete** on a Mac keyboard), or click the **delete icon** (trash) on the right
+
+> **Note**
+> Deleting a history entry is immediate; deleting a saved entry asks for confirmation.
+> Templates come from your configuration, so they cannot be deleted here.
+> Deletion is unavailable while `?` is listing object names in Data Export.
+
+### Visual badges
+
+* **Label badge**: appears at the start for saved entries with a label
+* **Tooling badge** (Data Export): appears at the end when "Tooling API" was enabled
+* **HTTP method badge** (REST Explorer): shows `GET`, `POST`, `PATCH`, `PUT`, or `DELETE`
+
+To create labeled entries: enter your query or endpoint, type an optional label,
+then click **Save Query**. The button is disabled while the query or endpoint is empty.
+
+### Automatic history saving
+
+Entries are saved to history **immediately** when you:
+* Click **Run Export**, **Query Plan**, or **Send**
+* Press **Ctrl+Enter** or **F5**
+
+Failed runs are also saved, so you can reload and fix them from the history.
+
+### Searching
+
+Typing ranks exact phrases first, followed by queries containing every word. If none match
+all words, partial matches are shown as a fallback. Matching text is highlighted in the
+coloured query.
+
+### Object search filter
+
+Type `?` in the search box to filter by the objects the queries in the selected list
+select from, that is the SOQL `FROM` object or the SOSL `RETURNING` objects:
+* `?`: show every object used in the list
+* `?Acc`: objects starting with "Acc"
+* `?Account `: queries against Account (a trailing space confirms the object)
+* `?Account status`: Account queries that also contain "status"
+
+Select an object to see its queries. The dropdown stays open so you can browse and select.
+
+### Keyboard shortcuts
+
+* **Escape**: close the dropdown
+* **Arrow Up/Down**: open the dropdown, then move through it
+* **Enter**: select the highlighted item
+* **Tab**: select the highlighted item, if any, and close the dropdown
+* **Delete**: remove the highlighted item
+
+---
+
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
 
 1. Open data export page on legacy extension

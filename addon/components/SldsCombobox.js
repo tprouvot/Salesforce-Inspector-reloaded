@@ -5,7 +5,6 @@ let h = React.createElement;
 
 const PAGE_SIZE = 30;
 const RESIZE_CORNER_PX = 12;
-const ALL_SOURCE_ORDER = ["saved", "history", "templates"];
 
 function isInResizeCorner(listbox, clientX, clientY, target) {
   if (!listbox || target?.closest?.(".sfir-combobox-delete")) {
@@ -13,18 +12,6 @@ function isInResizeCorner(listbox, clientX, clientY, target) {
   }
   const rect = listbox.getBoundingClientRect();
   return clientX >= rect.right - RESIZE_CORNER_PX && clientY >= rect.bottom - RESIZE_CORNER_PX;
-}
-
-function orderSourcesForAll(sources) {
-  const ordered = ALL_SOURCE_ORDER
-    .map(id => sources.find(source => source.id === id))
-    .filter(Boolean);
-  sources.forEach(source => {
-    if (!ordered.includes(source)) {
-      ordered.push(source);
-    }
-  });
-  return ordered;
 }
 
 export class SldsCombobox extends React.Component {
@@ -82,9 +69,8 @@ export class SldsCombobox extends React.Component {
     setTimeout(() => document.addEventListener("mousedown", this.handleDocumentClick), 0);
   }
 
-  // Where the input sits in the toolbar depends on the org name, so a fixed side
-  // would hang off one edge or the other. Open towards whichever side has more
-  // room; the max-width in CSS keeps the dropdown inside the window either way.
+  // Keep the dropdown left-aligned to the search input, only flipping right on tiny
+  // viewports where there is no room on the right; clamp max-width to the viewport.
   alignDropdown() {
     const box = document.getElementById(this.props.id + "-listbox");
     if (!box || !this.containerRef) {
@@ -92,10 +78,12 @@ export class SldsCombobox extends React.Component {
     }
     const anchor = this.containerRef.getBoundingClientRect();
     const viewportWidth = document.documentElement.clientWidth;
-    const openLeft = viewportWidth - anchor.left >= anchor.right;
+    const rightSpace = viewportWidth - anchor.left;
+    const openLeft = rightSpace >= 240 || rightSpace >= anchor.right;
     box.classList.toggle("slds-dropdown_left", openLeft);
     box.classList.toggle("slds-dropdown_right", !openLeft);
-    box.style.setProperty("--sfir-query-dropdown-available-width", (openLeft ? viewportWidth - anchor.left : anchor.right) + "px");
+    const availableWidth = Math.max(anchor.width, (openLeft ? rightSpace : anchor.right) - 16);
+    box.style.setProperty("--sfir-query-dropdown-available-width", availableWidth + "px");
     if (!this.isResizing) {
       box.style.height = "";
       box.style.maxHeight = "";
@@ -208,8 +196,7 @@ export class SldsCombobox extends React.Component {
         ),
         isOpen && h("div", {
           id: listboxId,
-          // Horizontal alignment is set by alignDropdown, not an SLDS modifier.
-          className: "slds-dropdown slds-dropdown_length-7 sfir-query-combobox-dropdown",
+          className: "slds-dropdown slds-dropdown_left slds-dropdown_length-7 sfir-query-combobox-dropdown",
           role: "listbox",
           onScroll: (e) => {
             const box = e.currentTarget;
@@ -320,7 +307,7 @@ export class QueryToolbar extends React.Component {
   }
 
   buildAllSource() {
-    const orderedSources = orderSourcesForAll(this.props.sources);
+    const orderedSources = this.props.sources;
     const hasRemovableSource = orderedSources.some(source => Boolean(source.remove));
     return {
       id: "all",

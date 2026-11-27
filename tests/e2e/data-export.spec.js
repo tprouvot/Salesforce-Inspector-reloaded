@@ -635,26 +635,31 @@ test.describe("Data Export", () => {
     await expect(page.locator(".sfir-query-toolbar button", {hasText: "Clear"})).toHaveCount(0);
 
     await searchAll.click();
-    await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "History", "Templates"]);
+    await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["History", "Saved", "Templates"]);
     await expect(options).toHaveCount(4);
 
-    // Saved and History entries show delete affordances; Templates do not.
+    // History and Saved entries show delete affordances; Templates do not.
     await expect(options.nth(0).locator(".sfir-combobox-delete")).toHaveCount(1);
     await expect(options.nth(1).locator(".sfir-combobox-delete")).toHaveCount(1);
     await expect(options.nth(2).locator(".sfir-combobox-delete")).toHaveCount(0);
 
     // Saved asks for confirmation; History deletes immediately.
     page.once("dialog", dialog => dialog.dismiss());
-    await options.nth(0).locator(".sfir-combobox-delete").click();
+    await options.nth(1).locator(".sfir-combobox-delete").click();
     await expect(options).toHaveCount(4);
 
-    await options.nth(1).locator(".sfir-combobox-delete").click();
+    await options.nth(0).locator(".sfir-combobox-delete").click();
     await expect(options).toHaveCount(3);
     await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "Templates"]);
 
-    // "?" unions objects across remaining sources (Case from Saved + Opportunity from Templates).
+    // "?" unions objects across remaining sources (Case from Saved + Opportunity from Templates),
+    // and short suggestion items still match at least the search input width while staying left-aligned.
     await searchAll.fill("?");
     await expect(options).toHaveText(["case", "opportunity"]);
+    const inputBounds = await searchAll.boundingBox();
+    const suggestListboxBounds = await listbox.boundingBox();
+    expect(Math.abs(suggestListboxBounds.x - inputBounds.x), "dropdown left-aligns with the search input").toBeLessThan(2);
+    expect(suggestListboxBounds.width, "short suggestions never shrink narrower than the input").toBeGreaterThanOrEqual(inputBounds.width - 1);
     await searchAll.fill("?opportunity ");
     await expect(options).toHaveCount(1);
     await expect(options.first()).toContainText("FROM Opportunity");
@@ -827,8 +832,12 @@ test.describe("Data Export", () => {
       if (width >= 1024) {
         const headingCenter = heading.y + (heading.height / 2);
         const toolbarCenter = bounds.y + (bounds.height / 2);
-        const toggleCenter = toggle.y + (toggle.height / 2);
         expect(Math.abs(toolbarCenter - headingCenter), "toolbar is inline with Export Query").toBeLessThan(6);
+        expect(bounds.x - (heading.x + heading.width), "toolbar sits directly after Export Query").toBeLessThan(24);
+      }
+      if (width >= 1280) {
+        const toolbarCenter = bounds.y + (bounds.height / 2);
+        const toggleCenter = toggle.y + (toggle.height / 2);
         expect(Math.abs(toggleCenter - toolbarCenter), "toggles are inline with toolbar").toBeLessThan(6);
       }
     });

@@ -2007,7 +2007,7 @@ class App extends React.Component {
               h("div", {className: "query-history-controls"},
                 this.renderQuerySection()
               ),
-              h("div", {className: "slds-grid slds-grid_vertical-align-center"},
+              h("div", {className: "slds-grid slds-grid_vertical-align-center slds-col_bump-left"},
                 h("label", {className: "slds-checkbox_toggle slds-grid sfir-inline-toggle slds-m-right_small"},
                   h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
                   h("input", {

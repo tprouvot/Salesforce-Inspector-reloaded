@@ -195,12 +195,20 @@ test.describe("REST Explore", () => {
     expect(Math.abs(saveBox.y - sendBox.y), "Save Query sits on the Send row").toBeLessThan(2);
     await expect(page.locator(".sfir-query-toolbar button", {hasText: "Clear"})).toHaveCount(0);
 
-    // 1. All is selected by default and searches across Saved, History, and Templates with group headers.
+    // 1. All is selected by default, sits directly after Request, and left-aligns its dropdown to the search input.
+    const requestHeading = await page.getByRole("heading", {name: "Request", exact: true}).boundingBox();
+    const toolbarBox = await page.locator(".sfir-query-toolbar").boundingBox();
+    expect(toolbarBox.x - (requestHeading.x + requestHeading.width), "toolbar sits directly after Request").toBeLessThan(24);
+
     const searchAll = page.getByRole("combobox", {name: "Search all"});
     await searchAll.click();
-    await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "History", "Templates"]);
+    const searchInputBox = await searchAll.boundingBox();
+    const openListboxBox = await listbox.boundingBox();
+    expect(Math.abs(openListboxBox.x - searchInputBox.x), "dropdown left-aligns with the search input").toBeLessThan(2);
+    expect(openListboxBox.width, "dropdown is at least as wide as the search input").toBeGreaterThanOrEqual(searchInputBox.width - 1);
+    await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["History", "Saved", "Templates"]);
     await searchAll.fill("create account");
-    await expect(options.first().locator(".slds-badge_inverse")).toHaveText("Create Account");
+    await expect(listbox.locator(".slds-badge_inverse")).toHaveText("Create Account");
 
     // 2. Search History across method and endpoint, with highlighted matches and method badges.
     await selectSource("history");

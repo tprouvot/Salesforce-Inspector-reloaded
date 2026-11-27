@@ -72,7 +72,7 @@ Data Export and REST Explorer share an inline toolbar in their top header bar. P
 the entry comes from with the **All / History / Saved / Templates** buttons, then search that
 scope in the box beside them:
 
-* **All**: searches across Saved, History, and Templates together, grouped by section
+* **All**: searches across History, Saved, and Templates together, grouped by section
 * **History**: queries or REST requests you have run, newest first
 * **Saved**: entries you saved, with their optional labels
 * **Templates**: the starter queries or REST requests from your Templates configuration

@@ -652,7 +652,7 @@ class App extends React.Component {
         // Request card (not flexible)
         h("div", {className: "slds-card slds-m-around_medium"},
           h("div", {className: "slds-card__body slds-card__body_inner"},
-            h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap"},
+            h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center slds-wrap"},
               h("h3", {className: "slds-card__header-title slds-m-vertical_xx-small slds-m-right_small"}, "Request"),
               h(QueryToolbar, {
                 sources: this.querySources()

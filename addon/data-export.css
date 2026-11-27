@@ -189,9 +189,9 @@ textarea[hidden] {
 .query-controls {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  gap: var(--slds-g-spacing-2, 0.5rem);
+  gap: var(--slds-g-spacing-3, 0.75rem);
   margin-bottom: var(--slds-g-spacing-2, 0.5rem);
 }
 

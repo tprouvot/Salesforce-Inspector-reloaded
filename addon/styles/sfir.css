@@ -286,8 +286,9 @@ a.download-salesforce {
 }
 
 .sfir-query-combobox-dropdown {
+  min-width: 100%;
   width: max-content;
-  max-width: min(60rem, 75vw, var(--sfir-query-dropdown-available-width, 50vw));
+  max-width: min(48rem, var(--sfir-query-dropdown-available-width, calc(100vw - 2rem)));
   resize: vertical;
 }
 

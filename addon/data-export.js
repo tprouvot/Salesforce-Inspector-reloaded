@@ -2030,7 +2030,7 @@ class App extends React.Component {
                 this.renderQuerySection()
               ),
               h("div", {className: "slds-grid slds-grid_vertical-align-center"},
-                h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_medium"},
+                h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_small"},
                   h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
                   h("input", {
                     type: "checkbox",

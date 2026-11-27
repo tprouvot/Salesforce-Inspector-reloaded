@@ -249,9 +249,6 @@ class Model {
     }
     return {text: `${batchCount}${this.totalTime.toFixed(1)}ms`, batchStats};
   }
-  clearHistory() {
-    this.queryHistory.clear();
-  }
   selectSavedEntry() {
     if (this.selectedSavedEntry != null) {
       const {label, query} = splitSavedQuery(this.selectedSavedEntry.query);
@@ -262,9 +259,6 @@ class Model {
       this.queryAutocompleteHandler();
       this.selectedSavedEntry = null;
     }
-  }
-  clearSavedHistory() {
-    this.savedHistory.clear();
   }
   showToast(variant, title, message) {
     clearTimeout(this.toastTimeout);
@@ -1423,11 +1417,9 @@ class App extends React.Component {
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
-    this.onClearHistory = this.onClearHistory.bind(this);
     this.onOpenSaveModal = this.onOpenSaveModal.bind(this);
     this.onConfirmSaveModal = this.onConfirmSaveModal.bind(this);
     this.onCloseSaveModal = this.onCloseSaveModal.bind(this);
-    this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
     this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
@@ -1509,16 +1501,6 @@ class App extends React.Component {
     model.updatedExportedData();
     model.didUpdate();
   }
-  onClearHistory(e) {
-    e.preventDefault();
-    if (!confirm("Are you sure you want to clear the query history?")) {
-      return false;
-    }
-    let {model} = this.props;
-    model.clearHistory();
-    model.didUpdate();
-    return true;
-  }
   onOpenSaveModal(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -1539,16 +1521,6 @@ class App extends React.Component {
   }
   onCloseSaveModal() {
     this.setState({isSaveModalOpen: false});
-  }
-  onClearSavedHistory(e) {
-    e.preventDefault();
-    if (!confirm("Are you sure you want to remove all saved queries?")) {
-      return false;
-    }
-    let {model} = this.props;
-    model.clearSavedHistory();
-    model.didUpdate();
-    return true;
   }
   onToggleHelp(e) {
     e.preventDefault();
@@ -1833,10 +1805,7 @@ class App extends React.Component {
         getResults: dropdownEntries,
         renderEntry: renderEntry((entry, searchValue) => renderQueryItem({query: entry.query, useToolingApi: entry.useToolingApi}, searchValue)),
         select: (entry) => { model.selectedHistoryEntry = entry; model.selectHistoryEntry(); model.didUpdate(); },
-        remove: (entry) => this.onDeleteHistoryEntry(entry),
-        clear: this.onClearHistory,
-        clearLabel: "Clear Query History",
-        clearAriaLabel: "Clear list of query history"
+        remove: (entry) => this.onDeleteHistoryEntry(entry)
       },
       {
         id: "saved",
@@ -1845,10 +1814,7 @@ class App extends React.Component {
         getResults: dropdownEntries,
         renderEntry: renderEntry((entry, searchValue) => renderQueryItem({...splitSavedQuery(entry.query), useToolingApi: entry.useToolingApi}, searchValue)),
         select: (entry) => { model.selectedSavedEntry = entry; model.selectSavedEntry(); model.didUpdate(); },
-        remove: (entry) => this.onDeleteSavedEntry(entry),
-        clear: this.onClearSavedHistory,
-        clearLabel: "Clear Saved Queries",
-        clearAriaLabel: "Clear list of saved queries"
+        remove: (entry) => this.onDeleteSavedEntry(entry)
       },
       {
         id: "templates",
@@ -1857,10 +1823,7 @@ class App extends React.Component {
         getResults: dropdownEntries,
         renderEntry: renderEntry((entry, searchValue) => renderQueryItem({query: entry.query}, searchValue)),
         select: (entry) => { model.selectedQueryTemplate = entry.query; model.selectQueryTemplate(); model.didUpdate(); },
-        remove: null,
-        clear: null,
-        clearLabel: "Clear",
-        clearAriaLabel: "Clear list"
+        remove: null
       }
     ];
   }

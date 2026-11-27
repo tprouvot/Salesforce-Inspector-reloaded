@@ -294,6 +294,41 @@ test.describe("Options", () => {
       // Verify value is set
       await expect(csvSeparatorInput).toHaveValue(";");
     });
+
+    test("Clear Query History and Saved Queries Buttons", async ({page, context, extensionId}) => {
+      await context.addInitScript(() => {
+        window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+          {query: "SELECT Id FROM Account", useToolingApi: false}
+        ]));
+        window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+          {query: "Saved:SELECT Id FROM Contact", useToolingApi: false}
+        ]));
+      });
+
+      await initOptionsPage(page, extensionId, null, "Data Export");
+
+      const clearHistoryBtn = page.getByRole("button", {name: "Clear Query History"});
+      const clearSavedBtn = page.getByRole("button", {name: "Clear Saved Queries"});
+      await expect(clearHistoryBtn).toBeEnabled();
+      await expect(clearSavedBtn).toBeEnabled();
+
+      // Dismissing confirmation preserves data; accepting clears storage, shows toast, and disables the button.
+      page.once("dialog", dialog => dialog.dismiss());
+      await clearHistoryBtn.click();
+      await expect(clearHistoryBtn).toBeEnabled();
+
+      page.once("dialog", dialog => dialog.accept());
+      await clearHistoryBtn.click();
+      await expect(clearHistoryBtn).toBeDisabled();
+      await expect(page.locator(".slds-notify_toast")).toContainText("Query history cleared successfully.");
+      expect(await page.evaluate(() => window.localStorage.getItem("insextQueryHistory"))).toBeNull();
+      expect(await page.evaluate(() => JSON.parse(window.localStorage.getItem("insextSavedQueryHistory")))).toHaveLength(1);
+
+      page.once("dialog", dialog => dialog.accept());
+      await clearSavedBtn.click();
+      await expect(clearSavedBtn).toBeDisabled();
+      expect(await page.evaluate(() => window.localStorage.getItem("insextSavedQueryHistory"))).toBeNull();
+    });
   });
 
   test.describe("Data Import", () => {
@@ -799,6 +834,30 @@ test.describe("Options", () => {
 
       // Verify value is set
       await expect(debugTimeInput).toHaveValue("30");
+    });
+  });
+
+  test.describe("REST Explorer", () => {
+    test("Clear Request History and Saved Requests Buttons", async ({page, context, extensionId}) => {
+      await context.addInitScript(() => {
+        window.localStorage.setItem("restQueryHistory", JSON.stringify([
+          {key: 1, method: "GET", endpoint: "/services/data/v68.0/limits", body: ""}
+        ]));
+        window.localStorage.removeItem("restSavedQueryHistory");
+      });
+
+      await initOptionsPage(page, extensionId, null, "REST Explorer");
+
+      const clearHistoryBtn = page.getByRole("button", {name: "Clear Request History"});
+      const clearSavedBtn = page.getByRole("button", {name: "Clear Saved Requests"});
+      await expect(clearHistoryBtn).toBeEnabled();
+      await expect(clearSavedBtn).toBeDisabled();
+
+      page.once("dialog", dialog => dialog.accept());
+      await clearHistoryBtn.click();
+      await expect(clearHistoryBtn).toBeDisabled();
+      await expect(page.locator(".slds-notify_toast")).toContainText("Request history cleared successfully.");
+      expect(await page.evaluate(() => window.localStorage.getItem("restQueryHistory"))).toBeNull();
     });
   });
 });

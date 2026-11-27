@@ -627,12 +627,12 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
-    // All is selected by default, and Clear is disabled so Saved entries cannot be wiped accidentally.
+    // All is selected by default, and no inline Clear button clutters the toolbar.
     const searchAll = page.getByRole("combobox", {name: "Search all"});
     const listbox = page.locator("#query-search-listbox");
     const options = listbox.locator("[role='option']");
     await expect(page.locator("#sfir-query-source-all")).toBeChecked();
-    await expect(page.locator(".sfir-query-clear")).toBeDisabled();
+    await expect(page.locator(".sfir-query-toolbar button", {hasText: "Clear"})).toHaveCount(0);
 
     await searchAll.click();
     await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "History", "Templates"]);
@@ -697,51 +697,10 @@ test.describe("Data Export", () => {
       const querySource = document.getElementById("sfir-query-source-all");
       return Boolean(querySource.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING);
     })).toBe(true);
-  });
 
-  test("Clear Selected Query Source", async ({page, context, extensionId}) => {
-    await context.addInitScript(() => {
-      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
-        {query: "SELECT Id FROM Account", useToolingApi: false}
-      ]));
-      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
-        {query: "Saved:SELECT Id FROM Contact", useToolingApi: false}
-      ]));
-    });
-
-    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
-    await page.waitForSelector("textarea#query", {timeout: 2000});
-
-    const clearList = page.locator(".sfir-query-clear");
-    await expect(clearList).toBeDisabled();
-    await expect(clearList).toHaveAttribute("title", "Select History or Saved to clear");
-
-    await selectQuerySource(page, "history");
-    await expect(clearList).toBeEnabled();
-    await expect(clearList).toHaveText("Clear");
-    await expect(clearList).toHaveAccessibleName("Clear list of query history");
-    await expect(clearList).toHaveAttribute("title", "Clear Query History");
-    page.once("dialog", dialog => dialog.accept());
-    await clearList.click();
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextQueryHistory")) || [])).toHaveLength(0);
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")))).toHaveLength(1);
-    await expect(clearList).toBeDisabled();
-    await expect(page.locator("#sfir-query-source-history")).toBeFocused();
-
-    await selectQuerySource(page, "saved");
-    await expect(clearList).toBeEnabled();
-    await expect(clearList).toHaveAccessibleName("Clear list of saved queries");
-    await expect(clearList).toHaveAttribute("title", "Clear Saved Queries");
-    page.once("dialog", dialog => dialog.accept());
-    await clearList.click();
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
-    await expect(clearList).toBeDisabled();
-    await expect(page.locator("#sfir-query-source-saved")).toBeFocused();
-
-    await selectQuerySource(page, "templates");
-    await expect(clearList).toBeDisabled();
-    await expect(clearList).toHaveAccessibleName("Clear list");
-    await expect(clearList).toHaveAttribute("title", "Clear");
+    // The widened search input is roomy enough for multi-word queries.
+    const searchBox = await page.locator(".sfir-query-search").boundingBox();
+    expect(searchBox.width, "search input is widened").toBeGreaterThanOrEqual(220);
   });
 
   test("Empty Editor Cannot Be Saved", async ({page, context, extensionId}) => {

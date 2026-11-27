@@ -10,6 +10,39 @@ import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
 import {PageHeader} from "./components/PageHeader.js";
 
+function hasStoredEntries(storageKey) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch {
+    return Boolean(localStorage.getItem(storageKey));
+  }
+}
+
+function clearStorageListAction({storageKey, label, title, confirmMessage, toastMessage}) {
+  return {
+    label,
+    title: title || label,
+    disabled: () => !hasStoredEntries(storageKey),
+    onClick: (e, model, appRef) => {
+      e.preventDefault();
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+      localStorage.removeItem(storageKey);
+      if (appRef) {
+        appRef.setState({
+          showToast: true,
+          toastMessage,
+          toastVariant: "success",
+          toastTitle: "Success"
+        });
+        setTimeout(() => appRef.hideToast(), 3000);
+      }
+    }
+  };
+}
+
 class Model {
 
   constructor(sfHost) {
@@ -244,8 +277,38 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Prevent line wrap in Data Export table cells", key: "preventLineWrapDataExport", default: true, tooltip: "When enabled, prevents text from wrapping in table cells (matches v1.27 behavior)"}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
-          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100, inputSize: "1"}},
-          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50, inputSize: "1"}},
+          {option: Option,
+            props: {
+              type: "number",
+              title: "Number of queries stored in the history",
+              key: "numberOfQueriesInHistory",
+              default: 100,
+              inputSize: "1",
+              actionButtonVariant: "neutral",
+              actionButton: clearStorageListAction({
+                storageKey: "insextQueryHistory",
+                label: "Clear Query History",
+                confirmMessage: "Are you sure you want to clear the query history?",
+                toastMessage: "Query history cleared successfully."
+              })
+            }
+          },
+          {option: Option,
+            props: {
+              type: "number",
+              title: "Number of saved queries",
+              key: "numberOfQueriesSaved",
+              default: 50,
+              inputSize: "1",
+              actionButtonVariant: "neutral",
+              actionButton: clearStorageListAction({
+                storageKey: "insextSavedQueryHistory",
+                label: "Clear Saved Queries",
+                confirmMessage: "Are you sure you want to remove all saved queries?",
+                toastMessage: "Saved queries cleared successfully."
+              })
+            }
+          },
           {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", inputSize: "6", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}},
@@ -456,6 +519,34 @@ class OptionsTabSelector extends React.Component {
                 {label: "Response Size", name: "responseSize", checked: true},
                 {label: "Response Duration", name: "responseDuration", checked: true}
               ]}
+          },
+          {option: Option,
+            props: {
+              type: "button",
+              title: "Request History",
+              key: "clearRestQueryHistory",
+              actionButtonVariant: "neutral",
+              actionButton: clearStorageListAction({
+                storageKey: "restQueryHistory",
+                label: "Clear Request History",
+                confirmMessage: "Are you sure you want to clear the request history?",
+                toastMessage: "Request history cleared successfully."
+              })
+            }
+          },
+          {option: Option,
+            props: {
+              type: "button",
+              title: "Saved Requests",
+              key: "clearRestSavedQueries",
+              actionButtonVariant: "neutral",
+              actionButton: clearStorageListAction({
+                storageKey: "restSavedQueryHistory",
+                label: "Clear Saved Requests",
+                confirmMessage: "Are you sure you want to remove all saved requests?",
+                toastMessage: "Saved requests cleared successfully."
+              })
+            }
           }
         ]
       },
@@ -1078,8 +1169,13 @@ class Option extends React.Component {
             // appRef is passed to allow actionButton handlers to show toast notifications via appRef.setState()
             this.actionButton && h("div", {className: "slds-col"},
               h("button", {
+                type: "button",
                 className: `slds-button slds-button_${this.actionButtonVariant}`,
-                onClick: (e) => this.actionButton.onClick(e, this.props.model, this.props.appRef),
+                disabled: typeof this.actionButton.disabled === "function" ? this.actionButton.disabled() : Boolean(this.actionButton.disabled),
+                onClick: (e) => {
+                  this.actionButton.onClick(e, this.props.model, this.props.appRef);
+                  this.forceUpdate();
+                },
                 title: this.actionButton.title || "Action"
               }, this.actionButton.label || "Action")
             ),

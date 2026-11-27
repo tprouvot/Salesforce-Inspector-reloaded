@@ -186,18 +186,17 @@ test.describe("REST Explore", () => {
     const bodyInput = page.locator("textarea.slds-textarea");
     const saveBtn = page.getByRole("button", {name: "Save Query"});
     const sendBtn = page.getByRole("button", {name: "Send"});
-    const clearBtn = page.locator(".sfir-query-clear");
     const listbox = page.locator("#query-search-listbox");
     const options = listbox.locator("[role='option']");
 
-    // Save Query sits on the Send row.
+    // Save Query sits on the Send row, and no inline Clear button clutters the toolbar.
     const saveBox = await saveBtn.boundingBox();
     const sendBox = await sendBtn.boundingBox();
     expect(Math.abs(saveBox.y - sendBox.y), "Save Query sits on the Send row").toBeLessThan(2);
+    await expect(page.locator(".sfir-query-toolbar button", {hasText: "Clear"})).toHaveCount(0);
 
     // 1. All is selected by default and searches across Saved, History, and Templates with group headers.
     const searchAll = page.getByRole("combobox", {name: "Search all"});
-    await expect(clearBtn).toBeDisabled();
     await searchAll.click();
     await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "History", "Templates"]);
     await searchAll.fill("create account");
@@ -267,9 +266,8 @@ test.describe("REST Explore", () => {
     await saved.click();
     await expect(options).toHaveCount(3);
 
-    // 5. Templates are searchable and read-only; Clear empties History/Saved and restores focus.
+    // 5. Templates are searchable and read-only.
     await selectSource("templates");
-    await expect(clearBtn).toBeDisabled();
     const templates = page.getByRole("combobox", {name: "Search templates"});
     await templates.fill("limits");
     await expect(options).toHaveCount(1);
@@ -277,11 +275,5 @@ test.describe("REST Explore", () => {
     await options.first().click();
     await expect(methodSelect).toHaveValue("GET");
     await expect(endpointInput).toHaveValue(`/services/data/v${apiVersion}/limits`);
-
-    await selectSource("history");
-    page.once("dialog", dialog => dialog.accept());
-    await clearBtn.click();
-    await expect(clearBtn).toBeDisabled();
-    await expect(page.locator("#sfir-query-source-history")).toBeFocused();
   });
 });

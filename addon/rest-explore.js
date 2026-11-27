@@ -178,17 +178,11 @@ class Model {
     args.set("objectType", this.autocompleteResults.sobjectName);
     return "inspect.html?" + args;
   }
-  clearHistory() {
-    this.queryHistory.clear();
-  }
   copyAsJson() {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
   clear() {
     this.apiResponse.value = "";
-  }
-  clearSavedHistory() {
-    this.savedHistory.clear();
   }
   addToHistory() {
     const endpoint = this.request.endpoint?.trim();
@@ -415,11 +409,9 @@ class App extends React.Component {
       isSaveModalOpen: false
     };
     this.onSelectQueryMethod = this.onSelectQueryMethod.bind(this);
-    this.onClearHistory = this.onClearHistory.bind(this);
     this.onOpenSaveModal = this.onOpenSaveModal.bind(this);
     this.onConfirmSaveModal = this.onConfirmSaveModal.bind(this);
     this.onCloseSaveModal = this.onCloseSaveModal.bind(this);
-    this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onSend = this.onSend.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onClearResponse = this.onClearResponse.bind(this);
@@ -462,16 +454,6 @@ class App extends React.Component {
     this.canSendRequest();
     model.didUpdate();
   }
-  onClearHistory(e) {
-    e.preventDefault();
-    if (!confirm("Are you sure you want to clear the query history?")) {
-      return false;
-    }
-    let {model} = this.props;
-    model.clearHistory();
-    model.didUpdate();
-    return true;
-  }
   onOpenSaveModal(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -492,16 +474,6 @@ class App extends React.Component {
   }
   onCloseSaveModal() {
     this.setState({isSaveModalOpen: false});
-  }
-  onClearSavedHistory(e) {
-    e.preventDefault();
-    if (!confirm("Are you sure you want to remove all saved queries?")) {
-      return false;
-    }
-    let {model} = this.props;
-    model.clearSavedHistory();
-    model.didUpdate();
-    return true;
   }
   onDeleteHistoryEntry(entry) {
     let {model} = this.props;
@@ -526,10 +498,7 @@ class App extends React.Component {
         getResults: restDropdownEntries,
         renderEntry: (entry, searchValue) => renderRestItem({...entry, label: null}, searchValue),
         select: (entry) => this.applyRestEntry(entry),
-        remove: (entry) => this.onDeleteHistoryEntry(entry),
-        clear: this.onClearHistory,
-        clearLabel: "Clear Request History",
-        clearAriaLabel: "Clear list of request history"
+        remove: (entry) => this.onDeleteHistoryEntry(entry)
       },
       {
         id: "saved",
@@ -538,10 +507,7 @@ class App extends React.Component {
         getResults: restDropdownEntries,
         renderEntry: (entry, searchValue) => renderRestItem(entry, searchValue),
         select: (entry) => this.applyRestEntry(entry, {restoreLabel: true}),
-        remove: (entry) => this.onDeleteSavedEntry(entry),
-        clear: this.onClearSavedHistory,
-        clearLabel: "Clear Saved Queries",
-        clearAriaLabel: "Clear list of saved queries"
+        remove: (entry) => this.onDeleteSavedEntry(entry)
       },
       {
         id: "templates",
@@ -550,10 +516,7 @@ class App extends React.Component {
         getResults: restDropdownEntries,
         renderEntry: (entry, searchValue) => renderRestItem({...entry, label: null}, searchValue),
         select: (entry) => this.applyRestEntry(entry),
-        remove: null,
-        clear: null,
-        clearLabel: "Clear",
-        clearAriaLabel: "Clear list"
+        remove: null
       }
     ];
   }

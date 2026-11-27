@@ -79,9 +79,9 @@ scope in the box beside them:
 
 The search box names the active scope so you always know what you are filtering. Long entries
 are truncated to two lines in the dropdown, with the full query or request shown on hover.
-**Clear** empties the selected History or Saved list and is disabled on All and Templates so
-saved entries are never cleared accidentally. Drag the bottom-right corner of an open dropdown
-to set its preferred maximum height; shorter lists still shrink to fit their items.
+Drag the bottom-right corner of an open dropdown to set its preferred maximum height; shorter
+lists still shrink to fit their items. To clear an entire History or Saved list at once, use
+the **Clear** buttons in **Options** under the **Data Export** and **REST Explorer** tabs.
 
 To save the current query or request, click **Save Query** next to **Run Export** (in Data
 Export) or **Send** (in REST Explorer). A dialog lets you enter an optional label and confirm

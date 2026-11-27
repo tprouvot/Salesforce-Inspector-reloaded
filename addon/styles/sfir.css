@@ -260,15 +260,11 @@ a.download-salesforce {
 
 .sfir-query-search {
   flex: none;
-  width: clamp(10rem, 14vw, 15rem);
+  width: clamp(14rem, 22vw, 24rem);
 }
 
 .sfir-combobox-search-icon {
   pointer-events: none;
-}
-
-.sfir-query-clear {
-  justify-content: center;
 }
 
 .sfir-inline-toggle {

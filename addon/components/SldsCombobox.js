@@ -317,7 +317,6 @@ export class QueryToolbar extends React.Component {
       activeIndex: -1
     };
     this.onSearchInput = this.onSearchInput.bind(this);
-    this.onClear = this.onClear.bind(this);
   }
 
   buildAllSource() {
@@ -349,10 +348,7 @@ export class QueryToolbar extends React.Component {
       select: (item) => item.source.select(item.entry),
       remove: hasRemovableSource ? (item) => item.source.remove?.(item.entry) : null,
       canDelete: (item) => Boolean(item?.source?.remove),
-      getGroup: (item) => item?.source?.label || null,
-      clear: null,
-      clearLabel: "Select History or Saved to clear",
-      clearAriaLabel: "Clear list"
+      getGroup: (item) => item?.source?.label || null
     };
   }
 
@@ -381,18 +377,6 @@ export class QueryToolbar extends React.Component {
 
   onSearchInput(e) {
     this.setState({searchValue: e.target.value, activeIndex: -1, isOpen: true});
-  }
-
-  onClear(e) {
-    const source = this.activeSource();
-    if (source.clear && source.clear(e)) {
-      const {sourceId} = this.state;
-      this.setState({searchValue: "", isOpen: false, activeIndex: -1}, () => {
-        // Clearing disables the button that held focus. Move focus to the selected source
-        // after React has rendered the empty state instead of dropping it on <body>.
-        setTimeout(() => document.getElementById("sfir-query-source-" + sourceId)?.focus(), 0);
-      });
-    }
   }
 
   onDeleteEntry(entry, source) {
@@ -505,15 +489,7 @@ export class QueryToolbar extends React.Component {
           canDelete: !isObjectSuggest ? source.canDelete : null,
           getGroup: !isObjectSuggest ? source.getGroup : null,
           renderItem: (entry) => source.renderEntry(entry, searchValue, isObjectSuggest)
-        }),
-        h("button", {
-          type: "button",
-          className: "slds-button slds-button_neutral sfir-query-clear",
-          title: source.clearLabel,
-          "aria-label": source.clearAriaLabel,
-          disabled: !source.clear || source.entries.length === 0,
-          onClick: this.onClear
-        }, "Clear")
+        })
       )
     );
   }

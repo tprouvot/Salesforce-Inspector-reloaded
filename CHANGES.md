@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Fix Copy (JSON) ignoring the results filter: only the filtered records are now copied, consistent with Copy (CSV/Excel) [issue #1348](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1348) (contribution by [Beatriz Barguil](https://github.com/BeBarguil))
 - `Metadata Retrieve` Refresh the interface with improved styling, remove the page-load overlay, adjust page height to reduce clipping and unnecessary scrolling, improve in-modal loading, fix row stripe alignment in the package.xml panel, and use DOM-based XML formatting [feature/issue #1474](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1474) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Display Flow record details, including Id, Name, Created, and Modified information [feature #1471](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1471) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Add a Paste button in the data input box that reads the clipboard and loads it into the import table [feature #1475](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1475) (contribution by [Prem Kumar](https://github.com/prem-k-r))

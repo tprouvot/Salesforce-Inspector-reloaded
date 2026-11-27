@@ -142,7 +142,7 @@ Instructions:** 
             <referenceName>Input:Description</referenceName>
             <required>true</required>
         </inputs>
-        <primaryModel>sfdc_ai__DefaultOpenAIGPT4</primaryModel>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
         <status>Published</status>
         <versionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</versionIdentifier>
     </templateVersions>

@@ -1767,34 +1767,42 @@ class AllDataBoxSObject extends React.PureComponent {
 
   loadRecordIdDetails() {
     let {selectedValue} = this.state;
-    let {sfHost} = this.props;
-    //If a recordId is selected and the object supports regularApi
+    // Load details from the regular API, or for Flow Versions from the Tooling API.
+    const supportsRegularApi = selectedValue?.sobject?.availableApis?.includes("regularApi");
+    // Flow versions (301...) are exposed only through the Tooling API. Their
+    // display field is MasterLabel rather than Name.
+    const isFlowVersion = selectedValue?.sobject?.name === "Flow"
+      && selectedValue.recordId?.startsWith("301")
+      && selectedValue.sobject.availableApis?.includes("toolingApi");
+
     if (
       selectedValue
       && selectedValue.recordId
       && selectedValue.sobject
-      && selectedValue.sobject.availableApis
-      && selectedValue.sobject.availableApis.includes("regularApi")
+      && (supportsRegularApi || isFlowVersion)
     ) {
       let fields = [
         "Id",
-        "LastModifiedBy.Alias",
-        "CreatedBy.Alias",
         "CreatedDate",
         "LastModifiedDate",
-        "Name",
+        isFlowVersion ? "MasterLabel" : "Name",
       ];
 
-      if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
+      // Flow versions (Tooling API) do not support the CreatedBy/LastModifiedBy Alias fields.
+      if (!isFlowVersion) {
+        fields.push("LastModifiedBy.Alias", "CreatedBy.Alias");
+      }
+
+      if (supportsRegularApi && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
-      this.restCallForRecordDetails(fields, selectedValue);
+      this.restCallForRecordDetails(fields, selectedValue, isFlowVersion);
     } else {
       this.setState({recordIdDetails: null});
     }
   }
 
-  restCallForRecordDetails(fields, selectedValue) {
+  restCallForRecordDetails(fields, selectedValue, toolingApi = false) {
     let query
       = "SELECT "
       + fields.join()
@@ -1807,51 +1815,54 @@ class AllDataBoxSObject extends React.PureComponent {
       .rest(
         "/services/data/v"
           + apiVersion
-          + "/query?q="
+          + (toolingApi ? "/tooling/query?q=" : "/query?q=")
           + encodeURIComponent(query),
         {logErrors: false}
       )
       .then((res) => {
         for (let record of res.records) {
-          let lastModifiedDate = new Date(record.LastModifiedDate);
-          let createdDate = new Date(record.CreatedDate);
           this.setState({
-            recordIdDetails: {
-              recordTypeId: record.RecordType ? record.RecordType.Id : "",
-              recordName: record.Name ? record.Name : "",
-              recordTypeName: record.RecordType
-                ? record.RecordType.DeveloperName
-                : "",
-              createdBy: record.CreatedBy.Alias,
-              lastModifiedBy: record.LastModifiedBy.Alias,
-              created:
-                createdDate.toLocaleDateString()
-                + " "
-                + createdDate.toLocaleTimeString(),
-              lastModified:
-                lastModifiedDate.toLocaleDateString()
-                + " "
-                + lastModifiedDate.toLocaleTimeString(),
-            },
+            recordIdDetails: this.buildRecordIdDetails(record),
           });
         }
       })
       .catch((e) => {
-        //some fields (Name, RecordTypeId) are not available for particular objects, in this case remove it from the fields list
-        if (e.message.includes("No such column ")) {
+        // Some objects do not expose their display-name (Name/MasterLabel) or RecordType fields; retry without it.
+        const unsupportedDisplayField = fields.find(
+          (field) => field === "Name" || field === "MasterLabel"
+        );
+        if (e.message.includes("No such column ") && unsupportedDisplayField) {
           this.restCallForRecordDetails(
-            fields.filter((field) => field !== "Name"),
-            selectedValue
+            fields.filter((field) => field !== unsupportedDisplayField),
+            selectedValue,
+            toolingApi
           );
         } else if (
           e.message.includes("Didn't understand relationship 'RecordType'")
         ) {
           this.restCallForRecordDetails(
             fields.filter((field) => !field.startsWith("RecordType.")),
-            selectedValue
+            selectedValue,
+            toolingApi
           );
         }
       });
+  }
+
+  buildRecordIdDetails(record) {
+    const formatDateTime = (value) => {
+      const date = new Date(value);
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    };
+    return {
+      recordTypeId: record.RecordType ? record.RecordType.Id : "",
+      recordName: record.Name || record.MasterLabel || "",
+      recordTypeName: record.RecordType ? record.RecordType.DeveloperName : "",
+      createdBy: record.CreatedBy?.Alias || "",
+      lastModifiedBy: record.LastModifiedBy?.Alias || "",
+      created: formatDateTime(record.CreatedDate),
+      lastModified: formatDateTime(record.LastModifiedDate),
+    };
   }
 
   getBestMatch(query) {
@@ -4701,7 +4712,8 @@ class AllDataRecordDetails extends React.PureComponent {
             h(
               "td",
               {},
-              recordIdDetails.created + " (" + recordIdDetails.createdBy + ")"
+              recordIdDetails.created
+                + (recordIdDetails.createdBy ? " (" + recordIdDetails.createdBy + ")" : "")
             )
           ),
           h(
@@ -4712,9 +4724,7 @@ class AllDataRecordDetails extends React.PureComponent {
               "td",
               {},
               recordIdDetails.lastModified
-                + " ("
-                + recordIdDetails.lastModifiedBy
-                + ")"
+                + (recordIdDetails.lastModifiedBy ? " (" + recordIdDetails.lastModifiedBy + ")" : "")
             )
           )
         )

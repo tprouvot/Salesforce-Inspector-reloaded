@@ -1,12 +1,12 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory, queryLanguage} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {SldsCombobox} from "./components/SldsCombobox.js";
 import Toast from "./components/Toast.js";
-import {dropdownEntries, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
+import {dropdownEntries, isGraphqlQuery, queryLanguage, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
 
 // Where the query in the editor can come from. Mutually exclusive, so the picker is
 // a radio button group and only the selected source's list and actions are shown.
@@ -149,10 +149,12 @@ class Model {
       method = "queryAll";
     } else if (this.queryInput.value.toLowerCase().startsWith("find")){
       method = "search";
-    } else if (this.queryInput.value.trim().startsWith("{")){
+    } else if (isGraphqlQuery(query)){
       method = "graphql";
       queryParams = "";
-      params = {...baseParams, method: "POST", body: {"query": "query objects " + query}};
+      // The "{ ... }" shorthand of the query templates gets an operation name, a full "query accounts { ... }" is sent as is
+      const operation = query.trimStart().startsWith("{") ? "query objects " + query : query;
+      params = {...baseParams, method: "POST", body: {"query": operation}};
     } else {
       method = "query";
     }

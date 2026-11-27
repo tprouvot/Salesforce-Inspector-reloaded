@@ -1,14 +1,43 @@
 /* global React */
-import {queryLanguage} from "./utils.js";
 
 let h = React.createElement;
+
+/**
+ * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
+ * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
+ * Salesforce GraphQL examples. SOQL and SOSL never start with either.
+ * @param {string} query
+ * @returns {boolean}
+ */
+export function isGraphqlQuery(query) {
+  return /^(?:\{|query\b)/.test(query.trimStart());
+}
+
+/**
+ * Picks the Prism language for a Data Export query: SELECT is SOQL and FIND is SOSL
+ * (both from lib/prism/prism-sf.js), GraphQL as detected by isGraphqlQuery (lib/prism/prism.js),
+ * the same rule Data Export uses to send it to the GraphQL endpoint. Anything else
+ * keeps plain SQL.
+ * @param {string} query
+ * @returns {"soql"|"sosl"|"graphql"|"sql"}
+ */
+export function queryLanguage(query) {
+  const start = query.trimStart();
+  if (/^select\b/i.test(start)) {
+    return "soql";
+  }
+  if (/^find\b/i.test(start)) {
+    return "sosl";
+  }
+  return isGraphqlQuery(start) ? "graphql" : "sql";
+}
 
 // Parentheses track subquery depth; the other branches name an object. The last one
 // only looks ahead for "(" so that parenthesis is still counted.
 const OBJECT_SOURCE = /\(|\)|\bfrom\s+([a-zA-Z0-9_]+)|\breturning\s+([a-zA-Z0-9_]+)|,\s*([a-zA-Z0-9_]+)(?=\s*\()/gi;
 const STRING_LITERAL = /'(?:[^'\\]|\\.)*'/g;
 // The query forms data-export can run: SOQL, SOSL and GraphQL.
-const LEADING_QUERY = /^\s*(select\b|find\b|\{)/i;
+const LEADING_QUERY = /^\s*(select\b|find\b|\{|query\b)/i;
 const QUERY_PUNCTUATION = /['{]/;
 
 // Saved queries are stored as "label:query". The prefix is a label when what follows

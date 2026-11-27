@@ -120,4 +120,48 @@ test.describe("REST Explore", () => {
 
     await expect(statusBadge).toContainText("Status: 204");
   });
+
+  // formatXml (addon/utils.js) is used by the REST Explorer to pretty-print XML responses.
+  // The response is stubbed at page level so the test is identical in mock and real-org mode.
+  async function sendStubbedXml(page, extensionId, body) {
+    const endpoint = `/services/data/v${apiVersion}/xml-format-test`;
+    await page.route(`**${endpoint}`, route => route.fulfill({
+      status: 200,
+      contentType: "application/xml",
+      headers: {"access-control-allow-origin": "*"},
+      body
+    }));
+    await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
+    await page.waitForSelector("select.slds-select", {timeout: 1000});
+    await page.locator('input[placeholder*="/services/data/v"]').fill(endpoint);
+    await page.click('button:has-text("Send")');
+    const responseCode = page.locator("code.language-xml");
+    await expect(responseCode).toBeVisible();
+    return responseCode;
+  }
+
+  test("Format XML Response (indent, attributes, escaping, CDATA, comments)", async ({page, extensionId}) => {
+    const compact = '<root a="1" b="x&amp;y"><item>text &amp; more</item><empty/><cdata><![CDATA[<raw>]]></cdata>'
+      + "<parent>\n   <child>x</child>\n</parent><!-- note --></root>";
+    const responseCode = await sendStubbedXml(page, extensionId, compact);
+
+    expect(await responseCode.evaluate(el => el.textContent)).toBe([
+      '<root a="1" b="x&amp;y">',
+      "  <item>text &amp; more</item>",
+      "  <empty/>",
+      "  <cdata><![CDATA[<raw>]]></cdata>",
+      "  <parent>",
+      "    <child>x</child>",
+      "  </parent>",
+      "  <!-- note -->",
+      "</root>"
+    ].join("\n"));
+  });
+
+  test("Format XML Response returns malformed XML unchanged", async ({page, extensionId}) => {
+    const malformed = "<root><unclosed></root>";
+    const responseCode = await sendStubbedXml(page, extensionId, malformed);
+
+    expect(await responseCode.evaluate(el => el.textContent)).toBe(malformed);
+  });
 });

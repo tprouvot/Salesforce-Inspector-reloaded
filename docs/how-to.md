@@ -66,52 +66,54 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
-## Use Query History and Saved Queries in Data Export
+## Use History, Saved Queries, and Templates in Data Export and REST Explorer
 
-Everything that puts a query into the editor lives in one **Queries** section. Pick where
-the query comes from with the **History / Saved / Templates** buttons, then search that
+Data Export and REST Explorer share an inline toolbar in their top header bar. Pick where
+the entry comes from with the **History / Saved / Templates** buttons, then search that
 list in the box beside them:
 
-* **History**: queries you have run, newest first
-* **Saved**: queries you saved, with their labels
-* **Templates**: the starter queries from your Templates configuration
+* **History**: queries or REST requests you have run, newest first
+* **Saved**: entries you saved, with their optional labels
+* **Templates**: the starter queries or REST requests from your Templates configuration
 
 Only the selected list is shown, and the search box names it, so there is never any doubt
-about which list you are searching. **Clear list** clears the selected History or Saved
+about which list you are searching. Long entries are truncated to two lines in the dropdown,
+with the full query or request shown on hover. **Clear** empties the selected History or Saved
 list and is disabled for Templates. Drag the bottom-right corner of an open dropdown to
-make it taller; the extension remembers its height.
+set its preferred maximum height; shorter lists still shrink to fit their items.
 
-**Save as**, its label input, and **Save Query** are separated from the browsing controls
-because they save the query currently in the editor, regardless of which source is selected.
-After saving, a success message appears and the label is cleared. The label is also cleared
-when you switch query tabs, but remains while you edit the current query.
+The **Optional label** input and **Save Query** are separated from the browsing controls
+because they save what is currently in the editor, regardless of which source is selected.
+After saving, a success message appears and the label is cleared. In Data Export, the label
+is also cleared when you switch query tabs, while remaining intact as you edit the query.
 
-### Delete individual queries
+### Delete individual entries
 
 1. Select **History** or **Saved** and open the dropdown
-2. Highlight a query with the arrow keys, or hover over it
+2. Highlight an entry with the arrow keys, or hover over it
 3. Press **Delete** (**Fn+Delete** on a Mac keyboard), or click the **delete icon** (trash) on the right
 
 > **Note**
-> Deleting a history entry is immediate; deleting a saved query asks for confirmation.
+> Deleting a history entry is immediate; deleting a saved entry asks for confirmation.
 > Templates come from your configuration, so they cannot be deleted here.
-> Deletion is unavailable while `?` is listing object names.
+> Deletion is unavailable while `?` is listing object names in Data Export.
 
 ### Visual badges
 
-* **Label badge**: appears at the start for saved queries with a label (`label:query` format)
-* **Tooling badge**: appears at the end when "Use Tooling API" was checked
+* **Label badge**: appears at the start for saved entries with a label
+* **Tooling badge** (Data Export): appears at the end when "Tooling API" was enabled
+* **HTTP method badge** (REST Explorer): shows `GET`, `POST`, `PATCH`, `PUT`, or `DELETE`
 
-To create labeled queries: enter your query in the editor, enter a label in **Save as**,
-then click **Save Query**. The button is disabled while the editor is empty.
+To create labeled entries: enter your query or endpoint, type an optional label,
+then click **Save Query**. The button is disabled while the query or endpoint is empty.
 
 ### Automatic history saving
 
-Queries are saved to history **immediately** when you:
-* Click **Run Export** or **Query Plan**
+Entries are saved to history **immediately** when you:
+* Click **Run Export**, **Query Plan**, or **Send**
 * Press **Ctrl+Enter** or **F5**
 
-Failed queries are also saved, so you can reload and fix them from the history.
+Failed runs are also saved, so you can reload and fix them from the history.
 
 ### Searching
 

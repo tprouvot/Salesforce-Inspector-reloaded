@@ -1,10 +1,25 @@
 /* global React */
 let h = React.createElement;
 
+const PAGE_SIZE = 30;
+const RESIZE_CORNER_PX = 12;
+
+function isInResizeCorner(listbox, clientX, clientY, target) {
+  if (!listbox || target?.closest?.(".sfir-combobox-delete")) {
+    return false;
+  }
+  const rect = listbox.getBoundingClientRect();
+  return clientX >= rect.right - RESIZE_CORNER_PX && clientY >= rect.bottom - RESIZE_CORNER_PX;
+}
+
 export class SldsCombobox extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      visibleCount: PAGE_SIZE
+    };
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
+    this.handleWindowMouseUp = this.handleWindowMouseUp.bind(this);
     this.containerRef = null;
     this.isResizing = false;
     this.resizeStartHeight = 0;
@@ -19,6 +34,7 @@ export class SldsCombobox extends React.Component {
 
   componentWillUnmount() {
     document.removeEventListener("mousedown", this.handleDocumentClick);
+    window.removeEventListener("mouseup", this.handleWindowMouseUp);
   }
 
   componentDidUpdate(prevProps) {
@@ -27,8 +43,16 @@ export class SldsCombobox extends React.Component {
     } else if (!this.props.isOpen && prevProps.isOpen) {
       document.removeEventListener("mousedown", this.handleDocumentClick);
     }
+    const shouldResetBatch = (this.props.isOpen && !prevProps.isOpen)
+      || this.props.value !== prevProps.value
+      || this.props.sourceKey !== prevProps.sourceKey;
+    if (shouldResetBatch && this.state.visibleCount !== PAGE_SIZE) {
+      this.setState({visibleCount: PAGE_SIZE});
+    } else if (this.props.isOpen && this.props.activeIndex >= this.state.visibleCount) {
+      this.setState({visibleCount: this.props.activeIndex + 1});
+    }
     if (this.props.isOpen) {
-      // Entries change the width, so re-check the side on every open render.
+      // Entries change the width and content height, so re-check bounds on every open render.
       this.alignDropdown();
     }
     if (this.props.isOpen && this.props.activeIndex !== prevProps.activeIndex) {
@@ -58,20 +82,40 @@ export class SldsCombobox extends React.Component {
     box.classList.toggle("slds-dropdown_right", !openLeft);
     box.style.setProperty("--sfir-query-dropdown-available-width", (openLeft ? viewportWidth - anchor.left : anchor.right) + "px");
     if (!this.isResizing) {
+      box.style.height = "";
+      box.style.maxHeight = "";
+      const boxTop = box.getBoundingClientRect().top;
+      const availableHeight = Math.max(0, document.documentElement.clientHeight - boxTop);
       const storedHeight = Number.parseFloat(localStorage.getItem("sfirComboboxHeight_" + this.props.id));
       if (Number.isFinite(storedHeight) && storedHeight > 0) {
-        box.style.maxHeight = "none";
-        box.style.height = storedHeight + "px";
-        const overflow = box.getBoundingClientRect().bottom - document.documentElement.clientHeight;
-        if (overflow > 0) {
-          box.style.height = Math.max(0, storedHeight - overflow) + "px";
-        }
+        box.style.maxHeight = Math.min(storedHeight, availableHeight) + "px";
+      } else if (box.getBoundingClientRect().bottom > document.documentElement.clientHeight) {
+        box.style.maxHeight = availableHeight + "px";
       }
     }
   }
 
+  handleWindowMouseUp() {
+    window.removeEventListener("mouseup", this.handleWindowMouseUp);
+    if (!this.isResizing) {
+      return;
+    }
+    const box = document.getElementById(this.props.id + "-listbox");
+    if (box) {
+      const currentHeight = box.getBoundingClientRect().height;
+      const heightChanged = Math.abs(currentHeight - this.resizeStartHeight) >= 1;
+      if (heightChanged) {
+        localStorage.setItem("sfirComboboxHeight_" + this.props.id, currentHeight + "px");
+      }
+    }
+    this.isResizing = false;
+    this.resizeStartHeight = 0;
+    this.alignDropdown();
+  }
+
   handleDocumentClick(e) {
-    if (this.props.isOpen && this.containerRef && !this.containerRef.contains(e.target) && this.props.onClose) {
+    const clickedInside = this.containerRef && (this.containerRef.contains(e.target) || e.composedPath?.().includes(this.containerRef));
+    if (this.props.isOpen && !clickedInside && this.props.onClose) {
       this.props.onClose();
     }
   }
@@ -104,6 +148,8 @@ export class SldsCombobox extends React.Component {
 
     const listboxId = id + "-listbox";
     const hintId = id + "-delete-hint";
+    const limit = Math.max(this.state.visibleCount, activeIndex + 1);
+    const visibleEntries = entries.length > limit ? entries.slice(0, limit) : entries;
 
     // SLDS Markup Structure and Accessibility Attributes
     return h("div", {
@@ -138,7 +184,7 @@ export class SldsCombobox extends React.Component {
             onKeyDown
           }),
           h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right sfir-combobox-search-icon"},
-            h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
+            h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
               h("use", {xlinkHref: "symbols.svg#search"})
             )
           )
@@ -148,47 +194,50 @@ export class SldsCombobox extends React.Component {
           // Horizontal alignment is set by alignDropdown, not an SLDS modifier.
           className: "slds-dropdown slds-dropdown_length-7 sfir-query-combobox-dropdown",
           role: "listbox",
+          onScroll: (e) => {
+            const box = e.currentTarget;
+            if (this.state.visibleCount < entries.length && box.scrollTop + box.clientHeight >= box.scrollHeight - 80) {
+              this.setState(state => ({visibleCount: Math.min(entries.length, state.visibleCount + PAGE_SIZE)}));
+            }
+          },
           onMouseDown: (e) => {
             // Keep input focus for rows and padding, but leave native controls interactive.
-            const isContainer = e.target === e.currentTarget;
-            const isScrollbar = isContainer && e.nativeEvent.offsetX >= e.currentTarget.clientWidth;
-            const isResizeHandle = isContainer
-              && e.nativeEvent.offsetX >= e.currentTarget.clientWidth - 16
-              && e.nativeEvent.offsetY >= e.currentTarget.clientHeight - 16;
+            const box = e.currentTarget;
+            const isContainer = e.target === box;
+            const isScrollbar = isContainer && e.nativeEvent.offsetX >= box.clientWidth;
+            const isResizeHandle = isInResizeCorner(box, e.clientX, e.clientY, e.target);
             this.isResizing = isResizeHandle;
             if (isResizeHandle) {
-              this.resizeStartHeight = e.currentTarget.getBoundingClientRect().height;
-              e.currentTarget.style.height = this.resizeStartHeight + "px";
-              e.currentTarget.style.maxHeight = "none";
+              const rect = box.getBoundingClientRect();
+              this.resizeStartHeight = rect.height;
+              box.style.height = this.resizeStartHeight + "px";
+              box.style.maxHeight = Math.max(0, document.documentElement.clientHeight - rect.top) + "px";
+              window.addEventListener("mouseup", this.handleWindowMouseUp);
             }
             if (!isScrollbar && !isResizeHandle) {
               e.preventDefault();
             }
-          },
-          onMouseUp: (e) => {
-            const heightChanged = Math.abs(e.currentTarget.getBoundingClientRect().height - this.resizeStartHeight) >= 1;
-            if (this.isResizing && heightChanged) {
-              localStorage.setItem("sfirComboboxHeight_" + id, e.currentTarget.style.height);
-            }
-            this.isResizing = false;
-            this.resizeStartHeight = 0;
           }
         },
         h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},
-          entries.length === 0 ? h("li", {role: "presentation", className: "slds-listbox__item"},
-            h("div", {className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option"},
+          visibleEntries.length === 0 ? h("li", {role: "presentation", className: "slds-listbox__item"},
+            h("div", {className: "slds-media slds-media_center slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option"},
               h("span", {className: "slds-media__body"},
                 h("span", {className: "slds-truncate"}, "No results found")
               )
             )
-          ) : entries.map((entry, index) =>
+          ) : visibleEntries.map((entry, index) =>
             h("li", {role: "presentation", className: "slds-listbox__item", key: index},
               h("div", {
                 id: listboxId + "-option-" + index,
-                className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option" + (index === activeIndex ? " slds-has-focus" : ""),
+                className: "slds-media slds-media_center slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option" + (index === activeIndex ? " slds-has-focus" : ""),
                 role: "option",
                 "aria-selected": index === activeIndex ? "true" : "false",
                 onMouseDown: (e) => {
+                  const box = e.currentTarget.closest("[role='listbox']");
+                  if (isInResizeCorner(box, e.clientX, e.clientY, e.target)) {
+                    return;
+                  }
                   // The delete affordance is nested in the option, so ignore its clicks here.
                   if (e.target.closest(".sfir-combobox-delete")) {
                     return;
@@ -222,6 +271,195 @@ export class SldsCombobox extends React.Component {
       )
     ),
     onDelete && h("span", {id: hintId, className: "slds-assistive-text"}, "Press Delete to remove the highlighted entry.")
+    );
+  }
+}
+
+export class QueryToolbar extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sourceId: props.sources[0].id,
+      searchValue: "",
+      isOpen: false,
+      activeIndex: -1
+    };
+    this.onSearchInput = this.onSearchInput.bind(this);
+    this.onClear = this.onClear.bind(this);
+  }
+
+  activeSource() {
+    return this.props.sources.find(source => source.id === this.state.sourceId) || this.props.sources[0];
+  }
+
+  openDropdown() {
+    this.setState({isOpen: true, activeIndex: -1});
+  }
+
+  closeDropdown() {
+    this.setState({isOpen: false, activeIndex: -1});
+  }
+
+  onSourceChange(sourceId) {
+    this.setState({sourceId, searchValue: "", isOpen: false, activeIndex: -1});
+  }
+
+  onSearchInput(e) {
+    this.setState({searchValue: e.target.value, activeIndex: -1, isOpen: true});
+  }
+
+  onClear(e) {
+    const source = this.activeSource();
+    if (source.clear && source.clear(e)) {
+      const {sourceId} = this.state;
+      this.setState({searchValue: "", isOpen: false, activeIndex: -1}, () => {
+        // Clearing disables the button that held focus. Move focus to the selected source
+        // after React has rendered the empty state instead of dropping it on <body>.
+        setTimeout(() => document.getElementById("sfir-query-source-" + sourceId)?.focus(), 0);
+      });
+    }
+  }
+
+  onDeleteEntry(entry, source) {
+    if (source.remove) {
+      source.remove(entry);
+      this.setState({activeIndex: -1});
+    }
+  }
+
+  applyEntry(entry, isObjectSuggest, source) {
+    if (isObjectSuggest) {
+      this.setState({searchValue: `?${entry} `, activeIndex: 0});
+    } else {
+      source.select(entry);
+      this.closeDropdown();
+    }
+  }
+
+  onKeyDown(e, entries, isObjectSuggest, source) {
+    const {activeIndex, isOpen} = this.state;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      this.closeDropdown();
+      return;
+    }
+    // A closed list must never act on an entry the user cannot see.
+    if (!isOpen) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        this.openDropdown();
+      }
+      return;
+    }
+    const count = entries.length;
+    if (e.key === "Tab") {
+      // Tab keeps moving focus, so it accepts the highlighted entry and closes the list.
+      if (activeIndex >= 0 && count) {
+        this.applyEntry(entries[Math.min(activeIndex, count - 1)], isObjectSuggest, source);
+      }
+      this.closeDropdown();
+      return;
+    }
+    if (!count) {
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex >= 0) {
+        this.applyEntry(entries[Math.min(activeIndex, count - 1)], isObjectSuggest, source);
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.setState({activeIndex: (activeIndex + 1) % count});
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.setState({activeIndex: activeIndex < 0 ? count - 1 : (activeIndex - 1 + count) % count});
+    } else if (e.key === "Delete" && !isObjectSuggest && activeIndex >= 0 && source.remove) {
+      e.preventDefault();
+      this.onDeleteEntry(entries[activeIndex], source);
+    }
+  }
+
+  render() {
+    const {
+      sources,
+      queryName,
+      onQueryNameChange,
+      onSave,
+      isSaveDisabled,
+      saveTitle = "Add query to saved history"
+    } = this.props;
+    const {isOpen, activeIndex, searchValue} = this.state;
+    const source = this.activeSource();
+    const {entries, isObjectSuggest} = isOpen
+      ? source.getResults(source.entries, searchValue)
+      : {entries: [], isObjectSuggest: false};
+
+    return h("div", {className: "sfir-query-toolbar", role: "group", "aria-label": "Queries"},
+      h("div", {className: "sfir-query-section__browse"},
+        h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query source"},
+          sources.map(({id, label}) =>
+            h("span", {key: id, className: "slds-button slds-radio_button"},
+              h("input", {
+                type: "radio",
+                name: "sfir-query-source",
+                id: "sfir-query-source-" + id,
+                checked: source.id === id,
+                onChange: () => this.onSourceChange(id)
+              }),
+              h("label", {className: "slds-radio_button__label", htmlFor: "sfir-query-source-" + id},
+                h("span", {className: "slds-radio_faux"}, label)
+              )
+            )
+          )
+        ),
+        h(SldsCombobox, {
+          id: "query-search",
+          className: "sfir-query-search",
+          sourceKey: source.id,
+          // Naming the source keeps it visible once the placeholder is replaced by typing.
+          placeholder: "Search " + source.label.toLowerCase(),
+          "aria-label": "Search " + source.label.toLowerCase(),
+          value: searchValue,
+          entries,
+          isOpen,
+          activeIndex,
+          onInput: this.onSearchInput,
+          onFocus: () => this.openDropdown(),
+          onClick: () => this.openDropdown(),
+          onKeyDown: (e) => this.onKeyDown(e, entries, isObjectSuggest, source),
+          onSelect: (entry) => this.applyEntry(entry, isObjectSuggest, source),
+          onClose: () => this.closeDropdown(),
+          onDelete: !isObjectSuggest && source.remove ? (entry) => this.onDeleteEntry(entry, source) : null,
+          renderItem: (entry) => source.renderEntry(entry, searchValue, isObjectSuggest)
+        }),
+        h("button", {
+          type: "button",
+          className: "slds-button slds-button_neutral sfir-query-clear",
+          title: source.clearLabel,
+          "aria-label": source.clearAriaLabel,
+          disabled: !source.clear || source.entries.length === 0,
+          onClick: this.onClear
+        }, "Clear")
+      ),
+      h("div", {className: "sfir-query-section__save"},
+        h("input", {
+          id: "sfir-query-label",
+          className: "slds-input sfir-query-label",
+          placeholder: "Optional label",
+          "aria-label": "Save as",
+          type: "text",
+          value: queryName,
+          onInput: onQueryNameChange
+        }),
+        h("button", {
+          type: "button",
+          className: "slds-button slds-button_neutral",
+          onClick: onSave,
+          title: saveTitle,
+          disabled: isSaveDisabled
+        }, "Save Query")
+      )
     );
   }
 }

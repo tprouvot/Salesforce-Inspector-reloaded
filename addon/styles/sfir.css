@@ -235,3 +235,125 @@ a.download-salesforce {
   top: 50%;
   transform: translateY(-50%);
 }
+
+/* Shared History / Saved / Templates toolbar and combobox (Data Export & REST Explorer) */
+.sfir-query-toolbar,
+.sfir-query-section__browse,
+.sfir-query-section__save {
+  display: flex;
+  align-items: center;
+  gap: var(--slds-g-spacing-2, 0.5rem);
+}
+
+.sfir-query-toolbar {
+  flex-wrap: wrap;
+}
+
+.sfir-query-section__save {
+  border-left: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
+  padding-left: var(--slds-g-spacing-2, 0.5rem);
+}
+
+@media (max-width: 56rem) {
+  .sfir-query-section__save {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+.sfir-query-section__browse > *,
+.sfir-query-section__save > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+.sfir-query-search {
+  flex: none;
+  width: clamp(9.5rem, 12.5vw, 14rem);
+}
+
+.sfir-combobox-search-icon {
+  pointer-events: none;
+}
+
+.sfir-query-label {
+  width: clamp(6.25rem, 7.5vw, 8rem);
+}
+
+.sfir-query-clear {
+  justify-content: center;
+}
+
+.sfir-query-combobox-dropdown {
+  width: max-content;
+  max-width: min(60rem, 75vw, var(--sfir-query-dropdown-available-width, 50vw));
+  resize: vertical;
+}
+
+.sfir-combobox-body {
+  min-width: 0;
+}
+
+.sfir-query-badge {
+  flex-shrink: 0;
+}
+
+.sfir-query-item {
+  display: flex;
+  align-items: center;
+  gap: var(--slds-g-spacing-1, 0.25rem);
+  width: 100%;
+}
+
+.sfir-query-item code.sfir-query-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  font-size: var(--slds-g-font-scale-neg-1);
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Override Prism Coy's semi-transparent white operator background on hovered/focused rows. */
+.sfir-query-combobox-dropdown .sfir-query-text .token {
+  background: none;
+}
+
+.sfir-query-combobox-dropdown .token.sobject {
+  color: light-dark(
+    var(--slds-g-color-palette-purple-40),
+    var(--slds-g-color-palette-purple-60)
+  );
+}
+
+.sfir-query-combobox-dropdown .sfir-search-match {
+  background-color: light-dark(
+    var(--slds-g-color-palette-yellow-90),
+    var(--slds-g-color-palette-yellow-30)
+  );
+  color: var(--slds-g-color-neutral-base-10);
+  border-radius: var(--slds-g-radius-border-1);
+}
+
+.sfir-combobox-delete {
+  flex-shrink: 0;
+  align-self: center;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.sfir-combobox-option:hover .sfir-combobox-delete,
+.sfir-combobox-option.slds-has-focus .sfir-combobox-delete {
+  opacity: 1;
+}

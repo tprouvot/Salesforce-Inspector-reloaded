@@ -4,17 +4,9 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {SldsCombobox} from "./components/SldsCombobox.js";
+import {QueryToolbar} from "./components/SldsCombobox.js";
 import Toast from "./components/Toast.js";
 import {dropdownEntries, isGraphqlQuery, queryLanguage, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
-
-// Where the query in the editor can come from. Mutually exclusive, so the picker is
-// a radio button group and only the selected source's list and actions are shown.
-const QUERY_SOURCES = [
-  {id: "history", label: "History"},
-  {id: "saved", label: "Saved"},
-  {id: "templates", label: "Templates"}
-];
 
 // Prism re-tokenizes and rewrites the whole highlight layer on every keystroke. Past this length the
 // cost (mostly the innerHTML write/layout, not the tokenizing itself) makes typing feel unresponsive,
@@ -70,9 +62,9 @@ class Model {
     let savedNb = localStorage.getItem("numberOfQueriesSaved");
     this.savedHistory = createQueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
-    this.querySearchValue = "";
     this.toast = null;
     this.toastTimeout = null;
+    this.showAutocomplete = false;
     this.expandAutocomplete = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
@@ -169,6 +161,7 @@ class Model {
     this.queryInput = queryInput;
     queryInput.value = this.initialQuery;
     this.initialQuery = null;
+    this.queryAutocompleteHandler();
   }
   toggleHelp() {
     this.showHelp = !this.showHelp;
@@ -176,8 +169,18 @@ class Model {
   toggleAI() {
     this.showAI = !this.showAI;
   }
+  hideAutocomplete() {
+    this.showAutocomplete = false;
+    this.expandAutocomplete = false;
+  }
   toggleExpand() {
-    this.expandAutocomplete = !this.expandAutocomplete;
+    if (!this.showAutocomplete) {
+      this.showAutocomplete = true;
+      this.expandAutocomplete = true;
+      this.queryAutocompleteHandler();
+    } else {
+      this.expandAutocomplete = !this.expandAutocomplete;
+    }
   }
   showDescribeUrl() {
     let args = new URLSearchParams();
@@ -192,12 +195,15 @@ class Model {
     if (this.selectedHistoryEntry != null) {
       this.queryInput.value = this.selectedHistoryEntry.query;
       this.queryTooling = this.selectedHistoryEntry.useToolingApi;
+      this.hideAutocomplete();
       this.queryAutocompleteHandler();
       this.selectedHistoryEntry = null;
     }
   }
   selectQueryTemplate() {
     this.queryInput.value = this.selectedQueryTemplate.trimStart();
+    this.hideAutocomplete();
+    this.queryAutocompleteHandler();
     this.queryInput.focus();
     let indexPos = this.queryInput.value.toLowerCase().indexOf("from ");
     if (indexPos !== -1) {
@@ -243,7 +249,6 @@ class Model {
   }
   clearHistory() {
     this.queryHistory.clear();
-    this.querySearchValue = "";
   }
   selectSavedEntry() {
     if (this.selectedSavedEntry != null) {
@@ -251,13 +256,13 @@ class Model {
       this.queryName = label ?? "";
       this.queryInput.value = query;
       this.queryTooling = this.selectedSavedEntry.useToolingApi;
+      this.hideAutocomplete();
       this.queryAutocompleteHandler();
       this.selectedSavedEntry = null;
     }
   }
   clearSavedHistory() {
     this.savedHistory.clear();
-    this.querySearchValue = "";
   }
   showToast(variant, title, message) {
     clearTimeout(this.toastTimeout);
@@ -373,7 +378,7 @@ class Model {
     let ctrlSpace = e.ctrlSpace;
 
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
-    let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
+    let newAutocompleteState = [useToolingApi, query, selStart, selEnd, vm.showAutocomplete].join("$");
     if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
       return;
     }
@@ -448,7 +453,7 @@ class Model {
     }
 
     // If we are just after the "from" keyword, autocomplete the sobject name
-    if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
+    if ((vm.showAutocomplete || !searchTerm) && query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
       let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
       if (!globalDescribe) {
         switch (globalStatus) {
@@ -884,6 +889,7 @@ class Model {
   }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
+    vm.hideAutocomplete();
     let exportedData = new RecordTable(vm);
     exportedData.isTooling = vm.queryTooling;
     exportedData.describeInfo = vm.describeInfo;
@@ -1047,6 +1053,7 @@ class Model {
   }
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this
+    vm.hideAutocomplete();
     let exportedData = new RecordTable(vm);
 
     // Save query to history immediately when query plan is initiated
@@ -1159,6 +1166,7 @@ class Model {
     this.activeTabIndex = index;
     if (this.queryTabs[index] !== previousTab) {
       this.queryName = "";
+      this.hideAutocomplete();
     }
     // Update the query input value to match the current tab's query
     if (this.queryInput) {
@@ -1166,6 +1174,9 @@ class Model {
     }
     this.queryTooling = this.queryTabs[index].queryTooling;
     this.queryAll = this.queryTabs[index].queryAll;
+    if (this.queryInput) {
+      this.queryAutocompleteHandler();
+    }
     // Update the exported data with the tab's results
     this.exportedData = this.queryTabs[index].results;
     // Update the UI with the new data
@@ -1457,11 +1468,20 @@ class App extends React.Component {
       editingTabName: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
-      contextMenu: null,
-      querySource: "history",
-      isQueryDropdownOpen: false,
-      queryActiveIndex: -1
+      contextMenu: null
     };
+    this.handleDocumentMouseDown = this.handleDocumentMouseDown.bind(this);
+  }
+  handleDocumentMouseDown(e) {
+    let {model} = this.props;
+    if (!model.showAutocomplete) {
+      return;
+    }
+    if (e.target.closest(".query-editor") || e.target.closest(".autocomplete-box")) {
+      return;
+    }
+    model.hideAutocomplete();
+    model.didUpdate();
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1484,13 +1504,13 @@ class App extends React.Component {
   }
   onClearHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to clear the query history?");
-    if (r == true) {
-      let {model} = this.props;
-      model.clearHistory();
-      model.didUpdate();
-      this.focusQuerySource();
+    if (!confirm("Are you sure you want to clear the query history?")) {
+      return false;
     }
+    let {model} = this.props;
+    model.clearHistory();
+    model.didUpdate();
+    return true;
   }
   onAddToHistory(e) {
     e.preventDefault();
@@ -1501,18 +1521,13 @@ class App extends React.Component {
   }
   onClearSavedHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove all saved queries?");
-    if (r == true) {
-      let {model} = this.props;
-      model.clearSavedHistory();
-      model.didUpdate();
-      this.focusQuerySource();
+    if (!confirm("Are you sure you want to remove all saved queries?")) {
+      return false;
     }
-  }
-  focusQuerySource() {
-    // Clearing disables the button that held focus. Move focus to the selected source
-    // after React has rendered the empty state instead of dropping it on <body>.
-    setTimeout(() => document.getElementById("sfir-query-source-" + this.state.querySource)?.focus(), 0);
+    let {model} = this.props;
+    model.clearSavedHistory();
+    model.didUpdate();
+    return true;
   }
   onToggleHelp(e) {
     e.preventDefault();
@@ -1642,6 +1657,7 @@ class App extends React.Component {
 
   onQueryInput(e) {
     let {model} = this.props;
+    model.showAutocomplete = true;
     model.updateCurrentTabQuery(e.target.value);
     model.queryAutocompleteHandler();
     model.didUpdate();
@@ -1773,18 +1789,9 @@ class App extends React.Component {
     this.setState({contextMenu: null});
   }
 
-  _openQueryDropdown() {
-    this.setState({isQueryDropdownOpen: true, queryActiveIndex: -1});
-  }
-
-  _closeQueryDropdown() {
-    this.setState({isQueryDropdownOpen: false, queryActiveIndex: -1});
-  }
-
   onDeleteHistoryEntry(entry) {
     let {model} = this.props;
     model.deleteHistoryEntry(entry);
-    this.setState({queryActiveIndex: -1});
     model.didUpdate();
   }
 
@@ -1794,115 +1801,58 @@ class App extends React.Component {
     }
     let {model} = this.props;
     model.deleteSavedEntry(entry);
-    this.setState({queryActiveIndex: -1});
     model.didUpdate();
   }
 
-  // The three places a query can come from. Only one list shows at a time, so the
-  // search box, the dropdown and the actions beside it all follow the selected source.
-  activeQuerySource() {
+  querySources() {
     let {model} = this.props;
-    if (this.state.querySource === "saved") {
-      return {
+    const renderEntry = (renderItem) => (entry, searchValue, isObjectSuggest) => (isObjectSuggest
+      ? h("span", {className: "slds-truncate", title: entry}, renderHighlightedText(entry, searchValue.slice(1)))
+      : renderItem(entry, searchValue));
+    return [
+      {
+        id: "history",
+        label: "History",
+        entries: model.queryHistory.list,
+        getResults: dropdownEntries,
+        renderEntry: renderEntry((entry, searchValue) => renderQueryItem({query: entry.query, useToolingApi: entry.useToolingApi}, searchValue)),
+        select: (entry) => { model.selectedHistoryEntry = entry; model.selectHistoryEntry(); model.didUpdate(); },
+        remove: (entry) => this.onDeleteHistoryEntry(entry),
+        clear: this.onClearHistory,
+        clearLabel: "Clear Query History",
+        clearAriaLabel: "Clear list of query history"
+      },
+      {
         id: "saved",
+        label: "Saved",
         entries: model.savedHistory.list,
-        renderItem: (entry, searchValue) => renderQueryItem({...splitSavedQuery(entry.query), useToolingApi: entry.useToolingApi}, searchValue),
-        select: (entry) => { model.selectedSavedEntry = entry; model.selectSavedEntry(); },
+        getResults: dropdownEntries,
+        renderEntry: renderEntry((entry, searchValue) => renderQueryItem({...splitSavedQuery(entry.query), useToolingApi: entry.useToolingApi}, searchValue)),
+        select: (entry) => { model.selectedSavedEntry = entry; model.selectSavedEntry(); model.didUpdate(); },
         remove: (entry) => this.onDeleteSavedEntry(entry),
         clear: this.onClearSavedHistory,
         clearLabel: "Clear Saved Queries",
         clearAriaLabel: "Clear list of saved queries"
-      };
-    }
-    if (this.state.querySource === "templates") {
-      return {
+      },
+      {
         id: "templates",
+        label: "Templates",
         entries: model.queryTemplates.map(query => ({query})),
-        renderItem: (entry, searchValue) => renderQueryItem({query: entry.query}, searchValue),
-        select: (entry) => { model.selectedQueryTemplate = entry.query; model.selectQueryTemplate(); },
+        getResults: dropdownEntries,
+        renderEntry: renderEntry((entry, searchValue) => renderQueryItem({query: entry.query}, searchValue)),
+        select: (entry) => { model.selectedQueryTemplate = entry.query; model.selectQueryTemplate(); model.didUpdate(); },
         remove: null,
         clear: null,
-        clearLabel: "Clear list",
+        clearLabel: "Clear",
         clearAriaLabel: "Clear list"
-      };
-    }
-    return {
-      id: "history",
-      entries: model.queryHistory.list,
-      renderItem: (entry, searchValue) => renderQueryItem({query: entry.query, useToolingApi: entry.useToolingApi}, searchValue),
-      select: (entry) => { model.selectedHistoryEntry = entry; model.selectHistoryEntry(); },
-      remove: (entry) => this.onDeleteHistoryEntry(entry),
-      clear: this.onClearHistory,
-      clearLabel: "Clear Query History",
-      clearAriaLabel: "Clear list of query history"
-    };
+      }
+    ];
   }
 
-  onQuerySourceChange(source) {
-    let {model} = this.props;
-    model.querySearchValue = "";
-    this.setState({querySource: source, isQueryDropdownOpen: false, queryActiveIndex: -1});
-    model.didUpdate();
+  componentWillUnmount() {
+    document.removeEventListener("mousedown", this.handleDocumentMouseDown);
   }
-  onQuerySearchInput(e) {
-    let {model} = this.props;
-    model.querySearchValue = e.target.value;
-    this.setState({queryActiveIndex: -1, isQueryDropdownOpen: true});
-    model.didUpdate();
-  }
-  onQueryKeyDown(e, entries, isObjectSuggest, source) {
-    const {queryActiveIndex, isQueryDropdownOpen} = this.state;
-    if (e.key === "Escape") {
-      e.preventDefault();
-      this._closeQueryDropdown();
-      return;
-    }
-    // A closed list must never act on an entry the user cannot see.
-    if (!isQueryDropdownOpen) {
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        this._openQueryDropdown();
-      }
-      return;
-    }
-    const count = entries.length;
-    if (e.key === "Tab") {
-      // Tab keeps moving focus, so it accepts the highlighted entry and closes the list.
-      if (queryActiveIndex >= 0 && count) {
-        this.applyQueryEntry(entries[Math.min(queryActiveIndex, count - 1)], isObjectSuggest, source);
-      }
-      this._closeQueryDropdown();
-      return;
-    }
-    if (!count) return;
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (queryActiveIndex >= 0) {
-        this.applyQueryEntry(entries[Math.min(queryActiveIndex, count - 1)], isObjectSuggest, source);
-      }
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      this.setState({queryActiveIndex: (queryActiveIndex + 1) % count});
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      this.setState({queryActiveIndex: queryActiveIndex < 0 ? count - 1 : (queryActiveIndex - 1 + count) % count});
-    } else if (e.key === "Delete" && !isObjectSuggest && queryActiveIndex >= 0 && source.remove) {
-      e.preventDefault();
-      source.remove(entries[queryActiveIndex]);
-    }
-  }
-  // An object suggestion completes into the search box, anything else loads the query.
-  applyQueryEntry(entry, isObjectSuggest, source) {
-    let {model} = this.props;
-    if (isObjectSuggest) {
-      model.querySearchValue = `?${entry} `;
-      this.setState({queryActiveIndex: 0});
-    } else {
-      source.select(entry);
-      this._closeQueryDropdown();
-    }
-    model.didUpdate();
-  }
+
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
@@ -1913,6 +1863,7 @@ class App extends React.Component {
       queryInput.focus();
     }
     this.updateQueryHighlight();
+    document.addEventListener("mousedown", this.handleDocumentMouseDown);
     // Keep the highlight layer's scroll position in sync since it sits behind the (scrollable) real textarea.
     queryInput.addEventListener("scroll", () => {
       this.refs.queryHighlight.scrollTop = queryInput.scrollTop;
@@ -1920,11 +1871,12 @@ class App extends React.Component {
     });
 
     function queryAutocompleteEvent() {
+      model.showAutocomplete = true;
       model.queryAutocompleteHandler();
       model.didUpdate();
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);
-    queryInput.addEventListener("select", queryAutocompleteEvent);
+    queryInput.addEventListener("mousedown", queryAutocompleteEvent);
 
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
@@ -1935,12 +1887,14 @@ class App extends React.Component {
     queryInput.addEventListener("keydown", e => {
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
+        model.showAutocomplete = true;
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       }
     });
     addEventListener("message", e => {
       if (e.data.command === "open-export-autocomplete") {
+        model.showAutocomplete = true;
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       } else if (e.data.command === "open-export-execute"){
@@ -1994,84 +1948,25 @@ class App extends React.Component {
 
   renderQuerySection() {
     let {model} = this.props;
-    const {isQueryDropdownOpen, queryActiveIndex} = this.state;
-    const source = this.activeQuerySource();
-    const searchValue = model.querySearchValue || "";
-    const {entries, isObjectSuggest} = dropdownEntries(source.entries, searchValue);
-    const label = QUERY_SOURCES.find(option => option.id === source.id).label;
-
-    return h("fieldset", {className: "slds-form-element sfir-query-section"},
-      h("legend", {className: "slds-assistive-text"}, "Queries"),
-      h("div", {className: "slds-form-element__control sfir-query-section__control"},
-        h("div", {className: "sfir-query-section__browse"},
-          h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query source"},
-            QUERY_SOURCES.map(({id, label: sourceLabel}) =>
-              h("span", {key: id, className: "slds-button slds-radio_button"},
-                h("input", {
-                  type: "radio",
-                  name: "sfir-query-source",
-                  id: "sfir-query-source-" + id,
-                  checked: source.id === id,
-                  onChange: () => this.onQuerySourceChange(id)
-                }),
-                h("label", {className: "slds-radio_button__label", htmlFor: "sfir-query-source-" + id},
-                  h("span", {className: "slds-radio_faux"}, sourceLabel)
-                )
-              )
-            )
-          ),
-          h(SldsCombobox, {
-            id: "query-search",
-            className: "sfir-query-search",
-            // Naming the source keeps it visible once the placeholder is replaced by typing.
-            placeholder: "Search " + label.toLowerCase(),
-            "aria-label": "Search " + label.toLowerCase(),
-            value: searchValue,
-            entries,
-            isOpen: isQueryDropdownOpen,
-            activeIndex: queryActiveIndex,
-            onInput: this.onQuerySearchInput.bind(this),
-            onFocus: () => this._openQueryDropdown(),
-            onClick: () => this._openQueryDropdown(),
-            onKeyDown: (e) => this.onQueryKeyDown(e, entries, isObjectSuggest, source),
-            onSelect: (entry) => this.applyQueryEntry(entry, isObjectSuggest, source),
-            onClose: () => this._closeQueryDropdown(),
-            onDelete: !isObjectSuggest && source.remove ? source.remove : null,
-            renderItem: (entry) => (isObjectSuggest
-              ? h("span", {className: "slds-truncate", title: entry}, renderHighlightedText(entry, searchValue.slice(1)))
-              : source.renderItem(entry, searchValue))
-          }),
-          h("button", {
-            type: "button",
-            className: "slds-button slds-button_neutral sfir-query-clear",
-            title: source.clearLabel,
-            "aria-label": source.clearAriaLabel,
-            disabled: !source.clear || source.entries.length === 0,
-            onClick: source.clear
-          }, "Clear list")
-        ),
-        this.renderQuerySave()
-      )
-    );
-  }
-
-  // Saving acts on the editor, not the selected source, so these controls stay put
-  // while the source changes.
-  renderQuerySave() {
-    let {model} = this.props;
     // Every query textarea mutation calls didUpdate(), keeping this DOM read current.
     const isQueryEmpty = !model.queryInput?.value.trim();
 
-    return h("div", {className: "sfir-query-section__save"},
-      h("label", {className: "sfir-query-save-label", htmlFor: "sfir-query-label"}, "Save as"),
-      h("input", {id: "sfir-query-label", className: "slds-input sfir-query-label", placeholder: "Optional label", type: "text", value: model.queryName, onInput: this.onSetQueryName}),
-      h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history", disabled: isQueryEmpty}, "Save Query")
-    );
+    return h(QueryToolbar, {
+      sources: this.querySources(),
+      queryName: model.queryName,
+      onQueryNameChange: this.onSetQueryName,
+      onSave: this.onAddToHistory,
+      isSaveDisabled: isQueryEmpty
+    });
   }
 
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
+    const isAutocompleteError = model.autocompleteResults.results.some(r => r.value === "Retry");
+    const showSuggestions = model.showAutocomplete || isAutocompleteError;
+    const visibleSuggestions = showSuggestions ? model.autocompleteResults.results : [];
+    const visibleTitle = showSuggestions ? model.autocompleteResults.title : "";
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
@@ -2130,49 +2025,46 @@ class App extends React.Component {
             h("div", {},
             ),
             h("div", {className: "query-controls"},
-              h("h3", {className: "slds-text-heading_small slds-m-bottom_xx-small slds-m-left_xxx-small"}, "Export Query"),
-              h("div", {className: "slds-grid slds-grid_align-spread"},
-                h("div", {className: "slds-col slds-size_7-of-12"},
-                  h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_x-large"},
-                    h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
-                    h("input", {
-                      type: "checkbox",
-                      name: "checkbox-toggle-queryAll",
-                      value: "checkbox-toggle-queryAll",
-                      role: "switch",
-                      checked: model.queryAll,
-                      onChange: this.onQueryAllChange,
-                      disabled: model.queryTooling
-                    }),
-                    h("span", {id: "checkbox-toggle-queryAll", className: "slds-checkbox_faux_container"},
-                      h("span", {className: "slds-checkbox_faux"}),
-                      h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                      h("span", {className: "slds-checkbox_off"}, "Disabled")
-                    )
-                  )
-                ),
-                h("div", {className: "slds-col slds-col-size_5-of-12"},
-                  h("label", {className: "slds-checkbox_toggle slds-grid slds-grid_align-end", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
-                    h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Tooling API"),
-                    h("input", {
-                      type: "checkbox",
-                      name: "checkbox-toggle-tooling",
-                      value: "checkbox-toggle-tooling",
-                      role: "switch",
-                      checked: model.queryTooling,
-                      onChange: this.onQueryToolingChange,
-                      disabled: model.queryAll
-                    }),
-                    h("span", {id: "checkbox-toggle-tooling", className: "slds-checkbox_faux_container"},
-                      h("span", {className: "slds-checkbox_faux"}),
-                      h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                      h("span", {className: "slds-checkbox_off"}, "Disabled")
-                    )
-                  )),
-              ),
+              h("h3", {className: "slds-text-heading_small slds-m-bottom_none slds-m-left_xxx-small"}, "Export Query"),
               h("div", {className: "query-history-controls"},
                 this.renderQuerySection()
               ),
+              h("div", {className: "slds-grid slds-grid_vertical-align-center"},
+                h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_medium"},
+                  h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
+                  h("input", {
+                    type: "checkbox",
+                    name: "checkbox-toggle-queryAll",
+                    value: "checkbox-toggle-queryAll",
+                    role: "switch",
+                    checked: model.queryAll,
+                    onChange: this.onQueryAllChange,
+                    disabled: model.queryTooling
+                  }),
+                  h("span", {id: "checkbox-toggle-queryAll", className: "slds-checkbox_faux_container"},
+                    h("span", {className: "slds-checkbox_faux"}),
+                    h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                    h("span", {className: "slds-checkbox_off"}, "Disabled")
+                  )
+                ),
+                h("label", {className: "slds-checkbox_toggle slds-grid", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
+                  h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Tooling API"),
+                  h("input", {
+                    type: "checkbox",
+                    name: "checkbox-toggle-tooling",
+                    value: "checkbox-toggle-tooling",
+                    role: "switch",
+                    checked: model.queryTooling,
+                    onChange: this.onQueryToolingChange,
+                    disabled: model.queryAll
+                  }),
+                  h("span", {id: "checkbox-toggle-tooling", className: "slds-checkbox_faux_container"},
+                    h("span", {className: "slds-checkbox_faux"}),
+                    h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                    h("span", {className: "slds-checkbox_off"}, "Disabled")
+                  )
+                )
+              )
             ),
             h("div", {
               className: "query-tabs",
@@ -2245,9 +2137,9 @@ class App extends React.Component {
                 onChange: this.onQueryInput
               })
             ),
-            h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
+            h("div", {className: "autocomplete-box" + (showSuggestions && model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},
-                h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),
+                h("span", {className: "slds-m-left_xx-small"}, visibleTitle),
                 h("ul", {className: "slds-button-group-row flex-right"},
                   h("li", {className: "slds-button-group-item"},
                     h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
@@ -2263,15 +2155,15 @@ class App extends React.Component {
                   ),
                   h("li", {className: "slds-button-group-item"},
                     h("div", {className: "slds-dropdown-trigger"},
-                      h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "slds-button slds-button_icon slds-button_icon-more toggle contract" : "slds-button slds-button_icon slds-button_icon-more toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+                      h("button", {tabIndex: 5, href: "#", className: showSuggestions && model.expandAutocomplete ? "slds-button slds-button_icon slds-button_icon-more toggle contract" : "slds-button slds-button_icon slds-button_icon-more toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                         h("div", {className: "button-icon"}),
                         h("div", {className: "button-toggle-icon"})
                       )
                     ))
                 ),
               ),
-              h("div", {className: "autocomplete-results slds-m-top_small"},
-                model.autocompleteResults.results.map(r => (
+              visibleSuggestions.length > 0 && h("div", {className: "autocomplete-results slds-m-top_small"},
+                visibleSuggestions.map(r => (
                   h("span", {className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", key: r.value},
                     h("span", {className: "slds-pill__icon_container " + r.autocompleteType + " " + r.dataType},
                       h("span", {className: "sfir-autocomplete-icon"})

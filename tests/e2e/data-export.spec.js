@@ -79,13 +79,19 @@ test.describe("Data Export", () => {
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
     const queryInput = page.locator("textarea#query");
+    const suggestions = page.locator(".autocomplete-results");
+    const header = page.locator(".autocomplete-header");
+
+    // On initial load (before interacting with the query editor), field suggestion pills stay
+    // hidden so they do not shrink the result table, while object Field Info is still resolved.
+    await expect(suggestions).toHaveCount(0);
+    await expect(header).not.toContainText("suggestions");
+    await expect(page.locator("a", {hasText: "Account Field Info"})).toBeVisible();
 
     // 1. Object Autocomplete
     await queryInput.fill("SELECT Id FROM Acc");
-    // Trigger autocomplete (usually automatic on typing, but we might need to wait)
-    // The autocomplete-box is always present, we check if it has results
     await expect(page.locator(".autocomplete-box")).toBeVisible();
-    await expect(page.locator(".autocomplete-results")).toContainText("Account");
+    await expect(suggestions).toContainText("Account");
 
     // Click suggestion - target the link element specifically with title="Account"
     await page.locator(".autocomplete-results a[title='Account']").first().click();
@@ -94,40 +100,42 @@ test.describe("Data Export", () => {
     await expect(queryInput).toHaveValue("SELECT Id FROM Account ");
 
     // 2. Field Autocomplete
-    // Position cursor after "Id, "
     await queryInput.fill("SELECT Id, Nam FROM Account");
-    // Move cursor to end to trigger autocomplete logic
-    // Note: The cursor needs to be at the end of "Nam"
-    // "SELECT Id, Nam".length is 14.
-    // But we filled the whole string.
-    // The autocomplete logic looks at cursor position.
-    // "SELECT Id, Nam FROM Account"
-    // Cursor at end -> context is "Account" (word after FROM)? No.
-    // The code looks for the token at cursor.
-    // If cursor at end, token is "Account".
-    // We want to autocomplete "Nam". We need to put cursor after "Nam".
-
-    // Let's set the value and move cursor to position 14 (after Nam)
-    await queryInput.fill("SELECT Id, Nam FROM Account");
-    // Calculate position: "SELECT Id, Nam".length = 14
     await page.evaluate(() => {
       const el = document.querySelector("textarea#query");
       el.selectionStart = 14;
       el.selectionEnd = 14;
-      // Trigger input event to notify app
       el.dispatchEvent(new Event("input", {bubbles: true}));
     });
 
     // Now wait for field suggestions
-    await expect(page.locator(".autocomplete-header")).toContainText("Account fields suggestions");
-
-    await expect(page.locator(".autocomplete-results")).toContainText("Name");
-    // Click suggestion - target the link element specifically
+    await expect(header).toContainText("Account fields suggestions");
+    await expect(suggestions).toContainText("Name");
     await page.locator(".autocomplete-results a").filter({hasText: "Name"}).first().click();
-
-    // Autocomplete adds ", " after fields when not last?
-    // "SELECT Id, Name,  FROM Account"
     await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account");
+
+    // Clicking outside the editor/autocomplete collapses suggestions; clicking back in #query restores them.
+    await page.getByRole("heading", {name: "Export Query"}).click();
+    await expect(suggestions).toHaveCount(0);
+    await expect(header).not.toContainText("suggestions");
+
+    await queryInput.click();
+    await expect(suggestions).toBeVisible();
+
+    // Running Export collapses suggestions so the result table gets full vertical space.
+    await page.click("button:has-text('Run Export')");
+    await expect(suggestions).toHaveCount(0);
+
+    // Switching tabs keeps suggestions collapsed and updates the Field Info button to the active tab's object.
+    await queryInput.click();
+    await expect(suggestions).toBeVisible();
+    await page.locator(".add-tab-button").click();
+    await expect(suggestions).toHaveCount(0);
+    await queryInput.fill("SELECT Id FROM Contact LIMIT 1");
+    await expect(page.locator("a", {hasText: "Contact Field Info"})).toBeVisible();
+    await page.locator(".query-tab").first().click();
+    await expect(suggestions).toHaveCount(0);
+    await expect(page.locator("a", {hasText: "Account Field Info"})).toBeVisible();
   });
 
   test("Copy as CSV", async ({page, context, extensionId}) => {
@@ -369,11 +377,17 @@ test.describe("Data Export", () => {
     const queryText = options.first().locator(".sfir-query-text");
     const queryStyle = await queryText.evaluate(element => {
       const style = getComputedStyle(element);
-      return {marginBottom: style.marginBottom, padding: style.padding};
+      return {
+        marginBottom: style.marginBottom,
+        padding: style.padding,
+        lineClamp: style.webkitLineClamp
+      };
     });
-    expect(queryStyle).toEqual({marginBottom: "0px", padding: "0px"});
+    expect(queryStyle).toEqual({marginBottom: "0px", padding: "0px", lineClamp: "2"});
+    await expect(queryText).toHaveAttribute("title", `SELECT ${"Name, ".repeat(80)}Id FROM Account`);
 
     const firstOption = await options.first().boundingBox();
+    expect(firstOption.height, "long queries clamp to at most two lines").toBeLessThan(60);
     const secondOption = await options.nth(1).boundingBox();
     expect(Math.abs(secondOption.y - firstOption.y - firstOption.height), "option hover boxes are flush").toBeLessThan(1);
     const initialBounds = await listbox.boundingBox();
@@ -453,6 +467,18 @@ test.describe("Data Export", () => {
     await page.waitForSelector("textarea#query", {timeout: 2000});
     await history.click();
     expect(Math.abs((await listbox.boundingBox()).height - resizedBounds.height), "clicking the resize corner preserves the preferred height").toBeLessThan(2);
+
+    // Filtering down to one entry shrinks the dropdown to fit its content instead of
+    // leaving blank space from the stored maxHeight, and has no extra bottom gap.
+    await history.fill("Account 19");
+    await expect(options).toHaveCount(1);
+    const singleBounds = await listbox.boundingBox();
+    const singleOptionBounds = await options.first().boundingBox();
+    expect(singleBounds.height, "short list hugs its content").toBeLessThan(80);
+    expect(
+      (singleBounds.y + singleBounds.height) - (singleOptionBounds.y + singleOptionBounds.height),
+      "no extra bottom spacing after the last entry"
+    ).toBeLessThanOrEqual(6);
 
     // Empty-state interaction retains focus, while the native scrollbar remains on
     // the outer div and is not covered by this mousedown handler.
@@ -589,7 +615,7 @@ test.describe("Data Export", () => {
         search: box(".slds-combobox__input"),
         browse: box(".sfir-query-section__browse"),
         save: box(".sfir-query-section__save"),
-        section: box(".sfir-query-section")
+        toolbar: box(".sfir-query-toolbar")
       };
     });
 
@@ -608,11 +634,11 @@ test.describe("Data Export", () => {
     await page.keyboard.press("ArrowRight");
     await expect(page.getByRole("combobox", {name: "Search saved"})).toBeVisible();
 
-    // DOM and visual order agree: the top-row toggles precede the second-row Queries controls.
+    // DOM and visual order agree: the inline Queries controls precede the right-side toggles.
     expect(await page.evaluate(() => {
       const toggle = document.querySelector("[name='checkbox-toggle-tooling']");
       const querySource = document.getElementById("sfir-query-source-history");
-      return Boolean(toggle.compareDocumentPosition(querySource) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return Boolean(querySource.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING);
     })).toBe(true);
   });
 
@@ -631,7 +657,7 @@ test.describe("Data Export", () => {
 
     const clearList = page.locator(".sfir-query-clear");
     await expect(clearList).toBeEnabled();
-    await expect(clearList).toHaveText("Clear list");
+    await expect(clearList).toHaveText("Clear");
     await expect(clearList).toHaveAccessibleName("Clear list of query history");
     await expect(clearList).toHaveAttribute("title", "Clear Query History");
     page.once("dialog", dialog => dialog.accept());
@@ -654,7 +680,7 @@ test.describe("Data Export", () => {
     await selectQuerySource(page, "templates");
     await expect(clearList).toBeDisabled();
     await expect(clearList).toHaveAccessibleName("Clear list");
-    await expect(clearList).toHaveAttribute("title", "Clear list");
+    await expect(clearList).toHaveAttribute("title", "Clear");
   });
 
   test("Empty Editor Cannot Be Saved", async ({page, context, extensionId}) => {
@@ -735,30 +761,108 @@ test.describe("Data Export", () => {
     await expect(label).toHaveValue("Keep while closing another tab");
   });
 
-  for (const width of [800, 1024, 1280]) {
-    test(`Queries Section Fits At ${width}px`, async ({page, extensionId}) => {
+  for (const width of [800, 1024, 1280, 1440]) {
+    test(`Queries Toolbar Fits At ${width}px`, async ({page, extensionId}) => {
       await page.setViewportSize({width, height: 760});
       await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
       await page.waitForSelector("textarea#query", {timeout: 2000});
 
-      const section = page.locator(".sfir-query-section");
-      const bounds = await section.boundingBox();
+      const toolbar = page.locator(".sfir-query-toolbar");
+      const bounds = await toolbar.boundingBox();
       expect(bounds.x, "left edge on screen").toBeGreaterThanOrEqual(0);
       expect(bounds.x + bounds.width, "right edge on screen").toBeLessThanOrEqual(width);
-      expect(await section.evaluate(element => element.scrollWidth <= element.clientWidth), "section content does not overflow").toBe(true);
+      expect(await toolbar.evaluate(element => element.scrollWidth <= element.clientWidth), "toolbar content does not overflow").toBe(true);
 
       const heading = await page.getByRole("heading", {name: "Export Query"}).boundingBox();
-      expect(bounds.y, "Queries section occupies the second row").toBeGreaterThan(heading.y);
-
+      const toggle = await page.locator("label", {hasText: "Tooling API"}).boundingBox();
       const browse = await page.locator(".sfir-query-section__browse").boundingBox();
       const save = await page.locator(".sfir-query-section__save").boundingBox();
-      if (width <= 1024) {
-        expect(save.y, "save group wraps as a unit").toBeGreaterThan(browse.y);
-      } else {
-        expect(Math.abs(save.y - browse.y), "groups remain on one row").toBeLessThan(2);
+      if (width >= 1024) {
+        expect(Math.abs(save.y - browse.y), "browse and save stay on one row").toBeLessThan(2);
+      }
+
+      if (width >= 1280) {
+        const headingCenter = heading.y + (heading.height / 2);
+        const toolbarCenter = bounds.y + (bounds.height / 2);
+        const toggleCenter = toggle.y + (toggle.height / 2);
+        expect(Math.abs(toolbarCenter - headingCenter), "toolbar is inline with Export Query").toBeLessThan(6);
+        expect(Math.abs(toggleCenter - toolbarCenter), "toggles are inline with toolbar").toBeLessThan(6);
       }
     });
   }
+
+  test("Dropdown Row Alignment, Operator Hover Background And Progressive Batching", async ({page, context, extensionId}) => {
+    const hugeQuery = `SELECT Id FROM Account WHERE Id IN (${Array.from({length: 400}, (_, i) => `'001000000000${String(i).padStart(3, "0")}AAA'`).join(", ")}) AND External_Id__c != 'DEEP_TARGET_99'`;
+    await context.addInitScript(longQuery => {
+      window.localStorage.setItem("numberOfQueriesInHistory", "150");
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: longQuery, useToolingApi: false},
+        ...Array.from({length: 119}, (_, i) => ({
+          query: `SELECT Id FROM Account WHERE Name = 'Batch ${i}' AND Type != 'Other'`,
+          useToolingApi: false
+        }))
+      ]));
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "test:SELECT Id FROM Account WHERE Id = '001Ws000062hgiwIAB'", useToolingApi: false}
+      ]));
+    }, hugeQuery);
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    // 1. Saved single-line row: operator has transparent background on hover, and query text is vertically centred with badge and delete icon.
+    await selectQuerySource(page, "saved");
+    const saved = page.getByRole("combobox", {name: "Search saved"});
+    await saved.click();
+    const savedOption = page.locator("#query-search-listbox [role='option']").first();
+    await savedOption.hover();
+
+    const operatorBg = await savedOption.locator(".token.operator").first().evaluate(el => getComputedStyle(el).backgroundColor);
+    expect(operatorBg, "operator token has no contrasting background box on hover").toBe("rgba(0, 0, 0, 0)");
+
+    const savedOptionBox = await savedOption.boundingBox();
+    const savedTextBox = await savedOption.locator(".sfir-query-text").boundingBox();
+    const savedBadgeBox = await savedOption.locator(".sfir-query-badge").boundingBox();
+    expect(
+      Math.abs((savedTextBox.y + (savedTextBox.height / 2)) - (savedOptionBox.y + (savedOptionBox.height / 2))),
+      "single-line query text is vertically centred in its row"
+    ).toBeLessThan(2);
+    expect(
+      Math.abs((savedBadgeBox.y + (savedBadgeBox.height / 2)) - (savedOptionBox.y + (savedOptionBox.height / 2))),
+      "label badge is vertically centred in its row"
+    ).toBeLessThan(2);
+
+    // 2. Large history progressive rendering & capped tokenization.
+    await selectQuerySource(page, "history");
+    const history = page.getByRole("combobox", {name: "Search history"});
+    const listbox = page.locator("#query-search-listbox");
+    const options = listbox.locator("[role='option']");
+
+    await history.click();
+    await expect(options, "renders only the initial page of entries on open").toHaveCount(30);
+    const tokenCount = await options.first().locator(".token").count();
+    expect(tokenCount, "multi-KB query tokenization is capped").toBeLessThan(120);
+
+    // Scrolling near the bottom progressively mounts the next batch.
+    await listbox.evaluate(el => {
+      el.scrollTop = el.scrollHeight;
+      el.dispatchEvent(new Event("scroll"));
+    });
+    await expect(options).toHaveCount(60);
+
+    // ArrowUp from the unhighlighted state still wraps to the final entry (index 119) and renders it.
+    await history.fill("");
+    await history.press("Escape");
+    await history.press("ArrowUp");
+    await history.press("ArrowUp");
+    await expect(options).toHaveCount(120);
+    await expect(options.nth(119)).toHaveAttribute("aria-selected", "true");
+
+    // Searching a term deep inside a multi-KB query windows the preview onto the match.
+    await history.fill("DEEP_TARGET_99");
+    await expect(options).toHaveCount(1);
+    await expect(options.first().locator(".sfir-search-match")).toHaveText("DEEP_TARGET_99");
+  });
 
   test("Templates Source Loads A Template", async ({page, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);

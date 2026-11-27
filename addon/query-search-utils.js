@@ -2,6 +2,8 @@
 
 let h = React.createElement;
 
+const MAX_PREVIEW_CHARS = 400;
+
 /**
  * Whether a Data Export query is GraphQL: either the "{ uiapi { ... } }" shorthand of the
  * query templates, or a full operation such as "query accounts { uiapi { ... } }" as in the
@@ -109,26 +111,39 @@ function parseSearch(value) {
   return {isObjectSuggest: false, object: name.toLowerCase(), text: rest.trim().toLowerCase(), terms: splitTerms(rest)};
 }
 
+function scoreText(haystack, text, terms) {
+  if (!terms.length) {
+    return 0;
+  }
+  const hits = terms.filter(term => haystack.includes(term)).length;
+  if (!hits) {
+    return -1;
+  }
+  if (text && haystack.includes(text)) {
+    return 2;
+  }
+  return hits / terms.length;
+}
+
+function rankEntries(entries, getScore) {
+  const scored = entries
+    .map((entry, index) => ({entry, index, score: getScore(entry)}))
+    .filter(result => result.score >= 0)
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  const completeMatches = scored.filter(result => result.score >= 1);
+  const results = completeMatches.length ? completeMatches : scored;
+  return results.map(result => result.entry);
+}
+
 function scoreEntry(entry, search) {
   const query = (entry.query || "").toLowerCase();
   if (search.object && !extractObjectNames(query).has(search.object)) {
     return -1;
   }
-  if (!search.terms.length) {
-    return 0;
-  }
-  const hits = search.terms.filter(term => query.includes(term)).length;
-  if (!hits) {
-    return -1;
-  }
-  if (search.text && query.includes(search.text)) {
-    return 2;
-  }
-  return hits / search.terms.length;
+  return scoreText(query, search.text, search.terms);
 }
 
 // Either object-name suggestions or matching queries, strongest matches first.
-// Linear scan: history holds at most 100 entries and saved queries 50.
 export function dropdownEntries(entries, searchValue) {
   const search = parseSearch(searchValue);
   if (search.isObjectSuggest) {
@@ -138,23 +153,49 @@ export function dropdownEntries(entries, searchValue) {
       isObjectSuggest: true
     };
   }
-  const scored = entries
-    .map((entry, index) => ({entry, index, score: scoreEntry(entry, search)}))
-    .filter(result => result.score >= 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index);
-  const completeMatches = scored.filter(result => result.score >= 1);
-  const results = completeMatches.length ? completeMatches : scored;
-  return {entries: results.map(result => result.entry), isObjectSuggest: false};
+  return {entries: rankEntries(entries, entry => scoreEntry(entry, search)), isObjectSuggest: false};
+}
+
+export function restDropdownEntries(entries, searchValue) {
+  const input = searchValue || "";
+  const text = input.trim().toLowerCase();
+  const terms = splitTerms(input);
+  return {
+    entries: rankEntries(entries, entry => {
+      const haystack = `${entry.label || ""} ${entry.method || ""} ${entry.endpoint || ""}`.toLowerCase();
+      return scoreText(haystack, text, terms);
+    }),
+    isObjectSuggest: false
+  };
+}
+
+function buildTermsPattern(terms) {
+  const escape = term => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const orderedTerms = [...new Set(terms)].sort((a, b) => b.length - a.length);
+  return new RegExp(orderedTerms.map(escape).join("|"), "gi");
 }
 
 function matchRanges(text, terms) {
   if (!terms.length) {
     return [];
   }
-  const escape = term => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const orderedTerms = [...new Set(terms)].sort((a, b) => b.length - a.length);
-  return Array.from(text.matchAll(new RegExp(orderedTerms.map(escape).join("|"), "gi")))
+  return Array.from(text.matchAll(buildTermsPattern(terms)))
     .map(match => ({start: match.index, end: match.index + match[0].length}));
+}
+
+// Rows clamp to two lines, so tokenizing multi-KB queries only wastes DOM and CPU;
+// keep a short window (shifted onto the first match when searching deep inside a query).
+function previewSlice(text, terms) {
+  if (text.length <= MAX_PREVIEW_CHARS) {
+    return text;
+  }
+  const firstMatchIndex = terms.length ? text.search(buildTermsPattern(terms)) : -1;
+  if (firstMatchIndex < MAX_PREVIEW_CHARS / 2) {
+    return text.slice(0, MAX_PREVIEW_CHARS) + "…";
+  }
+  const start = Math.max(0, firstMatchIndex - 60);
+  const end = Math.min(text.length, start + MAX_PREVIEW_CHARS);
+  return (start > 0 ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
 }
 
 function renderTextRanges(text, ranges, position, keyPrefix) {
@@ -204,9 +245,11 @@ function renderPrismToken(token, ranges, position, key) {
 
 // Prism owns syntax colouring; search matches are marked inside its text tokens.
 function renderQuery(query, terms) {
-  const ranges = matchRanges(query, terms);
+  const preview = previewSlice(query, terms);
+  const ranges = matchRanges(preview, terms);
   const position = {offset: 0};
-  const content = window.Prism.tokenize(query, window.Prism.languages[queryLanguage(query)])
+  const language = preview.startsWith("…") ? "sql" : queryLanguage(query);
+  const content = window.Prism.tokenize(preview, window.Prism.languages[language])
     .map((token, index) => renderPrismToken(token, ranges, position, `token-${index}`));
   return h("code", {className: "language-sql sfir-query-text", title: query}, content);
 }
@@ -219,5 +262,18 @@ export function renderQueryItem({label, query, useToolingApi}, searchValue) {
     label && h("span", {className: "slds-badge slds-badge_inverse sfir-query-badge", title: "Saved query label"}, highlightText(label, terms, "label")),
     renderQuery(query || "", terms),
     useToolingApi && h("span", {className: "slds-badge sfir-query-badge", title: "Uses Tooling API"}, "Tooling")
+  );
+}
+
+export function renderRestItem({label, method, endpoint, body}, searchValue) {
+  const terms = splitTerms(searchValue || "");
+  const upperMethod = (method || "GET").toUpperCase();
+  const fullEndpoint = endpoint || "";
+  const preview = previewSlice(fullEndpoint, terms);
+  const tooltip = body ? `${upperMethod} ${fullEndpoint}\n\n${body}` : `${upperMethod} ${fullEndpoint}`;
+  return h("span", {className: "sfir-query-item"},
+    label && h("span", {className: "slds-badge slds-badge_inverse sfir-query-badge", title: "Saved request label"}, highlightText(label, terms, "label")),
+    h("span", {className: "slds-badge sfir-query-badge", title: "HTTP method"}, highlightText(upperMethod, terms, "method")),
+    h("code", {className: "sfir-query-text", title: tooltip}, highlightText(preview, terms, "endpoint"))
   );
 }

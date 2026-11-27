@@ -69,27 +69,27 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 ## Use History, Saved Queries, and Templates in Data Export and REST Explorer
 
 Data Export and REST Explorer share an inline toolbar in their top header bar. Pick where
-the entry comes from with the **History / Saved / Templates** buttons, then search that
-list in the box beside them:
+the entry comes from with the **All / History / Saved / Templates** buttons, then search that
+scope in the box beside them:
 
+* **All**: searches across Saved, History, and Templates together, grouped by section
 * **History**: queries or REST requests you have run, newest first
 * **Saved**: entries you saved, with their optional labels
 * **Templates**: the starter queries or REST requests from your Templates configuration
 
-Only the selected list is shown, and the search box names it, so there is never any doubt
-about which list you are searching. Long entries are truncated to two lines in the dropdown,
-with the full query or request shown on hover. **Clear** empties the selected History or Saved
-list and is disabled for Templates. Drag the bottom-right corner of an open dropdown to
-set its preferred maximum height; shorter lists still shrink to fit their items.
+The search box names the active scope so you always know what you are filtering. Long entries
+are truncated to two lines in the dropdown, with the full query or request shown on hover.
+**Clear** empties the selected History or Saved list and is disabled on All and Templates so
+saved entries are never cleared accidentally. Drag the bottom-right corner of an open dropdown
+to set its preferred maximum height; shorter lists still shrink to fit their items.
 
-The **Optional label** input and **Save Query** are separated from the browsing controls
-because they save what is currently in the editor, regardless of which source is selected.
-After saving, a success message appears and the label is cleared. In Data Export, the label
-is also cleared when you switch query tabs, while remaining intact as you edit the query.
+To save the current query or request, click **Save Query** next to **Run Export** (in Data
+Export) or **Send** (in REST Explorer). A dialog lets you enter an optional label and confirm
+with **Enter** or **Save**, followed by a confirmation toast.
 
 ### Delete individual entries
 
-1. Select **History** or **Saved** and open the dropdown
+1. Select **All**, **History**, or **Saved** and open the dropdown
 2. Highlight an entry with the arrow keys, or hover over it
 3. Press **Delete** (**Fn+Delete** on a Mac keyboard), or click the **delete icon** (trash) on the right
 
@@ -104,8 +104,9 @@ is also cleared when you switch query tabs, while remaining intact as you edit t
 * **Tooling badge** (Data Export): appears at the end when "Tooling API" was enabled
 * **HTTP method badge** (REST Explorer): shows `GET`, `POST`, `PATCH`, `PUT`, or `DELETE`
 
-To create labeled entries: enter your query or endpoint, type an optional label,
-then click **Save Query**. The button is disabled while the query or endpoint is empty.
+To create labeled entries: enter your query or endpoint, click **Save Query**, type an
+optional label in the dialog, and confirm. The button is disabled while the query or
+endpoint is empty.
 
 ### Automatic history saving
 

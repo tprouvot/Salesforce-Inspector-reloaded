@@ -185,11 +185,26 @@ test.describe("REST Explore", () => {
     const methodSelect = page.locator('select.slds-select:has(option[value="GET"])');
     const bodyInput = page.locator("textarea.slds-textarea");
     const saveBtn = page.getByRole("button", {name: "Save Query"});
-    const labelInput = page.getByLabel("Save as");
+    const sendBtn = page.getByRole("button", {name: "Send"});
     const clearBtn = page.locator(".sfir-query-clear");
-    const options = page.locator("#query-search-listbox [role='option']");
+    const listbox = page.locator("#query-search-listbox");
+    const options = listbox.locator("[role='option']");
 
-    // 1. Search History across method and endpoint, with highlighted matches and method badges.
+    // Save Query sits on the Send row.
+    const saveBox = await saveBtn.boundingBox();
+    const sendBox = await sendBtn.boundingBox();
+    expect(Math.abs(saveBox.y - sendBox.y), "Save Query sits on the Send row").toBeLessThan(2);
+
+    // 1. All is selected by default and searches across Saved, History, and Templates with group headers.
+    const searchAll = page.getByRole("combobox", {name: "Search all"});
+    await expect(clearBtn).toBeDisabled();
+    await searchAll.click();
+    await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "History", "Templates"]);
+    await searchAll.fill("create account");
+    await expect(options.first().locator(".slds-badge_inverse")).toHaveText("Create Account");
+
+    // 2. Search History across method and endpoint, with highlighted matches and method badges.
+    await selectSource("history");
     const history = page.getByRole("combobox", {name: "Search history"});
     await history.click();
     await expect(options).toHaveCount(2);
@@ -204,7 +219,7 @@ test.describe("REST Explore", () => {
     await options.nth(1).locator(".sfir-combobox-delete").click();
     await expect(options).toHaveCount(1);
 
-    // 2. Saved requests show label and method badges, restore request fields, and confirm before delete.
+    // 3. Saved requests show label and method badges, restore request fields, and confirm before delete.
     await selectSource("saved");
     const saved = page.getByRole("combobox", {name: "Search saved"});
     await saved.click();
@@ -214,36 +229,45 @@ test.describe("REST Explore", () => {
     await expect(methodSelect).toHaveValue("POST");
     await expect(endpointInput).toHaveValue(`/services/data/v${apiVersion}/sobjects/Account/`);
     await expect(bodyInput).toHaveValue('{"Name":"Saved"}');
+
+    await saveBtn.click();
+    const modal = page.getByRole("dialog");
+    const labelInput = modal.getByLabel("Label (optional)");
     await expect(labelInput).toHaveValue("Create Account");
+    await modal.getByRole("button", {name: "Cancel", exact: true}).click();
 
     await saved.click();
     page.once("dialog", dialog => dialog.dismiss());
     await options.first().locator(".sfir-combobox-delete").click();
     await expect(options).toHaveCount(1);
+    await saved.press("Escape");
 
-    // 3. Empty endpoint disables Save Query; saving a valid request shows toast and clears label.
+    // 4. Empty endpoint disables Save Query; saving via modal shows toast and resets label.
     await endpointInput.fill("");
     await expect(saveBtn).toBeDisabled();
 
     await methodSelect.selectOption("PATCH");
     await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Account/001000000000001AAA`);
     await bodyInput.fill('{"Name":"Patched"}');
-    await labelInput.fill("Patch Account");
     await saveBtn.click();
+    await labelInput.fill("Patch Account");
+    await labelInput.press("Enter");
+    await expect(modal).toHaveCount(0);
 
     const toast = page.locator(".slds-notify_toast[role='status']");
     await expect(toast.getByRole("heading", {name: "Saved"})).toBeVisible();
-    await expect(labelInput).toHaveValue("");
 
     // PATCH and DELETE on the same endpoint do not overwrite one another in Saved or History.
     await methodSelect.selectOption("DELETE");
     await bodyInput.fill("");
-    await labelInput.fill("Delete Account");
     await saveBtn.click();
+    await expect(labelInput).toHaveValue("");
+    await labelInput.fill("Delete Account");
+    await modal.getByRole("button", {name: "Save"}).click();
     await saved.click();
     await expect(options).toHaveCount(3);
 
-    // 4. Templates are searchable and read-only; Clear empties History/Saved and restores focus.
+    // 5. Templates are searchable and read-only; Clear empties History/Saved and restores focus.
     await selectSource("templates");
     await expect(clearBtn).toBeDisabled();
     const templates = page.getByRole("combobox", {name: "Search templates"});

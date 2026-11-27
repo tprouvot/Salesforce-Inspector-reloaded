@@ -4,7 +4,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {QueryToolbar} from "./components/SldsCombobox.js";
+import {QueryToolbar, SaveQueryModal} from "./components/SldsCombobox.js";
 import Toast from "./components/Toast.js";
 import {dropdownEntries, isGraphqlQuery, queryLanguage, renderHighlightedText, renderQueryItem, splitSavedQuery} from "./query-search-utils.js";
 
@@ -193,6 +193,7 @@ class Model {
   }
   selectHistoryEntry() {
     if (this.selectedHistoryEntry != null) {
+      this.queryName = "";
       this.queryInput.value = this.selectedHistoryEntry.query;
       this.queryTooling = this.selectedHistoryEntry.useToolingApi;
       this.hideAutocomplete();
@@ -201,6 +202,7 @@ class Model {
     }
   }
   selectQueryTemplate() {
+    this.queryName = "";
     this.queryInput.value = this.selectedQueryTemplate.trimStart();
     this.hideAutocomplete();
     this.queryAutocompleteHandler();
@@ -1422,7 +1424,9 @@ class App extends React.Component {
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
-    this.onAddToHistory = this.onAddToHistory.bind(this);
+    this.onOpenSaveModal = this.onOpenSaveModal.bind(this);
+    this.onConfirmSaveModal = this.onConfirmSaveModal.bind(this);
+    this.onCloseSaveModal = this.onCloseSaveModal.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
     this.onToggleAI = this.onToggleAI.bind(this);
@@ -1437,9 +1441,12 @@ class App extends React.Component {
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
-    this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
-    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
+    this.state = {
+      hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")),
+      isDropdownOpen: false,
+      isSaveModalOpen: false
+    };
     this.filterColumns = []; // Initialize as an empty array
     this.onAddTab = this.onAddTab.bind(this);
     this.onRemoveTab = this.onRemoveTab.bind(this);
@@ -1512,12 +1519,26 @@ class App extends React.Component {
     model.didUpdate();
     return true;
   }
-  onAddToHistory(e) {
+  onOpenSaveModal(e) {
     e.preventDefault();
     let {model} = this.props;
+    if (!model.queryInput?.value.trim()) {
+      return;
+    }
+    this.setState({isSaveModalOpen: true});
+  }
+  onConfirmSaveModal(label) {
+    let {model} = this.props;
+    model.setQueryName(label);
+    this.setState({isSaveModalOpen: false});
     if (model.addToHistory()) {
       model.showToast("success", "Saved", "Query saved successfully.");
+    } else {
+      model.didUpdate();
     }
+  }
+  onCloseSaveModal() {
+    this.setState({isSaveModalOpen: false});
   }
   onClearSavedHistory(e) {
     e.preventDefault();
@@ -1603,11 +1624,6 @@ class App extends React.Component {
     if (e.target.value.length == 0){
       this.setState({isDropdownOpen: false});
     }
-    model.didUpdate();
-  }
-  onSetQueryName(e) {
-    let {model} = this.props;
-    model.setQueryName(e.target.value);
     model.didUpdate();
   }
   onStopExport() {
@@ -1947,22 +1963,15 @@ class App extends React.Component {
   }
 
   renderQuerySection() {
-    let {model} = this.props;
-    // Every query textarea mutation calls didUpdate(), keeping this DOM read current.
-    const isQueryEmpty = !model.queryInput?.value.trim();
-
     return h(QueryToolbar, {
-      sources: this.querySources(),
-      queryName: model.queryName,
-      onQueryNameChange: this.onSetQueryName,
-      onSave: this.onAddToHistory,
-      isSaveDisabled: isQueryEmpty
+      sources: this.querySources()
     });
   }
 
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
+    const isQueryEmpty = !model.queryInput?.value.trim();
     const isAutocompleteError = model.autocompleteResults.results.some(r => r.value === "Retry");
     const showSuggestions = model.showAutocomplete || isAutocompleteError;
     const visibleSuggestions = showSuggestions ? model.autocompleteResults.results : [];
@@ -2018,6 +2027,12 @@ class App extends React.Component {
         message: model.toast.message,
         onClose: () => model.closeToast()
       }),
+      h(SaveQueryModal, {
+        isOpen: this.state.isSaveModalOpen,
+        defaultLabel: model.queryName,
+        onSave: this.onConfirmSaveModal,
+        onCancel: this.onCloseSaveModal
+      }),
 
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-around_medium"},
@@ -2030,7 +2045,7 @@ class App extends React.Component {
                 this.renderQuerySection()
               ),
               h("div", {className: "slds-grid slds-grid_vertical-align-center"},
-                h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_small"},
+                h("label", {className: "slds-checkbox_toggle slds-grid sfir-inline-toggle slds-m-right_small"},
                   h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
                   h("input", {
                     type: "checkbox",
@@ -2047,7 +2062,7 @@ class App extends React.Component {
                     h("span", {className: "slds-checkbox_off"}, "Disabled")
                   )
                 ),
-                h("label", {className: "slds-checkbox_toggle slds-grid", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
+                h("label", {className: "slds-checkbox_toggle slds-grid sfir-inline-toggle", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
                   h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Tooling API"),
                   h("input", {
                     type: "checkbox",
@@ -2143,6 +2158,9 @@ class App extends React.Component {
                 h("ul", {className: "slds-button-group-row flex-right"},
                   h("li", {className: "slds-button-group-item"},
                     h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
+                  ),
+                  h("li", {className: "slds-button-group-item"},
+                    h("button", {type: "button", disabled: isQueryEmpty, onClick: this.onOpenSaveModal, title: "Add query to saved history", className: "slds-button slds-button_neutral"}, "Save Query")
                   ),
                   h("li", {className: "slds-button-group-item"},
                     isOptionEnabled("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "slds-button slds-button_neutral copy-id"}, "Export Query") : null

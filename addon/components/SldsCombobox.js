@@ -1,8 +1,11 @@
 /* global React */
+import ConfirmModal from "./ConfirmModal.js";
+
 let h = React.createElement;
 
 const PAGE_SIZE = 30;
 const RESIZE_CORNER_PX = 12;
+const ALL_SOURCE_ORDER = ["saved", "history", "templates"];
 
 function isInResizeCorner(listbox, clientX, clientY, target) {
   if (!listbox || target?.closest?.(".sfir-combobox-delete")) {
@@ -10,6 +13,18 @@ function isInResizeCorner(listbox, clientX, clientY, target) {
   }
   const rect = listbox.getBoundingClientRect();
   return clientX >= rect.right - RESIZE_CORNER_PX && clientY >= rect.bottom - RESIZE_CORNER_PX;
+}
+
+function orderSourcesForAll(sources) {
+  const ordered = ALL_SOURCE_ORDER
+    .map(id => sources.find(source => source.id === id))
+    .filter(Boolean);
+  sources.forEach(source => {
+    if (!ordered.includes(source)) {
+      ordered.push(source);
+    }
+  });
+  return ordered;
 }
 
 export class SldsCombobox extends React.Component {
@@ -141,6 +156,8 @@ export class SldsCombobox extends React.Component {
       onKeyDown,
       onSelect,
       onDelete,
+      canDelete,
+      getGroup,
       renderItem,
       className = "",
       "aria-label": ariaLabel
@@ -226,45 +243,60 @@ export class SldsCombobox extends React.Component {
                 h("span", {className: "slds-truncate"}, "No results found")
               )
             )
-          ) : visibleEntries.map((entry, index) =>
-            h("li", {role: "presentation", className: "slds-listbox__item", key: index},
-              h("div", {
-                id: listboxId + "-option-" + index,
-                className: "slds-media slds-media_center slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option" + (index === activeIndex ? " slds-has-focus" : ""),
-                role: "option",
-                "aria-selected": index === activeIndex ? "true" : "false",
-                onMouseDown: (e) => {
-                  const box = e.currentTarget.closest("[role='listbox']");
-                  if (isInResizeCorner(box, e.clientX, e.clientY, e.target)) {
-                    return;
+          ) : visibleEntries.reduce((items, entry, index) => {
+            const group = getGroup ? getGroup(entry) : null;
+            const prevGroup = getGroup && index > 0 ? getGroup(visibleEntries[index - 1]) : null;
+            if (group && group !== prevGroup) {
+              items.push(
+                h("li", {key: "group-" + group, role: "presentation", className: "slds-listbox__item"},
+                  h("div", {className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-group-header", role: "presentation"},
+                    h("h3", {className: "slds-listbox__option-header", role: "presentation"}, group)
+                  )
+                )
+              );
+            }
+            const showDelete = Boolean(onDelete && (!canDelete || canDelete(entry)));
+            items.push(
+              h("li", {key: "opt-" + index, role: "presentation", className: "slds-listbox__item"},
+                h("div", {
+                  id: listboxId + "-option-" + index,
+                  className: "slds-media slds-media_center slds-listbox__option slds-listbox__option_plain slds-media_small sfir-combobox-option" + (index === activeIndex ? " slds-has-focus" : ""),
+                  role: "option",
+                  "aria-selected": index === activeIndex ? "true" : "false",
+                  onMouseDown: (e) => {
+                    const box = e.currentTarget.closest("[role='listbox']");
+                    if (isInResizeCorner(box, e.clientX, e.clientY, e.target)) {
+                      return;
+                    }
+                    // The delete affordance is nested in the option, so ignore its clicks here.
+                    if (e.target.closest(".sfir-combobox-delete")) {
+                      return;
+                    }
+                    e.preventDefault();
+                    onSelect(entry);
                   }
-                  // The delete affordance is nested in the option, so ignore its clicks here.
-                  if (e.target.closest(".sfir-combobox-delete")) {
-                    return;
+                },
+                h("span", {className: "slds-media__body sfir-combobox-body"}, renderItem(entry)),
+                // Pointer shortcut only: options stay atomic for assistive technology,
+                // which deletes with the Delete key announced by the hint below.
+                showDelete && h("span", {
+                  className: "slds-button slds-button_icon slds-button_icon-x-small slds-m-left_x-small sfir-combobox-delete",
+                  title: "Delete this item",
+                  "aria-hidden": "true",
+                  onMouseDown: (e) => {
+                    e.preventDefault();
+                    onDelete(entry, index);
                   }
-                  e.preventDefault();
-                  onSelect(entry);
-                }
-              },
-              h("span", {className: "slds-media__body sfir-combobox-body"}, renderItem(entry)),
-              // Pointer shortcut only: options stay atomic for assistive technology,
-              // which deletes with the Delete key announced by the hint below.
-              onDelete && h("span", {
-                className: "slds-button slds-button_icon slds-button_icon-x-small slds-m-left_x-small sfir-combobox-delete",
-                title: "Delete this item",
-                "aria-hidden": "true",
-                onMouseDown: (e) => {
-                  e.preventDefault();
-                  onDelete(entry, index);
-                }
-              },
-              h("svg", {className: "slds-button__icon"},
-                h("use", {xlinkHref: "symbols.svg#delete"})
+                },
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#delete"})
+                )
+                )
+                )
               )
-              )
-              )
-            )
-          )
+            );
+            return items;
+          }, [])
         )
         )
         )
@@ -279,7 +311,7 @@ export class QueryToolbar extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      sourceId: props.sources[0].id,
+      sourceId: "all",
       searchValue: "",
       isOpen: false,
       activeIndex: -1
@@ -288,8 +320,51 @@ export class QueryToolbar extends React.Component {
     this.onClear = this.onClear.bind(this);
   }
 
+  buildAllSource() {
+    const orderedSources = orderSourcesForAll(this.props.sources);
+    const hasRemovableSource = orderedSources.some(source => Boolean(source.remove));
+    return {
+      id: "all",
+      label: "All",
+      entries: [],
+      getResults: (_, searchValue) => {
+        const results = orderedSources.map(source => ({
+          source,
+          result: source.getResults(source.entries, searchValue)
+        }));
+        if (results.some(({result}) => result.isObjectSuggest)) {
+          const vocab = new Set();
+          results.forEach(({result}) => result.entries.forEach(name => vocab.add(name)));
+          return {entries: Array.from(vocab).sort(), isObjectSuggest: true};
+        }
+        const combined = [];
+        results.forEach(({source, result}) => {
+          result.entries.forEach(entry => combined.push({entry, source}));
+        });
+        return {entries: combined, isObjectSuggest: false};
+      },
+      renderEntry: (item, searchValue, isObjectSuggest) => (isObjectSuggest
+        ? orderedSources[0].renderEntry(item, searchValue, true)
+        : item.source.renderEntry(item.entry, searchValue, false)),
+      select: (item) => item.source.select(item.entry),
+      remove: hasRemovableSource ? (item) => item.source.remove?.(item.entry) : null,
+      canDelete: (item) => Boolean(item?.source?.remove),
+      getGroup: (item) => item?.source?.label || null,
+      clear: null,
+      clearLabel: "Select History or Saved to clear",
+      clearAriaLabel: "Clear list"
+    };
+  }
+
+  allSources() {
+    return [this.buildAllSource(), ...this.props.sources];
+  }
+
   activeSource() {
-    return this.props.sources.find(source => source.id === this.state.sourceId) || this.props.sources[0];
+    if (this.state.sourceId === "all") {
+      return this.buildAllSource();
+    }
+    return this.props.sources.find(source => source.id === this.state.sourceId) || this.buildAllSource();
   }
 
   openDropdown() {
@@ -321,7 +396,7 @@ export class QueryToolbar extends React.Component {
   }
 
   onDeleteEntry(entry, source) {
-    if (source.remove) {
+    if (source.remove && (!source.canDelete || source.canDelete(entry))) {
       source.remove(entry);
       this.setState({activeIndex: -1});
     }
@@ -375,22 +450,18 @@ export class QueryToolbar extends React.Component {
       e.preventDefault();
       this.setState({activeIndex: activeIndex < 0 ? count - 1 : (activeIndex - 1 + count) % count});
     } else if (e.key === "Delete" && !isObjectSuggest && activeIndex >= 0 && source.remove) {
-      e.preventDefault();
-      this.onDeleteEntry(entries[activeIndex], source);
+      const target = entries[activeIndex];
+      if (!source.canDelete || source.canDelete(target)) {
+        e.preventDefault();
+        this.onDeleteEntry(target, source);
+      }
     }
   }
 
   render() {
-    const {
-      sources,
-      queryName,
-      onQueryNameChange,
-      onSave,
-      isSaveDisabled,
-      saveTitle = "Add query to saved history"
-    } = this.props;
     const {isOpen, activeIndex, searchValue} = this.state;
-    const source = this.activeSource();
+    const radioOptions = this.allSources();
+    const source = radioOptions.find(option => option.id === this.state.sourceId) || radioOptions[0];
     const {entries, isObjectSuggest} = isOpen
       ? source.getResults(source.entries, searchValue)
       : {entries: [], isObjectSuggest: false};
@@ -398,7 +469,7 @@ export class QueryToolbar extends React.Component {
     return h("div", {className: "sfir-query-toolbar", role: "group", "aria-label": "Queries"},
       h("div", {className: "sfir-query-section__browse"},
         h("div", {className: "slds-radio_button-group", role: "radiogroup", "aria-label": "Query source"},
-          sources.map(({id, label}) =>
+          radioOptions.map(({id, label}) =>
             h("span", {key: id, className: "slds-button slds-radio_button"},
               h("input", {
                 type: "radio",
@@ -431,6 +502,8 @@ export class QueryToolbar extends React.Component {
           onSelect: (entry) => this.applyEntry(entry, isObjectSuggest, source),
           onClose: () => this.closeDropdown(),
           onDelete: !isObjectSuggest && source.remove ? (entry) => this.onDeleteEntry(entry, source) : null,
+          canDelete: !isObjectSuggest ? source.canDelete : null,
+          getGroup: !isObjectSuggest ? source.getGroup : null,
           renderItem: (entry) => source.renderEntry(entry, searchValue, isObjectSuggest)
         }),
         h("button", {
@@ -441,25 +514,77 @@ export class QueryToolbar extends React.Component {
           disabled: !source.clear || source.entries.length === 0,
           onClick: this.onClear
         }, "Clear")
-      ),
-      h("div", {className: "sfir-query-section__save"},
+      )
+    );
+  }
+}
+
+export class SaveQueryModal extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      label: props.defaultLabel || ""
+    };
+    this.inputRef = null;
+    this.handleConfirm = this.handleConfirm.bind(this);
+  }
+
+  componentDidMount() {
+    if (this.props.isOpen) {
+      this.syncAndFocus();
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (!prevProps.isOpen && this.props.isOpen) {
+      this.syncAndFocus();
+    }
+  }
+
+  syncAndFocus() {
+    this.setState({label: this.props.defaultLabel || ""}, () => {
+      if (this.inputRef) {
+        this.inputRef.focus();
+        this.inputRef.select();
+      }
+    });
+  }
+
+  handleConfirm() {
+    this.props.onSave(this.state.label.trim());
+  }
+
+  render() {
+    const {isOpen, onCancel} = this.props;
+    return h(ConfirmModal, {
+      isOpen,
+      title: "Save Query",
+      confirmLabel: "Save",
+      cancelLabel: "Cancel",
+      onConfirm: this.handleConfirm,
+      onCancel
+    },
+    h("div", {className: "slds-form-element"},
+      h("label", {className: "slds-form-element__label", htmlFor: "sfir-query-label"}, "Label (optional)"),
+      h("div", {className: "slds-form-element__control"},
         h("input", {
           id: "sfir-query-label",
-          className: "slds-input sfir-query-label",
-          placeholder: "Optional label",
-          "aria-label": "Save as",
+          ref: (el) => { this.inputRef = el; },
+          className: "slds-input",
           type: "text",
-          value: queryName,
-          onInput: onQueryNameChange
-        }),
-        h("button", {
-          type: "button",
-          className: "slds-button slds-button_neutral",
-          onClick: onSave,
-          title: saveTitle,
-          disabled: isSaveDisabled
-        }, "Save Query")
+          placeholder: "Optional label",
+          value: this.state.label,
+          onChange: (e) => this.setState({label: e.target.value}),
+          onKeyDown: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              this.handleConfirm();
+            }
+          }
+        })
       )
+    )
     );
   }
 }

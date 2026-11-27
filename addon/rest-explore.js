@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {QueryToolbar} from "./components/SldsCombobox.js";
+import {QueryToolbar, SaveQueryModal} from "./components/SldsCombobox.js";
 import Toast from "./components/Toast.js";
 import {renderRestItem, restDropdownEntries} from "./query-search-utils.js";
 import {UserInfoModel, createSpinForMethod, createChangeGuard, copyToClipboard, isOptionEnabled, StorageHistory, formatXml} from "./utils.js";
@@ -411,15 +411,19 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      isSaveModalOpen: false
+    };
     this.onSelectQueryMethod = this.onSelectQueryMethod.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
-    this.onAddToHistory = this.onAddToHistory.bind(this);
+    this.onOpenSaveModal = this.onOpenSaveModal.bind(this);
+    this.onConfirmSaveModal = this.onConfirmSaveModal.bind(this);
+    this.onCloseSaveModal = this.onCloseSaveModal.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onSend = this.onSend.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onClearResponse = this.onClearResponse.bind(this);
     this.onUpdateBody = this.onUpdateBody.bind(this);
-    this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
     this.onToggleHeadersEditor = this.onToggleHeadersEditor.bind(this);
     this.onUpdateHeaders = this.onUpdateHeaders.bind(this);
@@ -468,12 +472,26 @@ class App extends React.Component {
     model.didUpdate();
     return true;
   }
-  onAddToHistory(e) {
+  onOpenSaveModal(e) {
     e.preventDefault();
     let {model} = this.props;
+    if (!model.request.endpoint?.trim()) {
+      return;
+    }
+    this.setState({isSaveModalOpen: true});
+  }
+  onConfirmSaveModal(label) {
+    let {model} = this.props;
+    model.setQueryName(label);
+    this.setState({isSaveModalOpen: false});
     if (model.addToHistory()) {
       model.showToast("success", "Saved", "Query saved successfully.");
+    } else {
+      model.didUpdate();
     }
+  }
+  onCloseSaveModal() {
+    this.setState({isSaveModalOpen: false});
   }
   onClearSavedHistory(e) {
     e.preventDefault();
@@ -558,11 +576,6 @@ class App extends React.Component {
     let {model} = this.props;
     model.request.body = e.target.value;
     this.canSendRequest();
-    model.didUpdate();
-  }
-  onSetQueryName(e) {
-    let {model} = this.props;
-    model.setQueryName(e.target.value);
     model.didUpdate();
   }
   onSetEndpoint(e) {
@@ -662,6 +675,12 @@ class App extends React.Component {
         message: model.toast.message,
         onClose: () => model.closeToast()
       }),
+      h(SaveQueryModal, {
+        isOpen: this.state.isSaveModalOpen,
+        defaultLabel: model.queryName,
+        onSave: this.onConfirmSaveModal,
+        onCancel: this.onCloseSaveModal
+      }),
       h(
         "div",
         {
@@ -673,11 +692,7 @@ class App extends React.Component {
             h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap"},
               h("h3", {className: "slds-card__header-title slds-m-vertical_xx-small slds-m-right_small"}, "Request"),
               h(QueryToolbar, {
-                sources: this.querySources(),
-                queryName: model.queryName,
-                onQueryNameChange: this.onSetQueryName,
-                onSave: this.onAddToHistory,
-                isSaveDisabled: isEndpointEmpty
+                sources: this.querySources()
               })
             ),
             h("div", {className: "slds-card__body slds-card__body_inner"},
@@ -700,10 +715,13 @@ class App extends React.Component {
                 h("div", {className: "slds-col sfir-full-width slds-p-horizontal_xx-small"},
                   h("input", {ref: "endpoint", className: "slds-input", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint})
                 ),
-                h("div", {className: "slds-col slds-text-align_right slds-p-left_xx-small"},
+                h("div", {className: "slds-col slds-no-flex slds-text-align_right slds-p-left_xx-small"},
                   h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-end slds-gutters_xx-small"},
                     h("div", {className: "slds-col"},
                       h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.onToggleHeadersEditor, title: model.showHeadersEditor ? "Hide Headers" : "Show Headers"}, "Headers")
+                    ),
+                    h("div", {className: "slds-col"},
+                      h("button", {type: "button", className: "slds-button slds-button_neutral slds-button_small", disabled: isEndpointEmpty, onClick: this.onOpenSaveModal, title: "Add query to saved history"}, "Save Query")
                     ),
                     h("div", {className: "slds-col"},
                       h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand slds-button_small"}, "Send")

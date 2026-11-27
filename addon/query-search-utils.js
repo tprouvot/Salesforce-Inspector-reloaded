@@ -37,6 +37,7 @@ export function queryLanguage(query) {
 // Parentheses track subquery depth; the other branches name an object. The last one
 // only looks ahead for "(" so that parenthesis is still counted.
 const OBJECT_SOURCE = /\(|\)|\bfrom\s+([a-zA-Z0-9_]+)|\breturning\s+([a-zA-Z0-9_]+)|,\s*([a-zA-Z0-9_]+)(?=\s*\()/gi;
+const CLAUSE_AFTER_FROM = new Set(["where", "order", "group", "limit", "offset", "with", "for", "having"]);
 const STRING_LITERAL = /'(?:[^'\\]|\\.)*'/g;
 // The query forms data-export can run: SOQL, SOSL and GraphQL.
 const LEADING_QUERY = /^\s*(select\b|find\b|\{|query\b)/i;
@@ -74,7 +75,10 @@ function extractObjectNames(query) {
     } else if (match[0] === ")") {
       depth--;
     } else if (match[1] && depth === 0) {
-      names.add(match[1].toLowerCase());
+      const candidate = match[1].toLowerCase();
+      if (!CLAUSE_AFTER_FROM.has(candidate)) {
+        names.add(candidate);
+      }
     } else if (match[2]) {
       names.add(match[2].toLowerCase());
     } else if (match[3] && isSosl && depth === 0) {

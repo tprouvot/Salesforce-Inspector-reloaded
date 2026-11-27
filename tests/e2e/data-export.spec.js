@@ -255,6 +255,7 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
+    await selectQuerySource(page, "history");
     const history = page.getByRole("combobox", {name: "Search history"});
     const listbox = page.locator("#query-search-listbox");
     const options = listbox.locator("[role='option']");
@@ -320,6 +321,7 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
+    await selectQuerySource(page, "history");
     const history = page.getByRole("combobox", {name: "Search history"});
     const options = page.locator("#query-search-listbox [role='option']");
 
@@ -342,6 +344,7 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
+    await selectQuerySource(page, "history");
     const history = page.getByRole("combobox", {name: "Search history"});
     const matches = page.locator("#query-search-listbox .sfir-search-match");
 
@@ -370,6 +373,7 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
+    await selectQuerySource(page, "history");
     const history = page.getByRole("combobox", {name: "Search history"});
     const listbox = page.locator("#query-search-listbox");
     await history.click();
@@ -441,6 +445,7 @@ test.describe("Data Export", () => {
 
     await page.reload();
     await page.waitForSelector("textarea#query", {timeout: 2000});
+    await selectQuerySource(page, "history");
     await history.click();
     const restoredBounds = await listbox.boundingBox();
     expect(Math.abs(restoredBounds.height - resizedBounds.height), "resized height is restored").toBeLessThan(2);
@@ -454,6 +459,7 @@ test.describe("Data Export", () => {
     await page.setViewportSize({width: 800, height: shortenedViewportHeight});
     await page.reload();
     await page.waitForSelector("textarea#query", {timeout: 2000});
+    await selectQuerySource(page, "history");
     await history.click();
     const clampedBounds = await listbox.boundingBox();
     expect(clampedBounds.y + clampedBounds.height).toBeLessThanOrEqual(shortenedViewportHeight);
@@ -465,6 +471,7 @@ test.describe("Data Export", () => {
     await page.setViewportSize({width: 800, height: 760});
     await page.reload();
     await page.waitForSelector("textarea#query", {timeout: 2000});
+    await selectQuerySource(page, "history");
     await history.click();
     expect(Math.abs((await listbox.boundingBox()).height - resizedBounds.height), "clicking the resize corner preserves the preferred height").toBeLessThan(2);
 
@@ -525,14 +532,18 @@ test.describe("Data Export", () => {
     await expect(datetimeQuery).toHaveCount(1);
     await expect(datetimeQuery.locator(".slds-badge")).toHaveCount(0);
 
-    // Selecting restores the query without its label, and the label input with it.
+    // Selecting restores the query without its label, and pre-fills the Save Query modal label.
     await labelled.click();
     await expect(page.locator("textarea#query")).toHaveValue("SELECT Id, Subject FROM Case");
-    await expect(page.getByLabel("Save as")).toHaveValue("Open Cases");
+    await page.getByRole("button", {name: "Save Query"}).click();
+    await expect(page.getByLabel("Label (optional)")).toHaveValue("Open Cases");
+    await page.getByRole("button", {name: "Cancel", exact: true}).click();
 
     await saved.fill("2026");
     await options.click();
-    await expect(page.getByLabel("Save as")).toHaveValue("");
+    await page.getByRole("button", {name: "Save Query"}).click();
+    await expect(page.getByLabel("Label (optional)")).toHaveValue("");
+    await page.getByRole("button", {name: "Cancel", exact: true}).click();
   });
 
   test("Delete Query History Entries", async ({page, context, extensionId}) => {
@@ -548,6 +559,7 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
+    await selectQuerySource(page, "history");
     const history = page.getByRole("combobox", {name: "Search history"});
     const options = page.locator("#query-search-listbox [role='option']");
     const query = page.locator("textarea#query");
@@ -601,6 +613,53 @@ test.describe("Data Export", () => {
     await expect(options).toHaveCount(0);
   });
 
+  test("All Scope Groups Sources, Filters Objects And Preserves Delete Rules", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem("insextQueryHistory", JSON.stringify([
+        {query: "SELECT Id, Name FROM Account", useToolingApi: false}
+      ]));
+      window.localStorage.setItem("insextSavedQueryHistory", JSON.stringify([
+        {query: "Pinned:SELECT Id, Subject FROM Case", useToolingApi: false}
+      ]));
+      window.localStorage.setItem("queryTemplates", "SELECT Id FROM Opportunity//SELECT Id FROM WHERE");
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    // All is selected by default, and Clear is disabled so Saved entries cannot be wiped accidentally.
+    const searchAll = page.getByRole("combobox", {name: "Search all"});
+    const listbox = page.locator("#query-search-listbox");
+    const options = listbox.locator("[role='option']");
+    await expect(page.locator("#sfir-query-source-all")).toBeChecked();
+    await expect(page.locator(".sfir-query-clear")).toBeDisabled();
+
+    await searchAll.click();
+    await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "History", "Templates"]);
+    await expect(options).toHaveCount(4);
+
+    // Saved and History entries show delete affordances; Templates do not.
+    await expect(options.nth(0).locator(".sfir-combobox-delete")).toHaveCount(1);
+    await expect(options.nth(1).locator(".sfir-combobox-delete")).toHaveCount(1);
+    await expect(options.nth(2).locator(".sfir-combobox-delete")).toHaveCount(0);
+
+    // Saved asks for confirmation; History deletes immediately.
+    page.once("dialog", dialog => dialog.dismiss());
+    await options.nth(0).locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(4);
+
+    await options.nth(1).locator(".sfir-combobox-delete").click();
+    await expect(options).toHaveCount(3);
+    await expect(listbox.locator(".slds-listbox__option-header")).toHaveText(["Saved", "Templates"]);
+
+    // "?" unions objects across remaining sources (Case from Saved + Opportunity from Templates).
+    await searchAll.fill("?");
+    await expect(options).toHaveText(["case", "opportunity"]);
+    await searchAll.fill("?opportunity ");
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toContainText("FROM Opportunity");
+  });
+
   test("Query Source Switch Keeps Layout Stable", async ({page, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
@@ -614,30 +673,28 @@ test.describe("Data Export", () => {
         picker: box(".slds-radio_button-group"),
         search: box(".slds-combobox__input"),
         browse: box(".sfir-query-section__browse"),
-        save: box(".sfir-query-section__save"),
         toolbar: box(".sfir-query-toolbar")
       };
     });
 
-    await selectQuerySource(page, "history");
     const stable = await geometry();
 
     // Switching source must not shift the controls out from under the pointer,
     // so the actions beside the picker are deliberately source independent.
-    for (const source of ["saved", "templates"]) {
+    for (const source of ["history", "saved", "templates", "all"]) {
       await selectQuerySource(page, source);
       expect(await geometry(), `layout moved on ${source}`).toEqual(stable);
     }
 
     // The picker is a real radio group, so arrow keys select as well as clicks.
-    await page.locator("#sfir-query-source-history").focus();
+    await page.locator("#sfir-query-source-all").focus();
     await page.keyboard.press("ArrowRight");
-    await expect(page.getByRole("combobox", {name: "Search saved"})).toBeVisible();
+    await expect(page.getByRole("combobox", {name: "Search history"})).toBeVisible();
 
     // DOM and visual order agree: the inline Queries controls precede the right-side toggles.
     expect(await page.evaluate(() => {
       const toggle = document.querySelector("[name='checkbox-toggle-tooling']");
-      const querySource = document.getElementById("sfir-query-source-history");
+      const querySource = document.getElementById("sfir-query-source-all");
       return Boolean(querySource.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING);
     })).toBe(true);
   });
@@ -656,6 +713,10 @@ test.describe("Data Export", () => {
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
     const clearList = page.locator(".sfir-query-clear");
+    await expect(clearList).toBeDisabled();
+    await expect(clearList).toHaveAttribute("title", "Select History or Saved to clear");
+
+    await selectQuerySource(page, "history");
     await expect(clearList).toBeEnabled();
     await expect(clearList).toHaveText("Clear");
     await expect(clearList).toHaveAccessibleName("Clear list of query history");
@@ -692,15 +753,15 @@ test.describe("Data Export", () => {
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
     await page.locator("textarea#query").fill("");
-    await page.getByLabel("Save as").fill("Only a label");
     const save = page.getByRole("button", {name: "Save Query"});
     await expect(save).toBeDisabled();
 
-    // Bypass the DOM-disabled state to prove the model guard also rejects it.
+    // Bypass the DOM-disabled state to prove the guard also rejects opening/saving an empty query.
     await save.evaluate(button => {
       button.disabled = false;
       button.click();
     });
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
   });
 
@@ -716,17 +777,17 @@ test.describe("Data Export", () => {
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
     await page.locator("textarea#query").fill("SELECT Id FROM Contact");
-    await page.getByLabel("Save as").fill("Zulu");
     await page.getByRole("button", {name: "Save Query"}).click();
+    await page.getByLabel("Label (optional)").fill("Zulu");
+    await page.getByRole("dialog").getByRole("button", {name: "Save"}).click();
 
     await expect(page.locator(".slds-notify_toast")).toHaveCount(0);
-    await expect(page.getByLabel("Save as")).toHaveValue("Zulu");
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")))).toEqual([
       {query: "Alpha:SELECT Id FROM Account", useToolingApi: false}
     ]);
   });
 
-  test("Saving A Query Confirms And Clears Its Label", async ({page, context, extensionId}) => {
+  test("Saving A Query Confirms Via Modal And Resets Label", async ({page, context, extensionId}) => {
     await context.addInitScript(() => {
       window.localStorage.removeItem("insextSavedQueryHistory");
     });
@@ -734,31 +795,53 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
+    // Save Query sits immediately after Run Export on the action row.
+    const runExportBox = await page.getByRole("button", {name: "Run Export"}).boundingBox();
+    const saveQueryBox = await page.getByRole("button", {name: "Save Query"}).boundingBox();
+    expect(Math.abs(saveQueryBox.y - runExportBox.y), "Save Query is on the Run Export row").toBeLessThan(2);
+    expect(saveQueryBox.x, "Save Query follows Run Export").toBeGreaterThan(runExportBox.x);
+
     const query = page.locator("textarea#query");
-    const label = page.getByLabel("Save as");
-    await label.fill("Accounts");
     await query.fill("SELECT Id FROM Account");
-    await expect(label, "query edits keep the pending label").toHaveValue("Accounts");
+
+    // Escape dismisses the modal without saving.
     await page.getByRole("button", {name: "Save Query"}).click();
+    const modal = page.getByRole("dialog");
+    const labelInput = modal.getByLabel("Label (optional)");
+    await expect(labelInput).toBeFocused();
+    await labelInput.fill("Dismissed");
+    await labelInput.press("Escape");
+    await expect(modal).toHaveCount(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")) || [])).toHaveLength(0);
+
+    // Pressing Enter inside the modal saves with the optional label and shows a toast.
+    await page.getByRole("button", {name: "Save Query"}).click();
+    await expect(labelInput).toHaveValue("");
+    await labelInput.fill("Accounts");
+    await labelInput.press("Enter");
+    await expect(modal).toHaveCount(0);
 
     const toast = page.locator(".slds-notify_toast[role='status']");
     await expect(toast.getByRole("heading", {name: "Saved"})).toBeVisible();
     await expect(toast).toContainText("Query saved successfully.");
-    await expect(label).toHaveValue("");
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory"))[0].query)).toBe("Accounts:SELECT Id FROM Account");
     await expect(toast).toHaveCount(0, {timeout: 3000});
 
-    // Loading the saved query restores its label, while changing tabs clears it.
+    // Loading the saved query pre-fills its label on Save Query, while switching tabs clears it.
     await selectQuerySource(page, "saved");
     const saved = page.getByRole("combobox", {name: "Search saved"});
     await saved.click();
     await page.locator("#query-search-listbox [role='option']").click();
-    await expect(label).toHaveValue("Accounts");
+    await page.getByRole("button", {name: "Save Query"}).click();
+    await expect(labelInput).toHaveValue("Accounts");
+    await page.getByRole("button", {name: "Cancel", exact: true}).click();
+
     await page.locator(".add-tab-button").click();
-    await expect(label).toHaveValue("");
-    await label.fill("Keep while closing another tab");
-    await page.locator(".query-tab-close").first().click();
-    await expect(label).toHaveValue("Keep while closing another tab");
+    await query.fill("SELECT Id FROM Contact");
+    await page.getByRole("button", {name: "Save Query"}).click();
+    await expect(labelInput).toHaveValue("");
+    await modal.getByRole("button", {name: "Save"}).click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("insextSavedQueryHistory")).map(e => e.query))).toContain("SELECT Id FROM Contact");
   });
 
   for (const width of [800, 1024, 1280, 1440]) {
@@ -773,15 +856,16 @@ test.describe("Data Export", () => {
       expect(bounds.x + bounds.width, "right edge on screen").toBeLessThanOrEqual(width);
       expect(await toolbar.evaluate(element => element.scrollWidth <= element.clientWidth), "toolbar content does not overflow").toBe(true);
 
+      // "Deleted/Archived Records" text must remain on a single row, matching "Tooling API".
+      const deletedLabel = await page.locator(".sfir-inline-toggle .slds-form-element__label", {hasText: "Deleted/Archived Records"}).boundingBox();
+      const toolingLabel = await page.locator(".sfir-inline-toggle .slds-form-element__label", {hasText: "Tooling API"}).boundingBox();
+      expect(deletedLabel.height, "Deleted/Archived Records stays on one line").toBeLessThanOrEqual(24);
+      expect(Math.abs(deletedLabel.height - toolingLabel.height), "toggle labels have identical single-line height").toBeLessThan(2);
+
       const heading = await page.getByRole("heading", {name: "Export Query"}).boundingBox();
       const toggle = await page.locator("label", {hasText: "Tooling API"}).boundingBox();
-      const browse = await page.locator(".sfir-query-section__browse").boundingBox();
-      const save = await page.locator(".sfir-query-section__save").boundingBox();
-      if (width >= 1024) {
-        expect(Math.abs(save.y - browse.y), "browse and save stay on one row").toBeLessThan(2);
-      }
 
-      if (width >= 1280) {
+      if (width >= 1024) {
         const headingCenter = heading.y + (heading.height / 2);
         const toolbarCenter = bounds.y + (bounds.height / 2);
         const toggleCenter = toggle.y + (toggle.height / 2);
@@ -894,6 +978,7 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});
 
+    await selectQuerySource(page, "history");
     const history = page.getByRole("combobox", {name: "Search history"});
     const listbox = page.locator("#query-search-listbox");
     const query = page.locator("textarea#query");
@@ -933,6 +1018,7 @@ test.describe("Data Export", () => {
     await expect(editor.locator(".token.keyword")).toHaveText(["query"]);
     await expect(editor.locator(".token.attr-name")).toHaveText(["first", "orderBy", "Name", "order"]);
 
+    await selectQuerySource(page, "history");
     await page.getByRole("combobox", {name: "Search history"}).click();
     const option = page.locator("#query-search-listbox [role='option']").first();
     await expect(option.locator(".token.keyword")).toHaveText(["query"]);

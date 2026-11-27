@@ -236,13 +236,12 @@ a.download-salesforce {
   transform: translateY(-50%);
 }
 
-/* Shared History / Saved / Templates toolbar and combobox (Data Export & REST Explorer) */
+/* Shared All / History / Saved / Templates toolbar and combobox (Data Export & REST Explorer) */
 .sfir-query-toolbar,
-.sfir-query-section__browse,
-.sfir-query-section__save {
+.sfir-query-section__browse {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: var(--slds-g-spacing-2, 0.5rem);
 }
 
 .sfir-query-toolbar {
@@ -251,42 +250,43 @@ a.download-salesforce {
 
 .sfir-query-toolbar .slds-button:not(.slds-radio_button):not(.slds-button_icon),
 .sfir-query-toolbar .slds-radio_button .slds-radio_faux {
-  padding-inline: var(--slds-g-spacing-2, 0.5rem);
+  padding-inline: var(--slds-g-spacing-3, 0.75rem);
 }
 
-.sfir-query-section__save {
-  border-left: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
-  padding-left: 0.375rem;
-}
-
-@media (max-width: 56rem) {
-  .sfir-query-section__save {
-    border-left: 0;
-    padding-left: 0;
-  }
-}
-
-.sfir-query-section__browse > *,
-.sfir-query-section__save > * {
+.sfir-query-section__browse > * {
   flex: none;
   white-space: nowrap;
 }
 
 .sfir-query-search {
   flex: none;
-  width: clamp(8.5rem, 11vw, 14rem);
+  width: clamp(10rem, 14vw, 15rem);
 }
 
 .sfir-combobox-search-icon {
   pointer-events: none;
 }
 
-.sfir-query-label {
-  width: clamp(5.75rem, 7vw, 8rem);
-}
-
 .sfir-query-clear {
   justify-content: center;
+}
+
+.sfir-inline-toggle {
+  width: auto;
+  align-items: center;
+}
+
+.sfir-inline-toggle .slds-form-element__label {
+  white-space: nowrap;
+  padding-block-start: 0;
+}
+
+.sfir-combobox-group-header {
+  padding-block: var(--slds-g-spacing-1, 0.25rem);
+}
+
+.slds-listbox__item + .slds-listbox__item > .sfir-combobox-group-header {
+  border-top: var(--slds-g-sizing-border-1) solid var(--slds-g-color-border-1);
 }
 
 .sfir-query-combobox-dropdown {
